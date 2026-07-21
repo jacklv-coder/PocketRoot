@@ -1,110 +1,181 @@
-# PocketRoot Roadmap
+# PocketRoot 路线图
 
-## Milestone 1: Project foundation
+[简体中文](Roadmap.md) | [English](en/Roadmap.md) | [文档中心](README.md)
 
-- Swift Package module boundaries
-- Public runtime, command, session, and terminal API foundations
-- Placeholder runtime and terminal behavior
-- Programmatic UIKit demo with four tabs
-- XcodeGen generation, scripts, documentation, and tests
-- Unified iOS 18.0 deployment target
-- macOS CI for package tests, pinned RootFS validation, project generation,
-  generic Simulator builds, and arm64 Experimental-runtime final links
+本文是 PocketRoot **动态完成状态、工程门禁和下一步顺序的唯一事实源**。产品目标见[产品规划](ProductPlan.md)，固定 revision/hash 见[上游依赖清单](UpstreamDependencies.md)。
 
-### Engineering baseline
+状态定义：
 
-- Xcode 16.0 or newer with the iOS 18 SDK
-- Swift 5.10 or newer for Swift Package Manager
-- iOS 18.0 as the minimum supported deployment target
-- `project.yml` as the committed Xcode project source of truth
+- **已通过**：当前验收证据满足该阶段要求，后续变更仍需回归。
+- **进行中**：已有实现，但验收尚未闭环。
+- **未开始**：尚无可依赖实现。
+- **阻塞**：需要外部资源、上游修改、硬件、法律或产品决定。
 
-## Milestone 2: ARM64 Linux runtime
+## 里程碑 1：工程基础
 
-Status: **Experimental — in progress**.
+状态：**已通过**。
 
-### Completed feasibility gates
+完成内容：
 
-- Audited `jacklv-coder/ish-arm64-pkg` and its parent repository
-- Pinned the exact package revision and nested iSH gitlink
-- Verified XCFramework and RootFS release hashes
-- Added the opt-in `PocketRootIshRuntime` module boundary
-- Added the opt-in `PocketRootIshRuntimeIntegration` composition boundary
-- Established process-wide ownership, serialized boot, bounded one-shot
-  commands, and terminal-shutdown semantics
-- Added a versioned RootFS manifest, secure extractor, fakefs validator, and
-  recoverable atomic installer
-- Installed and revalidated the exact v0.3.3 RootFS release archive
-- Final-linked the full integration graph for iOS 18 arm64 Simulator and
-  unsigned device destinations
-- Booted the audited fakefs on an iOS 18.2 Simulator
-- Verified `/bin/uname -m` exits 0 and returns `aarch64`
-- Passed the repository-owned PocketRoot adapter smoke on an iOS 18.2 arm64
-  Simulator: 13 checks cover the v0.3.3 RootFS, boot, Alpine identity, command
-  context, streams and exit status, timeout and output-limit recovery, and the
-  terminal shutdown that ends the host App process through pinned iSH
-  `_exit(0)` behavior
+- Swift Package 模块边界；
+- public runtime、command、session 和 terminal API 基础；
+- placeholder runtime 与 terminal behavior；
+- 纯 UIKit Demo，包含四个 tab；
+- XcodeGen 工程生成和脚本；
+- 文档、测试与 GitHub Actions；
+- package、Demo、tests 和 CI 统一 iOS 18.0；
+- macOS host tests；
+- 固定 RootFS CI 校验；
+- generic Simulator Demo build；
+- 完整实验 runtime 的 arm64 最终链接。
 
-The independent spike and repository adapter smoke establish the Simulator
-path. They do not satisfy the Xcode 16, physical-device, PTY, or
-production-distribution gates, and the smoke is not a CI claim.
+工程基线：
 
-### Current gate status
+| 项目 | 要求 |
+| --- | --- |
+| Xcode | 16.0+ 与 iOS 18 SDK |
+| Swift Package | Swift 5.10+ |
+| Deployment target | iOS 18.0 |
+| Xcode project source | `project.yml` |
+| Git generated project | 不提交 |
 
-| Gate | Status | Next exit condition |
+## 里程碑 2：ARM64 Linux 一次性命令
+
+状态：**实验性，进行中**。
+
+### 已完成的可行性基础
+
+- 审核 `jacklv-coder/ish-arm64-pkg` 与 parent repository；
+- 固定完整 package revision 和 nested iSH gitlink；
+- 独立验证 XCFramework 与 RootFS hash；
+- 建立 opt-in `PocketRootIshRuntime`；
+- 建立 opt-in `PocketRootIshRuntimeIntegration`；
+- 实现 process ownership、serial native execution 和 lifecycle reentrancy protection；
+- 实现正 timeout、bounded read、stdout/stderr limits；
+- 实现 cwd、environment、stderr merge、exit 与 signal 映射；
+- 实现 RootFS manifest、no-follow snapshot、安全 gzip/ustar、fakefs validation；
+- 实现 versioned install、reuse、corruption replacement、rollback 和 interrupted promotion recovery；
+- 对精确 v0.3.3 release archive 完成真实资产测试；
+- 对 arm64 Simulator 和 unsigned device 完成完整依赖图最终链接；
+- 在 iOS 18.2 arm64 Simulator boot 固定 fakefs；
+- repository native smoke 通过 13 项 prepare、boot、guest、command、recovery 与 shutdown 检查。
+
+这些证据建立了当前 Simulator 一次性命令路径，不覆盖真机、最低 Xcode 16、PTY 或公开发行。
+
+### 当前门禁
+
+| 门禁 | 状态 | 退出条件 |
 | --- | --- | --- |
-| iOS 18 baseline | Passed | Keep package, demo, tests, and CI aligned |
-| Immutable IshEmbed revision | Passed | Change only through the audited update procedure |
-| Experimental one-shot adapter foundation | Passed | Preserve lifecycle, timeout, and output-limit unit coverage |
-| Native adapter behavior on iOS 18 Simulator | Passed | Preserve the 13-check repository smoke and rerun it for runtime or RootFS changes |
-| RootFS manifest and installer foundation | Passed | Preserve real-asset, private-snapshot, rollback, and interrupted-promotion coverage; add ENOSPC testing |
-| Runtime/RootFS composition | Passed | Keep preparation caller-controlled and Experimental |
-| Host-process-safe native shutdown | Blocked | Patch the embed fork to stop the kernel thread without `_exit`, bound native joins, rebuild the XCFramework, and repeat the audit |
-| Default VM and post-boot health check | Not started | Verify `aarch64`, Alpine version, and command context before reporting ready |
-| Demo native smoke path | Not started | Inject one prepared system into all screens without bundling an unreviewed asset |
-| License-reviewed RootFS | Blocked | Complete licenses, NOTICE, corresponding source, and SBOM |
-| Interactive PocketRootSession | Not started | Bounded reads, input, output, signal, resize, cancellation, and safe close |
-| SwiftTerm bridge | Not started | Pin only after the PTY ownership contract is stable |
-| Physical iPhone and iPad | Blocked | Signed boot and `aarch64` smoke tests on both device classes |
-| App lifecycle and memory | Not started | Foreground/background, jetsam, failure injection, and persistence tests |
-| Xcode 16 native-runtime compatibility | Not started | Repeat final-link and smoke checks with the minimum supported toolchain |
-| App Store 2.5.2 disposition | Blocked | Review guest package download and execution behavior |
+| iOS 18 基线 | 已通过 | 持续保持 package、Demo、tests、CI 一致 |
+| 不可变 IshEmbed revision | 已通过 | 只通过完整供应链更新流程变更 |
+| 一次性命令 adapter | 已通过 | 保持 lifecycle、timeout、output-limit coverage |
+| iOS 18 Simulator 原生行为 | 已通过 | runtime/RootFS 变更时重跑 13 项 smoke |
+| RootFS 安全安装与恢复 | 已通过 | 保持真实资产、snapshot、rollback、recovery coverage；补 ENOSPC |
+| RootFS/runtime composition | 已通过 | 保持 caller-controlled、no-download、no-auto-boot |
+| 默认 post-boot health gate | 未开始 | `aarch64`、Alpine version 与 command context 通过后才 ready |
+| Demo 真实 runtime 注入 | 未开始 | 一个 prepared system 注入 System/Commands/Diagnostics，不打包未审查 RootFS |
+| 进程安全 soft shutdown | 阻塞 | patch fork、kernel thread 返回、bounded joins、新 XCFramework 与重审 |
+| 签名 iPhone | 阻塞 | physical boot 与 command smoke |
+| 签名 iPad | 阻塞 | physical boot 与 command smoke |
+| 最低 Xcode 16 原生兼容 | 未开始 | 使用 Xcode 16 重跑 final-link 和 native behavior |
+| App lifecycle 与内存 | 未开始 | foreground/background、jetsam、failure injection、persistence |
+| RootFS ENOSPC/掉电 | 未开始 | storage pressure 和 transaction fault matrix |
+| License-reviewed RootFS | 阻塞 | license、NOTICE、对应源码和 SBOM 完整 |
+| App Store 2.5.2 | 阻塞 | guest download/execute policy 有书面结论 |
 
-### Next implementation sequence
+### 下一步执行顺序
 
-1. Repeat the repository smoke suite in signed builds on a physical iPhone and
-   iPad, including
-   cold launch, background/foreground, low-memory, and failed-boot recovery.
-2. Decide whether process-terminal shutdown is an acceptable product contract;
-   otherwise patch and rebuild the upstream embed artifact so shutdown returns
-   without ending the App, and add bounded native-join tests.
-3. Define the default VM/command context and add a post-boot health contract;
-   do not report `ready` until guest architecture and Alpine identity pass.
-4. Repeat the complete native final-link and adapter smoke with the declared
-   minimum Xcode 16 toolchain.
-5. Add an opt-in Demo smoke configuration that injects the same prepared system
-   into System, Commands, and Diagnostics without bundling an unreviewed RootFS.
-6. Extend cancellation, ENOSPC, and power-loss fault injection, then measure
-   command-output and RootFS memory peaks.
-7. Add a session registry, bounded native reads, input, signal, resize, EOF,
-   cancellation, and close-before-shutdown guarantees.
-8. Pin and integrate SwiftTerm only after the PTY lifecycle contract passes on
-   physical hardware.
-9. Complete license/NOTICE/SBOM, corresponding-source, sandbox, security, and
-   App Store policy reviews before enabling any binary distribution.
+1. **真机基线**
+   在签名 iPhone 与 iPad 上重跑 prepare、boot、guest identity、streams、timeout、limit 和 failure recovery；记录 Xcode/iOS/device/entitlement。
 
-See [ADR-001](Decisions/ADR-001-IshEmbed-Feasibility.md) and
-[Upstream Dependencies](UpstreamDependencies.md) for the evidence behind these
-gates.
+2. **关闭策略**
+   决定产品是否接受宿主进程退出。若不接受，patch upstream embed fork，让 shutdown 只结束 kernel thread，限制 native reader/log join，重建并重审 XCFramework。
 
-## Milestone 3: Hardening
+3. **默认健康检查**
+   定义 VM 与 command context；只有 guest `aarch64`、Alpine identity 和必要工具通过后才报告 ready。
 
-- Runtime lifecycle recovery, cancellation, and failure injection
-- RootFS migration and storage policy
-- Performance and memory benchmarks
-- Accessibility and localization review
-- Security and sandbox review
-- Dependency update and artifact reproducibility checks
-- Distribution review remains gated by the Milestone 2 compliance decisions
+4. **最低工具链**
+   使用声明的 Xcode 16 重跑完整 final-link、RootFS install 和 native smoke。
 
-Agent, browser automation, and MCP capabilities are intentionally outside the
-scope of PocketRootCore.
+5. **Demo 注入**
+   增加 opt-in smoke configuration，把同一个 prepared system 注入 System、Commands 与 Diagnostics，不把 RootFS 放进默认 target。
+
+6. **故障与资源硬化**
+   增加 Task cancellation、ENOSPC、power-loss、storage pressure、long output 与 memory peak。
+
+完成上述闭环后，才能把“一次性命令”提升到 Developer Preview 候选。
+
+## 里程碑 3：交互式终端
+
+状态：**未开始**。
+
+按顺序实现：
+
+1. public `PocketRootSystem` interactive session entry point；
+2. process-wide live session registry；
+3. bounded native PTY reads；
+4. stdin write 与 close；
+5. stdout/stderr/exit event；
+6. terminal size 与 resize；
+7. signal、EOF 与 cancellation；
+8. close idempotency；
+9. close-all-before-shutdown；
+10. physical-device lifecycle tests；
+11. 固定 SwiftTerm revision；
+12. `TerminalBridge` 与 UIKit integration；
+13. accessibility、keyboard 和 iPad layout。
+
+在 session 指针所有权、read pump 取消和 close 顺序证明安全前，不使用上游高层 `IshTerminal` wrapper，也不加入 SwiftTerm。
+
+验收：
+
+- 一个 session 的生命周期可预测；
+- background/foreground 不丢失 ownership；
+- 关闭时没有 use-after-free 或无限 read；
+- shutdown 不越过任何 live session；
+- iPhone/iPad keyboard、resize、VoiceOver 可用；
+- timeout/limit/cancellation 错误可恢复。
+
+## 里程碑 4：硬化与发行候选
+
+状态：**未开始 / 受阻塞门禁约束**。
+
+工程：
+
+- runtime failure recovery；
+- RootFS migration 与 user data policy；
+- performance、memory、battery benchmark；
+- long-running workload；
+- storage pressure 与 jetsam；
+- dependency rebuild reproducibility；
+- security 与 sandbox review；
+- localization 与 accessibility；
+- telemetry/privacy policy。
+
+合规：
+
+- PocketRoot 顶层 license；
+- upstream LICENSE/NOTICE；
+- corresponding source；
+- machine-readable SBOM；
+- artifact provenance；
+- App Store 2.5.2；
+- privacy manifest；
+- release notes 与 known limitations。
+
+全部阻塞发行项有明确处置后，才可以定义 Beta 或 Distribution Candidate。
+
+## 每阶段共同要求
+
+- 修改中英文文档；
+- 更新变更日志；
+- 固定依赖与 hash；
+- 根据[测试矩阵](Testing.md)运行最小门禁；
+- 不提交 RootFS 或未审查二进制；
+- 不把 link success 描述成 runtime success；
+- 不把 Simulator success 描述成 physical-device support；
+- 不把技术验证描述成法律或 App Review 结论。
+
+## 不属于 PocketRootCore 的范围
+
+Agent、浏览器自动化、MCP、云端编排和业务工作流不进入 PocketRootCore。它们可以由上层应用基于稳定 command/session API 构建。

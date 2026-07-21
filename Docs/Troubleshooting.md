@@ -1,0 +1,315 @@
+# 故障排查
+
+[简体中文](Troubleshooting.md) | [English](en/Troubleshooting.md) | [文档中心](README.md)
+
+先确认问题属于哪一层：依赖解析、工程生成、默认 Demo、RootFS 安装、原生最终链接、runtime 启动、命令执行或 smoke。不要用更高层的错误掩盖更低层输入问题。
+
+## 快速诊断
+
+```bash
+git status -sb
+git remote -v
+xcodebuild -version
+swift --version
+xcrun --sdk iphonesimulator --show-sdk-version
+xcodegen version
+swift package show-dependencies
+```
+
+然后运行最小相关检查：
+
+```bash
+./Scripts/check-docs.sh
+./Scripts/test.sh
+./Scripts/build.sh
+```
+
+## `xcodegen: command not found`
+
+安装：
+
+```bash
+brew install xcodegen
+```
+
+或重新运行：
+
+```bash
+./Scripts/bootstrap.sh
+```
+
+`bootstrap.sh` 在缺少 XcodeGen 时会调用 Homebrew。CI 不使用浮动 Homebrew 包，而是下载固定版本并验证哈希。
+
+## 找不到 `PocketRootDemo.xcodeproj`
+
+生成工程：
+
+```bash
+./Scripts/generate-project.sh
+```
+
+不要从其他机器复制生成工程，也不要直接修改 `project.pbxproj`。`project.yml` 是事实源。
+
+## Swift Package 依赖解析失败
+
+检查：
+
+- 当前网络能访问固定的 `ish-arm64-pkg` commit 和 parent release asset；
+- `Package.swift` 中完整 revision 没被改成 branch；
+- `Package.resolved` 没有非预期漂移；
+- Xcode Command Line Tools 指向预期 Xcode。
+
+重试标准流程：
+
+```bash
+swift package resolve
+./Scripts/generate-project.sh
+```
+
+不要用移动 tag 或本地未记录二进制绕过失败。
+
+## `no such module IshEmbed` 或 native runtime 不可用
+
+真实 driver 只支持：
+
+- iOS；
+- arm64；
+- `canImport(IshEmbed)`；
+- 显式依赖 `PocketRootIshRuntime` / `PocketRootIshRuntimeIntegration`。
+
+macOS、x86_64 Simulator 和默认 `PocketRoot` 产品不会提供真实 runtime。检查：
+
+```swift
+PocketRootIshRuntimeFactory.isAvailable
+```
+
+Intel Mac 无法执行当前原生路径。Apple Silicon 上仍要确保 destination 是 arm64 iOS Simulator，不是 Rosetta/x86_64。
+
+## 在上游包直接运行 `swift test` 时链接失败
+
+固定 IshEmbed manifest 声明 macOS，但 release XCFramework 没有 macOS slice。直接在上游包做 macOS native link 预期失败。
+
+在 PocketRoot 仓库运行宿主测试；adapter seam 会使用 unsupported/injected driver。原生行为用 `build-runtime-spike.sh` 与 iOS smoke 验证。
+
+## 默认 Demo 报 “Runtime is not installed yet”
+
+这是当前预期行为。Demo 只依赖安全伞形 `PocketRoot`，System 和 Commands 使用 placeholder `PocketRootSystem.shared`，Terminal 没有 PTY。
+
+不要通过向默认 bundle 随意加入 RootFS 解决。真实应用接入流程见[应用接入指南](IntegrationGuide.md)。
+
+## `runtimeNotBooted`
+
+确认顺序：
+
+1. `prepareSystem` 成功返回；
+2. 使用返回的 `prepared.system`，不是 `PocketRootSystem.shared`；
+3. `boot()` 成功；
+4. `await system.state == .ready`；
+5. 再调用 `execute`。
+
+如果 boot 失败，保留原始 typed error 和 runtime state，并先判断失败发生在哪个边界：
+
+- RootFS 预检（例如目录缺失或 `meta.db` 是 symlink）发生在申请 process-global 槽位之前。这类失败保持 `idle`，修正输入或重新 prepare 后，可在同一宿主进程中重试 boot。
+- 一旦已申请槽位并进入 native driver boot，该调用若失败就会保守地把全局槽位标记为 terminated。此后同一或新建 system 的 boot 都会得到 `restartRequired`，必须重启宿主 App。
+- 第一次 boot 仍在执行时的并发重复调用会被拒绝；等待原调用返回，不要另起多个 system 竞争。
+
+## “already booted” 或重复 boot
+
+RootFS 预检失败仍可按上一节说明在同一进程重试；但一旦 system 已成功 boot，或已进入并消费
+native process slot，就不能再次 boot。IshEmbed 是进程级单例，多个 system 也不能拥有多个内核。
+
+应用应集中保存 prepared system，并让一个 lifecycle coordinator 管理它，不要让多个页面各自 prepare/boot。
+
+## `restartRequired`
+
+表示当前宿主进程不能再次启动 native runtime，常见原因：
+
+- native driver boot 在占用 process-global 槽位后失败；
+- injected driver 的 shutdown 已返回并将 process gate 标记为 terminated（当前真实 native shutdown 会直接结束宿主进程）；
+- 其他 system 已终结全局 iSH 实例，当前 system 看到的 process gate 已是 terminated。
+
+当前解决方式是重新启动宿主 App。不要实现 `shutdown(); boot()`。
+
+## RootFS 大小或 SHA-256 不匹配
+
+必须同时满足：
+
+- 6,581,376 字节；
+- `be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4`。
+
+检查：
+
+```bash
+stat -f '%z' /path/to/fs.tar.gz
+shasum -a 256 /path/to/fs.tar.gz
+```
+
+可能原因：
+
+- 下载不完整；
+- 拿到不同 release；
+- HTML 错误页被保存为 archive；
+- 代理或缓存替换内容；
+- 文件在校验前后被修改。
+
+不要关闭验证或修改 manifest 来接受未知文件。重新从已审核来源取得，并独立计算 hash。
+
+## RootFS 报 symlink 或非普通文件
+
+installer 故意拒绝：
+
+- symlink 输入；
+- FIFO、socket、device；
+- fakefs root/meta.db/data symlink；
+- tar 内 symlink/hardlink/special node。
+
+把真实 archive 文件复制到 App 自己控制的本地普通文件路径。不要通过 `followSymlink` 降低边界。
+
+## “missing top-level fs” 或 fakefs 布局无效
+
+固定 archive 必须解包为：
+
+```text
+fs/
+├── meta.db
+└── data/
+```
+
+不要传入 Alpine 原始 minirootfs；PocketRoot 当前接受的是 iSH fakefs archive。检查上游版本、归档格式和清单。
+
+## RootFS 安装失败但旧版本仍存在
+
+这是预期保护。候选只有完全校验后才 promotion；替换失败会回滚旧版本和 `current.json`。保留日志和错误，让下次 `prepareArchive` 先恢复 journal。
+
+不要手工删除 `.replacement-transaction` 或 `current.json`，除非已经理解并备份整个安装状态；手工清理可能破坏恢复证据。
+
+## 命令 timeout 无效
+
+timeout 必须：
+
+- 大于 0；
+- 不超过 24 小时。
+
+0、负数或超过 86,400 秒会抛 `invalidCommandRequest`。正数但不足 1 毫秒会 clamp 到 1 毫秒。
+
+使用明确边界：
+
+```swift
+PocketRootCommandRequest(
+    command: "your-command",
+    timeout: .seconds(30)
+)
+```
+
+## 命令超时后仍有部分输出
+
+这是设计行为。driver 在 deadline 到期时终止 session，并返回 `timedOut == true` 以及此前已经接收的 bounded output。应用必须先检查 `timedOut`，不能只看 stdout。
+
+## `commandOutputLimitExceeded`
+
+命令累计 stdout 或 stderr 超过 runtime 配置：
+
+- 默认 stdout：8 MiB；
+- 默认 stderr：4 MiB。
+
+adapter 会终止当前 session 并抛 typed error。解决方向：
+
+- 修改命令让输出分页、过滤或写入 guest 文件；
+- 在风险评估后通过 `prepareSystem` 调整 limit；
+- 不要设置无限上限；
+- 捕获错误并允许下一条命令继续。
+
+## “one one-shot command at a time”
+
+当前 runtime 每次只允许一个一次性命令。并发调用中只有一个可进入 native session。
+
+在应用层使用单个命令队列，或在 UI 中禁用重复提交。交互式多 session 尚未实现。
+
+## shutdown 提示 active command
+
+等待当前 `execute` 返回后再 shutdown。PocketRoot 故意禁止 shutdown 越过仍在读写的 native session。
+
+## 调用 shutdown 后 App 立即退出
+
+这是固定上游的已知、已记录行为，不是普通 Swift crash。guest PID 1 halt 最终调用 `_exit(0)`。
+
+当前不要在常规 UI 或 App lifecycle cleanup 中调用。若产品不能接受宿主进程退出，只能避免调用并等待 soft-shutdown rebuild。参见 [ADR-001](Decisions/ADR-001-IshEmbed-Feasibility.md)。
+
+## smoke 找不到 iOS 18 Simulator
+
+查看：
+
+```bash
+xcrun simctl list runtimes
+xcrun simctl list devices available
+```
+
+在 Xcode Settings 中安装 iOS 18 Simulator runtime。默认脚本需要 Apple Silicon，并会创建 iPhone 16 临时设备。临时设备在脚本成功或失败退出时都会被删除，除非设置 `POCKETROOT_KEEP_SIMULATOR=1`。也可指定已有 UDID：
+
+```bash
+POCKETROOT_SMOKE_DEVICE="paste-exact-udid-here" \
+POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
+  ./Scripts/run-runtime-smoke.sh
+```
+
+目标必须运行 iOS 18.x。
+
+对 caller-provided Simulator，脚本会 boot 设备、卸载旧 smoke App 并安装新版本；退出时只终止 App，会留下新 App、注入的 archive/report 和当前开机状态。用精确 UDID 安全清理：
+
+```bash
+SMOKE_DEVICE_UDID="paste-exact-udid-here"
+xcrun simctl terminate "$SMOKE_DEVICE_UDID" com.jacklv.PocketRootIshRuntimeSmoke || true
+xcrun simctl uninstall "$SMOKE_DEVICE_UDID" com.jacklv.PocketRootIshRuntimeSmoke
+```
+
+`uninstall` 会一并删除该 App 的数据容器。如果设备在 smoke 前是关机状态，可再执行 `xcrun simctl shutdown "$SMOKE_DEVICE_UDID"`。只对已确认的脚本专用临时 UDID 使用 `simctl delete`，绝不删除共享开发设备。
+
+## smoke 超时或没有 report
+
+检查：
+
+- archive 路径可读且 hash 正确；
+- Simulator 能 boot；
+- smoke App 是否成功安装和启动；
+- timeout 是否足够；
+- `simctl --console` 输出；
+- App Documents 中的 `pocketroot-smoke-result.json`；
+- 宿主磁盘和 Simulator storage。
+
+临时提高 App 启动后的 JSON report 等待时间（不影响工程生成、构建、Simulator boot，也不改变 report 后固定 20 秒的退出检查）：
+
+```bash
+POCKETROOT_SMOKE_TIMEOUT_SECONDS=600 \
+POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
+  ./Scripts/run-runtime-smoke.sh
+```
+
+不要因为超时就把 crash 或缺失 report 视为成功。
+
+## 本地通过但 CI 失败
+
+比较：
+
+- Xcode/Swift/SDK；
+- arm64 destination；
+- `Package.resolved`；
+- XcodeGen 版本；
+- RootFS/XcodeGen digest；
+- 生成工程是否来自最新 `project.yml`；
+- 未提交文件是否被本地构建错误地引用。
+
+CI 先运行 `./Scripts/check-docs.sh`，再执行测试与构建。`actions/checkout` 自身固定到精确 revision，但它检出的仓库内容是 workflow 事件选定的 SHA（push SHA 或 PR merge SHA）。CI 是干净 checkout，不能访问本地 archive、DerivedData、未提交工程或凭据。
+
+## 报告问题时提供
+
+- commit SHA 与分支；
+- Xcode、Swift、SDK、macOS；
+- destination 与架构；
+- 执行的精确命令；
+- typed error 和相关日志；
+- runtime state；
+- archive 版本、大小和 SHA-256（不要上传受限 archive）；
+- 最小复现；
+- 是否为 host test、Simulator、unsigned link 或 signed device。
+
+不要在 issue 或日志中附带 token、签名材料、私有路径内容或未获授权的 RootFS。

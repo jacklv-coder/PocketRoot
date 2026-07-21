@@ -23,6 +23,9 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - name: Validate bilingual documentation
+        run: ./Scripts/check-docs.sh
+
       - name: Report Apple toolchain
         run: |
           xcodebuild -version

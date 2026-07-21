@@ -1,0 +1,306 @@
+# PocketRoot 实现原理
+
+[简体中文](Implementation.md) | [English](en/Implementation.md) | [文档中心](README.md)
+
+本文把公开 API 映射到实际源码和端到端执行流程，说明“调用一个方法后，工程内部究竟发生什么”。架构边界见[架构说明](Architecture.md)，对外接入契约见[应用接入指南](IntegrationGuide.md)。
+
+## 1. 源码地图
+
+| 能力 | 入口 | 主要实现 |
+| --- | --- | --- |
+| 公共系统 | `PocketRootSystem` | `Sources/PocketRootCore/Public/PocketRootSystem.swift` |
+| 生命周期协调 | `RuntimeCoordinator` | `Sources/PocketRootCore/Runtime/RuntimeCoordinator.swift` |
+| 默认占位 runtime | `PlaceholderLinuxRuntime` | `Sources/PocketRootCore/Runtime/PlaceholderLinuxRuntime.swift` |
+| RootFS 清单 | `PocketRootRootFSArtifactManifest` | `Sources/PocketRootResources/RootFSArtifactManifest.swift` |
+| Archive 校验 | `PocketRootRootFSValidator` | `Sources/PocketRootResources/RootFSValidator.swift` |
+| gzip/ustar 解包 | `PocketRootGzipTarExtractor` | `Sources/PocketRootResources/RootFSGzipTarExtractor.swift` |
+| zlib primitive | C API | `Sources/CPocketRootArchiveSupport/` |
+| RootFS 安装 | `PocketRootRootFSInstaller` | `Sources/PocketRootResources/RootFSInstaller.swift` |
+| 原生 runtime factory | `PocketRootIshRuntimeFactory` | `Sources/PocketRootIshRuntime/Public/` |
+| RootFS/runtime 组合 | `PocketRootIshSystemFactory` | `Sources/PocketRootIshRuntimeIntegration/` |
+| iSH adapter | `IshLinuxRuntime` | `Sources/PocketRootIshRuntime/Runtime/` |
+| 原生 driver | `IshEmbedDriver` | `Sources/PocketRootIshRuntime/Native/` |
+| 原生串行执行 | `BlockingIshExecutor` | `Sources/PocketRootIshRuntime/Concurrency/` |
+| 进程所有权 | `IshProcessGate` | `Sources/PocketRootIshRuntime/Concurrency/` |
+| Terminal UI | `PocketRootTerminalViewController` | `Sources/PocketRootTerminal/` |
+| Demo | UIKit controllers | `Demo/PocketRootDemo/` |
+| 最终链接验证 | compile spike | `Spikes/PocketRootIshRuntimeCompileSpike/` |
+| 原生行为验证 | smoke App | `Spikes/PocketRootIshRuntimeSmoke/` |
+
+## 2. 默认系统为什么不能启动 Linux
+
+`PocketRootSystem()` 和 `PocketRootSystem.shared` 构造时注入 `PlaceholderLinuxRuntime`：
+
+```text
+PocketRootSystem.shared
+  └── RuntimeCoordinator
+      └── PlaceholderLinuxRuntime
+```
+
+结果：
+
+- `boot()` 抛出 `unsupportedOperation`；
+- `execute()` 抛出 `runtimeNotBooted`；
+- `shutdown()` 保持 idle；
+- 导入默认 `PocketRoot` 不会链接 IshEmbed。
+
+这是安全默认行为，不是临时绕过。真实系统必须通过实验性 factory 创建：
+
+```text
+PocketRootIshSystemFactory.prepareSystem(...)
+  └── PocketRootIshRuntimeFactory.makeSystem(...)
+      └── PocketRootSystem(package runtime: IshLinuxRuntime)
+```
+
+factory 返回的新对象不会替换 `PocketRootSystem.shared`。业务代码必须保存并注入这个实例。
+
+## 3. `prepareSystem` 调用链
+
+```mermaid
+flowchart TD
+    A["PocketRootIshSystemFactory.prepareSystem"] --> B["创建 RootFSInstaller"]
+    B --> C["prepareArchive(local URL)"]
+    C --> D["得到 PocketRootRootFSInstallation"]
+    D --> E["将 system rootFSVersion 对齐 manifest"]
+    E --> F["创建 PocketRootIshRuntimeConfiguration"]
+    F --> G["IshRuntimeFactory.makeSystem"]
+    G --> H["返回 installation + idle system"]
+```
+
+参数映射：
+
+- `archiveURL` → installer 的本地输入。
+- `applicationSupportURL` → RootFS 安装根。
+- `manifest` → 版本、架构、格式、大小、展开上限、SHA-256。
+- `workDirectory` → iSH boot options 的 guest workdir，默认 `/`。
+- `supervisorGuestPath` → 可选 guest supervisor。
+- `kernelLogFileDescriptor` → iSH kernel log FD，默认 `-1`。
+- stdout/stderr limits → 每个 native session 的最大累计输出。
+
+`systemConfiguration` 中的 rootFSVersion 会被 manifest version 替换，避免系统配置与实际安装漂移；default working directory 与 command timeout 被保留。但当前每个 `PocketRootCommandRequest` 仍使用自己的值。
+
+## 4. RootFS 安装算法
+
+### 4.1 串行与恢复优先
+
+`PocketRootRootFSInstaller` 是 actor，阻塞文件操作进入共享 `RootFSInstallationExecutor`。每次准备先：
+
+1. 验证 base URL 是本地 file URL；
+2. 规范化 manifest version，拒绝不安全目录名；
+3. 创建真实、非符号链接的 `rootfs/` 目录；
+4. 检查持久化 replacement journal；
+5. 完成或回滚上一次中断的 rename；
+6. 清理确认不再需要的 stale staging。
+
+恢复发生在新安装之前，避免旧事务和新候选交叉。
+
+### 4.2 私有 archive snapshot
+
+调用方路径可能在异步安装过程中被替换，因此 installer 不直接在原路径验证后再解包：
+
+1. 以 `O_NOFOLLOW` 打开源文件；
+2. 用 `fstat` 确认它是普通文件；
+3. 在同卷创建私有 `.installing-<uuid>`；
+4. 以 exclusive create 和仅用户权限创建 snapshot；
+5. 边复制边检查取消和压缩字节上限；
+6. 只对 snapshot 做大小与 SHA-256 验证；
+7. 解包后再次验证同一 snapshot。
+
+这样源路径随后被替换也不会改变已经锁定的实际输入。
+
+### 4.3 gzip 与 tar
+
+gzip：
+
+- 使用 `CPocketRootArchiveSupport` 的 zlib streaming；
+- 不启动宿主 `gzip` 或 `tar` 进程；
+- 强制 expanded byte ceiling；
+- 解压失败删除部分输出。
+
+tar：
+
+- 解析 POSIX ustar header；
+- 验证 header checksum；
+- 只接受 UTF-8 相对路径；
+- 拒绝绝对路径、`.`、`..` 和路径逃逸；
+- 拒绝重复文件；
+- 接受普通文件、目录和被忽略内容的 PAX 扩展记录；
+- 拒绝 symlink、hardlink、设备节点和其他特殊类型；
+- 默认最多 100,000 条目；
+- 同时限制 entry payload 总量。
+
+### 4.4 fakefs 布局
+
+归档必须包含顶层 `fs/`。物化结果必须满足：
+
+- `fs/` 是真实目录；
+- `fs/meta.db` 是真实普通文件；
+- `fs/data/` 是真实目录；
+- 三者都不是符号链接。
+
+安装时不对 `meta.db` 每次执行 SQLite `integrity_check`。完整内容可信度来自固定 archive SHA-256；布局检查负责阻止错误形态进入 runtime。
+
+校验通过后，`extracted/fs` 目录本身成为 promotion 候选。它被 rename 到
+`rootfs/<version>`，所以最终目录直接包含 `meta.db`、`data/` 和
+`.pocketroot-rootfs.json`，不会形成 `rootfs/<version>/fs/...`。
+
+### 4.5 安装记录与可恢复 promotion
+
+候选目录写入 `.pocketroot-rootfs.json`，记录 manifest 关键字段。`rootfs/current.json` 指向当前版本。
+
+promotion 的实际顺序是：
+
+1. 创建 `.replacement-transaction/`；
+2. 原子写入 journal，记录目标版本、预期安装记录、是否已有旧安装和旧 `current.json` 数据；
+3. 若已有同版本，把旧 final 通过同卷 rename 移到 transaction 的 `previous/`；
+4. 把候选通过同卷 rename 提升到 `rootfs/<version>`；
+5. 原子写入 current record；
+6. 删除 transaction（包括 previous 和 journal）。
+
+每次 rename 与 JSON 写入各自具有原子性，但以上多步序列整体不是一次原子替换。同步失败
+时立即 rollback；进程中断时，下次准备先读取 journal。journal 不包含 phase，恢复代码通过
+final 是否匹配预期记录、backup 是否存在以及 journal 中的旧安装事实，推断应完成 commit 还是
+恢复旧版本与旧 current 数据。
+
+已有版本只要 fakefs 布局和版本内安装记录匹配 manifest 就会复用，并返回
+`reusedExistingInstallation = true`。`current.json` 缺失或不匹配不会阻止复用；复用分支会在
+返回前将它修复为目标版本。
+
+完整威胁边界见 [RootFS 安全方案](RootFS.md)。
+
+## 5. boot 实现
+
+`IshLinuxRuntime.boot` 在 actor 中执行：
+
+1. 检查状态只允许从 `idle` 或可报告的失败边界进入；
+2. 验证 fakefs 根、`meta.db`、`data/` 的真实文件类型；
+3. 在第一次 `await` 之前设置 `.booting`，关闭 actor reentrancy；
+4. 构造 `IshDriverBootOptions`；
+5. 向 `IshProcessGate` 申请当前 UUID 的唯一 ownership；
+6. 在 `BlockingIshExecutor` 的共享 serial queue 调用 driver；
+7. native 返回后设置 `.ready`；
+8. 失败时标记 process gate 和 `.failed(reason)`，再映射 typed error。
+
+这里的 `.booting`、`.ready` 和 `.failed` 首先是 `IshLinuxRuntime` 的内部状态。
+`PocketRootSystem.state` 不会在 `await boot()` 的执行过程中持续同步它；公共值只在 `boot()`
+返回或抛错后刷新。因此不能轮询公共 state 来获取实时 boot 进度。shutdown 的
+`.shuttingDown` 也具有同样边界。
+
+原生 driver 调用：
+
+```swift
+IshInstance.shared.boot(
+    .init(
+        rootfsPath: options.rootFSPath,
+        workdir: options.workDirectory,
+        supervisorGuestPath: options.supervisorGuestPath,
+        kernelLogFD: options.kernelLogFileDescriptor
+    )
+)
+```
+
+当前没有自动 guest health command。`ready` 表示 native boot 已返回，而不是业务所需工具一定可用。
+
+## 6. execute 实现
+
+### 6.1 请求验证
+
+adapter 要求：
+
+- 当前状态为 `ready`；
+- timeout > 0 且 ≤ 86,400 秒；
+- 有效但小于 1 ms 的 timeout 提升到 1 ms；
+- stdout/stderr limits 都 > 0；
+- 没有另一个 `commandInFlight`；
+- 当前 system 仍拥有 process gate。
+
+### 6.2 native spawn
+
+命令被转换为：
+
+```text
+argv = ["/bin/sh", "-lc", request.command]
+cwd = request.workingDirectory
+env = nil or request.environment
+```
+
+因此 shell quoting 和 injection 风险属于调用方。
+
+`IshEmbedDriver` 使用 `IshInstance.shared.spawn`，然后立即关闭 stdin。它不使用上游一次性收集全部输出的便利 API，而是循环读取 session event。
+
+### 6.3 bounded read
+
+循环根据 wall-clock deadline 计算 remaining time，每次 native read 最多等待约 250 ms：
+
+- stdout event → 检查累计 stdout limit 后 append；
+- stderr event → 检查累计 stderr limit 后 append；
+- timeout read error → 继续检查 deadline；
+- exited event → 返回 exit code、signal 和 buffers；
+- deadline 到期 → 立即 terminate session，返回 `timedOut = true`；
+- stream 超限 → terminate session，抛 typed output-limit error。
+
+`defer` 最终调用 `session.close()`。超时或超限后，后续命令仍可继续，这是 smoke 的恢复检查之一。
+
+## 7. shutdown 实现
+
+`IshLinuxRuntime.shutdown`：
+
+1. 只接受 `ready`；idle/terminated 直接返回；
+2. active command 时拒绝；
+3. 在第一次 suspension 前设置 `.shuttingDown`；
+4. 确认 process ownership；
+5. 在 serial native executor 调用 `IshInstance.shared.shutdown()`。
+
+固定上游的 guest halt 最终执行 `_exit(0)`。真实 App 通常在第 5 步内部退出。后续 `.terminated` 代码只服务于：
+
+- injected test driver；
+- 未来会返回 Swift 的 soft-shutdown build。
+
+因此当前不能依赖 shutdown 后的 Swift cleanup，也不能重启 runtime。
+
+## 8. Demo 与 smoke 为什么分开
+
+默认 Demo 只依赖安全伞形产品，适合展示 UI、API 和 future injection seam。它故意不接真实 RootFS 和 IshEmbed。
+
+compile spike 只证明完整实验图能够最终链接。
+
+native smoke 负责行为证据：
+
+1. host 脚本验证本地 archive；
+2. 生成 smoke App；
+3. 把 archive 注入 App Documents；
+4. 在 iOS 18 Simulator 运行 `prepare → boot → execute`；
+5. 持久化 JSON report；
+6. 最后调用 shutdown；
+7. host 确认 App 进程按固定 `_exit(0)` 行为退出。
+
+这种分离避免默认 Demo 无意包含尚未完成合规审查的资产或原生能力。
+
+## 9. 关键不变量
+
+- 默认伞形产品不能引入 IshEmbed。
+- RootFS 安装器不能下载网络资源。
+- 未匹配 manifest 的 archive 不能进入最终目录。
+- caller path 变化不能改变已锁定 snapshot。
+- 失败 promotion 不能破坏最后一个有效版本。
+- 一个宿主进程只能有一个 native owner。
+- native call 不能运行在主线程或 Swift cooperative executor。
+- runtime 内部 lifecycle 状态必须在 suspension 前关闭重入窗口；公共 system state 不是实时进度流。
+- 一次性命令必须有正 timeout 和有限输出。
+- active command 不能被 shutdown 越过。
+- 真实 shutdown 被视为宿主进程终止。
+- 未完成 PTY ownership 前不连接 SwiftTerm。
+
+## 10. 尚待实现
+
+- `ready` 前的默认 guest health gate；
+- Swift Task cancellation 到 native terminate 的完整契约；
+- interactive session public entry point；
+- live session registry；
+- bounded PTY read、input、resize、signal、EOF；
+- close-all-before-shutdown；
+- soft shutdown 与 bounded native joins；
+- Demo prepared-system dependency injection；
+- 真机生命周期与性能硬化。
+
+状态与顺序见[路线图](Roadmap.md)。
