@@ -192,6 +192,8 @@ timeout 必须：
 
 0、负数或超过 86,400 秒会抛 `invalidCommandRequest`。正数但不足 1 毫秒会 clamp 到 1 毫秒。
 
+该 timeout 在同步 `spawn` 和 `closeStdin` 返回后才开始约束 event-read loop。当前固定 v0.3.3 的 control write、terminate 和 close 仍可能阻塞，因此它不是整个 `execute()` 的端到端 watchdog。若表现为 session 尚未建立就一直等待，应优先检查原生 control transport，而不是只增大 timeout。
+
 使用明确边界：
 
 ```swift
@@ -203,7 +205,7 @@ PocketRootCommandRequest(
 
 ## 命令超时后仍有部分输出
 
-这是设计行为。driver 在 deadline 到期时终止 session，并返回 `timedOut == true` 以及此前已经接收的 bounded output。应用必须先检查 `timedOut`，不能只看 stdout。
+这是设计行为。driver 在 read-loop deadline 到期时尝试终止 session，并在 native control 操作成功返回后给出 `timedOut == true` 以及此前已经接收的结果。应用必须先检查 `timedOut`，不能只看 stdout；也不能据此推断整个 native 调用一定受相同 deadline 约束。
 
 ## `commandOutputLimitExceeded`
 

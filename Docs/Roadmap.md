@@ -51,7 +51,7 @@
 - 建立 opt-in `PocketRootIshRuntime`；
 - 建立 opt-in `PocketRootIshRuntimeIntegration`；
 - 实现 process ownership、serial native execution 和 lifecycle reentrancy protection；
-- 实现正 timeout、bounded read、stdout/stderr limits；
+- 实现正 timeout、bounded read wait、Swift stdout/stderr 结果 limits；
 - 实现 cwd、environment、stderr merge、exit 与 signal 映射；
 - 实现 RootFS manifest、no-follow snapshot、安全 gzip/ustar、fakefs validation；
 - 实现 versioned install、reuse、corruption replacement、rollback 和 interrupted promotion recovery；
@@ -69,6 +69,8 @@
 | iOS 18 基线 | 已通过 | 持续保持 package、Demo、tests、CI 一致 |
 | 不可变 IshEmbed revision | 已通过 | 只通过完整供应链更新流程变更 |
 | 一次性命令 adapter | 已通过 | 保持 lifecycle、timeout、output-limit coverage |
+| 原生 transport 背压 | 进行中 | 发布并接入具有 protocol/session/stdin/log 有界队列的新制品，再完成持续输出与内存峰值测试 |
+| 原生 control path 端到端时间界限 | 进行中 | 发布并接入 nonblocking writer/有界控制操作，覆盖 spawn、terminate、close 阻塞回归 |
 | iOS 18 Simulator 原生行为 | 已通过 | runtime/RootFS 变更时重跑 13 项 smoke |
 | RootFS 安全安装与恢复 | 已通过 | 保持真实资产、snapshot、rollback、recovery coverage；补 ENOSPC |
 | RootFS/runtime composition | 已通过 | 保持 caller-controlled、no-download、no-auto-boot |

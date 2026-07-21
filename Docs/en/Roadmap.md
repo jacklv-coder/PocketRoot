@@ -43,7 +43,7 @@ Status: **Experimental, in progress**.
 - Independently verified XCFramework and RootFS hashes.
 - Added opt-in runtime and integration products.
 - Added process ownership, serial native execution, and lifecycle reentrancy protection.
-- Added positive timeouts, bounded reads, stream limits, cwd/environment/stderr/exit/signal mapping.
+- Added positive timeouts, bounded read waits, Swift result limits, and cwd/environment/stderr/exit/signal mapping.
 - Added no-follow RootFS snapshots, secure gzip/ustar, fakefs validation, versioned install, reuse, replacement, rollback, and interrupted recovery.
 - Passed the exact v0.3.3 real-asset test.
 - Final-linked the full graph for arm64 Simulator and unsigned device.
@@ -59,6 +59,8 @@ This establishes the current Simulator one-shot path, not physical-device, minim
 | iOS 18 baseline | Passed | Keep package, Demo, tests, and CI aligned |
 | Immutable IshEmbed pin | Passed | Change only through the supply-chain update procedure |
 | One-shot adapter | Passed | Preserve lifecycle, timeout, and output-limit coverage |
+| Native transport backpressure | In progress | Publish and integrate an artifact with bounded protocol/session/stdin/log queues, then complete sustained-output and peak-memory tests |
+| End-to-end native control-path time bound | In progress | Publish and integrate the nonblocking writer/bounded control operations and cover blocked spawn, terminate, and close regressions |
 | iOS 18 Simulator native behavior | Passed | Rerun the 13-check smoke for runtime/RootFS changes |
 | Secure RootFS install/recovery | Passed | Preserve real-asset/snapshot/rollback/recovery; add ENOSPC |
 | RootFS/runtime composition | Passed | Keep caller-controlled, no-download, no-auto-boot |

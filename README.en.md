@@ -39,7 +39,7 @@ Design principles:
 - Extraction occurs in private same-volume staging. A durable journal protects the multi-step, same-volume rename promotion so it can recover or roll back. Each rename and record write is atomic on its own; the replacement sequence as a whole is not one atomic operation.
 - IshEmbed is process-global: one native owner and one in-flight command.
 - Synchronous native work runs on a serial blocking executor away from the main and Swift cooperative executors.
-- Command time and both output streams are bounded.
+- The event-read loop uses a deadline after session establishment, and Swift applies product budgets to collected stdout/stderr. In the pinned native transport, spawn/control/terminate/close may still block and the unread inbox has no independent ceiling, so end-to-end time bounds and complete memory backpressure remain open gates.
 
 See [Architecture](Docs/en/Architecture.md), [Implementation](Docs/en/Implementation.md), and [RootFS Security](Docs/en/RootFS.md).
 
@@ -158,6 +158,7 @@ The native smoke requires Apple Silicon, iOS 18 Simulator, and the exact local a
 
 | Topic | Document |
 | --- | --- |
+| System-wide mental model and learning path | [Technical Learning Guide](Docs/en/TechnicalGuide.md) |
 | Users, use cases, MVP, and non-goals | [Product Plan](Docs/en/ProductPlan.md) |
 | Checkout, build, and Demo | [Getting Started](Docs/en/GettingStarted.md) |
 | Product selection and API use | [Integration Guide](Docs/en/IntegrationGuide.md) |

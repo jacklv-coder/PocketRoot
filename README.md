@@ -39,7 +39,7 @@ flowchart LR
 - RootFS 在私有、同卷 staging 中解包；校验通过后，通过持久化 journal 保护的多步同卷 rename 完成可恢复、可回滚的 promotion。每次 rename 和记录写入各自具有原子性，但整个替换流程不是一次整体原子操作。
 - IshEmbed 是进程级单例；PocketRoot 只允许一个原生运行时所有者和一个在途命令。
 - 同步原生调用在串行阻塞队列中执行，不阻塞主线程和 Swift cooperative executor。
-- stdout/stderr 和命令时间都有上限，避免一次性命令无限占用内存或运行时间。
+- session 建立后的 event-read loop 使用 deadline，Swift 已收集的 stdout/stderr 有产品配额；当前固定原生 transport 的 spawn/control/terminate/close 仍可能阻塞，未读 inbox 也无独立上限，因此端到端时间界限和完整内存背压仍是开放门禁。
 
 完整实现见[架构说明](Docs/Architecture.md)、[实现原理](Docs/Implementation.md)和 [RootFS 安全方案](Docs/RootFS.md)。
 
@@ -167,6 +167,7 @@ POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
 
 | 想了解的内容 | 文档 |
 | --- | --- |
+| 从整体建立技术心智模型与学习路线 | [技术学习指南](Docs/TechnicalGuide.md) |
 | 产品目标、用户、场景与非目标 | [产品规划](Docs/ProductPlan.md) |
 | 从零构建工程和运行 Demo | [快速开始](Docs/GettingStarted.md) |
 | SwiftPM 产品选择与应用接入 | [应用接入指南](Docs/IntegrationGuide.md) |

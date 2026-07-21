@@ -226,7 +226,7 @@ env = nil or request.environment
 
 因此 shell quoting 和 injection 风险属于调用方。
 
-`IshEmbedDriver` 使用 `IshInstance.shared.spawn`，然后立即关闭 stdin。它不使用上游一次性收集全部输出的便利 API，而是循环读取 session event。
+`IshEmbedDriver` 使用 `IshInstance.shared.spawn`，然后立即关闭 stdin。它不使用上游一次性收集全部输出的便利 API，而是循环读取 session event。当前 deadline 只在同步 `spawn` 和 `closeStdin` 都返回后创建；固定 v0.3.3 的 control write 可能阻塞，所以请求 timeout 不是整个 `execute()` 的端到端硬上限。
 
 ### 6.3 bounded read
 
@@ -239,7 +239,7 @@ env = nil or request.environment
 - deadline 到期 → 立即 terminate session，返回 `timedOut = true`；
 - stream 超限 → terminate session，抛 typed output-limit error。
 
-`defer` 最终调用 `session.close()`。超时或超限后，后续命令仍可继续，这是 smoke 的恢复检查之一。
+`defer` 最终调用 `session.close()`。超时或超限后，后续命令仍可继续，这是 smoke 的恢复检查之一。但当前固定 transport 的 `terminate` / `close` 也可能受阻塞 control write 影响；上述 deadline 只证明 event-read loop 的观察边界，不证明所有 native control 操作都在请求时间内返回。
 
 ## 7. shutdown 实现
 

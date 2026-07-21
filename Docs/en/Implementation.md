@@ -86,7 +86,7 @@ The adapter spawns:
 ["/bin/sh", "-lc", request.command]
 ```
 
-It closes stdin and polls events with bounded reads. stdout/stderr are accumulated under independent caps. Deadline expiry terminates the session and returns timeout with partial output; cap overflow terminates and throws a typed error. Exit events map exit code and signal. The session is always closed.
+It closes stdin and polls events with bounded read waits. The deadline is created only after synchronous `spawn` and `closeStdin` return. stdout/stderr are accumulated under independent caps. Deadline expiry attempts to terminate the session and returns timeout with partial output; cap overflow terminates and throws a typed error. Exit events map exit code and signal, and the session is always closed. In the pinned v0.3.3 transport, spawn/control/terminate/close can still block, so this deadline is a read-loop boundary rather than an end-to-end time bound for `execute()`.
 
 The command is a shell string; quoting and injection policy belong to the caller.
 

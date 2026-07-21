@@ -93,6 +93,8 @@ development Simulator.
 
 The 13 checks cover preparation, ready boot, aarch64, Alpine 3.19.1, cwd, environment, split streams and exit 7, merged stderr, 100 ms timeout and recovery, 64-byte output limit and recovery, and host-process exit on shutdown.
 
+The 100 ms check proves recovery after an established session observes its event-read deadline. It does not cover the earlier synchronous spawn/control write or prove that terminate/close have the same end-to-end hard limit. The [Roadmap](Roadmap.md) tracks that native control-path gate.
+
 The report is persisted before shutdown. The host requires the attached Simulator process to finish successfully, so an ordinary crash is not accepted. This smoke is a local gate, not a GitHub Actions step.
 
 ## CI

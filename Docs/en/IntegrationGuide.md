@@ -185,7 +185,8 @@ Contract:
 - The command runs as `/bin/sh -lc <command>`. It is a shell string, not an argv-safe API.
 - One runtime accepts one one-shot command at a time.
 - Timeout must be positive and no longer than 24 hours; positive sub-millisecond values become 1 ms.
-- Timeout terminates the session and returns `timedOut == true` with partial output.
+- Timeout starts in the event-read loop only after the session is established and stdin is closed; expiry attempts termination and, when the call returns, reports `timedOut == true` with partial output.
+- In pinned v0.3.3, spawn, control writes, terminate, and close may still block. The request timeout is therefore not an end-to-end watchdog for `execute()` and remains an Experimental read-loop deadline until native transport hardening is integrated.
 - Merged stderr is returned in stdout with an empty stderr buffer.
 - Default stdout/stderr caps are 8 MiB/4 MiB. Exceeding a cap throws `commandOutputLimitExceeded`.
 - Swift Task cancellation is not yet a complete native-kill contract.

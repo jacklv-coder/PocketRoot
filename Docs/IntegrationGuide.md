@@ -222,7 +222,7 @@ let result = try await system.execute(
 )
 
 if result.timedOut {
-    // timeout 会终止当前 session；结果仍可能包含此前收到的部分输出。
+    // read-loop deadline 已触发且 native terminate/close 已返回；结果可能包含此前收到的部分输出。
 } else if result.signal != 0 {
     // 子进程被 signal 终止。
 } else if result.exitCode != 0 {
@@ -241,7 +241,8 @@ print(result.stderr)
 - `workingDirectory` 和 `environment` 按请求传给 guest。
 - timeout 必须大于 0 且不超过 24 小时。
 - 大于 0 但不足 1 毫秒的 timeout 会提升为 1 毫秒，避免上游把 0 毫秒解释为无限等待。
-- timeout 到期会终止 session，返回 `timedOut == true` 和已经收集的输出。
+- session 建立并关闭 stdin 后，event-read loop 才开始计算 timeout；到期时尝试终止 session，成功返回时包含 `timedOut == true` 和已经收集的输出。
+- 当前固定 v0.3.3 的 `spawn`、control write、terminate 和 close 仍可能阻塞，所以请求 timeout 不是整个 `execute()` 的端到端 watchdog；在原生 transport 硬化完成前只能把它当作实验性 read-loop deadline。
 - `mergeStandardError == true` 时 stderr 合并到 stdout，`standardError` 为空。
 - 默认 stdout 上限 8 MiB，stderr 上限 4 MiB；通过 `prepareSystem` 参数调整。
 - 超过输出上限会终止 session，并抛出 `PocketRootError.commandOutputLimitExceeded`。

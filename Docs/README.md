@@ -26,17 +26,19 @@
 
 ### 工程维护者
 
-1. [架构说明](Architecture.md)：模块边界、依赖方向、并发和生命周期。
-2. [实现原理](Implementation.md)：端到端调用链、源码地图与关键不变量。
-3. [测试与验证](Testing.md)：单元测试、真实资产测试、最终链接、CI 和 smoke。
-4. [上游依赖清单](UpstreamDependencies.md)：不可变 revision、gitlink、制品哈希和更新流程。
-5. [贡献指南](../CONTRIBUTING.md)：分支、提交、验证和中英文同步规则。
-6. [变更日志](../CHANGELOG.md)：尚未发布的行为和 API 变化。
+1. [技术学习指南](TechnicalGuide.md)：先建立三个仓库、模块、调用链和验证方法的整体心智模型。
+2. [架构说明](Architecture.md)：模块边界、依赖方向、并发和生命周期。
+3. [实现原理](Implementation.md)：端到端调用链、源码地图与关键不变量。
+4. [测试与验证](Testing.md)：单元测试、真实资产测试、最终链接、CI 和 smoke。
+5. [上游依赖清单](UpstreamDependencies.md)：不可变 revision、gitlink、制品哈希和更新流程。
+6. [贡献指南](../CONTRIBUTING.md)：分支、提交、验证和中英文同步规则。
+7. [变更日志](../CHANGELOG.md)：尚未发布的行为和 API 变化。
 
 ## 文档职责
 
 | 文档 | 唯一负责的事实 |
 | --- | --- |
+| [技术学习指南](TechnicalGuide.md) | 跨仓库心智模型、源码入口、验证映射与推荐学习顺序 |
 | [产品规划](ProductPlan.md) | 用户、场景、价值、MVP 与非目标 |
 | [路线图](Roadmap.md) | 动态完成状态、门禁和下一步 |
 | [架构说明](Architecture.md) | 当前模块、依赖、并发与生命周期设计 |

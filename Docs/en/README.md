@@ -22,17 +22,19 @@ This is the English documentation hub for PocketRoot. The Chinese documents at t
 
 ### Maintainers
 
-1. [Architecture](Architecture.md) for module boundaries, dependency direction, concurrency, and lifecycle.
-2. [Implementation](Implementation.md) for end-to-end call paths, source mapping, and invariants.
-3. [Testing](Testing.md) for unit, real-asset, final-link, CI, and native smoke coverage.
-4. [Upstream dependencies](UpstreamDependencies.md) for immutable revisions, gitlinks, hashes, and update procedure.
-5. [Contributing](../../CONTRIBUTING.en.md) for branch, validation, and bilingual-document rules.
-6. [Changelog](../../CHANGELOG.en.md) for unreleased behavior and API changes.
+1. [Technical Learning Guide](TechnicalGuide.md) for a system-wide model of the repositories, modules, call paths, and verification strategy.
+2. [Architecture](Architecture.md) for module boundaries, dependency direction, concurrency, and lifecycle.
+3. [Implementation](Implementation.md) for end-to-end call paths, source mapping, and invariants.
+4. [Testing](Testing.md) for unit, real-asset, final-link, CI, and native smoke coverage.
+5. [Upstream dependencies](UpstreamDependencies.md) for immutable revisions, gitlinks, hashes, and update procedure.
+6. [Contributing](../../CONTRIBUTING.en.md) for branch, validation, and bilingual-document rules.
+7. [Changelog](../../CHANGELOG.en.md) for unreleased behavior and API changes.
 
 ## Sources of truth
 
 | Document | Authoritative responsibility |
 | --- | --- |
+| [Technical Learning Guide](TechnicalGuide.md) | Cross-repository mental model, source entry points, verification mapping, and learning order |
 | [Product plan](ProductPlan.md) | Users, scenarios, value, MVP, and non-goals |
 | [Roadmap](Roadmap.md) | Dynamic status, gates, and next work |
 | [Architecture](Architecture.md) | Current module, dependency, concurrency, and lifecycle design |

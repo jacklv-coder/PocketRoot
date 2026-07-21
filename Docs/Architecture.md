@@ -188,7 +188,7 @@ sequenceDiagram
     Runtime-->>App: ready
     App->>Runtime: execute(command request)
     Runtime->>Native: spawn /bin/sh -lc
-    Native-->>Runtime: bounded stream events + exit
+    Native-->>Runtime: stream events + exit
     Runtime-->>App: command result
 ```
 
@@ -225,7 +225,7 @@ IshEmbed 暴露同步、进程级 API。adapter 使用：
 - bounded poll：native read 最长约 250 ms 后回到 deadline 检查；
 - stdout/stderr limits：超限终止 session。
 
-这些机制避免并发 boot、命令越过 shutdown 和无限输出直接耗尽内存。Swift Task cancellation 尚未成为完整 native kill 契约。
+这些机制避免并发 boot、命令越过 shutdown，并限制 session 建立后 event-read loop 的等待和 Swift 已收集结果的大小。deadline 在同步 `spawn` 与 `closeStdin` 返回后才创建；当前固定 v0.3.3 native transport 的 control write、terminate、close 仍可能阻塞，未读 session inbox 也没有独立容量上限。因此当前不能宣称 `execute()` 具有端到端硬时间界限或整个宿主进程具备完整内存背压。Swift Task cancellation 也尚未成为完整 native kill 契约。
 
 ## 7. 生命周期
 

@@ -101,7 +101,7 @@ sequenceDiagram
     Runtime-->>App: ready
     App->>Runtime: execute request
     Runtime->>Native: spawn /bin/sh -lc
-    Native-->>Runtime: bounded stream events and exit
+    Native-->>Runtime: stream events and exit
     Runtime-->>App: command result
 ```
 
@@ -117,7 +117,7 @@ first suspension to close boot/shutdown reentrancy. Public
 after `boot()` / `shutdown()` returns or throws. Internal `.booting` and
 `.shuttingDown` transitions are therefore not a public real-time progress feed.
 
-The runtime uses a process ownership gate, lifecycle state transitions before suspension, one in-flight command, bounded native reads, and independent stream limits. Swift Task cancellation is not yet a complete native kill contract.
+The runtime uses a process ownership gate, lifecycle state transitions before suspension, one in-flight command, bounded native read waits, and independent Swift result limits. The deadline is created only after synchronous `spawn` and `closeStdin` return. In the pinned v0.3.3 native transport, control writes, terminate, and close may still block, and the unread session inbox has no independent ceiling. `execute()` therefore has neither an end-to-end hard time bound nor complete host-process memory backpressure. Swift Task cancellation is not yet a complete native kill contract.
 
 ## Lifecycle
 

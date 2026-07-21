@@ -26,7 +26,7 @@ PocketRoot is not a full iSH app fork or a general virtualization platform. It s
 - Application code uses PocketRoot APIs instead of holding iSH native objects.
 - Experimental native binaries are never linked by the default product.
 - The caller owns network retrieval and authorization; PocketRoot never downloads a RootFS implicitly.
-- Native blocking, process ownership, command time, and output memory have explicit bounds.
+- The executor for blocking native work, process ownership, the post-establishment read-loop deadline, and Swift result buffers have explicit boundaries; end-to-end native control-path time bounds and transport-backlog backpressure remain open gates.
 - Build evidence, hashes, constraints, and release gates are traceable from the repository.
 
 ## Scope
@@ -102,8 +102,9 @@ than download counts:
 - Runtime or RootFS changes must pass their corresponding unit, real-asset,
   final-link, and smoke gates.
 - A failed installation cannot damage the last verified RootFS.
-- Invalid timeouts or unbounded output cannot leave a command occupying the
-  process indefinitely.
+- After native control-path, cancellation, and backlog hardening, blocked writes
+  or unbounded output cannot leave a command occupying the process indefinitely;
+  until then, those gaps remain explicit gates.
 - Every production blocker has an actionable exit criterion in the roadmap.
 - Links, commands, and critical facts remain synchronized between the Chinese
   and English documentation.

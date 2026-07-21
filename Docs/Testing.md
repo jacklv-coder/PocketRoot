@@ -203,6 +203,8 @@ xcrun simctl shutdown "$SMOKE_DEVICE_UDID"
 12. output-limit termination 后下一条命令成功；
 13. shutdown 请求触发宿主 App 进程退出。
 
+第 9 项证明已经建立的 session 在 event-read loop 中观察到 deadline 后可以恢复；它不覆盖此前的同步 spawn/control write，也不证明 terminate/close 具有相同端到端硬时限。该缺口在[路线图](Roadmap.md)中作为原生 control path 门禁维护。
+
 最后一项先原子写入 report，再调用 native shutdown。host 脚本要求 attached `simctl --console` 进程在限定时间内以成功状态结束，因此普通 crash 不能冒充通过。
 
 该 smoke 是仓库维护的本地门禁，不在 GitHub Actions 中运行。
