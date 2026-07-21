@@ -3,14 +3,14 @@ name: PocketRootDemo
 options:
   bundleIdPrefix: com.jacklv
   deploymentTarget:
-    iOS: "17.0"
+    iOS: "18.0"
   createIntermediateGroups: true
   generateEmptyDirectories: true
 
 settings:
   base:
     SWIFT_VERSION: "5.0"
-    IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+    IPHONEOS_DEPLOYMENT_TARGET: "18.0"
     TARGETED_DEVICE_FAMILY: "1,2"
     GENERATE_INFOPLIST_FILE: YES
     CURRENT_PROJECT_VERSION: 1
@@ -22,10 +22,56 @@ packages:
     path: .
 
 targets:
+  PocketRootIshRuntimeCompileSpike:
+    type: application
+    platform: iOS
+    deploymentTarget: "18.0"
+
+    sources:
+      - path: Spikes/PocketRootIshRuntimeCompileSpike
+
+    dependencies:
+      - package: PocketRoot
+        product: PocketRootIshRuntimeIntegration
+
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jacklv.PocketRootIshRuntimeCompileSpike
+        PRODUCT_NAME: PocketRootIshRuntimeCompileSpike
+        ARCHS: arm64
+        ONLY_ACTIVE_ARCH: YES
+        SKIP_INSTALL: YES
+        SUPPORTS_MACCATALYST: NO
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+
+  PocketRootIshRuntimeSmoke:
+    type: application
+    platform: iOS
+    deploymentTarget: "18.0"
+
+    sources:
+      - path: Spikes/PocketRootIshRuntimeSmoke
+
+    dependencies:
+      - package: PocketRoot
+        product: PocketRootCore
+      - package: PocketRoot
+        product: PocketRootIshRuntimeIntegration
+
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jacklv.PocketRootIshRuntimeSmoke
+        PRODUCT_NAME: PocketRootIshRuntimeSmoke
+        ARCHS: arm64
+        ONLY_ACTIVE_ARCH: YES
+        SKIP_INSTALL: YES
+        SUPPORTS_MACCATALYST: NO
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+
   PocketRootDemo:
     type: application
     platform: iOS
-    deploymentTarget: "17.0"
+    deploymentTarget: "18.0"
 
     sources:
       - path: Demo/PocketRootDemo
@@ -64,7 +110,7 @@ targets:
   PocketRootDemoTests:
     type: bundle.unit-test
     platform: iOS
-    deploymentTarget: "17.0"
+    deploymentTarget: "18.0"
 
     sources:
       - path: Tests/PocketRootDemoTests
@@ -74,6 +120,22 @@ targets:
       - target: PocketRootDemo
 
 schemes:
+  PocketRootIshRuntimeCompileSpike:
+    build:
+      targets:
+        PocketRootIshRuntimeCompileSpike: all
+    analyze:
+      config: Debug
+
+  PocketRootIshRuntimeSmoke:
+    build:
+      targets:
+        PocketRootIshRuntimeSmoke: all
+    run:
+      config: Debug
+    analyze:
+      config: Debug
+
   PocketRootDemo:
     build:
       targets:

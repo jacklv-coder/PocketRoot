@@ -9,18 +9,22 @@ final class PocketRootCoreTests: XCTestCase {
 
         XCTAssertEqual(request.command, "uname -m")
         XCTAssertEqual(request.workingDirectory, "/root")
+        XCTAssertEqual(request.environment, [:])
         XCTAssertEqual(request.timeout, .seconds(30))
+        XCTAssertFalse(request.mergeStandardError)
     }
 
     func testCommandResultDecodesStandardStreams() {
         let result = PocketRootCommandResult(
             exitCode: 7,
+            signal: 15,
             standardOutput: Data("stdout".utf8),
             standardError: Data("stderr".utf8),
             timedOut: true
         )
 
         XCTAssertEqual(result.exitCode, 7)
+        XCTAssertEqual(result.signal, 15)
         XCTAssertEqual(result.stdout, "stdout")
         XCTAssertEqual(result.stderr, "stderr")
         XCTAssertTrue(result.timedOut)
@@ -61,7 +65,7 @@ final class PocketRootCoreTests: XCTestCase {
             XCTFail("Placeholder execution should fail")
         } catch let error as PocketRootError {
             XCTAssertEqual(error, .runtimeNotBooted)
-            XCTAssertEqual(error.localizedDescription, "Runtime is not installed yet.")
+            XCTAssertEqual(error.localizedDescription, "Linux Runtime is not booted.")
         }
 
         try await system.shutdown()
@@ -86,6 +90,23 @@ final class PocketRootCoreTests: XCTestCase {
         try await system.shutdown()
         let shutdownState = await system.state
         XCTAssertEqual(shutdownState, .idle)
+    }
+
+    func testSystemRefreshesStateWhenShutdownFails() async throws {
+        let runtime = FailingShutdownRuntime()
+        let system = PocketRootSystem(runtime: runtime)
+
+        try await system.boot()
+
+        do {
+            try await system.shutdown()
+            XCTFail("The injected runtime should fail shutdown.")
+        } catch let error as PocketRootError {
+            XCTAssertEqual(error, .runtimeFailure("Synthetic shutdown failure."))
+        }
+
+        let state = await system.state
+        XCTAssertEqual(state, .failed("Synthetic shutdown failure."))
     }
 
     func testRootFSManagerRequiresAProvider() async {
@@ -148,6 +169,32 @@ private actor StubLinuxRuntime: LinuxRuntime {
 
     func shutdown() async throws {
         state = .idle
+    }
+}
+
+@available(macOS 13.0, *)
+private actor FailingShutdownRuntime: LinuxRuntime {
+    private(set) var state: PocketRootRuntimeState = .idle
+
+    func boot(configuration: PocketRootConfiguration) async throws {
+        state = .ready
+    }
+
+    func execute(
+        _ request: PocketRootCommandRequest
+    ) async throws -> PocketRootCommandResult {
+        throw PocketRootError.unsupportedOperation("Not used by this test.")
+    }
+
+    func makeSession(
+        configuration: PocketRootSessionConfiguration
+    ) async throws -> any PocketRootSession {
+        throw PocketRootError.unsupportedOperation("Not used by this test.")
+    }
+
+    func shutdown() async throws {
+        state = .failed("Synthetic shutdown failure.")
+        throw PocketRootError.runtimeFailure("Synthetic shutdown failure.")
     }
 }
 

@@ -12,7 +12,7 @@ public actor PocketRootSystem {
         coordinator = RuntimeCoordinator(runtime: PlaceholderLinuxRuntime())
     }
 
-    init(
+    package init(
         configuration: PocketRootConfiguration = PocketRootConfiguration(),
         runtime: any LinuxRuntime
     ) {
@@ -37,7 +37,12 @@ public actor PocketRootSystem {
     }
 
     public func shutdown() async throws {
-        try await coordinator.shutdown()
-        state = await coordinator.currentState()
+        do {
+            try await coordinator.shutdown()
+            state = await coordinator.currentState()
+        } catch {
+            state = await coordinator.currentState()
+            throw error
+        }
     }
 }
