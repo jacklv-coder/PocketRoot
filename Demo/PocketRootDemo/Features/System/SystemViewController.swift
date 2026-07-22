@@ -213,6 +213,8 @@ final class SystemViewController: UIViewController {
             "Ready"
         case .shuttingDown:
             "Shutting Down"
+        case .terminated:
+            "Restart Required"
         case .failed(let message):
             "Failed: \(message)"
         }
