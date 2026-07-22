@@ -73,7 +73,7 @@ flowchart TD
 - `applicationSupportURL` → RootFS 安装根。
 - `manifest` → 版本、架构、格式、大小、展开上限、SHA-256。
 - `workDirectory` → iSH boot options 的 guest workdir，默认 `/`。
-- `supervisorGuestPath` → 可选 guest supervisor。
+- `supervisorGuestPath` → 可选 guest supervisor；进入原生 boot 前拒绝 NUL，避免 C 字符串静默截断。
 - `kernelLogFileDescriptor` → iSH kernel log FD，默认 `-1`。
 - stdout/stderr limits → 每个 native session 的最大累计输出。
 - `healthCheck` → `boot()` 返回前必须匹配的 guest 架构、OS ID、可选版本和最多 60 秒的检查超时；固定 v0.3.3 factory 默认要求 `aarch64`、`alpine`、`3.19.1`。
@@ -124,7 +124,7 @@ tar：
 - 验证 header checksum；
 - 只接受 UTF-8 相对路径；
 - 拒绝绝对路径、`.`、`..` 和路径逃逸；
-- 拒绝映射到同一路径或同一文件系统目标的重复文件和目录；
+- 把条目隐式创建的每一级父目录也登记为 archive target，拒绝后续映射到同一路径或同一文件系统目标的重复文件和目录；
 - 接受普通文件、目录和被忽略内容的 PAX 扩展记录；
 - 拒绝 symlink、hardlink、设备节点和其他特殊类型；
 - 默认最多 100,000 条目；

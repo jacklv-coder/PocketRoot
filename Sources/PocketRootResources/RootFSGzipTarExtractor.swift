@@ -234,6 +234,12 @@ public struct PocketRootGzipTarExtractor: Sendable, Equatable {
                 try discardPayload(size: entry.size, from: input)
 
             case .directory:
+                try materializeParentDirectories(
+                    for: entryURL,
+                    under: destinationURL,
+                    materializedPaths: &materializedPaths,
+                    materializedDirectoryIdentities: &materializedDirectoryIdentities
+                )
                 var isDirectory: ObjCBool = false
                 if FileManager.default.fileExists(
                     atPath: entryURL.path,
@@ -247,7 +253,7 @@ public struct PocketRootGzipTarExtractor: Sendable, Equatable {
                 } else {
                     try FileManager.default.createDirectory(
                         at: entryURL,
-                        withIntermediateDirectories: true
+                        withIntermediateDirectories: false
                     )
                 }
                 let identity = try fileIdentity(at: entryURL)
@@ -260,10 +266,11 @@ public struct PocketRootGzipTarExtractor: Sendable, Equatable {
                 try discardPayload(size: entry.size, from: input)
 
             case .regularFile:
-                let parentURL = entryURL.deletingLastPathComponent()
-                try FileManager.default.createDirectory(
-                    at: parentURL,
-                    withIntermediateDirectories: true
+                try materializeParentDirectories(
+                    for: entryURL,
+                    under: destinationURL,
+                    materializedPaths: &materializedPaths,
+                    materializedDirectoryIdentities: &materializedDirectoryIdentities
                 )
                 guard !FileManager.default.fileExists(atPath: entryURL.path),
                       FileManager.default.createFile(
@@ -511,6 +518,57 @@ public struct PocketRootGzipTarExtractor: Sendable, Equatable {
             throw PocketRootArchiveExtractionError.fileSystemFailure(
                 error.localizedDescription
             )
+        }
+    }
+
+    private func materializeParentDirectories(
+        for entryURL: URL,
+        under destinationURL: URL,
+        materializedPaths: inout Set<String>,
+        materializedDirectoryIdentities: inout Set<FileIdentity>
+    ) throws {
+        let destinationPath = destinationURL.standardizedFileURL.path
+        var directoryURL = entryURL.deletingLastPathComponent().standardizedFileURL
+        var missingAncestors: [URL] = []
+
+        while directoryURL.path != destinationPath {
+            guard directoryURL.path.hasPrefix(destinationPath + "/") else {
+                throw PocketRootArchiveExtractionError.unsafePath(entryURL.path)
+            }
+            missingAncestors.append(directoryURL)
+            directoryURL.deleteLastPathComponent()
+        }
+
+        for ancestorURL in missingAncestors.reversed() {
+            let ancestorPath = ancestorURL.path
+            if materializedPaths.contains(ancestorPath) {
+                continue
+            }
+
+            var isDirectory: ObjCBool = false
+            if FileManager.default.fileExists(
+                atPath: ancestorPath,
+                isDirectory: &isDirectory
+            ) {
+                guard isDirectory.boolValue else {
+                    throw PocketRootArchiveExtractionError.fileSystemFailure(
+                        "A non-directory already exists at \(ancestorPath)."
+                    )
+                }
+            } else {
+                try FileManager.default.createDirectory(
+                    at: ancestorURL,
+                    withIntermediateDirectories: false
+                )
+            }
+
+            let identity = try fileIdentity(at: ancestorURL)
+            guard materializedDirectoryIdentities.insert(identity).inserted else {
+                throw PocketRootArchiveExtractionError.fileSystemFailure(
+                    "A duplicate directory target exists at \(ancestorPath)."
+                )
+            }
+            materializedPaths.insert(ancestorPath)
         }
     }
 

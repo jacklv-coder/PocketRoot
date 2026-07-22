@@ -329,6 +329,31 @@ final class PocketRootResourcesTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: destinationURL.path))
     }
 
+    func testGzipTarExtractorRejectsExplicitDirectoryAfterImplicitParent() throws {
+        let archiveURL = try makeTemporaryFile(
+            contents: try XCTUnwrap(
+                Data(base64Encoded: Self.explicitDirectoryAfterImplicitParentArchiveBase64)
+            )
+        )
+        let destinationURL = archiveURL.deletingLastPathComponent()
+            .appendingPathComponent("extracted", isDirectory: true)
+
+        XCTAssertThrowsError(
+            try PocketRootGzipTarExtractor().extract(
+                archiveURL: archiveURL,
+                to: destinationURL
+            )
+        ) { error in
+            guard case .fileSystemFailure(let message) =
+                error as? PocketRootArchiveExtractionError
+            else {
+                return XCTFail("Unexpected error: \(error)")
+            }
+            XCTAssertTrue(message.contains("duplicate entry"))
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: destinationURL.path))
+    }
+
     func testGzipTarExtractorRejectsCaseAliasedDirectoriesOnInsensitiveVolume() throws {
         let probeURL = try makeTemporaryDirectory()
         let lowercaseProbeURL = probeURL.appendingPathComponent(
@@ -877,6 +902,8 @@ final class PocketRootResourcesTests: XCTestCase {
         "H4sIAAAAAAAC/+3OuwmEQAAE0C3lKvB/14+ggigKt9q/i6HGBsJ7yUw2M8R8HpcpPKlIfk1zZnLNey/Lov6GT5Vl+bpvcez6587tcWv/aT4AAAAAAAAAAADAexzHriFiACgAAA=="
     private static let duplicateDirectoryArchiveBase64 =
         "H4sIAKjkYGoAA0sr1megNTAAAnNTUzANBOg0FraZMVC5ginNXQYEpcUliUVAK+lh1yAEaaPxP6LjfxSMglEwcgEA5ciDeAAIAAA="
+    private static let explicitDirectoryAfterImplicitParentArchiveBase64 =
+        "H4sIAAAAAAAAA+2TywqAIBBF/RT/oBl17HtcNGBEQY//T3vtClq4iOZsLsKgdzjIUxUqjl2jygEA3jmds/a0JZj9fKKRjAWsnUPQgBa9URoKdrpYpjmMqUob+zkM93NpjPnhnmOPKz8CZ/+F38jeid74N9Ym/1S414b4l///Y/+CIPyXFdAeNEEACgAA"
     private static let caseAliasedDirectoryArchiveBase64 =
         "H4sIAG3oYGoAA0sr1megNTAAAnNTUzANBOg0FraZMVC5ginNXQYEpcUliUVAK+lh1yAEbsGDMv6NRuN/FIyCUTAKaAsAkTbGfQAIAAA="
 }

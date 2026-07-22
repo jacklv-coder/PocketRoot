@@ -64,6 +64,13 @@ package actor IshLinuxRuntime: LinuxRuntime {
         } catch {
             throw map(error)
         }
+        if let supervisorGuestPath = configuration.supervisorGuestPath,
+           supervisorGuestPath.contains("\0")
+        {
+            throw PocketRootError.runtimeFailure(
+                "Invalid runtime configuration: supervisor guest path must not contain a NUL byte."
+            )
+        }
         // Close the actor-reentrancy window before the first suspension.
         runtimeState = .booting
 

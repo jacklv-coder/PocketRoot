@@ -135,7 +135,7 @@ let installation = try await installer.prepareArchive(
 | gzip 解压失败留下半文件 | streaming error cleanup |
 | tar 绝对路径或 `..` 逃逸 | UTF-8 相对路径规范化与 destination containment |
 | symlink/hardlink 绕过目标目录 | 拒绝 link 和特殊 entry type |
-| 重复文件或目录覆盖 | 拒绝映射到同一路径或同一文件系统目标的重复 entry |
+| 重复文件或目录覆盖 | 隐式父目录也登记为 archive target；拒绝后续映射到同一路径或同一文件系统目标的重复 entry |
 | 候选布局不是 iSH fakefs | 要求真实 `fs/meta.db` 与 `fs/data/` |
 | 替换中途失败破坏旧版本 | persistent transaction + rollback |
 | 进程在 rename 中途退出 | 下次准备时读取 journal，根据 final 是否匹配预期、backup 是否存在以及旧安装事实完成 commit 或恢复 |

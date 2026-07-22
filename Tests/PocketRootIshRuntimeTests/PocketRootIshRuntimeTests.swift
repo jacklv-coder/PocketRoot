@@ -435,6 +435,33 @@ final class PocketRootIshRuntimeTests: XCTestCase {
         XCTAssertEqual(driver.snapshot.bootCallCount, 0)
     }
 
+    func testNULSupervisorPathDoesNotConsumeProcessSlot() async throws {
+        let rootFSURL = try makeFakeFSFixture()
+        let driver = FakeIshRuntimeDriver()
+        let runtime = IshLinuxRuntime(
+            configuration: .init(
+                rootFSURL: rootFSURL,
+                supervisorGuestPath: "/sbin/ish\0sv"
+            ),
+            driver: driver
+        )
+
+        do {
+            try await runtime.boot(configuration: PocketRootConfiguration())
+            XCTFail("A NUL-containing supervisor path must be rejected before native boot.")
+        } catch let error as PocketRootError {
+            guard case .runtimeFailure(let message) = error else {
+                return XCTFail("Unexpected PocketRoot error: \(error)")
+            }
+            XCTAssertTrue(message.contains("supervisor guest path must not contain a NUL byte"))
+        }
+
+        let state = await runtime.state
+        XCTAssertEqual(state, .idle)
+        XCTAssertEqual(driver.snapshot.bootCallCount, 0)
+        XCTAssertEqual(driver.snapshot.healthCheckCallCount, 0)
+    }
+
     func testHealthOutputLimitFailureConsumesProcessSlot() async throws {
         let rootFSURL = try makeFakeFSFixture()
         let driver = FakeIshRuntimeDriver(

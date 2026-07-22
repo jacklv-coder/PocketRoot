@@ -45,7 +45,7 @@ The returned instance never replaces `PocketRootSystem.shared`.
 4. Copy into private same-volume staging with exclusive creation, user-only permissions, cancellation checks, and a compressed-byte cap.
 5. Verify size and SHA-256 on that private snapshot.
 6. Stream gzip through zlib with an expanded-byte cap.
-7. Parse constrained POSIX ustar: checksums, UTF-8 relative paths, entry count and payload bounds; reject traversal, filesystem-equivalent duplicate file/directory targets, links, and special nodes.
+7. Parse constrained POSIX ustar: checksums, UTF-8 relative paths, entry count and payload bounds; record every implicitly created parent as an archive target, then reject later same-path or filesystem-equivalent duplicate file/directory targets, links, and special nodes.
 8. Reverify the archive snapshot and validate a real `fs/meta.db` file and `fs/data/` directory.
 9. Write `.pocketroot-rootfs.json` into `extracted/fs`, then promote that
    directory itself to `rootfs/<version>`. The final directory directly
@@ -66,7 +66,7 @@ The installer does not run SQLite integrity checks on every install; archive aut
 
 ## Boot
 
-The runtime validates fakefs types and health configuration, closes actor reentrancy by setting booting before suspension, claims the process gate, and runs synchronous IshEmbed boot on the shared serial blocking executor. After native boot returns, it runs a fixed `/bin/sh -c` identity command on that same queue. The command uses absolute `/bin/uname` and `/bin/cat`, returns `/etc/os-release` as data, and reports actual plus canonical target `pwd -P` values with NUL framing under a 4 KiB output budget. Swift parses unique ID/VERSION_ID keys without executing the file, rejects malformed quoting, UTF-8, duplicates, or framing, and compares configured expectations. The absolute working directory is passed as argv rather than interpolated into shell text; canonical comparison accepts trailing-slash, `.`, `..`, and symlink aliases. Only a successful match sets ready. A post-native-boot failure conservatively consumes the process slot and requires a host restart.
+The runtime validates fakefs types, health configuration, and the optional supervisor path before claiming the process slot. A supervisor path containing NUL is rejected before native boot so C-string conversion cannot silently truncate it. The runtime then closes actor reentrancy by setting booting before suspension, claims the process gate, and runs synchronous IshEmbed boot on the shared serial blocking executor. After native boot returns, it runs a fixed `/bin/sh -c` identity command on that same queue. The command uses absolute `/bin/uname` and `/bin/cat`, returns `/etc/os-release` as data, and reports actual plus canonical target `pwd -P` values with NUL framing under a 4 KiB output budget. Swift parses unique ID/VERSION_ID keys without executing the file, rejects malformed quoting, UTF-8, duplicates, or framing, and compares configured expectations. The absolute working directory is passed as argv rather than interpolated into shell text; canonical comparison accepts trailing-slash, `.`, `..`, and symlink aliases. Only a successful match sets ready. A post-native-boot failure conservatively consumes the process slot and requires a host restart.
 
 Those booting/ready/failed values are first the internal `IshLinuxRuntime`
 state. `PocketRootSystem.state` does not continuously synchronize while

@@ -92,7 +92,7 @@ flowchart TD
     J --> K["Update current.json"]
 ```
 
-The ustar subset accepts regular files, directories, and ignorable PAX content. It rejects links, devices, FIFO, absolute/traversal paths, filesystem-equivalent duplicate file/directory targets, bad checksums, non-UTF-8 names, and exceeded bounds.
+The ustar subset accepts regular files, directories, and ignorable PAX content. Parent directories implicitly created for an entry are recorded as archive targets, so a later explicit or filesystem-equivalent directory is rejected. Links, devices, FIFO, absolute/traversal paths, other duplicate file/directory targets, bad checksums, non-UTF-8 names, and exceeded bounds are also rejected.
 
 Archive authenticity comes from the fixed digest. Layout validation does not rehash every guest file or run SQLite integrity checks.
 

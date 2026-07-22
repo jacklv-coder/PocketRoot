@@ -39,9 +39,9 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 - Documentation now states that the default shared system is a placeholder and applications must retain the system returned by composition.
 - Pinned native shutdown is explicitly process-terminal and not routine UI cleanup.
 - The merged native ABI candidate is recorded without changing PocketRoot's current revision or binary behavior because no pinnable artifact exists yet.
-- One-shot commands reject NUL-containing C-string inputs and ambiguous environment keys before entering the native driver.
+- One-shot commands and the optional boot supervisor path reject NUL-containing C-string inputs before entering the native driver; command environments also reject ambiguous keys.
 - Pre-exit post-spawn failures now require an authoritative guest `EXITED` before recovery; negative synthetic supervisor states preserve error provenance, while pinned transport's ambiguous `(17, 0)` marker explicitly cleans up and fails the runtime closed.
-- The ustar extractor now also rejects duplicate directory entries and filesystem-equivalent directory targets, and RootFS journal documentation no longer promises power-loss durability without explicit `fsync`.
+- The ustar extractor now records parent directories implicitly created by file/directory entries and rejects later duplicate entries or filesystem-equivalent directory targets; RootFS journal documentation no longer promises power-loss durability without explicit `fsync`.
 - `PocketRootSystem` now refreshes stable public state after lifecycle/command success or failure, immediately publishes `.failed` after fail-close, hides transient lifecycle state from reentrant calls, and generations state refreshes so an older snapshot cannot overwrite a newer failure.
 - Native spike/smoke targets explicitly exclude x86_64 Simulator, and documentation clarifies that `isAvailable` is a post-link probe rather than a substitute for the arm64-only binary's build constraint.
 
