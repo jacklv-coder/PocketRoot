@@ -88,7 +88,8 @@ The current code does not provide a complete product-level privacy policy.
 
 - [ ] Complete native final-link and behavior validation with the minimum Xcode
   16 toolchain.
-- [ ] Run smoke tests on signed iPhone and iPad hardware.
+- [x] Run the signed iPhone one-shot smoke.
+- [ ] Run the signed iPad smoke and complete iPhone/iPad lifecycle coverage.
 - [ ] Validate foreground/background behavior, jetsam handling, and storage
   pressure.
 - [ ] Scan entitlements, private APIs, JIT behavior, and exported archives.

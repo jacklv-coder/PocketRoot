@@ -276,7 +276,7 @@ RootFS 二进制本身受来源与许可证门禁约束，所以不提交到仓�
 | Swift 到 native | `IshEmbedDriver.swift` | `ish-arm64-pkg` 的 `Sources/IshEmbed/` 与 C ABI |
 | 原生 kernel 行为 | `ish-arm64-pkg/third_party/ish` gitlink | `ish-arm64` 对应 commit |
 | Demo 页面 | `Demo/PocketRootDemo/` | `project.yml` |
-| 原生行为证据 | `Spikes/PocketRootIshRuntimeSmoke/` | `Scripts/run-runtime-smoke.sh` |
+| 原生行为证据 | `Spikes/PocketRootIshRuntimeSmoke/` | `Scripts/run-runtime-smoke.sh`、`Scripts/run-runtime-device-smoke.sh` |
 
 更细的逐方法说明见[实现原理](Implementation.md)。
 

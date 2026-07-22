@@ -120,6 +120,17 @@ cleanup boundary.
 
 See [testing](Testing.md) for coverage.
 
+Run the same checks on a paired iOS 18+ device with Developer Mode and development provisioning:
+
+```bash
+POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
+POCKETROOT_SMOKE_DEVICE=<physical-device-udid> \
+POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
+  ./Scripts/run-runtime-device-smoke.sh
+```
+
+The physical runner uninstalls the smoke App and injected RootFS after retrieving the report unless `POCKETROOT_KEEP_DEVICE_APP=1` is set. Never commit a UDID, provisioning profile, or local report.
+
 ## 8. Command reference
 
 | Goal | Command |
@@ -131,6 +142,7 @@ See [testing](Testing.md) for coverage.
 | Experimental final links | `./Scripts/build-runtime-spike.sh` |
 | Real RootFS first-materialization test | `POCKETROOT_ROOTFS_ARCHIVE=... swift test --filter testPinnedReleaseArchiveWhenProvidedByEnvironment` |
 | Native smoke | `POCKETROOT_ROOTFS_ARCHIVE=... ./Scripts/run-runtime-smoke.sh` |
+| Signed physical native smoke | `POCKETROOT_ROOTFS_ARCHIVE=... POCKETROOT_SMOKE_DEVICE=... POCKETROOT_DEVELOPMENT_TEAM=... ./Scripts/run-runtime-device-smoke.sh` |
 | Documentation checks | `./Scripts/check-docs.sh` |
 
 ## 9. Do not commit

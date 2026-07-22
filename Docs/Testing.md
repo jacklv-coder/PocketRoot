@@ -12,8 +12,8 @@ PocketRoot 把验证分成宿主逻辑、真实 RootFS、iOS 构建、完整原�
 | 真实 RootFS 资产测试 | 带环境变量的 filtered test | macOS | 精确 release archive 可校验并完成首次物化 | 已有安装可复用或 iSH 能 boot |
 | 默认 Demo 构建 | `./Scripts/build.sh` | Xcode + iOS SDK | 伞形产品和 UIKit Demo 可构建 | 实验 runtime 已链接 |
 | 原生最终链接 | `./Scripts/build-runtime-spike.sh` | Apple toolchain | 完整实验依赖图可生成 iOS 可执行文件 | 真机或 guest 行为 |
-| 原生 smoke | `./Scripts/run-runtime-smoke.sh` | Apple Silicon + iOS 18 Simulator + archive | prepare、boot、命令边界和固定 shutdown 行为 | 真机、Xcode 16 或发行可用 |
-| 物理设备验证 | 手工/后续自动化 | 签名 iPhone/iPad | sandbox、lifecycle、memory 与实际硬件行为 | 合规与 App Review |
+| Simulator 原生 smoke | `./Scripts/run-runtime-smoke.sh` | Apple Silicon + iOS 18 Simulator + archive | prepare、boot、命令边界和固定 shutdown 行为 | 真机、Xcode 16 或发行可用 |
+| 物理设备原生 smoke | `./Scripts/run-runtime-device-smoke.sh` | 签名 iOS 18+ iPhone/iPad + archive | 同一 13 项检查、development entitlement 与实际进程退出 | 完整 lifecycle、memory、iPad 或发行可用 |
 | 文档检查 | `./Scripts/check-docs.sh` | macOS/Linux shell | 中英文成对、中文覆盖和相对链接 | 技术实现正确 |
 
 ## 2. 宿主 Swift Package 测试
@@ -214,6 +214,21 @@ xcrun simctl shutdown "$SMOKE_DEVICE_UDID"
 
 该 smoke 是仓库维护的本地门禁，不在 GitHub Actions 中运行。
 
+### 签名 iPhone/iPad runner
+
+物理设备 runner 使用明确的设备 UDID 与 Apple team ID，避免误装到其他设备：
+
+```bash
+POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
+POCKETROOT_SMOKE_DEVICE=<physical-device-udid> \
+POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
+  ./Scripts/run-runtime-device-smoke.sh
+```
+
+runner 要求设备已配对、启用 Developer Mode 且能用 development profile 签名。它生成并签名 `PocketRootIshRuntimeSmoke`，验证 application identifier 与 `get-task-allow`，通过 `devicectl` 安装 App、把固定 archive 复制到 App data container、attached launch 并取回 JSON report。默认结束后卸载 smoke App 并删除其 RootFS 数据；只有显式设置 `POCKETROOT_KEEP_DEVICE_APP=1` 才保留。
+
+2026-07-23 记录：Xcode 26.1.1（17B100）、iPhone 17 Pro、iOS 26.1（23B85）、development provisioning；固定 archive 大小与 SHA-256 通过，报告记录 iPhone / iOS 26.1，13 项检查通过，attached process 以 0 退出。未提交 UDID、profile 或本地报告。该证据关闭一次性命令的 signed iPhone 基线，不关闭 iPad、foreground/background、memory/jetsam、storage pressure 或最低 Xcode 16 门禁。
+
 ## 8. GitHub Actions
 
 `.github/workflows/ci.yml` 在 macOS runner 上：
@@ -242,7 +257,7 @@ CI 不执行原生 boot，不证明真机，也不取代本地 smoke。
 | IshRuntime lifecycle/command/driver | `swift test` + strict build + runtime final-link + native smoke |
 | Package.swift 或 native dependency | `swift test` + Demo build + 两个 arm64 final-link + native smoke |
 | project.yml 或 Demo | regenerate + Demo build |
-| smoke App/runner | shell syntax + 实际 smoke |
+| smoke App/runner | shell syntax + Simulator smoke + 可用时 signed device smoke |
 | terminal placeholder | terminal tests + Demo build |
 | PTY/SwiftTerm（未来） | unit + final-link + Simulator + signed iPhone/iPad lifecycle |
 | 文档 | `./Scripts/check-docs.sh` |
@@ -266,7 +281,7 @@ CI 不执行原生 boot，不证明真机，也不取代本地 smoke。
 - storage pressure 与 ENOSPC；
 - 测试日志和制品 hash。
 
-当前未完成项以[路线图](Roadmap.md)为准。
+当前 signed iPhone 一次性命令基线已通过；iPad 与其余 lifecycle/resource 项仍以[路线图](Roadmap.md)为准。
 
 ## 11. 结果表达规则
 
@@ -275,12 +290,13 @@ CI 不执行原生 boot，不证明真机，也不取代本地 smoke。
 - “Swift Package tests 通过”；
 - “完整图在 arm64 Simulator/device destination 最终链接”；
 - “iOS 18.2 arm64 Simulator smoke 通过”。
+- “iPhone 17 Pro / iOS 26.1 signed one-shot smoke 通过”。
 
 不能由这些结果推导：
 
 - “支持所有 Simulator”；
 - “Xcode 16 原生行为已验证”；
-- “已在 iPhone/iPad 真机运行”；
+- “已完成 iPad 或完整真机 lifecycle”；
 - “可以 TestFlight/生产分发”；
 - “App Store 审核一定通过”。
 

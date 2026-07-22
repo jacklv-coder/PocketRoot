@@ -16,7 +16,7 @@ PocketRoot 是面向 iOS 的可嵌入 ARM64 Linux 运行时与终端基础设施
 | RootFS 校验与安全安装 | 可用 | 固定大小和 SHA-256、安全解包、journal 保护的同卷 promotion、复用与中断恢复 |
 | iSH 启动与一次性命令 | 实验性 | 仅 `iOS + arm64`，必须显式依赖实验产品 |
 | 交互式 PTY 与 SwiftTerm | 未实现 | 会话、输入、resize、signal 和安全关闭仍在规划中 |
-| 真机与公开发行 | 阻塞 | 仍需 iPhone/iPad、Xcode 16、许可证、SBOM 和 App Store 审查 |
+| 真机与公开发行 | 部分通过 / 阻塞 | iPhone 一次性命令基线已通过；仍需 iPad、生命周期、Xcode 16、许可证、SBOM 和 App Store 审查 |
 
 默认 `PocketRoot` 产品不会带入真实 iSH 运行时，也不会打包或下载 RootFS。`PocketRootSystem.shared` 使用安全的占位实现；需要真实运行时的应用必须显式依赖 `PocketRootIshRuntimeIntegration`。
 
@@ -161,9 +161,14 @@ POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
 
 POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
   ./Scripts/run-runtime-smoke.sh
+
+POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
+POCKETROOT_SMOKE_DEVICE=<physical-device-udid> \
+POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
+  ./Scripts/run-runtime-device-smoke.sh
 ```
 
-最后一个命令要求 Apple Silicon、iOS 18 Simulator 和精确匹配固定清单的本地归档。它验证 RootFS 准备、启动、guest 身份、命令上下文、输出、退出码、超时恢复、输出上限恢复和进程终止式关闭。详细矩阵见[测试与验证](Docs/Testing.md)。
+两个 smoke runner 都要求 Apple Silicon 和精确匹配固定清单的本地归档；前者使用 iOS 18 Simulator，后者要求已配对、已启用 Developer Mode 且可开发签名的 iOS 18+ 真机。它们验证 RootFS 准备、启动、guest 身份、命令上下文、输出、退出码、超时恢复、输出上限恢复和进程终止式关闭。详细矩阵见[测试与验证](Docs/Testing.md)。
 
 ## 文档导航
 

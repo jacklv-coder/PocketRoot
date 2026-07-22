@@ -49,8 +49,9 @@ Status: **Experimental, in progress**.
 - Final-linked the full graph for arm64 Simulator and unsigned device.
 - Booted on iOS 18.2 arm64 Simulator.
 - Passed the repository 13-check native smoke.
+- Passed the same signed 13-check smoke on an iPhone 17 Pro running iOS 26.1, including development entitlements and the pinned `_exit(0)` process exit.
 
-This establishes the current Simulator one-shot path, not physical-device, minimum-Xcode, PTY, or distribution readiness.
+This establishes the current Simulator and single-iPhone one-shot paths, not iPad, complete physical-device lifecycle, minimum-Xcode, PTY, or distribution readiness.
 
 ### Gates
 
@@ -67,7 +68,7 @@ This establishes the current Simulator one-shot path, not physical-device, minim
 | Default post-boot identity gate | Passed | Require aarch64, Alpine identity, optional version, and command context before ready; retain failed-slot regression coverage |
 | Real Demo runtime injection | Not started | Inject one prepared system without bundling an unreviewed RootFS |
 | Host-safe soft shutdown | In progress | Fork source fixes are merged; new XCFramework, checksum, PocketRoot pin, and lifecycle audit remain |
-| Signed iPhone | Blocked | Physical boot and command smoke |
+| Signed iPhone | Passed | 13-check signed smoke on iPhone 17 Pro / iOS 26.1 / Xcode 26.1.1; rerun for runtime, RootFS, or signing changes |
 | Signed iPad | Blocked | Physical boot and command smoke |
 | Minimum Xcode 16 native | Not started | Repeat final-link and behavior |
 | App lifecycle and memory | Not started | Background/foreground, jetsam, failure, persistence |
@@ -77,7 +78,7 @@ This establishes the current Simulator one-shot path, not physical-device, minim
 
 ### Next sequence
 
-1. Run signed preparation, boot, guest, command, and recovery checks on iPhone and iPad with recorded toolchains and entitlements.
+1. Complete the iPad baseline. The iPhone baseline passed; repeat signed preparation, boot, guest, command, and recovery checks on iPad with recorded toolchain and entitlements.
 2. Decide whether host-process exit is acceptable; otherwise rebuild a soft-shutdown artifact with bounded joins and repeat audits.
 3. Repeat full final-link, install, and native smoke with minimum Xcode 16.
 4. Add opt-in Demo injection of one prepared system across System, Commands, and Diagnostics.
