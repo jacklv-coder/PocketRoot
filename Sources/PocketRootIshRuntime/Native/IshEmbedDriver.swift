@@ -16,15 +16,26 @@ struct IshEmbedDriver: IshRuntimeDriver {
     }
 
     func execute(_ request: IshDriverCommandRequest) throws -> IshDriverCommandResult {
-        let session = try IshInstance.shared.spawn(
-            .init(
-                argv: request.arguments,
-                cwd: request.workingDirectory,
-                env: request.environment,
-                mergeStderrIntoStdout: request.mergeStandardError,
-                timeout: nil
+        let session: IshSession
+        do {
+            session = try IshInstance.shared.spawn(
+                .init(
+                    argv: request.arguments,
+                    cwd: request.workingDirectory,
+                    env: request.environment,
+                    mergeStderrIntoStdout: request.mergeStandardError,
+                    timeout: nil
+                )
             )
-        )
+        } catch IshError.raw(let code, let message) {
+            if let terminalFailure = IshRuntimeTransportPolicy.terminalSpawnFailure(
+                code: code,
+                message: message
+            ) {
+                throw terminalFailure
+            }
+            throw IshError.raw(code, message)
+        }
         defer {
             session.close()
         }

@@ -45,6 +45,47 @@ final class PocketRootIshRuntimeTests: XCTestCase {
         XCTAssertEqual(state, .idle)
     }
 
+    func testRootFSPreflightIOFailureMapsToTypedErrorWithoutConsumingSlot() async throws {
+        let rootFSURL = try makeFakeFSFixture()
+        let secondRootFSURL = try makeFakeFSFixture()
+        let processGate = IshProcessGate()
+        let driver = FakeIshRuntimeDriver()
+        let runtime = IshLinuxRuntime(
+            configuration: .init(rootFSURL: rootFSURL),
+            driver: driver,
+            processGate: processGate,
+            rootFSValidator: { _ in
+                throw FakeIshRuntimeError.rootFSReadFailed
+            }
+        )
+
+        do {
+            try await runtime.boot(configuration: PocketRootConfiguration())
+            XCTFail("A RootFS preflight I/O failure must reject boot.")
+        } catch let error as PocketRootError {
+            XCTAssertEqual(
+                error,
+                .rootFSUnavailable(
+                    "Unable to validate the fakefs at \(rootFSURL.path): "
+                        + "Synthetic RootFS attribute read failure."
+                )
+            )
+        }
+
+        let failedPreflightState = await runtime.state
+        XCTAssertEqual(failedPreflightState, .idle)
+        XCTAssertEqual(driver.snapshot.bootCallCount, 0)
+
+        let secondRuntime = IshLinuxRuntime(
+            configuration: .init(rootFSURL: secondRootFSURL),
+            driver: FakeIshRuntimeDriver(),
+            processGate: processGate
+        )
+        try await secondRuntime.boot(configuration: PocketRootConfiguration())
+        let secondRuntimeState = await secondRuntime.state
+        XCTAssertEqual(secondRuntimeState, .ready)
+    }
+
     func testRuntimeMapsBootCommandAndTerminalShutdownSemantics() async throws {
         let rootFSURL = try makeFakeFSFixture()
         let driver = FakeIshRuntimeDriver(
@@ -893,6 +934,27 @@ final class PocketRootIshRuntimeTests: XCTestCase {
         )
     }
 
+    func testTerminalSpawnTransportFailuresMapToFailClosedError() {
+        for code in [-9, -11, -17] as [Int32] {
+            guard case .sessionTerminationUnconfirmed(let reason) =
+                IshRuntimeTransportPolicy.terminalSpawnFailure(
+                    code: code,
+                    message: "synthetic transport loss"
+                )
+            else {
+                return XCTFail("IshError \(code) must fail the runtime closed.")
+            }
+            XCTAssertTrue(reason.contains("IshError \(code)"))
+        }
+
+        XCTAssertNil(
+            IshRuntimeTransportPolicy.terminalSpawnFailure(
+                code: -13,
+                message: "invalid argument"
+            )
+        )
+    }
+
     func testBootRejectsSymlinkedMetadataBeforeConsumingProcessSlot() async throws {
         let rootFSURL = try makeFakeFSFixture()
         let metadataURL = rootFSURL.appendingPathComponent("meta.db")
@@ -1105,8 +1167,14 @@ private final class FakeIshRuntimeDriver: IshRuntimeDriver, @unchecked Sendable 
 
 private enum FakeIshRuntimeError: LocalizedError {
     case bootFailed
+    case rootFSReadFailed
 
     var errorDescription: String? {
-        "Synthetic native boot failure."
+        switch self {
+        case .bootFailed:
+            return "Synthetic native boot failure."
+        case .rootFSReadFailed:
+            return "Synthetic RootFS attribute read failure."
+        }
     }
 }

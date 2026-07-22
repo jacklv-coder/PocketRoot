@@ -8,6 +8,7 @@ package actor IshLinuxRuntime: LinuxRuntime {
     private let driver: any IshRuntimeDriver
     private let executor: BlockingIshExecutor
     private let processGate: IshProcessGate
+    private let rootFSValidator: @Sendable (URL) throws -> Void
     private var ownsProcess = false
     private var commandInFlight = false
     private var runtimeState: PocketRootRuntimeState = .idle
@@ -17,7 +18,8 @@ package actor IshLinuxRuntime: LinuxRuntime {
             configuration: configuration,
             driver: makeDefaultIshRuntimeDriver(),
             executor: .shared,
-            processGate: .shared
+            processGate: .shared,
+            rootFSValidator: { try IshLinuxRuntime.validateRootFS($0) }
         )
     }
 
@@ -25,12 +27,16 @@ package actor IshLinuxRuntime: LinuxRuntime {
         configuration: PocketRootIshRuntimeConfiguration,
         driver: any IshRuntimeDriver,
         executor: BlockingIshExecutor = BlockingIshExecutor(),
-        processGate: IshProcessGate = IshProcessGate()
+        processGate: IshProcessGate = IshProcessGate(),
+        rootFSValidator: @escaping @Sendable (URL) throws -> Void = {
+            try IshLinuxRuntime.validateRootFS($0)
+        }
     ) {
         self.configuration = configuration
         self.driver = driver
         self.executor = executor
         self.processGate = processGate
+        self.rootFSValidator = rootFSValidator
     }
 
     package var state: PocketRootRuntimeState {
@@ -55,7 +61,16 @@ package actor IshLinuxRuntime: LinuxRuntime {
             )
         }
 
-        try validateRootFS()
+        do {
+            try rootFSValidator(configuration.rootFSURL)
+        } catch let error as PocketRootError {
+            throw error
+        } catch {
+            throw PocketRootError.rootFSUnavailable(
+                "Unable to validate the fakefs at \(configuration.rootFSURL.path): "
+                    + error.localizedDescription
+            )
+        }
         do {
             try IshRuntimeHealthCheck.validateConfiguration(
                 configuration.healthCheck,
@@ -250,9 +265,9 @@ package actor IshLinuxRuntime: LinuxRuntime {
         }
     }
 
-    private func validateRootFS() throws {
+    private static func validateRootFS(_ rootFSURL: URL) throws {
         var isDirectory: ObjCBool = false
-        let path = configuration.rootFSURL.path
+        let path = rootFSURL.path
         guard FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory),
               isDirectory.boolValue
         else {
@@ -260,7 +275,7 @@ package actor IshLinuxRuntime: LinuxRuntime {
                 "Expected a materialized fakefs directory at \(path)."
             )
         }
-        let rootValues = try configuration.rootFSURL.resourceValues(
+        let rootValues = try rootFSURL.resourceValues(
             forKeys: [.isDirectoryKey, .isSymbolicLinkKey]
         )
         guard rootValues.isDirectory == true, rootValues.isSymbolicLink != true else {
@@ -269,9 +284,9 @@ package actor IshLinuxRuntime: LinuxRuntime {
             )
         }
 
-        let metadataURL = configuration.rootFSURL.appendingPathComponent("meta.db")
+        let metadataURL = rootFSURL.appendingPathComponent("meta.db")
         let metadataPath = metadataURL.path
-        let dataURL = configuration.rootFSURL
+        let dataURL = rootFSURL
             .appendingPathComponent("data", isDirectory: true)
         let dataPath = dataURL.path
         var dataIsDirectory: ObjCBool = false

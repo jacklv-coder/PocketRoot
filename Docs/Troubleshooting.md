@@ -109,7 +109,7 @@ PocketRootIshRuntimeFactory.isAvailable
 
 如果 boot 失败，保留原始 typed error 和 runtime state，并先判断失败发生在哪个边界：
 
-- RootFS 预检（例如目录缺失或 `meta.db` 是 symlink）发生在申请 process-global 槽位之前。这类失败保持 `idle`，修正输入或重新 prepare 后，可在同一宿主进程中重试 boot。
+- RootFS 预检（例如目录缺失、`meta.db` 是 symlink，或检查期间文件属性读取失败）发生在申请 process-global 槽位之前。这类失败统一抛 typed `rootFSUnavailable` 并保持 `idle`，修正输入或重新 prepare 后，可在同一宿主进程中重试 boot。
 - 一旦已申请槽位并进入 native driver boot，该调用若失败就会保守地把全局槽位标记为 terminated。此后同一或新建 system 的 boot 都会得到 `restartRequired`，必须重启宿主 App。
 - 第一次 boot 仍在执行时的并发重复调用会被拒绝；等待原调用返回，不要另起多个 system 竞争。
 

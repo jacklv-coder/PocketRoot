@@ -41,7 +41,7 @@ flowchart LR
 - IshEmbed 是进程级单例；PocketRoot 只允许一个原生运行时所有者和一个在途命令。
 - 同步原生调用在串行阻塞队列中执行，不阻塞主线程和 Swift cooperative executor。
 - `boot()` 只有在固定 post-boot 命令验证 guest 架构、Alpine 身份和命令上下文后才报告 `ready`；默认 v0.3.3 组合还严格要求 Alpine `3.19.1`。
-- session 建立后的 event-read loop 使用 deadline，Swift 已收集的 stdout/stderr 有产品配额；pre-exit 错误必须先确认可信 `EXITED` 才允许继续执行，否则 runtime 失败关闭并要求重启宿主。supervisor 在 guest 创建前拒绝命令的负数合成状态会保留为可恢复错误；固定 v0.3.3 的 `(exitCode: 17, signal: 0)` 与 transport broken pipe 有歧义，因此显式清理后失败关闭。当前原生 transport 的 spawn/control/terminate/close 仍可能阻塞，未读 inbox 也无独立上限，因此端到端时间界限和完整内存背压仍是开放门禁。
+- session 建立后的 event-read loop 使用 deadline，Swift 已收集的 stdout/stderr 有产品配额；pre-exit 错误必须先确认可信 `EXITED` 才允许继续执行，否则 runtime 失败关闭并要求重启宿主。spawn 直接报告 not-running、protocol 或 broken-pipe 也视为 transport 已不可信并失败关闭。supervisor 在 guest 创建前拒绝命令的负数合成状态会保留为可恢复错误；固定 v0.3.3 的 `(exitCode: 17, signal: 0)` 与 transport broken pipe 有歧义，因此显式清理后失败关闭。当前原生 transport 的 spawn/control/terminate/close 仍可能阻塞，未读 inbox 也无独立上限，因此端到端时间界限和完整内存背压仍是开放门禁。
 
 完整实现见[架构说明](Docs/Architecture.md)、[实现原理](Docs/Implementation.md)和 [RootFS 安全方案](Docs/RootFS.md)。
 

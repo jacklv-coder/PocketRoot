@@ -230,7 +230,7 @@ env = nil or request.environment
 
 因此 shell quoting 和 injection 风险属于调用方。
 
-`IshEmbedDriver` 使用 `IshInstance.shared.spawn`，然后立即关闭 stdin。它不使用上游一次性收集全部输出的便利 API，而是循环读取 session event。当前 deadline 只在同步 `spawn` 和 `closeStdin` 都返回后创建；固定 v0.3.3 的 control write 可能阻塞，所以请求 timeout 不是整个 `execute()` 的端到端硬上限。
+`IshEmbedDriver` 使用 `IshInstance.shared.spawn`，然后立即关闭 stdin。spawn 直接返回 not-running、protocol 或 broken-pipe 代表原生 transport 已不可再信任，会映射为退出无法确认并失败关闭整个 runtime；其他可明确归因的 pre-session 错误仍按原错误返回。driver 不使用上游一次性收集全部输出的便利 API，而是循环读取 session event。当前 deadline 只在同步 `spawn` 和 `closeStdin` 都返回后创建；固定 v0.3.3 的 control write 可能阻塞，所以请求 timeout 不是整个 `execute()` 的端到端硬上限。
 
 ### 6.3 bounded read
 

@@ -193,7 +193,7 @@ sequenceDiagram
 - 没有第二个一次性命令在途；
 - 当前 system 仍拥有全局 iSH 实例。
 
-driver 先同步完成 `spawn` 和 `closeStdin`，之后才创建 deadline 并分段读取事件。session 建立后的关闭 stdin、非 timeout read、deadline 和输出超限错误都会请求终止并确认退出；下一块数据会使累计结果超过产品 stdout/stderr 配额时停止扩充 Swift `Data`，恰好等于 limit 的结果仍被接受。pre-exit 错误必须读到可信 `EXITED` 才作为可恢复结果返回。固定 supervisor 在创建 guest 前拒绝 spawn 时会把 `ERROR` 合成为负数 exit，PocketRoot 将其保留为可恢复 supervisor error；固定 v0.3.3 transport 的 broken pipe 则会合成为同样的 `(exitCode: 17, signal: 0)` 事件，所以该歧义组合显式请求终止并尝试二次确认后保守失败关闭。这个机制限制的是 session 建立后的读取阶段和已消费结果缓冲；当前固定 transport 的 spawn/control/terminate/close 仍可能阻塞，未读 inbox 也可能在 producer 快于 consumer 时增长，所以不能把请求 timeout 或产品配额表述成 `execute()` 的端到端时间/内存硬界限。
+driver 先同步完成 `spawn` 和 `closeStdin`，之后才创建 deadline 并分段读取事件。spawn 直接返回 not-running、protocol 或 broken-pipe 时已无法信任原生 transport，PocketRoot 会在 session 尚未建立时失败关闭 runtime。session 建立后的关闭 stdin、非 timeout read、deadline 和输出超限错误都会请求终止并确认退出；下一块数据会使累计结果超过产品 stdout/stderr 配额时停止扩充 Swift `Data`，恰好等于 limit 的结果仍被接受。pre-exit 错误必须读到可信 `EXITED` 才作为可恢复结果返回。固定 supervisor 在创建 guest 前拒绝 spawn 时会把 `ERROR` 合成为负数 exit，PocketRoot 将其保留为可恢复 supervisor error；固定 v0.3.3 transport 的 broken pipe 则会合成为同样的 `(exitCode: 17, signal: 0)` 事件，所以该歧义组合显式请求终止并尝试二次确认后保守失败关闭。这个机制限制的是 session 建立后的读取阶段和已消费结果缓冲；当前固定 transport 的 spawn/control/terminate/close 仍可能阻塞，未读 inbox 也可能在 producer 快于 consumer 时增长，所以不能把请求 timeout 或产品配额表述成 `execute()` 的端到端时间/内存硬界限。
 
 ### 5.4 `shutdown`
 

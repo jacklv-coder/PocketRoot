@@ -53,10 +53,25 @@ enum IshRuntimeDriverError: LocalizedError, Equatable {
 }
 
 enum IshRuntimeTransportPolicy {
+    private static let terminalSpawnErrorCodes: Set<Int32> = [-9, -11, -17]
+
     // ish_read_event in the pinned v0.3.3 transport synthesizes this pair when
     // the supervisor pipe breaks. Because the Swift event cannot distinguish
     // it from a guest `exit 17`, the pair is never treated as authoritative.
     static let ambiguousBrokenPipeExitCode: Int32 = 17
+
+    static func terminalSpawnFailure(
+        code: Int32,
+        message: String
+    ) -> IshRuntimeDriverError? {
+        guard terminalSpawnErrorCodes.contains(code) else {
+            return nil
+        }
+        return .sessionTerminationUnconfirmed(
+            "spawning the guest command failed because the native transport "
+                + "is no longer trustworthy (IshError \(code): \(message))"
+        )
+    }
 
     static func validateAuthoritativeExit(
         exitCode: Int32,

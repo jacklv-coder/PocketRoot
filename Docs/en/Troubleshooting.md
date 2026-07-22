@@ -40,7 +40,7 @@ Use the exact `prepared.system` returned by composition, call boot successfully,
 
 The retry boundary depends on where boot failed:
 
-- RootFS preflight, such as a missing directory or symlinked `meta.db`, runs before the process-global slot is claimed. It leaves the runtime idle, so after correcting the input or preparing again, boot may be retried in the same host process.
+- RootFS preflight, such as a missing directory, symlinked `meta.db`, or an attribute-read failure while checking the files, runs before the process-global slot is claimed. These failures map to typed `rootFSUnavailable` and leave the runtime idle, so after correcting the input or preparing again, boot may be retried in the same host process.
 - Once the slot has been claimed and native driver boot has been entered, a failure conservatively terminates the global slot. Booting the same or another system then returns `restartRequired`; restart the host app.
 - A duplicate boot while the first call is still in progress is rejected. Await the original call instead of racing multiple systems.
 

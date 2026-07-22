@@ -52,7 +52,8 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
 - 明确固定 native `shutdown()` 为进程终止式行为，不应作为普通 UI cleanup。
 - 记录已合并但尚无可固定制品的 native ABI 候选；PocketRoot 当前 revision 与二进制行为保持不变。
 - 一次性命令和 boot 的可选 supervisor 路径在进入 native driver 前拒绝含 NUL 的 C 字符串输入；命令环境还拒绝歧义 key。
-- session 建立后的 pre-exit 错误只有在观察到可信 guest `EXITED` 后才可恢复；supervisor 的负数合成状态保留错误来源，固定 transport 的 `(17, 0)` 歧义 marker 会先显式清理再失败关闭并要求重启宿主。
+- session 建立后的 pre-exit 错误只有在观察到可信 guest `EXITED` 后才可恢复；spawn 直接返回 not-running、protocol 或 broken-pipe 时也会失败关闭；supervisor 的负数合成状态保留错误来源，固定 transport 的 `(17, 0)` 歧义 marker 会先显式清理再失败关闭并要求重启宿主。
+- RootFS boot 预检期间的文件属性读取错误统一映射为 typed `rootFSUnavailable`，并在申请原生进程槽位前保持 `idle`。
 - ustar extractor 现在也登记文件/目录条目隐式创建的父目录，并拒绝后续重复目录项和文件系统等价目录目标；RootFS journal 文档明确不承诺未显式 `fsync` 的掉电持久性。
 - `PocketRootSystem` 现在在 lifecycle/command 成功或抛错后刷新稳定公开 state；失败关闭立即公开 `.failed`，重入调用不会泄漏 lifecycle 过渡态，并用刷新代次阻止较旧快照覆盖较新的失败状态。
 - 原生 spike/smoke target 显式排除 x86_64 Simulator；文档明确 `isAvailable` 是链接后的探针，不能替代 arm64-only binary 的构建架构约束。

@@ -52,12 +52,12 @@ swift test
 通过 injected driver 测试，不链接 native iOS binary：
 
 - 默认配置和 macOS native-slice 可用性 fallback；
-- 缺失 fakefs 和 symlinked `meta.db` 的 boot 预检；
+- 缺失 fakefs、symlinked `meta.db` 和文件属性读取失败的 typed boot 预检，且失败不占用进程槽位；
 - boot options 以及 `/bin/sh -lc` 命令的 cwd、environment、stderr merge、stream、exit 和 signal 映射；
 - boot 前 execute 拒绝、timeout 边界校验和亚毫秒 clamp、含 NUL/歧义环境 key 的请求拒绝；
 - process-global ownership、native boot 失败后占用槽位、并发 boot/reentrancy；
 - 默认/自定义 manifest 的健康配置选择，post-boot identity request、错误架构/OS/版本/cwd、规范化 cwd 别名、timeout、signal/exit、output limit、无效 UTF-8、重复 os-release 键、畸形 NUL framing，以及无效配置、相对 cwd、含 NUL supervisor 路径不占槽位；
-- active one-shot command 与 shutdown 顺序、output-limit error 映射、supervisor 负数合成状态保留来源且保持 ready、共享 process gate 的退出无法确认失败关闭，以及固定 transport 歧义 broken-pipe marker 拒绝；
+- active one-shot command 与 shutdown 顺序、output-limit error 映射、supervisor 负数合成状态保留来源且保持 ready、共享 process gate 的退出无法确认失败关闭、terminal spawn transport error 映射，以及固定 transport 歧义 broken-pipe marker 拒绝；
 - injected-driver shutdown 后的 terminated / `restartRequired` contract。
 
 ### Integration 与 Terminal tests

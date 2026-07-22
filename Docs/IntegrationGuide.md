@@ -250,7 +250,7 @@ print(result.stderr)
 - session 建立并关闭 stdin 后，event-read loop 才开始计算 timeout；到期时尝试终止 session，成功返回时包含 `timedOut == true` 和已经收集的输出。
 - 当前固定 v0.3.3 的 `spawn`、control write、terminate 和 close 仍可能阻塞，所以请求 timeout 不是整个 `execute()` 的端到端 watchdog；在原生 transport 硬化完成前只能把它当作实验性 read-loop deadline。
 - command、cwd 和 environment key/value 不能包含 NUL；environment key 还必须非空且不含 `=`。这些输入在进入 native driver 前校验，避免 C 字符串静默截断。
-- session 建立后的关闭 stdin、非 timeout 读取、timeout 或输出超限错误都会先终止 session；只有观察到可信 guest `EXITED` 才会恢复为 `ready`。固定 supervisor 在创建 guest 前拒绝 spawn 时会产生负数合成 exit，PocketRoot 将其作为保留来源的可恢复 runtime error，而不是 guest 退出码。固定 v0.3.3 用 `(exitCode: 17, signal: 0)` 同时表示 transport broken pipe，该歧义组合会显式请求终止后失败关闭；终止或退出确认失败也会把 runtime 锁定为 `failed`，后续启动要求重启宿主进程。
+- spawn 直接返回 not-running、protocol 或 broken-pipe 时，PocketRoot 无法证明原生 transport 与 guest 状态，runtime 会立即失败关闭。session 建立后的关闭 stdin、非 timeout 读取、timeout 或输出超限错误都会先终止 session；只有观察到可信 guest `EXITED` 才会恢复为 `ready`。固定 supervisor 在创建 guest 前拒绝 spawn 时会产生负数合成 exit，PocketRoot 将其作为保留来源的可恢复 runtime error，而不是 guest 退出码。固定 v0.3.3 用 `(exitCode: 17, signal: 0)` 同时表示 transport broken pipe，该歧义组合会显式请求终止后失败关闭；终止或退出确认失败也会把 runtime 锁定为 `failed`，后续启动要求重启宿主进程。
 - `mergeStandardError == true` 时 stderr 合并到 stdout，`standardError` 为空。
 - 默认 stdout 上限 8 MiB，stderr 上限 4 MiB；通过 `prepareSystem` 参数调整。
 - 超过输出上限会终止 session，并抛出 `PocketRootError.commandOutputLimitExceeded`。

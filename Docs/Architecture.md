@@ -230,7 +230,7 @@ IshEmbed 暴露同步、进程级 API。adapter 使用：
 - stdout/stderr limits：超限终止 session。
 - 退出确认：session 建立后的 stdin/read/timeout/超限错误先终止并确认可信 `EXITED`；无法确认时失败关闭整个进程 gate。固定 supervisor 在创建 guest 前拒绝命令时返回的负数合成 exit 作为保留来源的可恢复错误处理。
 
-这些机制避免并发 boot、命令越过 shutdown，并限制 session 建立后 event-read loop 的等待和 Swift 已收集结果的大小。deadline 在同步 `spawn` 与 `closeStdin` 返回后才创建；当前固定 v0.3.3 native transport 的 control write、terminate、close 仍可能阻塞，未读 session inbox 也没有独立容量上限。因此当前不能宣称 `execute()` 具有端到端硬时间界限或整个宿主进程具备完整内存背压。Swift Task cancellation 也尚未成为完整 native kill 契约。
+这些机制避免并发 boot、命令越过 shutdown，并限制 session 建立后 event-read loop 的等待和 Swift 已收集结果的大小。spawn 直接返回 not-running、protocol 或 broken-pipe 会关闭 process gate 并要求重启宿主。deadline 在同步 `spawn` 与 `closeStdin` 返回后才创建；当前固定 v0.3.3 native transport 的 control write、terminate、close 仍可能阻塞，未读 session inbox 也没有独立容量上限。因此当前不能宣称 `execute()` 具有端到端硬时间界限或整个宿主进程具备完整内存背压。Swift Task cancellation 也尚未成为完整 native kill 契约。
 
 ## 7. 生命周期
 
