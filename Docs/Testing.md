@@ -42,7 +42,7 @@ swift test
 - 固定 manifest 与受门禁的 bundled provider；
 - archive 存在性、symlink 拒绝、字节数和 SHA-256；
 - fakefs 所需 `meta.db` / `data` 布局以及 metadata symlink 拒绝；
-- gzip/ustar 正常解包、path traversal 清理、archive symlink entry/源路径拒绝和 expanded-byte 上限；
+- gzip/ustar 正常解包、path traversal 清理、重复目录项以及大小写不敏感卷上的目录别名拒绝、archive symlink entry/源路径拒绝和 expanded-byte 上限；
 - 用合成 fixture 验证首次安装与复用、私有 archive snapshot 隔离与字节上限；
 - 用合成 fixture 验证保留名版本、损坏版本替换、失败升级/提升回滚、中断事务恢复和并发时只安装一次；
 - 可选的精确 release asset 首次物化。
@@ -54,10 +54,10 @@ swift test
 - 默认配置和 macOS native-slice 可用性 fallback；
 - 缺失 fakefs 和 symlinked `meta.db` 的 boot 预检；
 - boot options 以及 `/bin/sh -lc` 命令的 cwd、environment、stderr merge、stream、exit 和 signal 映射；
-- boot 前 execute 拒绝、timeout 边界校验和亚毫秒 clamp；
+- boot 前 execute 拒绝、timeout 边界校验和亚毫秒 clamp、含 NUL/歧义环境 key 的请求拒绝；
 - process-global ownership、native boot 失败后占用槽位、并发 boot/reentrancy；
 - 默认/自定义 manifest 的健康配置选择，post-boot identity request、错误架构/OS/版本/cwd、规范化 cwd 别名、timeout、signal/exit、output limit、无效 UTF-8、重复 os-release 键、畸形 NUL framing，以及无效配置/相对 cwd 不占槽位；
-- active one-shot command 与 shutdown 顺序、output-limit error 映射；
+- active one-shot command 与 shutdown 顺序、output-limit error 映射、supervisor 负数合成状态保留来源且保持 ready、共享 process gate 的退出无法确认失败关闭，以及固定 transport 歧义 broken-pipe marker 拒绝；
 - injected-driver shutdown 后的 terminated / `restartRequired` contract。
 
 ### Integration 与 Terminal tests

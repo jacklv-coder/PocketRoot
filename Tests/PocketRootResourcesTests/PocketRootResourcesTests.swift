@@ -306,6 +306,72 @@ final class PocketRootResourcesTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: destinationURL.path))
     }
 
+    func testGzipTarExtractorRejectsDuplicateDirectories() throws {
+        let archiveURL = try makeTemporaryFile(
+            contents: try XCTUnwrap(Data(base64Encoded: Self.duplicateDirectoryArchiveBase64))
+        )
+        let destinationURL = archiveURL.deletingLastPathComponent()
+            .appendingPathComponent("extracted", isDirectory: true)
+
+        XCTAssertThrowsError(
+            try PocketRootGzipTarExtractor().extract(
+                archiveURL: archiveURL,
+                to: destinationURL
+            )
+        ) { error in
+            guard case .fileSystemFailure(let message) =
+                error as? PocketRootArchiveExtractionError
+            else {
+                return XCTFail("Unexpected error: \(error)")
+            }
+            XCTAssertTrue(message.contains("duplicate entry"))
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: destinationURL.path))
+    }
+
+    func testGzipTarExtractorRejectsCaseAliasedDirectoriesOnInsensitiveVolume() throws {
+        let probeURL = try makeTemporaryDirectory()
+        let lowercaseProbeURL = probeURL.appendingPathComponent(
+            "pocketroot-case-probe",
+            isDirectory: true
+        )
+        try FileManager.default.createDirectory(
+            at: lowercaseProbeURL,
+            withIntermediateDirectories: false
+        )
+        guard FileManager.default.fileExists(
+            atPath: probeURL.appendingPathComponent(
+                "POCKETROOT-CASE-PROBE",
+                isDirectory: true
+            ).path
+        ) else {
+            throw XCTSkip("The test volume is case-sensitive.")
+        }
+
+        let archiveURL = try makeTemporaryFile(
+            contents: try XCTUnwrap(
+                Data(base64Encoded: Self.caseAliasedDirectoryArchiveBase64)
+            )
+        )
+        let destinationURL = archiveURL.deletingLastPathComponent()
+            .appendingPathComponent("extracted", isDirectory: true)
+
+        XCTAssertThrowsError(
+            try PocketRootGzipTarExtractor().extract(
+                archiveURL: archiveURL,
+                to: destinationURL
+            )
+        ) { error in
+            guard case .fileSystemFailure(let message) =
+                error as? PocketRootArchiveExtractionError
+            else {
+                return XCTFail("Unexpected error: \(error)")
+            }
+            XCTAssertTrue(message.contains("duplicate directory target"))
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: destinationURL.path))
+    }
+
     func testGzipTarExtractorRejectsSymbolicLinkSource() throws {
         let realArchiveURL = try makeValidFakeFSArchiveFile()
         let symbolicLinkURL = realArchiveURL.deletingLastPathComponent()
@@ -809,4 +875,8 @@ final class PocketRootResourcesTests: XCTestCase {
         "H4sIAAAAAAAC/+3NPQqDQBgE0O8onsAIu5jzbNQ++HN/11Rin4DkvWaGaaZtH9MylPcU39NVfc6frK5ZpVM/9mdKOZoufmBb1jLXy/hPrzIGAAAAAAAAAAAA97MDz0AGZgAoAAA="
     private static let symlinkArchiveBase64 =
         "H4sIAAAAAAAC/+3OuwmEQAAE0C3lKvB/14+ggigKt9q/i6HGBsJ7yUw2M8R8HpcpPKlIfk1zZnLNey/Lov6GT5Vl+bpvcez6587tcWv/aT4AAAAAAAAAAADAexzHriFiACgAAA=="
+    private static let duplicateDirectoryArchiveBase64 =
+        "H4sIAKjkYGoAA0sr1megNTAAAnNTUzANBOg0FraZMVC5ginNXQYEpcUliUVAK+lh1yAEaaPxP6LjfxSMglEwcgEA5ciDeAAIAAA="
+    private static let caseAliasedDirectoryArchiveBase64 =
+        "H4sIAG3oYGoAA0sr1megNTAAAnNTUzANBOg0FraZMVC5ginNXQYEpcUliUVAK+lh1yAEbsGDMv6NRuN/FIyCUTAKaAsAkTbGfQAIAAA="
 }

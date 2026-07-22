@@ -119,7 +119,7 @@ first suspension to close boot/shutdown reentrancy. Public
 after `boot()` / `shutdown()` returns or throws. Internal `.booting` and
 `.shuttingDown` transitions are therefore not a public real-time progress feed.
 
-The runtime uses a process ownership gate, lifecycle state transitions before suspension, one in-flight command, bounded native read waits, and independent Swift result limits. The deadline is created only after synchronous `spawn` and `closeStdin` return. In the pinned v0.3.3 native transport, control writes, terminate, and close may still block, and the unread session inbox has no independent ceiling. `execute()` therefore has neither an end-to-end hard time bound nor complete host-process memory backpressure. Swift Task cancellation is not yet a complete native kill contract.
+The runtime uses a process ownership gate, lifecycle state transitions before suspension, one in-flight command, bounded native read waits, and independent Swift result limits. After a session is spawned, pre-exit stdin/read/timeout/overflow failures request termination and require an authoritative `EXITED` event before another command is admitted; otherwise the process gate fails closed and a host restart is required. A negative synthetic exit from pinned supervisor rejection before guest creation is instead surfaced as a provenance-preserving recoverable error. The deadline is created only after synchronous `spawn` and `closeStdin` return. In the pinned v0.3.3 native transport, control writes, terminate, and close may still block, and the unread session inbox has no independent ceiling. `execute()` therefore has neither an end-to-end hard time bound nor complete host-process memory backpressure. Swift Task cancellation is not yet a complete native kill contract.
 
 ## Lifecycle
 
@@ -160,13 +160,15 @@ The archive contains a top-level `fs/` directory, but the installer promotes
 that directory itself. The final `rootfs/<version>` therefore directly contains
 `meta.db`, `data/`, and `.pocketroot-rootfs.json`, with no extra `fs/` layer.
 
-After validation, a durable journal protects a multi-step sequence of
+After validation, an on-disk journal protects a multi-step sequence of
 same-volume renames. Each rename and JSON record write is atomic on its own,
 but the replacement as a whole is not one atomic operation; it can roll back
 on failure and recover after interruption. The journal stores no phase. It
 stores the expected record, whether a previous install existed, and the prior
 `current.json` bytes; recovery infers commit or rollback from an
 expected-final match, backup presence, and the recorded prior-install facts.
+The implementation does not explicitly `fsync` files or directories, so this
+recovery design does not promise durability across sudden power loss.
 
 Reuse requires a valid version-directory layout and a matching in-directory
 installation record. A missing or mismatched `current.json` does not block

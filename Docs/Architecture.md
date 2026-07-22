@@ -97,7 +97,7 @@ flowchart TB
 - 受限 POSIX ustar 解包；
 - fakefs 布局校验；
 - 版本化安装、复用、损坏替换；
-- 持久化 promotion transaction、rollback 和中断恢复。
+- 文件型 promotion transaction、rollback 和中断恢复。
 
 该模块不下载 RootFS。`downloadURL` 是供应链元数据。详细不变量见 [RootFS 安全方案](RootFS.md)。
 
@@ -227,6 +227,7 @@ IshEmbed 暴露同步、进程级 API。adapter 使用：
 - `commandInFlight`：同一 runtime 只允许一个 one-shot；
 - bounded poll：native read 最长约 250 ms 后回到 deadline 检查；
 - stdout/stderr limits：超限终止 session。
+- 退出确认：session 建立后的 stdin/read/timeout/超限错误先终止并确认可信 `EXITED`；无法确认时失败关闭整个进程 gate。固定 supervisor 在创建 guest 前拒绝命令时返回的负数合成 exit 作为保留来源的可恢复错误处理。
 
 这些机制避免并发 boot、命令越过 shutdown，并限制 session 建立后 event-read loop 的等待和 Swift 已收集结果的大小。deadline 在同步 `spawn` 与 `closeStdin` 返回后才创建；当前固定 v0.3.3 native transport 的 control write、terminate、close 仍可能阻塞，未读 session inbox 也没有独立容量上限。因此当前不能宣称 `execute()` 具有端到端硬时间界限或整个宿主进程具备完整内存背压。Swift Task cancellation 也尚未成为完整 native kill 契约。
 
@@ -264,7 +265,7 @@ applicationSupportURL/
 └── rootfs/
     ├── current.json
     ├── .installing-<uuid>/              # 临时、私有、同卷
-    ├── .replacement-transaction/        # 替换中断时的持久化恢复区
+    ├── .replacement-transaction/        # 替换中断时的文件型恢复区
     └── <manifest-version>/
         ├── .pocketroot-rootfs.json
         ├── meta.db

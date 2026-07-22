@@ -493,7 +493,7 @@ public actor PocketRootRootFSInstaller {
             isDirectory: false
         )
         // The transaction directory is created before its journal and no
-        // destructive rename happens before the journal is durable. A
+        // destructive rename happens before the journal file is written. A
         // journal-less directory is therefore either pre-transaction debris
         // or post-commit cleanup debris.
         guard itemExists(at: journalURL) else {

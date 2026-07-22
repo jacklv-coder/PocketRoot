@@ -67,7 +67,7 @@ A failed candidate intentionally preserves the old installation. Do not manually
 
 ## Invalid timeout or partial timeout output
 
-Timeout must be positive and no longer than 24 hours. Positive sub-millisecond values become 1 ms. It starts constraining the event-read loop only after synchronous `spawn` and `closeStdin` return. In pinned v0.3.3, control writes, terminate, and close may still block, so it is not an end-to-end watchdog for `execute()`. A timed-out result can contain partial collected output; check `timedOut` first without assuming every native operation had the same deadline.
+Timeout must be positive and no longer than 24 hours. Positive sub-millisecond values become 1 ms. It starts constraining the event-read loop only after synchronous `spawn` and `closeStdin` return. In pinned v0.3.3, control writes, terminate, and close may still block, so it is not an end-to-end watchdog for `execute()`. A timed-out result is returned only after an authoritative guest `EXITED` and can contain partial collected output; failed confirmation fails the runtime closed. Check `timedOut` first without assuming every native operation had the same deadline.
 
 ## Output limit
 

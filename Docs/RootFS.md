@@ -135,7 +135,7 @@ let installation = try await installer.prepareArchive(
 | gzip 解压失败留下半文件 | streaming error cleanup |
 | tar 绝对路径或 `..` 逃逸 | UTF-8 相对路径规范化与 destination containment |
 | symlink/hardlink 绕过目标目录 | 拒绝 link 和特殊 entry type |
-| 重复文件覆盖 | 拒绝 duplicate path |
+| 重复文件或目录覆盖 | 拒绝映射到同一路径或同一文件系统目标的重复 entry |
 | 候选布局不是 iSH fakefs | 要求真实 `fs/meta.db` 与 `fs/data/` |
 | 替换中途失败破坏旧版本 | persistent transaction + rollback |
 | 进程在 rename 中途退出 | 下次准备时读取 journal，根据 final 是否匹配预期、backup 是否存在以及旧安装事实完成 commit 或恢复 |
@@ -162,7 +162,7 @@ flowchart TD
     F --> G["再次校验 snapshot"]
     G --> H["验证 fs/meta.db + fs/data"]
     H --> I["写安装记录"]
-    I --> J["持久化事务 + 同卷 rename"]
+    I --> J["文件型事务 + 同卷 rename"]
     J --> K["更新 current.json"]
 ```
 
@@ -250,12 +250,16 @@ replacement journal **不记录 phase**。它保存目标版本、预期安装�
 - journal 声明曾有旧安装但没有 backup → 第一次 rename 尚未完成，要求旧安装仍在 final，再恢复旧 current 数据；
 - 原本没有旧安装且 final 无效 → 移除残留 final，并恢复或删除 current record。
 
-transaction 目录存在但 journal 尚未持久化时，不会有破坏性 rename；这种无 journal 的残留
+transaction 目录存在但 journal 文件尚未写入时，不会有破坏性 rename；这种无 journal 的残留
 可直接清理。恢复完成后再清理 `previous/`、journal 与 transaction 目录。
 
 恢复操作本身也要求路径保持在 installation root 内，并避免跟随 symlink。各次同卷 rename
 和 JSON 原子写入分别具备原子性，但多步 promotion 整体不是单次原子替换；安全性来自先写
 journal、失败回滚与下次准备时的状态推断恢复。
+
+当前实现使用 `.atomic` 写单个 JSON 记录和同卷 rename，但没有显式对文件或目录调用
+`fsync`。因此这里的“中断恢复”覆盖普通进程终止后仍可读取的文件系统状态，不承诺突然掉电
+时所有写入都已经持久化；掉电/ENOSPC fault matrix 仍是发布前门禁。
 
 ## 9. 测试边界
 

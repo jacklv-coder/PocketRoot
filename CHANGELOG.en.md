@@ -39,6 +39,9 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 - Documentation now states that the default shared system is a placeholder and applications must retain the system returned by composition.
 - Pinned native shutdown is explicitly process-terminal and not routine UI cleanup.
 - The merged native ABI candidate is recorded without changing PocketRoot's current revision or binary behavior because no pinnable artifact exists yet.
+- One-shot commands reject NUL-containing C-string inputs and ambiguous environment keys before entering the native driver.
+- Pre-exit post-spawn failures now require an authoritative guest `EXITED` before recovery; negative synthetic supervisor states preserve error provenance, while pinned transport's ambiguous `(17, 0)` marker explicitly cleans up and fails the runtime closed.
+- The ustar extractor now also rejects duplicate directory entries and filesystem-equivalent directory targets, and RootFS journal documentation no longer promises power-loss durability without explicit `fsync`.
 
 ### Security
 

@@ -175,6 +175,8 @@ public struct PocketRootGzipTarExtractor: Sendable, Equatable {
         var entryCount = 0
         var expandedFileByteCount: UInt64 = 0
         var directoryModes: [(URL, Int)] = []
+        var materializedPaths = Set<String>()
+        var materializedDirectoryIdentities = Set<FileIdentity>()
 
         while true {
             guard let header = try readBlockAllowingEndOfFile(from: input) else {
@@ -216,6 +218,13 @@ public struct PocketRootGzipTarExtractor: Sendable, Equatable {
                 try discardPadding(afterPayloadSize: entry.size, from: input)
                 continue
             }
+            if entry.type != .extendedHeader,
+               !materializedPaths.insert(entryURL.path).inserted
+            {
+                throw PocketRootArchiveExtractionError.fileSystemFailure(
+                    "A duplicate entry exists at \(entryURL.path)."
+                )
+            }
             switch entry.type {
             case .extendedHeader:
                 // The audited archive uses per-entry PAX records only for
@@ -239,6 +248,12 @@ public struct PocketRootGzipTarExtractor: Sendable, Equatable {
                     try FileManager.default.createDirectory(
                         at: entryURL,
                         withIntermediateDirectories: true
+                    )
+                }
+                let identity = try fileIdentity(at: entryURL)
+                guard materializedDirectoryIdentities.insert(identity).inserted else {
+                    throw PocketRootArchiveExtractionError.fileSystemFailure(
+                        "A duplicate directory target exists at \(entryURL.path)."
                     )
                 }
                 directoryModes.append((entryURL, entry.mode))
@@ -498,6 +513,34 @@ public struct PocketRootGzipTarExtractor: Sendable, Equatable {
             )
         }
     }
+
+    private func fileIdentity(at url: URL) throws -> FileIdentity {
+        do {
+            let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+            guard let device = attributes[.systemNumber] as? NSNumber,
+                  let inode = attributes[.systemFileNumber] as? NSNumber
+            else {
+                throw PocketRootArchiveExtractionError.fileSystemFailure(
+                    "Unable to identify the directory at \(url.path)."
+                )
+            }
+            return FileIdentity(
+                device: device.uint64Value,
+                inode: inode.uint64Value
+            )
+        } catch let error as PocketRootArchiveExtractionError {
+            throw error
+        } catch {
+            throw PocketRootArchiveExtractionError.fileSystemFailure(
+                error.localizedDescription
+            )
+        }
+    }
+}
+
+private struct FileIdentity: Hashable {
+    let device: UInt64
+    let inode: UInt64
 }
 
 private struct TarEntry {

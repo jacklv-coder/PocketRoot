@@ -51,6 +51,9 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
 - 明确默认 `PocketRootSystem.shared` 是 placeholder，真实 system 必须保存 `prepareSystem` 返回实例。
 - 明确固定 native `shutdown()` 为进程终止式行为，不应作为普通 UI cleanup。
 - 记录已合并但尚无可固定制品的 native ABI 候选；PocketRoot 当前 revision 与二进制行为保持不变。
+- 一次性命令在进入 native driver 前拒绝含 NUL 的 C 字符串输入和歧义 environment key。
+- session 建立后的 pre-exit 错误只有在观察到可信 guest `EXITED` 后才可恢复；supervisor 的负数合成状态保留错误来源，固定 transport 的 `(17, 0)` 歧义 marker 会先显式清理再失败关闭并要求重启宿主。
+- ustar extractor 现在也拒绝重复目录项和文件系统等价目录目标；RootFS journal 文档明确不承诺未显式 `fsync` 的掉电持久性。
 
 ### Security
 

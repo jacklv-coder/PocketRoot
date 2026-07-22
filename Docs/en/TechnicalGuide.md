@@ -27,7 +27,7 @@ It is not:
 
 The real iSH path remains experimental. The default `PocketRoot` product neither links iSH nor bundles or downloads a RootFS.
 
-In this guide, a command is currently “bounded” only in that the event-read loop uses a deadline after session establishment and Swift applies stdout/stderr budgets to results already consumed. The deadline does not cover the earlier synchronous `spawn` / `closeStdin`; control writes, terminate, and close may still block in pinned v0.3.3, whose native session backlog also has no independent ceiling. `execute()` therefore has no end-to-end hard time bound or complete host-process memory bound yet. A later native-package update and sustained-load tests must close those gaps.
+In this guide, a command is currently “bounded” only in that the event-read loop uses a deadline after session establishment and Swift applies stdout/stderr budgets to results already consumed. Recovery after timeout or overflow also requires an observed `EXITED` event; otherwise the runtime fails closed and requires a host restart. The deadline does not cover the earlier synchronous `spawn` / `closeStdin`; control writes, terminate, and close may still block in pinned v0.3.3, whose native session backlog also has no independent ceiling. `execute()` therefore has no end-to-end hard time bound or complete host-process memory bound yet. A later native-package update and sustained-load tests must close those gaps.
 
 ## 2. Three repositories and one external asset
 
@@ -193,7 +193,7 @@ A one-shot command currently becomes:
 - no second one-shot command is in flight;
 - this system still owns the global iSH instance.
 
-The driver first completes synchronous `spawn` and `closeStdin`, then creates the deadline and reads events incrementally. At the read-loop deadline it attempts to terminate the session. It also terminates when the next chunk would make the accumulated result exceed the product stdout/stderr budget; a result exactly equal to the limit is accepted. This mechanism bounds only the post-establishment read phase and consumed result buffers. In the pinned transport, spawn/control/terminate/close may still block, and the unread inbox can grow when a producer outpaces the consumer. Neither the request timeout nor product budgets are end-to-end time or memory bounds for `execute()`.
+The driver completes synchronous `spawn` and `closeStdin`, then creates the deadline and reads events incrementally. After spawn, close-stdin failures, non-timeout read failures, deadline expiry, and output overflow all request termination and confirm exit; a result exactly equal to a stream limit is accepted. Pre-exit failures must observe an authoritative `EXITED` before returning recoverably. Pinned supervisor rejection before guest creation is folded into a negative synthetic exit and preserved as a recoverable supervisor error. Pinned v0.3.3 also synthesizes `(exitCode: 17, signal: 0)` for transport broken pipe; that ambiguous pair explicitly requests termination and attempts another confirmation before the whole runtime fails closed. This mechanism bounds only the post-establishment read phase and consumed result buffers. In the pinned transport, spawn/control/terminate/close may still block, and the unread inbox can grow when a producer outpaces the consumer. Neither the request timeout nor product budgets are end-to-end time or memory bounds for `execute()`.
 
 ### 5.4 `shutdown`
 

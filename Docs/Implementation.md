@@ -89,7 +89,7 @@ flowchart TD
 1. 验证 base URL 是本地 file URL；
 2. 规范化 manifest version，拒绝不安全目录名；
 3. 创建真实、非符号链接的 `rootfs/` 目录；
-4. 检查持久化 replacement journal；
+4. 检查文件型 replacement journal；
 5. 完成或回滚上一次中断的 rename；
 6. 清理确认不再需要的 stale staging。
 
@@ -124,7 +124,7 @@ tar：
 - 验证 header checksum；
 - 只接受 UTF-8 相对路径；
 - 拒绝绝对路径、`.`、`..` 和路径逃逸；
-- 拒绝重复文件；
+- 拒绝映射到同一路径或同一文件系统目标的重复文件和目录；
 - 接受普通文件、目录和被忽略内容的 PAX 扩展记录；
 - 拒绝 symlink、hardlink、设备节点和其他特殊类型；
 - 默认最多 100,000 条目；
@@ -214,6 +214,7 @@ adapter 要求：
 - timeout > 0 且 ≤ 86,400 秒；
 - 有效但小于 1 ms 的 timeout 提升到 1 ms；
 - stdout/stderr limits 都 > 0；
+- command、cwd、environment key/value 都不含 NUL；environment key 还必须非空且不含 `=`，避免 C 字符串和 `key=value` 编码发生静默截断或歧义；
 - 没有另一个 `commandInFlight`；
 - 当前 system 仍拥有 process gate。
 
@@ -238,11 +239,11 @@ env = nil or request.environment
 - stdout event → 检查累计 stdout limit 后 append；
 - stderr event → 检查累计 stderr limit 后 append；
 - timeout read error → 继续检查 deadline；
-- exited event → 返回 exit code、signal 和 buffers；
-- deadline 到期 → 立即 terminate session，返回 `timedOut = true`；
-- stream 超限 → terminate session，抛 typed output-limit error。
+- exited event → 校验来源后处理：非负 guest wait status 返回结果；负数是 supervisor 在创建 guest 前拒绝 spawn 的合成状态，抛保留来源的可恢复错误；固定 v0.3.3 的 `(exitCode: 17, signal: 0)` 同时可能表示 transport broken pipe，因此先显式请求终止并尝试二次确认，最终保守失败关闭；
+- deadline 到期 → terminate session，观察到 `EXITED` 后返回 `timedOut = true`；
+- stream 超限 → terminate session，观察到 `EXITED` 后抛 typed output-limit error。
 
-`defer` 最终调用 `session.close()`。超时或超限后，后续命令仍可继续，这是 smoke 的恢复检查之一。但当前固定 transport 的 `terminate` / `close` 也可能受阻塞 control write 影响；上述 deadline 只证明 event-read loop 的观察边界，不证明所有 native control 操作都在请求时间内返回。
+`defer` 最终调用 `session.close()`。session 建立后的 `closeStdin`、非 timeout read、超时和超限等 pre-exit 错误路径都会请求终止；只有明确读到可信 `EXITED`，原错误才可作为可恢复错误返回。唯一不再终止的异常是上述负数 supervisor rejection：固定实现只在 spawn 创建 guest 之前发出该 `ERROR`，并已释放对应 session，因此可以保留来源后恢复。terminate 失败、确认窗口内没有退出事件、读取退出事件失败或读到上述歧义 transport marker 时，runtime 进入 `failed`，进程 gate 永久关闭并要求重启宿主，避免旧 guest 进程与新命令重叠。但当前固定 transport 的 `terminate` / `close` 也可能受阻塞 control write 影响；上述 deadline 只证明 event-read loop 的观察边界，不证明所有 native control 操作都在请求时间内返回。
 
 ## 7. shutdown 实现
 

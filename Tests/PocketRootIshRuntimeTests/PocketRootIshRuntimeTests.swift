@@ -519,6 +519,40 @@ final class PocketRootIshRuntimeTests: XCTestCase {
         }
     }
 
+    func testRuntimeRejectsAmbiguousCStringInputsBeforeCallingDriver() async throws {
+        let rootFSURL = try makeFakeFSFixture()
+        let driver = FakeIshRuntimeDriver()
+        let runtime = IshLinuxRuntime(
+            configuration: .init(rootFSURL: rootFSURL),
+            driver: driver
+        )
+        try await runtime.boot(configuration: PocketRootConfiguration())
+
+        let requests = [
+            PocketRootCommandRequest(command: "printf before\0after"),
+            PocketRootCommandRequest(command: "true", workingDirectory: "/tmp\0/root"),
+            PocketRootCommandRequest(command: "true", environment: ["BAD\0KEY": "value"]),
+            PocketRootCommandRequest(command: "true", environment: ["BAD=KEY": "value"]),
+            PocketRootCommandRequest(command: "true", environment: ["": "value"]),
+            PocketRootCommandRequest(command: "true", environment: ["KEY": "before\0after"]),
+        ]
+
+        for request in requests {
+            do {
+                _ = try await runtime.execute(request)
+                XCTFail("Ambiguous C-string input must be rejected.")
+            } catch let error as PocketRootError {
+                guard case .invalidCommandRequest = error else {
+                    return XCTFail("Unexpected PocketRoot error: \(error)")
+                }
+            }
+        }
+
+        XCTAssertNil(driver.snapshot.commandRequest)
+        let state = await runtime.state
+        XCTAssertEqual(state, .ready)
+    }
+
     func testRuntimeClampsSubMillisecondTimeoutToOneMillisecond() async throws {
         let rootFSURL = try makeFakeFSFixture()
         let driver = FakeIshRuntimeDriver()
@@ -702,6 +736,134 @@ final class PocketRootIshRuntimeTests: XCTestCase {
                 .commandOutputLimitExceeded(stream: "stdout", limit: 64)
             )
         }
+    }
+
+    func testSupervisorCommandRejectionPreservesProvenanceAndReadyState() async throws {
+        let rootFSURL = try makeFakeFSFixture()
+        let driver = FakeIshRuntimeDriver(
+            executeError: IshRuntimeDriverError.supervisorCommandRejected(
+                syntheticExitCode: -12
+            )
+        )
+        let runtime = IshLinuxRuntime(
+            configuration: .init(rootFSURL: rootFSURL),
+            driver: driver
+        )
+        try await runtime.boot(configuration: PocketRootConfiguration())
+
+        do {
+            _ = try await runtime.execute(PocketRootCommandRequest(command: "true"))
+            XCTFail("A supervisor ERROR must not appear as a guest exit result.")
+        } catch let error as PocketRootError {
+            XCTAssertEqual(
+                error,
+                .runtimeFailure(
+                    "The guest supervisor rejected the command before execution "
+                        + "(synthetic exit code -12)."
+                )
+            )
+        }
+
+        let state = await runtime.state
+        XCTAssertEqual(state, .ready)
+    }
+
+    func testUnconfirmedTerminationFailsClosedAndRequiresRestart() async throws {
+        let rootFSURL = try makeFakeFSFixture()
+        let secondRootFSURL = try makeFakeFSFixture()
+        let processGate = IshProcessGate()
+        let executor = BlockingIshExecutor(label: "PocketRootIshRuntimeTests.failClosed")
+        let driver = FakeIshRuntimeDriver(
+            executeError: IshRuntimeDriverError.sessionTerminationUnconfirmed(
+                "synthetic missing EXITED event"
+            )
+        )
+        let runtime = IshLinuxRuntime(
+            configuration: .init(rootFSURL: rootFSURL),
+            driver: driver,
+            executor: executor,
+            processGate: processGate
+        )
+        let secondRuntime = IshLinuxRuntime(
+            configuration: .init(rootFSURL: secondRootFSURL),
+            driver: FakeIshRuntimeDriver(),
+            executor: executor,
+            processGate: processGate
+        )
+        try await runtime.boot(configuration: PocketRootConfiguration())
+
+        do {
+            _ = try await runtime.execute(PocketRootCommandRequest(command: "sleep 30"))
+            XCTFail("Unconfirmed process exit must fail closed.")
+        } catch let error as PocketRootError {
+            XCTAssertEqual(
+                error,
+                .runtimeFailure(
+                    "Guest process termination could not be confirmed: "
+                        + "synthetic missing EXITED event"
+                )
+            )
+        }
+
+        let state = await runtime.state
+        XCTAssertEqual(
+            state,
+            .failed(
+                "Guest process termination could not be confirmed: "
+                    + "synthetic missing EXITED event"
+            )
+        )
+        do {
+            try await runtime.boot(configuration: PocketRootConfiguration())
+            XCTFail("A runtime with an unconfirmed guest process must require restart.")
+        } catch let error as PocketRootError {
+            XCTAssertEqual(error, .restartRequired)
+        }
+        do {
+            try await secondRuntime.boot(configuration: PocketRootConfiguration())
+            XCTFail("The shared process gate must reject a second runtime after fail-close.")
+        } catch let error as PocketRootError {
+            XCTAssertEqual(error, .restartRequired)
+        }
+    }
+
+    func testTransportPolicyRejectsAmbiguousBrokenPipeExitMarker() throws {
+        XCTAssertThrowsError(
+            try IshRuntimeTransportPolicy.validateAuthoritativeExit(
+                exitCode: 17,
+                signal: 0
+            )
+        ) { error in
+            XCTAssertEqual(
+                error as? IshRuntimeDriverError,
+                .ambiguousTransportExitMarker
+            )
+        }
+
+        XCTAssertThrowsError(
+            try IshRuntimeTransportPolicy.validateAuthoritativeExit(
+                exitCode: -12,
+                signal: 0
+            )
+        ) { error in
+            XCTAssertEqual(
+                error as? IshRuntimeDriverError,
+                .supervisorCommandRejected(syntheticExitCode: -12)
+            )
+        }
+
+        XCTAssertNoThrow(
+            try IshRuntimeTransportPolicy.validateAuthoritativeExit(
+                exitCode: 0,
+                signal: 0
+            )
+        )
+        XCTAssertNoThrow(
+            try IshRuntimeTransportPolicy.validateAuthoritativeExit(
+                exitCode: 17,
+                signal: 15
+            )
+        )
     }
 
     func testBootRejectsSymlinkedMetadataBeforeConsumingProcessSlot() async throws {

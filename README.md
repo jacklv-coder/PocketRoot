@@ -37,11 +37,11 @@ flowchart LR
 
 - RootFS 二进制不提交到仓库，库本身不执行网络下载。
 - 上游源码、XCFramework 和 RootFS 都固定到不可变 revision 或 SHA-256。
-- RootFS 在私有、同卷 staging 中解包；校验通过后，通过持久化 journal 保护的多步同卷 rename 完成可恢复、可回滚的 promotion。每次 rename 和记录写入各自具有原子性，但整个替换流程不是一次整体原子操作。
+- RootFS 在私有、同卷 staging 中解包；校验通过后，通过文件型 journal 保护的多步同卷 rename 完成可恢复、可回滚的 promotion。每次 rename 和记录写入各自具有原子性，但整个替换流程不是一次整体原子操作；当前未显式 `fsync` 文件和目录，因此不承诺突然掉电时的持久性。
 - IshEmbed 是进程级单例；PocketRoot 只允许一个原生运行时所有者和一个在途命令。
 - 同步原生调用在串行阻塞队列中执行，不阻塞主线程和 Swift cooperative executor。
 - `boot()` 只有在固定 post-boot 命令验证 guest 架构、Alpine 身份和命令上下文后才报告 `ready`；默认 v0.3.3 组合还严格要求 Alpine `3.19.1`。
-- session 建立后的 event-read loop 使用 deadline，Swift 已收集的 stdout/stderr 有产品配额；当前固定原生 transport 的 spawn/control/terminate/close 仍可能阻塞，未读 inbox 也无独立上限，因此端到端时间界限和完整内存背压仍是开放门禁。
+- session 建立后的 event-read loop 使用 deadline，Swift 已收集的 stdout/stderr 有产品配额；pre-exit 错误必须先确认可信 `EXITED` 才允许继续执行，否则 runtime 失败关闭并要求重启宿主。supervisor 在 guest 创建前拒绝命令的负数合成状态会保留为可恢复错误；固定 v0.3.3 的 `(exitCode: 17, signal: 0)` 与 transport broken pipe 有歧义，因此显式清理后失败关闭。当前原生 transport 的 spawn/control/terminate/close 仍可能阻塞，未读 inbox 也无独立上限，因此端到端时间界限和完整内存背压仍是开放门禁。
 
 完整实现见[架构说明](Docs/Architecture.md)、[实现原理](Docs/Implementation.md)和 [RootFS 安全方案](Docs/RootFS.md)。
 

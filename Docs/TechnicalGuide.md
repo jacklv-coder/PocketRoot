@@ -27,7 +27,7 @@ PocketRoot 是一个最低支持 iOS 18 的 Swift 模块化工程：它在 iOS �
 
 当前真实 iSH 路径仍是实验能力。默认 `PocketRoot` 产品不会链接 iSH，也不会打包或下载 RootFS。
 
-本文所说的命令“有界”目前只指 session 建立后的 event-read loop 使用 deadline，且 Swift 已收集结果有 stdout/stderr 配额。deadline 不覆盖此前同步 `spawn` / `closeStdin`，当前固定 v0.3.3 的 control write、terminate 和 close 仍可能阻塞，native session backlog 也无独立上限。因此 `execute()` 还没有端到端硬时间界限，整个宿主进程也没有完整内存硬上限；这些缺口必须由后续原生包更新和持续负载测试关闭。
+本文所说的命令“有界”目前只指 session 建立后的 event-read loop 使用 deadline，且 Swift 已收集结果有 stdout/stderr 配额。超时或超限后的恢复还要求明确观察到 `EXITED`；无法确认时 runtime 会失败关闭并要求重启宿主。deadline 不覆盖此前同步 `spawn` / `closeStdin`，当前固定 v0.3.3 的 control write、terminate 和 close 仍可能阻塞，native session backlog 也无独立上限。因此 `execute()` 还没有端到端硬时间界限，整个宿主进程也没有完整内存硬上限；这些缺口必须由后续原生包更新和持续负载测试关闭。
 
 ## 2. 三个仓库和一个外部资产
 
@@ -193,7 +193,7 @@ sequenceDiagram
 - 没有第二个一次性命令在途；
 - 当前 system 仍拥有全局 iSH 实例。
 
-driver 先同步完成 `spawn` 和 `closeStdin`，之后才创建 deadline 并分段读取事件。read loop 到达 deadline 时尝试终止 session；下一块数据会使累计结果超过产品 stdout/stderr 配额时，也会终止并停止扩充 Swift `Data`，恰好等于 limit 的结果仍被接受。这个机制限制的是 session 建立后的读取阶段和已消费结果缓冲；当前固定 transport 的 spawn/control/terminate/close 仍可能阻塞，未读 inbox 也可能在 producer 快于 consumer 时增长，所以不能把请求 timeout 或产品配额表述成 `execute()` 的端到端时间/内存硬界限。
+driver 先同步完成 `spawn` 和 `closeStdin`，之后才创建 deadline 并分段读取事件。session 建立后的关闭 stdin、非 timeout read、deadline 和输出超限错误都会请求终止并确认退出；下一块数据会使累计结果超过产品 stdout/stderr 配额时停止扩充 Swift `Data`，恰好等于 limit 的结果仍被接受。pre-exit 错误必须读到可信 `EXITED` 才作为可恢复结果返回。固定 supervisor 在创建 guest 前拒绝 spawn 时会把 `ERROR` 合成为负数 exit，PocketRoot 将其保留为可恢复 supervisor error；固定 v0.3.3 transport 的 broken pipe 则会合成为同样的 `(exitCode: 17, signal: 0)` 事件，所以该歧义组合显式请求终止并尝试二次确认后保守失败关闭。这个机制限制的是 session 建立后的读取阶段和已消费结果缓冲；当前固定 transport 的 spawn/control/terminate/close 仍可能阻塞，未读 inbox 也可能在 producer 快于 consumer 时增长，所以不能把请求 timeout 或产品配额表述成 `execute()` 的端到端时间/内存硬界限。
 
 ### 5.4 `shutdown`
 

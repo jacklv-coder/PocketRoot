@@ -68,7 +68,7 @@ Use `PocketRootIshSystemFactory.prepareSystem` for composition, or use `PocketRo
 | Partial gzip output | Streaming failure cleanup |
 | Tar traversal | UTF-8 relative-path validation and destination containment |
 | Links and special nodes | Reject unsupported entry types |
-| Duplicate overwrite | Reject duplicate paths |
+| Duplicate file or directory overwrite | Reject entries that map to the same path or filesystem target |
 | Invalid fakefs shape | Require real `fs/meta.db` and `fs/data/` |
 | Failed replacement | Persistent transaction and rollback |
 | Process interruption | Infer commit or restore from expected-final match, backup presence, and prior-install facts |
@@ -92,7 +92,7 @@ flowchart TD
     J --> K["Update current.json"]
 ```
 
-The ustar subset accepts regular files, directories, and ignorable PAX content. It rejects links, devices, FIFO, absolute/traversal paths, duplicates, bad checksums, non-UTF-8 names, and exceeded bounds.
+The ustar subset accepts regular files, directories, and ignorable PAX content. It rejects links, devices, FIFO, absolute/traversal paths, filesystem-equivalent duplicate file/directory targets, bad checksums, non-UTF-8 names, and exceeded bounds.
 
 Archive authenticity comes from the fixed digest. Layout validation does not rehash every guest file or run SQLite integrity checks.
 
@@ -140,11 +140,17 @@ and what the journal records about a prior installation:
 - when no old install existed and final is invalid, recovery removes the
   residue and restores or removes current.
 
-A transaction directory without a durable journal precedes every destructive
+A transaction directory without its journal file precedes every destructive
 rename and is safe to discard. Individual same-volume renames and atomic JSON
 writes are atomic on their own, but the multi-step promotion is not one atomic
-replacement; safety comes from the durable journal, rollback, and inferred
+replacement; safety comes from the on-disk journal, rollback, and inferred
 recovery.
+
+The implementation uses atomic single-record writes and same-volume renames,
+but does not explicitly `fsync` files or directories. Recovery therefore
+covers filesystem state readable after ordinary process interruption; it does
+not promise that every write survives sudden power loss. Power-loss and ENOSPC
+fault matrices remain release gates.
 
 ## Update rule
 

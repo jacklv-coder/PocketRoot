@@ -130,6 +130,25 @@ package actor IshLinuxRuntime: LinuxRuntime {
                 "runtime output limits must be greater than zero."
             )
         }
+        guard !request.command.contains("\0") else {
+            throw PocketRootError.invalidCommandRequest(
+                "command must not contain a NUL byte."
+            )
+        }
+        guard !request.workingDirectory.contains("\0") else {
+            throw PocketRootError.invalidCommandRequest(
+                "working directory must not contain a NUL byte."
+            )
+        }
+        guard request.environment.allSatisfy({ key, value in
+            !key.isEmpty && !key.contains("=") && !key.contains("\0")
+                && !value.contains("\0")
+        }) else {
+            throw PocketRootError.invalidCommandRequest(
+                "environment keys must be nonempty and contain neither '=' nor NUL; "
+                    + "environment values must not contain NUL."
+            )
+        }
 
         guard !commandInFlight else {
             throw PocketRootError.runtimeFailure(
@@ -165,6 +184,10 @@ package actor IshLinuxRuntime: LinuxRuntime {
                 timedOut: result.timedOut
             )
         } catch {
+            if case IshRuntimeDriverError.sessionTerminationUnconfirmed = error {
+                await processGate.markTerminated(for: ownerID)
+                runtimeState = .failed(error.localizedDescription)
+            }
             throw map(error)
         }
     }

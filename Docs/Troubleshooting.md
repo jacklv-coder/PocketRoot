@@ -205,7 +205,7 @@ PocketRootCommandRequest(
 
 ## 命令超时后仍有部分输出
 
-这是设计行为。driver 在 read-loop deadline 到期时尝试终止 session，并在 native control 操作成功返回后给出 `timedOut == true` 以及此前已经接收的结果。应用必须先检查 `timedOut`，不能只看 stdout；也不能据此推断整个 native 调用一定受相同 deadline 约束。
+这是设计行为。driver 在 read-loop deadline 到期时终止 session，并在观察到可信 guest `EXITED` 后给出 `timedOut == true` 以及此前已经接收的结果；无法确认时会失败关闭并要求重启宿主。应用必须先检查 `timedOut`，不能只看 stdout；也不能据此推断整个 native 调用一定受相同 deadline 约束。
 
 ## `commandOutputLimitExceeded`
 

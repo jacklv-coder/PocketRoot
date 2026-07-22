@@ -45,12 +45,12 @@ The returned instance never replaces `PocketRootSystem.shared`.
 4. Copy into private same-volume staging with exclusive creation, user-only permissions, cancellation checks, and a compressed-byte cap.
 5. Verify size and SHA-256 on that private snapshot.
 6. Stream gzip through zlib with an expanded-byte cap.
-7. Parse constrained POSIX ustar: checksums, UTF-8 relative paths, entry count and payload bounds; reject traversal, duplicates, links, and special nodes.
+7. Parse constrained POSIX ustar: checksums, UTF-8 relative paths, entry count and payload bounds; reject traversal, filesystem-equivalent duplicate file/directory targets, links, and special nodes.
 8. Reverify the archive snapshot and validate a real `fs/meta.db` file and `fs/data/` directory.
 9. Write `.pocketroot-rootfs.json` into `extracted/fs`, then promote that
    directory itself to `rootfs/<version>`. The final directory directly
    contains the record, `meta.db`, and `data/`; it has no extra `fs/` layer.
-10. Before any destructive rename, atomically persist a journal containing the
+10. Before any destructive rename, atomically write an on-disk journal containing the
     target version, expected record, whether a previous install existed, and
     the prior `current.json` bytes. Move an old final to `previous/`, move the
     candidate to final, then atomically write `current.json`.
@@ -78,7 +78,7 @@ The direct runtime default requires `aarch64` and Alpine. With no explicit healt
 
 ## One-shot execution
 
-Requests require ready state, positive timeout no longer than 24 hours, positive stream limits, no active command, and current process ownership. Positive sub-millisecond timeout becomes 1 ms.
+Requests require ready state, positive timeout no longer than 24 hours, positive stream limits, no active command, and current process ownership. Positive sub-millisecond timeout becomes 1 ms. Command, cwd, and environment keys/values must contain no NUL; environment keys must also be nonempty and contain no `=` so C-string and `key=value` encoding cannot truncate or become ambiguous.
 
 The adapter spawns:
 
@@ -86,7 +86,7 @@ The adapter spawns:
 ["/bin/sh", "-lc", request.command]
 ```
 
-It closes stdin and polls events with bounded read waits. The deadline is created only after synchronous `spawn` and `closeStdin` return. stdout/stderr are accumulated under independent caps. Deadline expiry attempts to terminate the session and returns timeout with partial output; cap overflow terminates and throws a typed error. Exit events map exit code and signal, and the session is always closed. In the pinned v0.3.3 transport, spawn/control/terminate/close can still block, so this deadline is a read-loop boundary rather than an end-to-end time bound for `execute()`.
+It closes stdin and polls events with bounded read waits. The deadline is created only after synchronous `spawn` and `closeStdin` return. stdout/stderr are accumulated under independent caps. After the session is spawned, close-stdin failures, non-timeout read failures, deadline expiry, and cap overflow all request termination and drain events until an authoritative `EXITED`; only then can the original error return as recoverable. Pinned v0.3.3 also folds a supervisor `ERROR` issued before guest creation into `EXITED(-errno, 0)`; negative synthetic exits are therefore surfaced as provenance-preserving recoverable errors rather than guest results. Its reader synthesizes `(exitCode: 17, signal: 0)` for a broken transport; that ambiguous pair explicitly requests termination and attempts another confirmation, then fails closed because it cannot establish a trustworthy guest exit. If termination or exit confirmation fails, the runtime permanently terminates its process gate and requires a host restart. Other exit events map exit code and signal, and the session is always closed. In the pinned v0.3.3 transport, spawn/control/terminate/close can still block, so this deadline is a read-loop boundary rather than an end-to-end time bound for `execute()`.
 
 The command is a shell string; quoting and injection policy belong to the caller.
 

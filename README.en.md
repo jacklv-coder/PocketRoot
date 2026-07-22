@@ -37,11 +37,11 @@ Design principles:
 
 - The RootFS payload is not committed; the library performs no network download.
 - Source, XCFramework, and RootFS inputs are pinned by immutable revision or digest.
-- Extraction occurs in private same-volume staging. A durable journal protects the multi-step, same-volume rename promotion so it can recover or roll back. Each rename and record write is atomic on its own; the replacement sequence as a whole is not one atomic operation.
+- Extraction occurs in private same-volume staging. An on-disk journal protects the multi-step, same-volume rename promotion so it can recover or roll back. Each rename and record write is atomic on its own, but the sequence is not one atomic operation. Files and directories are not explicitly `fsync`ed, so sudden-power-loss durability is not promised.
 - IshEmbed is process-global: one native owner and one in-flight command.
 - Synchronous native work runs on a serial blocking executor away from the main and Swift cooperative executors.
 - `boot()` reports `ready` only after a fixed post-boot command verifies guest architecture, Alpine identity, and command context. The default v0.3.3 composition also requires Alpine `3.19.1` exactly.
-- The event-read loop uses a deadline after session establishment, and Swift applies product budgets to collected stdout/stderr. In the pinned native transport, spawn/control/terminate/close may still block and the unread inbox has no independent ceiling, so end-to-end time bounds and complete memory backpressure remain open gates.
+- The event-read loop uses a deadline after session establishment, and Swift applies product budgets to collected stdout/stderr. Pre-exit failures must confirm an authoritative `EXITED` before another command is admitted; otherwise the runtime fails closed and requires a host restart. Negative synthetic states from supervisor rejection before guest creation remain recoverable provenance-preserving errors. Pinned v0.3.3 makes `(exitCode: 17, signal: 0)` ambiguous with transport broken pipe, so that pair explicitly cleans up and fails closed. Native spawn/control/terminate/close may still block and the unread inbox has no independent ceiling, so end-to-end time bounds and complete memory backpressure remain open gates.
 
 See [Architecture](Docs/en/Architecture.md), [Implementation](Docs/en/Implementation.md), and [RootFS Security](Docs/en/RootFS.md).
 
