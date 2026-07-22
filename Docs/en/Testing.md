@@ -77,6 +77,12 @@ script-created Simulator is deleted on script exit unless
 old smoke App uninstalled before the new one is installed, and retains the new
 App, injected data, and resulting boot state after the script terminates it.
 
+When creating a device, the runner locates the stable
+`com.apple.CoreSimulator.SimRuntime.iOS-18-*` identifier anywhere on the
+matching `simctl list runtimes available` line instead of relying on its field
+position. Fixture regression tests cover standard output, an `(available)`
+suffix, multiple runtimes, and no match.
+
 To safely remove the smoke App and its data from a caller-supplied device, use
 the exact UDID:
 

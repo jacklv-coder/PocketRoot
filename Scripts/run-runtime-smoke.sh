@@ -51,7 +51,10 @@ fi
 echo "$EXPECTED_SHA256  $ARCHIVE_PATH" | shasum -a 256 --check
 
 if [[ -z "$DEVICE_UDID" ]]; then
-    RUNTIME_ID="$(xcrun simctl list runtimes available | awk '/^iOS 18[.]/ { print $NF; exit }')"
+    RUNTIME_ID="$(
+        xcrun simctl list runtimes available \
+          | awk -f "$ROOT_DIR/Scripts/select-ios18-simulator-runtime.awk"
+    )"
     if [[ -z "$RUNTIME_ID" ]]; then
         echo "No available iOS 18 Simulator runtime was found." >&2
         exit 2

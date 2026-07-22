@@ -172,6 +172,10 @@ App，把 archive 注入 Documents，等待 JSON report，并在脚本退出时�
 旧 smoke App、安装新版本；结束时只终止运行中的 App，不卸载新 App、不删除
 注入数据，也不恢复设备原来的开关机状态。
 
+自动创建设备时，脚本从 `simctl list runtimes available` 的整行中识别稳定的
+`com.apple.CoreSimulator.SimRuntime.iOS-18-*` 标识，不依赖其列位置；fixture 回归测试覆盖
+标准输出、带 `(available)` 后缀、多运行时和无匹配四种格式。
+
 要从指定的已有设备中安全清理 smoke App 及其数据，使用精确 UDID：
 
 ```bash

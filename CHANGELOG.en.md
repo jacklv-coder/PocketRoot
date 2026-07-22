@@ -46,6 +46,7 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 - The ustar extractor now records parent directories implicitly created by file/directory entries and rejects later duplicate entries or filesystem-equivalent directory targets; RootFS journal documentation no longer promises power-loss durability without explicit `fsync`.
 - `PocketRootSystem` now refreshes stable public state after lifecycle/command success or failure, immediately publishes `.failed` after fail-close, hides transient lifecycle state from reentrant calls, and generations state refreshes so an older snapshot cannot overwrite a newer failure.
 - Native spike/smoke targets explicitly exclude x86_64 Simulator, and documentation clarifies that `isAvailable` is a post-link probe rather than a substitute for the arm64-only binary's build constraint.
+- The native smoke runner now selects an iOS 18 Simulator by its stable runtime identifier instead of the final `simctl` output field, with fixture regression tests for multiple output formats.
 
 ### Security
 

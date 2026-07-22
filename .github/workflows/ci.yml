@@ -26,6 +26,11 @@ jobs:
       - name: Validate bilingual documentation
         run: ./Scripts/check-docs.sh
 
+      - name: Validate smoke runner scripts
+        run: |
+          bash -n Scripts/run-runtime-smoke.sh Tests/Scripts/RuntimeSmokeScriptTests.sh
+          bash Tests/Scripts/RuntimeSmokeScriptTests.sh
+
       - name: Report Apple toolchain
         run: |
           xcodebuild -version
