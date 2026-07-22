@@ -60,6 +60,7 @@
 - `PocketRootIshRuntime` 与 `PocketRootIshRuntimeIntegration`：实验性、显式启用。
 - RootFS：安全安装机制已完成；二进制未提交、未打包、未由库下载。
 - iOS 18.2 arm64 Simulator：原生 smoke 已通过。
+- 默认 boot identity gate：已验证 `aarch64`、Alpine 身份、可选版本与 guest 工作目录后才 ready。
 - 真机、最低 Xcode 16 原生验证、PTY、软关闭和公开发行：仍未完成或被阻塞。
 
 最新动态状态只在[路线图](Roadmap.md)维护。

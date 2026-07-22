@@ -37,12 +37,13 @@ PocketRoot is not a full iSH app fork or a general virtualization platform. It s
 - Modular Swift Package APIs and a UIKit demonstration shell.
 - Caller-supplied local RootFS archives.
 - iSH boot and bounded one-shot shell commands.
+- A default post-boot guest identity gate.
 - Secure RootFS installation and recovery.
 - Experimental final-link and Simulator smoke validation.
 
 ### Planned
 
-- Post-boot guest health checks.
+- Application-specific guest tool, network, and data health checks.
 - Real runtime injection into the Demo.
 - Interactive `PocketRootSession`, PTY, and SwiftTerm.
 - A soft shutdown or an explicit decision to accept host-process exit.
@@ -83,7 +84,7 @@ Immutable dependency evidence, secure RootFS recovery, arm64 final links, Simula
 
 ### Developer Preview
 
-Proposed exit criteria: signed iPhone/iPad runs, minimum-Xcode native verification, guest health checks, prepared-system Demo injection, minimum viable PTY/SwiftTerm flow, and a decided shutdown contract.
+Proposed exit criteria: signed iPhone/iPad runs, minimum-Xcode native verification, a continuously passing base identity gate plus application health policy, prepared-system Demo injection, minimum viable PTY/SwiftTerm flow, and a decided shutdown contract.
 
 ### Beta / Distribution Candidate
 

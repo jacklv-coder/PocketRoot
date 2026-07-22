@@ -28,8 +28,9 @@ flowchart LR
     B --> C["Versioned fakefs directory"]
     C --> D["PocketRootIshRuntimeIntegration composes a system"]
     D --> E["PocketRootIshRuntime boots IshEmbed"]
-    E --> F["/bin/sh -lc executes a bounded command"]
-    F --> G["exit, signal, stdout, stderr, timeout"]
+    E --> F["Validate aarch64, Alpine identity, and cwd"]
+    F --> G["/bin/sh -lc executes a bounded command"]
+    G --> H["exit, signal, stdout, stderr, timeout"]
 ```
 
 Design principles:
@@ -39,6 +40,7 @@ Design principles:
 - Extraction occurs in private same-volume staging. A durable journal protects the multi-step, same-volume rename promotion so it can recover or roll back. Each rename and record write is atomic on its own; the replacement sequence as a whole is not one atomic operation.
 - IshEmbed is process-global: one native owner and one in-flight command.
 - Synchronous native work runs on a serial blocking executor away from the main and Swift cooperative executors.
+- `boot()` reports `ready` only after a fixed post-boot command verifies guest architecture, Alpine identity, and command context. The default v0.3.3 composition also requires Alpine `3.19.1` exactly.
 - The event-read loop uses a deadline after session establishment, and Swift applies product budgets to collected stdout/stderr. In the pinned native transport, spawn/control/terminate/close may still block and the unread inbox has no independent ceiling, so end-to-end time bounds and complete memory backpressure remain open gates.
 
 See [Architecture](Docs/en/Architecture.md), [Implementation](Docs/en/Implementation.md), and [RootFS Security](Docs/en/RootFS.md).
@@ -117,7 +119,7 @@ Contract:
 1. `archiveURL` is a caller-owned reviewed local regular file.
 2. Preparation verifies, installs, and composes; it does not download or boot.
 3. `applicationSupportURL/rootfs/<version>` directly contains `meta.db`, `data/`, and `.pocketroot-rootfs.json`; there is no retained `fs/` layer. A valid version directory and installation record can be reused even when `current.json` is missing or mismatched; reuse repairs it.
-4. Boot is explicit.
+4. Boot is explicit and runs the default health gate on the same serial native executor. The pinned v0.3.3 factory returns `ready` only after observing `aarch64`, Alpine `3.19.1`, and the configured guest working directory.
 5. Commands run through `/bin/sh -lc` and are shell strings, not argv-safe APIs.
 6. Each request owns cwd, environment, timeout, and stderr policy.
 7. Native shutdown ends the entire host app; never use it for routine view/scene cleanup.

@@ -98,6 +98,8 @@ sequenceDiagram
     App->>Runtime: boot
     Runtime->>Native: serial synchronous boot
     Native-->>Runtime: return
+    Runtime->>Native: fixed identity command
+    Native-->>Runtime: NUL-framed arch, OS, version, cwd
     Runtime-->>App: ready
     App->>Runtime: execute request
     Runtime->>Native: spawn /bin/sh -lc
@@ -105,7 +107,7 @@ sequenceDiagram
     Runtime-->>App: command result
 ```
 
-The caller owns the archive before composition. Install and boot are separate. One-shot output is bounded and is not an interactive session. Native shutdown is omitted from a returning flow because the pinned artifact exits the host process.
+The caller owns the archive before composition. Install and boot are separate. Native return alone is not ready: the configured identity gate must match first. One-shot output is bounded and is not an interactive session. Native shutdown is omitted from a returning flow because the pinned artifact exits the host process.
 
 ## Concurrency
 
@@ -128,8 +130,8 @@ observation trace of `PocketRootSystem.state`:
 stateDiagram-v2
     [*] --> idle
     idle --> booting: boot()
-    booting --> ready: native return
-    booting --> failed: error
+    booting --> ready: native boot + identity gate pass
+    booting --> failed: boot or identity error
     ready --> ready: execute()
     ready --> shuttingDown: shutdown()
     shuttingDown --> terminated: test/future returning driver
@@ -183,6 +185,6 @@ See [testing](Testing.md) and the [roadmap](Roadmap.md).
 
 ## Future seams
 
-`PocketRootSession`, live-session ownership, bounded PTY reads, `TerminalBridge` to pinned SwiftTerm, post-boot health policy, and a soft-shutdown IshEmbed build.
+`PocketRootSession`, live-session ownership, bounded PTY reads, `TerminalBridge` to pinned SwiftTerm, application-specific post-boot health, and integration of a soft-shutdown IshEmbed artifact.
 
 See [implementation](Implementation.md) for the source-level call paths.

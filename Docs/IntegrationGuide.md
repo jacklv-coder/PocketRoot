@@ -204,7 +204,9 @@ guard await system.state == .ready else {
 }
 ```
 
-当前 `boot()` 在原生 boot 返回后设置 `.ready`。它尚未内置 `uname` 或 Alpine 版本的 post-boot health gate；如果业务需要更强保证，应在启动后执行自己的健康命令。仓库 smoke 会检查 `aarch64` 与 Alpine `3.19.1`，但该逻辑尚未成为公共启动契约。
+`boot()` 在原生 boot 返回后自动执行固定的 post-boot identity command。`healthCheck` 省略或为 `nil` 时，只有精确的内置 `.ishEmbedV0_3_3` manifest 会自动选择同名健康配置，并严格要求 `aarch64`、`alpine` 和 `3.19.1`；自定义 manifest 默认使用不固定版本的 `.alpineARM64`，应显式传入与已审查 RootFS 对应的版本配置。架构、OS ID 和可选版本必须是非空且不含 NUL 的字符串，timeout 必须在 `(0, 60]` 秒，guest `workDirectory` 必须是无 NUL 的绝对路径。
+
+健康命令有独立的 4 KiB stdout/stderr 上限；`os-release` 作为数据由 Swift 解析，工作目录通过 argv 传入并以双方 `pwd -P` 结果比较，因此路径别名不会误判且预期值不会被插入 shell。失败发生在 native boot 之后时，runtime 保守进入 `.failed` 并消耗进程级槽位，必须重启宿主 App。该门禁是已验证 RootFS 内基础信息与命令上下文的一致性检查，不是独立的来源/安全证明，也不证明业务工具、网络或数据健康；固定 v0.3.3 transport 的同步 control write 也仍可能让检查超出配置 timeout。
 
 IshEmbed 是进程级单例。即使创建多个 `PocketRootSystem`，同一个 App 进程中也只有一个对象能获得原生 runtime ownership。
 
@@ -394,7 +396,7 @@ navigationController?.pushViewController(
 - [ ] 显式依赖实验产品，没有误用默认 `PocketRootSystem.shared`。
 - [ ] RootFS 是本地普通文件，大小和 SHA-256 与清单匹配。
 - [ ] RootFS 获取、许可和存储策略由 App 明确负责。
-- [ ] `prepareSystem`、`boot` 和业务健康检查按顺序执行。
+- [ ] `prepareSystem`、内置 boot identity gate 和业务专属健康检查按顺序执行。
 - [ ] 每个命令有正数 timeout，并处理非零 exit、signal、timeout 和输出超限。
 - [ ] 产品明确接受或避免进程终止式 `shutdown()`。
 - [ ] 没有把 Simulator 结果当作真机或发行结论。

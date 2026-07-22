@@ -15,6 +15,11 @@ final class PocketRootIshRuntimeTests: XCTestCase {
         XCTAssertEqual(configuration.kernelLogFileDescriptor, -1)
         XCTAssertEqual(configuration.maximumStandardOutputBytes, 8 * 1_024 * 1_024)
         XCTAssertEqual(configuration.maximumStandardErrorBytes, 4 * 1_024 * 1_024)
+        XCTAssertEqual(configuration.healthCheck, .alpineARM64)
+        XCTAssertEqual(
+            PocketRootIshRuntimeHealthCheckConfiguration.ishEmbedV0_3_3,
+            .init(expectedOperatingSystemVersionID: "3.19.1")
+        )
     }
 
     func testBootRejectsInvalidFakeFS() async {
@@ -65,6 +70,16 @@ final class PocketRootIshRuntimeTests: XCTestCase {
         let readyState = await runtime.state
         XCTAssertEqual(readyState, .ready)
 
+        let healthSnapshot = driver.snapshot
+        XCTAssertEqual(healthSnapshot.healthCheckCallCount, 1)
+        XCTAssertEqual(
+            healthSnapshot.healthCheckRequest,
+            IshRuntimeHealthCheck.makeRequest(
+                configuration: .alpineARM64,
+                workingDirectory: "/"
+            )
+        )
+
         let result = try await runtime.execute(
             PocketRootCommandRequest(
                 command: "printf ready",
@@ -112,6 +127,343 @@ final class PocketRootIshRuntimeTests: XCTestCase {
         do {
             try await runtime.boot(configuration: PocketRootConfiguration())
             XCTFail("A terminated iSH process cannot boot again.")
+        } catch let error as PocketRootError {
+            XCTAssertEqual(error, .restartRequired)
+        }
+    }
+
+    func testBootFailsClosedWhenGuestIdentityDoesNotMatch() async throws {
+        let rootFSURL = try makeFakeFSFixture()
+        let driver = FakeIshRuntimeDriver(
+            healthResult: makeHealthResult(architecture: "x86_64")
+        )
+        let runtime = IshLinuxRuntime(
+            configuration: .init(rootFSURL: rootFSURL),
+            driver: driver
+        )
+
+        do {
+            try await runtime.boot(configuration: PocketRootConfiguration())
+            XCTFail("Boot must not report ready for the wrong guest architecture.")
+        } catch let error as PocketRootError {
+            XCTAssertEqual(
+                error,
+                .runtimeFailure(
+                    "Post-boot guest architecture mismatch: "
+                        + "expected \"aarch64\", found \"x86_64\"."
+                )
+            )
+        }
+
+        let failedState = await runtime.state
+        XCTAssertEqual(failedState, .failed(
+            "Post-boot guest architecture mismatch: expected \"aarch64\", found \"x86_64\"."
+        ))
+        XCTAssertEqual(driver.snapshot.healthCheckCallCount, 1)
+
+        do {
+            try await runtime.boot(configuration: PocketRootConfiguration())
+            XCTFail("A failed post-boot gate consumes the process-global runtime slot.")
+        } catch let error as PocketRootError {
+            XCTAssertEqual(error, .restartRequired)
+        }
+    }
+
+    func testBootFailsClosedWhenGuestHealthCheckTimesOut() async throws {
+        let rootFSURL = try makeFakeFSFixture()
+        let driver = FakeIshRuntimeDriver(
+            healthResult: IshDriverCommandResult(
+                exitCode: -1,
+                signal: 0,
+                standardOutput: Data(),
+                standardError: Data(),
+                timedOut: true
+            )
+        )
+        let runtime = IshLinuxRuntime(
+            configuration: .init(rootFSURL: rootFSURL),
+            driver: driver
+        )
+
+        do {
+            try await runtime.boot(configuration: PocketRootConfiguration())
+            XCTFail("Boot must not report ready after a timed-out guest health check.")
+        } catch let error as PocketRootError {
+            XCTAssertEqual(
+                error,
+                .runtimeFailure("Post-boot guest health check timed out.")
+            )
+        }
+        let failedState = await runtime.state
+        XCTAssertEqual(
+            failedState,
+            .failed("Post-boot guest health check timed out.")
+        )
+    }
+
+    func testPinnedHealthGateRejectsTheWrongAlpineVersion() async throws {
+        let rootFSURL = try makeFakeFSFixture()
+        let driver = FakeIshRuntimeDriver(
+            healthResult: makeHealthResult(operatingSystemVersionID: "3.20.0")
+        )
+        let runtime = IshLinuxRuntime(
+            configuration: .init(
+                rootFSURL: rootFSURL,
+                healthCheck: .ishEmbedV0_3_3
+            ),
+            driver: driver
+        )
+
+        do {
+            try await runtime.boot(configuration: PocketRootConfiguration())
+            XCTFail("The pinned RootFS health gate must require Alpine 3.19.1.")
+        } catch let error as PocketRootError {
+            XCTAssertEqual(
+                error,
+                .runtimeFailure(
+                    "Post-boot guest operating system version mismatch: "
+                        + "expected \"3.19.1\", found \"3.20.0\"."
+                )
+            )
+        }
+    }
+
+    func testHealthGateParsesOSReleaseAsDataWithoutExecutingIt() throws {
+        let result = makeHealthResult(
+            osRelease: """
+            NAME="Alpine Linux"
+            ID="alpine"
+            VERSION_ID='3.19.1'
+            POCKETROOT_PAYLOAD=$(exit 99)
+            """
+        )
+
+        XCTAssertNoThrow(
+            try IshRuntimeHealthCheck.validate(
+                result,
+                configuration: .ishEmbedV0_3_3,
+                workingDirectory: "/"
+            )
+        )
+        XCTAssertFalse(IshRuntimeHealthCheck.shellCommand.contains(". /etc/os-release"))
+        XCTAssertTrue(IshRuntimeHealthCheck.shellCommand.contains("/bin/uname -m"))
+        XCTAssertTrue(IshRuntimeHealthCheck.shellCommand.contains("/bin/cat /etc/os-release"))
+    }
+
+    func testHealthGateRejectsWrongOperatingSystemAndWorkingDirectory() throws {
+        XCTAssertThrowsError(
+            try IshRuntimeHealthCheck.validate(
+                makeHealthResult(operatingSystemID: "ubuntu"),
+                configuration: .alpineARM64,
+                workingDirectory: "/"
+            )
+        ) { error in
+            XCTAssertEqual(
+                error as? IshRuntimeHealthCheckError,
+                .identityMismatch(field: "operating system", expected: "alpine", actual: "ubuntu")
+            )
+        }
+
+        XCTAssertThrowsError(
+            try IshRuntimeHealthCheck.validate(
+                makeHealthResult(workingDirectory: "/wrong", canonicalWorkingDirectory: "/srv"),
+                configuration: .alpineARM64,
+                workingDirectory: "/srv/../srv"
+            )
+        ) { error in
+            XCTAssertEqual(
+                error as? IshRuntimeHealthCheckError,
+                .identityMismatch(field: "working directory", expected: "/srv", actual: "/wrong")
+            )
+        }
+    }
+
+    func testHealthGateAcceptsCanonicalWorkingDirectoryAlias() throws {
+        XCTAssertNoThrow(
+            try IshRuntimeHealthCheck.validate(
+                makeHealthResult(
+                    workingDirectory: "/srv/app",
+                    canonicalWorkingDirectory: "/srv/app"
+                ),
+                configuration: .alpineARM64,
+                workingDirectory: "/srv/./app/"
+            )
+        )
+    }
+
+    func testHealthGateRejectsInvalidUTF8AndDuplicateOSReleaseKeys() throws {
+        var invalidUTF8 = Data("aarch64\0".utf8)
+        invalidUTF8.append(0xFF)
+        invalidUTF8.append(Data("\0/\0/\0".utf8))
+        let invalidUTF8Result = IshDriverCommandResult(
+            exitCode: 0,
+            signal: 0,
+            standardOutput: invalidUTF8,
+            standardError: Data(),
+            timedOut: false
+        )
+
+        XCTAssertThrowsError(
+            try IshRuntimeHealthCheck.validate(
+                invalidUTF8Result,
+                configuration: .alpineARM64,
+                workingDirectory: "/"
+            )
+        ) { error in
+            XCTAssertEqual(error as? IshRuntimeHealthCheckError, .malformedResponse)
+        }
+
+        XCTAssertThrowsError(
+            try IshRuntimeHealthCheck.validate(
+                makeHealthResult(osRelease: "ID=alpine\nID=ubuntu\nVERSION_ID=3.19.1"),
+                configuration: .ishEmbedV0_3_3,
+                workingDirectory: "/"
+            )
+        ) { error in
+            XCTAssertEqual(error as? IshRuntimeHealthCheckError, .malformedResponse)
+        }
+    }
+
+    func testHealthGateRejectsNonzeroAndSignaledCommands() throws {
+        for (result, expected) in [
+            (
+                IshDriverCommandResult(
+                    exitCode: 65,
+                    signal: 0,
+                    standardOutput: Data(),
+                    standardError: Data(),
+                    timedOut: false
+                ),
+                IshRuntimeHealthCheckError.commandFailed(
+                    "guest health command exited with status 65"
+                )
+            ),
+            (
+                IshDriverCommandResult(
+                    exitCode: -1,
+                    signal: 9,
+                    standardOutput: Data(),
+                    standardError: Data(),
+                    timedOut: false
+                ),
+                IshRuntimeHealthCheckError.commandFailed(
+                    "guest health command terminated with signal 9"
+                )
+            ),
+        ] {
+            XCTAssertThrowsError(
+                try IshRuntimeHealthCheck.validate(
+                    result,
+                    configuration: .alpineARM64,
+                    workingDirectory: "/"
+                )
+            ) { error in
+                XCTAssertEqual(error as? IshRuntimeHealthCheckError, expected)
+            }
+        }
+    }
+
+    func testHealthGateRejectsMalformedNULFraming() throws {
+        let malformed = IshDriverCommandResult(
+            exitCode: 0,
+            signal: 0,
+            standardOutput: Data(
+                ["aarch64", "alpine", "3.19.1", "/"].joined(separator: "\0").utf8
+            ),
+            standardError: Data(),
+            timedOut: false
+        )
+
+        XCTAssertThrowsError(
+            try IshRuntimeHealthCheck.validate(
+                malformed,
+                configuration: .ishEmbedV0_3_3,
+                workingDirectory: "/"
+            )
+        ) { error in
+            XCTAssertEqual(error as? IshRuntimeHealthCheckError, .malformedResponse)
+        }
+    }
+
+    func testInvalidHealthConfigurationDoesNotConsumeProcessSlot() async throws {
+        let rootFSURL = try makeFakeFSFixture()
+        let driver = FakeIshRuntimeDriver()
+        let runtime = IshLinuxRuntime(
+            configuration: .init(
+                rootFSURL: rootFSURL,
+                healthCheck: .init(expectedArchitecture: "", timeout: .seconds(5))
+            ),
+            driver: driver
+        )
+
+        do {
+            try await runtime.boot(configuration: PocketRootConfiguration())
+            XCTFail("An invalid health-check configuration must be rejected.")
+        } catch let error as PocketRootError {
+            guard case .runtimeFailure(let message) = error else {
+                return XCTFail("Unexpected PocketRoot error: \(error)")
+            }
+            XCTAssertTrue(message.contains("Invalid post-boot health-check configuration"))
+        }
+
+        let idleState = await runtime.state
+        XCTAssertEqual(idleState, .idle)
+        XCTAssertEqual(driver.snapshot.bootCallCount, 0)
+        XCTAssertEqual(driver.snapshot.healthCheckCallCount, 0)
+    }
+
+    func testRelativeHealthWorkingDirectoryDoesNotConsumeProcessSlot() async throws {
+        let rootFSURL = try makeFakeFSFixture()
+        let driver = FakeIshRuntimeDriver()
+        let runtime = IshLinuxRuntime(
+            configuration: .init(rootFSURL: rootFSURL, workDirectory: "relative/path"),
+            driver: driver
+        )
+
+        do {
+            try await runtime.boot(configuration: PocketRootConfiguration())
+            XCTFail("A relative guest working directory must be rejected before native boot.")
+        } catch let error as PocketRootError {
+            guard case .runtimeFailure(let message) = error else {
+                return XCTFail("Unexpected PocketRoot error: \(error)")
+            }
+            XCTAssertTrue(message.contains("guest working directory must be an absolute path"))
+        }
+
+        let state = await runtime.state
+        XCTAssertEqual(state, .idle)
+        XCTAssertEqual(driver.snapshot.bootCallCount, 0)
+    }
+
+    func testHealthOutputLimitFailureConsumesProcessSlot() async throws {
+        let rootFSURL = try makeFakeFSFixture()
+        let driver = FakeIshRuntimeDriver(
+            healthError: IshRuntimeDriverError.outputLimitExceeded(
+                stream: "stdout",
+                limit: IshRuntimeHealthCheck.maximumOutputBytes
+            )
+        )
+        let runtime = IshLinuxRuntime(
+            configuration: .init(rootFSURL: rootFSURL),
+            driver: driver
+        )
+
+        do {
+            try await runtime.boot(configuration: PocketRootConfiguration())
+            XCTFail("An oversized health response must fail boot.")
+        } catch let error as PocketRootError {
+            XCTAssertEqual(
+                error,
+                .commandOutputLimitExceeded(
+                    stream: "stdout",
+                    limit: IshRuntimeHealthCheck.maximumOutputBytes
+                )
+            )
+        }
+
+        do {
+            try await runtime.boot(configuration: PocketRootConfiguration())
+            XCTFail("A native health-check failure consumes the process slot.")
         } catch let error as PocketRootError {
             XCTAssertEqual(error, .restartRequired)
         }
@@ -403,19 +755,50 @@ final class PocketRootIshRuntimeTests: XCTestCase {
         }
         return rootURL
     }
+
+    private func makeHealthResult(
+        architecture: String = "aarch64",
+        operatingSystemID: String = "alpine",
+        operatingSystemVersionID: String = "3.19.1",
+        osRelease: String? = nil,
+        workingDirectory: String = "/",
+        canonicalWorkingDirectory: String? = nil
+    ) -> IshDriverCommandResult {
+        let release = osRelease ?? """
+            ID=\(operatingSystemID)
+            VERSION_ID=\(operatingSystemVersionID)
+            """
+        let payload = [
+            architecture,
+            release,
+            workingDirectory,
+            canonicalWorkingDirectory ?? workingDirectory,
+        ].joined(separator: "\0") + "\0"
+        return IshDriverCommandResult(
+            exitCode: 0,
+            signal: 0,
+            standardOutput: Data(payload.utf8),
+            standardError: Data(),
+            timedOut: false
+        )
+    }
 }
 
 private final class FakeIshRuntimeDriver: IshRuntimeDriver, @unchecked Sendable {
     struct Snapshot {
         let bootOptions: IshDriverBootOptions?
+        let healthCheckRequest: IshDriverCommandRequest?
         let commandRequest: IshDriverCommandRequest?
         let didShutdown: Bool
         let calledOnMainThread: Bool
         let bootCallCount: Int
+        let healthCheckCallCount: Int
     }
 
     private let lock = NSLock()
     private let result: IshDriverCommandResult
+    private let healthResult: IshDriverCommandResult
+    private let healthError: Error?
     private let bootError: Error?
     private let executeError: Error?
     private let bootStarted: XCTestExpectation?
@@ -423,10 +806,12 @@ private final class FakeIshRuntimeDriver: IshRuntimeDriver, @unchecked Sendable 
     private let commandStarted: XCTestExpectation?
     private let commandBlocker: DispatchSemaphore?
     private var bootOptions: IshDriverBootOptions?
+    private var healthCheckRequest: IshDriverCommandRequest?
     private var commandRequest: IshDriverCommandRequest?
     private var didShutdown = false
     private var calledOnMainThread = false
     private var bootCallCount = 0
+    private var healthCheckCallCount = 0
 
     init(
         result: IshDriverCommandResult = IshDriverCommandResult(
@@ -436,6 +821,8 @@ private final class FakeIshRuntimeDriver: IshRuntimeDriver, @unchecked Sendable 
             standardError: Data(),
             timedOut: false
         ),
+        healthResult: IshDriverCommandResult? = nil,
+        healthError: Error? = nil,
         bootError: Error? = nil,
         executeError: Error? = nil,
         bootStarted: XCTestExpectation? = nil,
@@ -444,6 +831,8 @@ private final class FakeIshRuntimeDriver: IshRuntimeDriver, @unchecked Sendable 
         commandBlocker: DispatchSemaphore? = nil
     ) {
         self.result = result
+        self.healthResult = healthResult ?? Self.defaultHealthResult
+        self.healthError = healthError
         self.bootError = bootError
         self.executeError = executeError
         self.bootStarted = bootStarted
@@ -457,10 +846,12 @@ private final class FakeIshRuntimeDriver: IshRuntimeDriver, @unchecked Sendable 
         defer { lock.unlock() }
         return Snapshot(
             bootOptions: bootOptions,
+            healthCheckRequest: healthCheckRequest,
             commandRequest: commandRequest,
             didShutdown: didShutdown,
             calledOnMainThread: calledOnMainThread,
-            bootCallCount: bootCallCount
+            bootCallCount: bootCallCount,
+            healthCheckCallCount: healthCheckCallCount
         )
     }
 
@@ -478,6 +869,20 @@ private final class FakeIshRuntimeDriver: IshRuntimeDriver, @unchecked Sendable 
     }
 
     func execute(_ request: IshDriverCommandRequest) throws -> IshDriverCommandResult {
+        if request.arguments.count == 5,
+           Array(request.arguments.prefix(3))
+            == ["/bin/sh", "-c", IshRuntimeHealthCheck.shellCommand] {
+            lock.lock()
+            healthCheckRequest = request
+            healthCheckCallCount += 1
+            calledOnMainThread = calledOnMainThread || Thread.isMainThread
+            lock.unlock()
+            if let healthError {
+                throw healthError
+            }
+            return healthResult
+        }
+
         lock.lock()
         commandRequest = request
         calledOnMainThread = calledOnMainThread || Thread.isMainThread
@@ -489,6 +894,17 @@ private final class FakeIshRuntimeDriver: IshRuntimeDriver, @unchecked Sendable 
         }
         return result
     }
+
+    private static let defaultHealthResult = IshDriverCommandResult(
+        exitCode: 0,
+        signal: 0,
+        standardOutput: Data(
+            (["aarch64", "ID=alpine\nVERSION_ID=3.19.1", "/", "/"]
+                .joined(separator: "\0") + "\0").utf8
+        ),
+        standardError: Data(),
+        timedOut: false
+    )
 
     func shutdown() throws {
         lock.lock()

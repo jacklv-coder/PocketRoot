@@ -28,8 +28,9 @@ flowchart LR
     B --> C["生成版本化 fakefs 安装目录"]
     C --> D["PocketRootIshRuntimeIntegration 组合系统"]
     D --> E["PocketRootIshRuntime 启动 IshEmbed"]
-    E --> F["通过 /bin/sh -lc 执行一次性命令"]
-    F --> G["返回 exit code、signal、stdout、stderr 与 timeout"]
+    E --> F["校验 aarch64、Alpine 身份与工作目录"]
+    F --> G["通过 /bin/sh -lc 执行一次性命令"]
+    G --> H["返回 exit code、signal、stdout、stderr 与 timeout"]
 ```
 
 关键设计原则：
@@ -39,6 +40,7 @@ flowchart LR
 - RootFS 在私有、同卷 staging 中解包；校验通过后，通过持久化 journal 保护的多步同卷 rename 完成可恢复、可回滚的 promotion。每次 rename 和记录写入各自具有原子性，但整个替换流程不是一次整体原子操作。
 - IshEmbed 是进程级单例；PocketRoot 只允许一个原生运行时所有者和一个在途命令。
 - 同步原生调用在串行阻塞队列中执行，不阻塞主线程和 Swift cooperative executor。
+- `boot()` 只有在固定 post-boot 命令验证 guest 架构、Alpine 身份和命令上下文后才报告 `ready`；默认 v0.3.3 组合还严格要求 Alpine `3.19.1`。
 - session 建立后的 event-read loop 使用 deadline，Swift 已收集的 stdout/stderr 有产品配额；当前固定原生 transport 的 spawn/control/terminate/close 仍可能阻塞，未读 inbox 也无独立上限，因此端到端时间界限和完整内存背压仍是开放门禁。
 
 完整实现见[架构说明](Docs/Architecture.md)、[实现原理](Docs/Implementation.md)和 [RootFS 安全方案](Docs/RootFS.md)。
@@ -126,7 +128,7 @@ print("stderr:", result.stderr)
 1. `archiveURL` 必须指向调用方已经获得并完成授权审查的本地普通文件。
 2. `prepareSystem` 只校验、安装并组合系统；它不会下载 RootFS，也不会启动运行时。
 3. 安装器在 `applicationSupportURL/rootfs/<version>` 下直接保存 `meta.db`、`data/` 和 `.pocketroot-rootfs.json`，不会再保留一层 `fs/`。版本目录和安装记录有效时即可复用；`current.json` 缺失或不匹配会在复用时修复。
-4. `boot()` 必须显式调用。
+4. `boot()` 必须显式调用；它会在同一原生串行队列执行默认健康门禁，固定 v0.3.3 factory 只有观察到 `aarch64`、Alpine `3.19.1` 和配置的 guest 工作目录后才返回 `ready`。
 5. 命令通过 `/bin/sh -lc` 执行，所以 `command` 是 shell 字符串，而不是无 shell 解析的 argv API。
 6. 每个请求独立设置工作目录、环境变量、超时和 stderr 合并策略。
 7. 真实 `shutdown()` 会结束整个宿主 App；不要把它用于页面消失、场景切换或普通资源清理。

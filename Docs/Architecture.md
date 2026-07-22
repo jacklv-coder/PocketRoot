@@ -185,6 +185,8 @@ sequenceDiagram
     App->>Runtime: boot
     Runtime->>Native: synchronous boot on serial executor
     Native-->>Runtime: boot returned
+    Runtime->>Native: fixed identity command
+    Native-->>Runtime: NUL-framed arch, OS, version, cwd
     Runtime-->>App: ready
     App->>Runtime: execute(command request)
     Runtime->>Native: spawn /bin/sh -lc
@@ -197,6 +199,7 @@ sequenceDiagram
 - App 在调用 factory 之前已经拥有本地 archive。
 - 安装和 boot 是两个独立动作。
 - 安装完成不代表 native runtime 已启动。
+- native boot 返回也不单独代表 ready；内置 identity gate 必须匹配配置。
 - 一次性命令收集有界输出；不是交互 session。
 - shutdown 未画入正常返回流程，因为固定上游会结束宿主进程。
 
@@ -235,8 +238,8 @@ IshEmbed 暴露同步、进程级 API。adapter 使用：
 stateDiagram-v2
     [*] --> idle
     idle --> booting: boot()
-    booting --> ready: native boot returns
-    booting --> failed: boot error
+    booting --> ready: native boot + identity gate pass
+    booting --> failed: boot or identity error
     ready --> ready: execute()
     ready --> shuttingDown: shutdown()
     shuttingDown --> terminated: returning test/future driver
@@ -297,7 +300,7 @@ CI 与测试职责见[测试与验证](Testing.md)。动态完成状态见[路�
 - live session registry：native 指针所有权与 close 顺序。
 - bounded PTY reads：让取消和 shutdown 可观察。
 - `TerminalBridge`：在 PTY 契约稳定后连接固定 SwiftTerm。
-- post-boot health policy：在报告 ready 前验证 guest 架构和版本。
+- 应用专属 post-boot health：在基础 identity gate 之后验证业务工具、网络和数据。
 - soft-shutdown IshEmbed build：关闭 kernel thread 而不是宿主进程。
 
 完整源码调用链见[实现原理](Implementation.md)。

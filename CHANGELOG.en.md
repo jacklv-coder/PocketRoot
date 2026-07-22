@@ -17,6 +17,7 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 - Experimental `PocketRootIshRuntimeIntegration` composing caller-local RootFS installation and native runtime.
 - Process ownership, serial native execution, and lifecycle reentrancy protection.
 - One-shot cwd, environment, stderr merge, exit, signal, timeout, and stream mapping.
+- A default post-boot identity gate using a fixed command and NUL framing; ready now requires matching guest architecture, Alpine identity, optional version, and working directory.
 - Positive timeout validation, bounded reads, and default 8 MiB/4 MiB stream limits.
 - Immutable v0.3.3 manifest, streaming SHA-256, and byte limits.
 - zlib gzip and constrained ustar extraction with traversal/link/special/duplicate rejection.
@@ -37,6 +38,7 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 - Contribution Git fetch/push uses SSH.
 - Documentation now states that the default shared system is a placeholder and applications must retain the system returned by composition.
 - Pinned native shutdown is explicitly process-terminal and not routine UI cleanup.
+- The merged native ABI candidate is recorded without changing PocketRoot's current revision or binary behavior because no pinnable artifact exists yet.
 
 ### Security
 

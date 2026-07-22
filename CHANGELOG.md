@@ -17,6 +17,7 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
 - 加入 Experimental `PocketRootIshRuntimeIntegration`，组合调用方本地 RootFS 与原生 runtime。
 - 加入 process-wide ownership、serial native execution、lifecycle reentrancy protection。
 - 加入一次性命令的 cwd、environment、stderr merge、exit、signal、timeout 和 stream mapping。
+- 加入默认 post-boot identity gate；使用固定命令和 NUL framing，在 `ready` 前验证 guest 架构、Alpine 身份、可选版本与工作目录。
 - 加入正 timeout、bounded native reads、默认 8 MiB stdout 与 4 MiB stderr limit。
 - 加入 v0.3.3 RootFS immutable manifest、streaming SHA-256 和 byte limits。
 - 加入 zlib gzip 与 constrained ustar extractor，拒绝 traversal、link、special node 和 duplicate。
@@ -49,6 +50,7 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
 - Git 贡献流程明确使用 SSH fetch/push。
 - 明确默认 `PocketRootSystem.shared` 是 placeholder，真实 system 必须保存 `prepareSystem` 返回实例。
 - 明确固定 native `shutdown()` 为进程终止式行为，不应作为普通 UI cleanup。
+- 记录已合并但尚无可固定制品的 native ABI 候选；PocketRoot 当前 revision 与二进制行为保持不变。
 
 ### Security
 

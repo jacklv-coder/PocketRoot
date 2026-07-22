@@ -6,6 +6,25 @@ import XCTest
 
 @available(macOS 13.0, *)
 final class PocketRootIshRuntimeIntegrationTests: XCTestCase {
+    func testFactoryDerivesHealthDefaultFromManifest() {
+        XCTAssertEqual(
+            PocketRootIshSystemFactory.defaultHealthCheck(for: .ishEmbedV0_3_3),
+            .ishEmbedV0_3_3
+        )
+
+        let customManifest = PocketRootRootFSArtifactManifest(
+            version: "custom-v1",
+            architecture: .arm64,
+            format: .fakeFSTarGzip,
+            downloadURL: URL(string: "https://example.com/custom.tar.gz")!,
+            sha256: String(repeating: "0", count: 64)
+        )
+        XCTAssertEqual(
+            PocketRootIshSystemFactory.defaultHealthCheck(for: customManifest),
+            .alpineARM64
+        )
+    }
+
     func testFactoryPreparesArchiveAndAlignsSystemVersion() async throws {
         let directoryURL = FileManager.default.temporaryDirectory.appendingPathComponent(
             "PocketRootIntegrationTests-\(UUID().uuidString)",

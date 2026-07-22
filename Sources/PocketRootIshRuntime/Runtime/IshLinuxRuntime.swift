@@ -56,6 +56,14 @@ package actor IshLinuxRuntime: LinuxRuntime {
         }
 
         try validateRootFS()
+        do {
+            try IshRuntimeHealthCheck.validateConfiguration(
+                configuration.healthCheck,
+                workingDirectory: configuration.workDirectory
+            )
+        } catch {
+            throw map(error)
+        }
         // Close the actor-reentrancy window before the first suspension.
         runtimeState = .booting
 
@@ -65,12 +73,24 @@ package actor IshLinuxRuntime: LinuxRuntime {
             supervisorGuestPath: configuration.supervisorGuestPath,
             kernelLogFileDescriptor: configuration.kernelLogFileDescriptor
         )
+        let healthConfiguration = configuration.healthCheck
+        let healthWorkingDirectory = configuration.workDirectory
+        let healthRequest = IshRuntimeHealthCheck.makeRequest(
+            configuration: healthConfiguration,
+            workingDirectory: healthWorkingDirectory
+        )
 
         do {
             try await processGate.claim(for: ownerID)
             ownsProcess = true
             try await executor.perform { [driver] in
                 try driver.boot(options)
+                let healthResult = try driver.execute(healthRequest)
+                try IshRuntimeHealthCheck.validate(
+                    healthResult,
+                    configuration: healthConfiguration,
+                    workingDirectory: healthWorkingDirectory
+                )
             }
             runtimeState = .ready
         } catch {
@@ -266,7 +286,7 @@ package actor IshLinuxRuntime: LinuxRuntime {
     }
 }
 
-private extension Duration {
+extension Duration {
     var timeInterval: TimeInterval {
         let value = components
         let seconds = Double(value.seconds)

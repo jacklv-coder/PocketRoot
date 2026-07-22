@@ -64,9 +64,9 @@ This establishes the current Simulator one-shot path, not physical-device, minim
 | iOS 18 Simulator native behavior | Passed | Rerun the 13-check smoke for runtime/RootFS changes |
 | Secure RootFS install/recovery | Passed | Preserve real-asset/snapshot/rollback/recovery; add ENOSPC |
 | RootFS/runtime composition | Passed | Keep caller-controlled, no-download, no-auto-boot |
-| Default post-boot health gate | Not started | Require aarch64, Alpine identity, and command context before ready |
+| Default post-boot identity gate | Passed | Require aarch64, Alpine identity, optional version, and command context before ready; retain failed-slot regression coverage |
 | Real Demo runtime injection | Not started | Inject one prepared system without bundling an unreviewed RootFS |
-| Host-safe soft shutdown | Blocked | Patch fork, return kernel thread, bound joins, rebuild and audit |
+| Host-safe soft shutdown | In progress | Fork source fixes are merged; new XCFramework, checksum, PocketRoot pin, and lifecycle audit remain |
 | Signed iPhone | Blocked | Physical boot and command smoke |
 | Signed iPad | Blocked | Physical boot and command smoke |
 | Minimum Xcode 16 native | Not started | Repeat final-link and behavior |
@@ -79,10 +79,9 @@ This establishes the current Simulator one-shot path, not physical-device, minim
 
 1. Run signed preparation, boot, guest, command, and recovery checks on iPhone and iPad with recorded toolchains and entitlements.
 2. Decide whether host-process exit is acceptable; otherwise rebuild a soft-shutdown artifact with bounded joins and repeat audits.
-3. Define the default guest context and require architecture/version/tool health before ready.
-4. Repeat full final-link, install, and native smoke with minimum Xcode 16.
-5. Add opt-in Demo injection of one prepared system across System, Commands, and Diagnostics.
-6. Add complete cancellation, ENOSPC, power-loss, storage-pressure, long-output, and memory-peak coverage.
+3. Repeat full final-link, install, and native smoke with minimum Xcode 16.
+4. Add opt-in Demo injection of one prepared system across System, Commands, and Diagnostics.
+5. Add complete cancellation, ENOSPC, power-loss, storage-pressure, long-output, and memory-peak coverage.
 
 Closing these makes one-shot execution a Developer Preview candidate.
 

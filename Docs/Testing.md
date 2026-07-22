@@ -56,6 +56,7 @@ swift test
 - boot options 以及 `/bin/sh -lc` 命令的 cwd、environment、stderr merge、stream、exit 和 signal 映射；
 - boot 前 execute 拒绝、timeout 边界校验和亚毫秒 clamp；
 - process-global ownership、native boot 失败后占用槽位、并发 boot/reentrancy；
+- 默认/自定义 manifest 的健康配置选择，post-boot identity request、错误架构/OS/版本/cwd、规范化 cwd 别名、timeout、signal/exit、output limit、无效 UTF-8、重复 os-release 键、畸形 NUL framing，以及无效配置/相对 cwd 不占槽位；
 - active one-shot command 与 shutdown 顺序、output-limit error 映射；
 - injected-driver shutdown 后的 terminated / `restartRequired` contract。
 

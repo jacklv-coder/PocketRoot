@@ -34,6 +34,20 @@
 
 固定 fork 仍从 parent repository 的 `v0.3.3` GitHub Release 下载 binary target。fork Git source 并没有镜像 release asset，仓库内 release script 也硬编码 parent repository。当前依赖已固定，但尚未自托管。
 
+### 已合并但尚未进入消费链的候选
+
+2026-07-22，用户 fork 的原生 ABI 过渡已合并到 `ish-arm64-pkg/main`：
+
+| 字段 | 候选值 |
+| --- | --- |
+| package main commit | `d63dfc9018369ffd60fc6bf442f0d2529fc5df25` |
+| nested iSH gitlink | `576ffaf2574310b5fb2d148aab39ddcd2b8fe67d` |
+| package PR | `jacklv-coder/ish-arm64-pkg#1` |
+| iSH PR | `jacklv-coder/ish-arm64#2` |
+| 状态 | 源码与 CI 已合并；无 tag、release 或可供 PocketRoot 固定的新 XCFramework |
+
+该候选加入有界 native 队列、session 生命周期、内容寻址 supervisor 校验、join/soft-halt 与 iOS 18 制品门禁，但**不属于当前 PocketRoot 二进制行为**。`Package.swift` 和 `Package.resolved` 继续固定 `6f96f02...`；只有新 XCFramework、URL/checksum、许可证/对应源码材料和 PocketRoot 最终链接/行为复核全部完成后才能更新。
+
 ## 2. iSH source submodule
 
 | 字段 | 审核值 |

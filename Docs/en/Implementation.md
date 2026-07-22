@@ -66,7 +66,7 @@ The installer does not run SQLite integrity checks on every install; archive aut
 
 ## Boot
 
-The runtime validates fakefs types, closes actor reentrancy by setting booting before suspension, claims the process gate, and runs synchronous IshEmbed boot on the shared serial blocking executor. Native return sets ready; errors set failed and consume the process gate where required.
+The runtime validates fakefs types and health configuration, closes actor reentrancy by setting booting before suspension, claims the process gate, and runs synchronous IshEmbed boot on the shared serial blocking executor. After native boot returns, it runs a fixed `/bin/sh -c` identity command on that same queue. The command uses absolute `/bin/uname` and `/bin/cat`, returns `/etc/os-release` as data, and reports actual plus canonical target `pwd -P` values with NUL framing under a 4 KiB output budget. Swift parses unique ID/VERSION_ID keys without executing the file, rejects malformed quoting, UTF-8, duplicates, or framing, and compares configured expectations. The absolute working directory is passed as argv rather than interpolated into shell text; canonical comparison accepts trailing-slash, `.`, `..`, and symlink aliases. Only a successful match sets ready. A post-native-boot failure conservatively consumes the process slot and requires a host restart.
 
 Those booting/ready/failed values are first the internal `IshLinuxRuntime`
 state. `PocketRootSystem.state` does not continuously synchronize while
@@ -74,7 +74,7 @@ state. `PocketRootSystem.state` does not continuously synchronize while
 The same boundary applies to internal shutting-down state. Public state is not
 a real-time progress feed.
 
-Ready currently means native boot returned. It does not include a default uname/Alpine health command.
+The direct runtime default requires `aarch64` and Alpine. With no explicit health configuration, the integration factory additionally requires version `3.19.1` only for the exact built-in v0.3.3 manifest; a custom manifest receives the version-agnostic Alpine ARM64 gate and should pass an explicit health configuration to pin its reviewed version. This checks consistency of base guest information and the configured command context inside an already validated RootFS; it is not an independent provenance or security proof and does not cover application-specific tools or services. The health timeout still shares the pinned native spawn/control path and is not an end-to-end hard bound over a blocked synchronous control write.
 
 ## One-shot execution
 
@@ -115,4 +115,4 @@ The default Demo stays asset-free and placeholder-backed. The compile spike prov
 
 ## Open implementation
 
-Post-boot health, complete Task cancellation, public interactive sessions, session registry, bounded PTY reads, input/resize/signal/EOF, close-before-shutdown, soft shutdown, Demo injection, and physical-device hardening remain open. See the [roadmap](Roadmap.md).
+Complete Task cancellation, public interactive sessions, session registry, bounded PTY reads, input/resize/signal/EOF, close-before-shutdown, soft-shutdown artifact integration, Demo injection, and physical-device hardening remain open. See the [roadmap](Roadmap.md).

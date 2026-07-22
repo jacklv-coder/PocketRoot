@@ -76,6 +76,7 @@ flowchart TD
 - `supervisorGuestPath` → 可选 guest supervisor。
 - `kernelLogFileDescriptor` → iSH kernel log FD，默认 `-1`。
 - stdout/stderr limits → 每个 native session 的最大累计输出。
+- `healthCheck` → `boot()` 返回前必须匹配的 guest 架构、OS ID、可选版本和最多 60 秒的检查超时；固定 v0.3.3 factory 默认要求 `aarch64`、`alpine`、`3.19.1`。
 
 `systemConfiguration` 中的 rootFSVersion 会被 manifest version 替换，避免系统配置与实际安装漂移；default working directory 与 command timeout 被保留。但当前每个 `PocketRootCommandRequest` 仍使用自己的值。
 
@@ -178,8 +179,10 @@ final 是否匹配预期记录、backup 是否存在以及 journal 中的旧安�
 4. 构造 `IshDriverBootOptions`；
 5. 向 `IshProcessGate` 申请当前 UUID 的唯一 ownership；
 6. 在 `BlockingIshExecutor` 的共享 serial queue 调用 driver；
-7. native 返回后设置 `.ready`；
-8. 失败时标记 process gate 和 `.failed(reason)`，再映射 typed error。
+7. native boot 返回后，在同一队列用固定 `/bin/sh -c` 命令通过绝对路径读取 `uname -m`，把 `/etc/os-release` 当普通数据读取，并分别取得实际与规范化目标 `pwd -P`；
+8. 使用 NUL framing 解析最多 4 KiB 的结果；Swift 不执行 `os-release`，而是解析唯一的 ID/VERSION_ID，再严格匹配配置的架构、OS ID、可选版本与规范化工作目录；
+9. 健康门禁通过后才设置 `.ready`；
+10. 失败时标记 process gate 和 `.failed(reason)`，再映射 typed error。native boot 已发生后的健康失败会保守消耗进程槽位，调用方必须重启宿主 App。
 
 这里的 `.booting`、`.ready` 和 `.failed` 首先是 `IshLinuxRuntime` 的内部状态。
 `PocketRootSystem.state` 不会在 `await boot()` 的执行过程中持续同步它；公共值只在 `boot()`
@@ -199,7 +202,7 @@ IshInstance.shared.boot(
 )
 ```
 
-当前没有自动 guest health command。`ready` 表示 native boot 已返回，而不是业务所需工具一定可用。
+默认健康命令使用固定脚本、绝对 `/bin/uname`/`/bin/cat`、固定 `PATH`/`LC_ALL`、独立超时和 4 KiB stdout/stderr 上限；预期值和绝对工作目录通过 argv/Swift 比较，不拼接进 shell。`os-release` 只作为数据解析，重复键、畸形引用、无效 UTF-8 或 NUL framing 都失败关闭；规范化后的 `pwd -P` 比较允许尾斜杠、`.`、`..` 和符号链接别名。该门禁证明已校验 RootFS 内基础 guest 信息与命令上下文的一致性，不是独立的来源或安全证明，也不证明应用自定义工具或网络服务健康。它仍复用当前 native spawn/control path，所以在固定 v0.3.3 transport 上，健康超时和普通命令 timeout 一样不是覆盖同步 control write 的端到端硬上限。
 
 ## 6. execute 实现
 
@@ -293,7 +296,6 @@ native smoke 负责行为证据：
 
 ## 10. 尚待实现
 
-- `ready` 前的默认 guest health gate；
 - Swift Task cancellation 到 native terminate 的完整契约；
 - interactive session public entry point；
 - live session registry；

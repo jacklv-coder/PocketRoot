@@ -44,6 +44,20 @@ mirror the release assets, and the included release script is hard-coded to
 the parent repository. The dependency is therefore pinned but not yet
 self-hosted.
 
+### Merged candidate not yet in the consumer chain
+
+On 2026-07-22, the native ABI transition was merged into the user's `ish-arm64-pkg/main`:
+
+| Field | Candidate value |
+| --- | --- |
+| package main commit | `d63dfc9018369ffd60fc6bf442f0d2529fc5df25` |
+| nested iSH gitlink | `576ffaf2574310b5fb2d148aab39ddcd2b8fe67d` |
+| package PR | `jacklv-coder/ish-arm64-pkg#1` |
+| iSH PR | `jacklv-coder/ish-arm64#2` |
+| status | Source and CI merged; no tag, release, or new XCFramework that PocketRoot can pin |
+
+The candidate adds bounded native queues, session lifecycle hardening, content-addressed supervisor verification, join/soft-halt behavior, and iOS 18 artifact gates, but it is **not current PocketRoot binary behavior**. `Package.swift` and `Package.resolved` remain pinned to `6f96f02...`; they can move only after a new XCFramework, URL/checksum, license/corresponding-source material, and PocketRoot final-link and behavior review are complete.
+
 ## iSH source submodule
 
 | Field | Audited value |

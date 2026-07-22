@@ -158,7 +158,9 @@ guard await system.state == .ready else {
 }
 ```
 
-The current adapter marks ready when native boot returns; it has no built-in uname/Alpine post-boot health gate. Add application health commands when required. IshEmbed is process-global, so only one system can own the native runtime.
+After native boot returns, `boot()` automatically runs a fixed post-boot identity command. When `healthCheck` is omitted or nil, only the exact built-in `.ishEmbedV0_3_3` manifest selects the same-name gate and strictly requires `aarch64`, `alpine`, and `3.19.1`; a custom manifest receives the version-agnostic `.alpineARM64` default and should explicitly pass the version reviewed for that RootFS. Identity values must be non-empty and NUL-free, timeout must be in `(0, 60]` seconds, and guest `workDirectory` must be an absolute NUL-free path.
+
+The identity command has independent 4 KiB stdout/stderr caps. Swift parses `os-release` as data, the working directory is passed as argv, and actual plus target `pwd -P` values are compared so path aliases do not false-fail; expected identity values are never interpolated into shell text. A failure after native boot conservatively sets failed, consumes the process-global slot, and requires a host restart. This is a consistency check over base guest information and command context inside an already validated RootFS, not an independent provenance/security proof or an application-tool, network, or data check. A synchronous control write in the pinned v0.3.3 transport can still outlive the configured health timeout.
 
 ## 5. Execute one-shot commands
 
@@ -263,7 +265,7 @@ and SwiftTerm gates.
 - iOS 18+ arm64 target.
 - Reviewed full PocketRoot commit and explicit Experimental products.
 - Caller-owned regular RootFS file matching the manifest.
-- Ordered prepare, boot, and application health check.
+- Ordered preparation, built-in boot identity gate, and application-specific health checks.
 - Positive command timeout and handling for exit, signal, timeout, and output limits.
 - Explicit acceptance or avoidance of process-terminal shutdown.
 - No claim that Simulator evidence proves physical-device or distribution readiness.

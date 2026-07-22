@@ -74,9 +74,9 @@
 | iOS 18 Simulator 原生行为 | 已通过 | runtime/RootFS 变更时重跑 13 项 smoke |
 | RootFS 安全安装与恢复 | 已通过 | 保持真实资产、snapshot、rollback、recovery coverage；补 ENOSPC |
 | RootFS/runtime composition | 已通过 | 保持 caller-controlled、no-download、no-auto-boot |
-| 默认 post-boot health gate | 未开始 | `aarch64`、Alpine version 与 command context 通过后才 ready |
+| 默认 post-boot identity gate | 已通过 | `aarch64`、Alpine identity、可选 version 与 command context 通过后才 ready；保持失败占用槽位回归 |
 | Demo 真实 runtime 注入 | 未开始 | 一个 prepared system 注入 System/Commands/Diagnostics，不打包未审查 RootFS |
-| 进程安全 soft shutdown | 阻塞 | patch fork、kernel thread 返回、bounded joins、新 XCFramework 与重审 |
+| 进程安全 soft shutdown | 进行中 | fork 源码修复已合并；仍需新 XCFramework、checksum、PocketRoot pin 与生命周期重审 |
 | 签名 iPhone | 阻塞 | physical boot 与 command smoke |
 | 签名 iPad | 阻塞 | physical boot 与 command smoke |
 | 最低 Xcode 16 原生兼容 | 未开始 | 使用 Xcode 16 重跑 final-link 和 native behavior |
@@ -93,16 +93,13 @@
 2. **关闭策略**
    决定产品是否接受宿主进程退出。若不接受，patch upstream embed fork，让 shutdown 只结束 kernel thread，限制 native reader/log join，重建并重审 XCFramework。
 
-3. **默认健康检查**
-   定义 VM 与 command context；只有 guest `aarch64`、Alpine identity 和必要工具通过后才报告 ready。
-
-4. **最低工具链**
+3. **最低工具链**
    使用声明的 Xcode 16 重跑完整 final-link、RootFS install 和 native smoke。
 
-5. **Demo 注入**
+4. **Demo 注入**
    增加 opt-in smoke configuration，把同一个 prepared system 注入 System、Commands 与 Diagnostics，不把 RootFS 放进默认 target。
 
-6. **故障与资源硬化**
+5. **故障与资源硬化**
    增加 Task cancellation、ENOSPC、power-loss、storage pressure、long output 与 memory peak。
 
 完成上述闭环后，才能把“一次性命令”提升到 Developer Preview 候选。

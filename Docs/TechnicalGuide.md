@@ -52,7 +52,7 @@ flowchart LR
 | 包装源码层 | [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) 的固定 revision | Swift wrapper、C ABI 源码和 binary target 声明 | 当前声明中的 URL 可以仍指向第三方已发布制品 |
 | 当前原生制品 | 上述 revision 的 `Package.swift` 所记录的 URL/checksum；当前是 Lolendor v0.3.3 release | 被 PocketRoot 最终链接的 XCFramework | 不包含用户 fork 中尚未发布的修改 |
 | 当前原生运行时层 | 上述 package revision 记录的精确 iSH gitlink | iSH 内核、进程、signal、halt 和线程生命周期等底层行为 | 不能用另一个 branch 或本地 checkout 替代 |
-| 下一版原生开发层 | [`jacklv-coder/ish-arm64`](https://github.com/jacklv-coder/ish-arm64) | 用户 fork 中准备下一版底层修复 | 在新 package 制品发布且 PocketRoot 更新 pin 前，不属于当前消费链 |
+| 已合并的下一版原生源码 | [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) `d63dfc9` 与 [`jacklv-coder/ish-arm64`](https://github.com/jacklv-coder/ish-arm64) `576ffaf` | 已通过 CI 的底层修复、ABI、wrapper 与制品门禁源码 | 在新 package 制品发布且 PocketRoot 更新 pin 前，不属于当前消费链 |
 | Guest 文件系统 | 经许可审查的 `fs.tar.gz` | Alpine 用户空间、fakefs 数据与 guest 工具 | 不存放在 PocketRoot Git 仓库中 |
 
 ### 为什么需要修改 `ish-arm64-pkg`
@@ -86,7 +86,7 @@ PocketRootIshSystemFactory
 → Swift result
 ```
 
-PocketRoot 负责链路的前半段和产品边界；后半段必须阅读当前 package revision 的对应源码和 gitlink。包仓库下一版开发工作树中的 `docs/architecture.md` 是一份尚未发布的外部文档，不存在于 PocketRoot 当前固定的 package revision 中；它只描述下一版候选，不能作为当前 PocketRoot 行为的证据。
+PocketRoot 负责链路的前半段和产品边界；后半段必须阅读当前 package revision 的对应源码和 gitlink。包仓库 main 的 `docs/architecture.md` 已随候选源码合并，但不存在于 PocketRoot 当前固定的 package revision 中，也没有对应的新发布制品；它只描述下一版候选，不能作为当前 PocketRoot 二进制行为的证据。
 
 ## 3. PocketRoot 仓库结构
 
@@ -145,6 +145,10 @@ sequenceDiagram
     System->>Runtime: claim process and boot
     Runtime->>Driver: synchronous native boot on serial queue
     Driver->>Guest: start kernel and PID 1
+    Runtime->>Driver: fixed post-boot identity command
+    Driver->>Guest: uname + os-release + pwd
+    Guest-->>Runtime: NUL-framed identity
+    Runtime-->>System: ready only after exact match
     App->>System: execute(request)
     System->>Runtime: validate state and bounds
     Runtime->>Driver: spawn /bin/sh -lc
@@ -171,7 +175,7 @@ sequenceDiagram
 
 `PocketRootSystem` 把请求转给 `RuntimeCoordinator`，再进入 `IshLinuxRuntime`。runtime 先同步校验 fakefs 布局；校验通过后，在第一次 suspension 前进入 `.booting`，随后申请进程级所有权，并把同步原生调用送到专用串行队列。布局校验失败发生在状态切换前。
 
-`ready` 表示 native boot 已返回，不等于每个 guest 工具都完成业务健康检查。
+`ready` 表示 native boot 已返回，并且内置 identity gate 已匹配配置的架构、Alpine 身份、可选版本和 guest 工作目录。默认 v0.3.3 factory 固定为 `aarch64`、`alpine`、`3.19.1` 与所配置工作目录。该门禁不等于每个业务工具、网络或数据都健康，应用仍可在 ready 后追加自己的领域检查。
 
 ### 5.3 `execute`
 

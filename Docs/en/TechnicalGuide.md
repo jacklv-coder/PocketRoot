@@ -52,7 +52,7 @@ The textual relationship is:
 | Packaging source | A pinned revision of [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) | Swift wrapper, C ABI source, and binary-target declaration | The URL in the current declaration may still select a third-party published artifact |
 | Current native artifact | The URL/checksum recorded in that revision's `Package.swift`, currently the Lolendor v0.3.3 release | XCFramework final-linked by PocketRoot | It does not contain unpublished changes from the user fork |
 | Current native runtime | The exact iSH gitlink recorded by that package revision | The iSH kernel and low-level process, signal, halt, and thread lifecycle | It cannot be replaced by another branch or local checkout |
-| Next-version native development | [`jacklv-coder/ish-arm64`](https://github.com/jacklv-coder/ish-arm64) | Low-level fixes prepared in the user-owned fork | It is not in the current consumer chain until a package artifact is released and PocketRoot updates its pin |
+| Merged next-version native source | [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) `d63dfc9` and [`jacklv-coder/ish-arm64`](https://github.com/jacklv-coder/ish-arm64) `576ffaf` | CI-validated low-level fixes, ABI, wrapper, and artifact-gate source | It is not in the current consumer chain until a package artifact is released and PocketRoot updates its pin |
 | Guest filesystem | License-reviewed `fs.tar.gz` | Alpine userspace, fakefs data, and guest tools | Storage in the PocketRoot Git repository |
 
 ### Why `ish-arm64-pkg` must sometimes change
@@ -86,7 +86,7 @@ PocketRootIshSystemFactory
 → Swift result
 ```
 
-PocketRoot owns the first half and the product boundary. For the second half, read the corresponding source and gitlink from the package revision currently pinned by PocketRoot. The package repository's next-version development worktree contains an external `docs/architecture.md` that has not been released and is absent from PocketRoot's currently pinned package revision. It describes only the next-version candidate and is not evidence of current PocketRoot behavior.
+PocketRoot owns the first half and the product boundary. For the second half, read the corresponding source and gitlink from the package revision currently pinned by PocketRoot. The package repository's `docs/architecture.md` is now merged with the candidate source on main, but it is absent from PocketRoot's current pinned revision and has no corresponding new released artifact. It describes the next-version candidate and is not evidence of current PocketRoot binary behavior.
 
 ## 3. PocketRoot repository map
 
@@ -145,6 +145,10 @@ sequenceDiagram
     System->>Runtime: claim process and boot
     Runtime->>Driver: synchronous native boot on serial queue
     Driver->>Guest: start kernel and PID 1
+    Runtime->>Driver: fixed post-boot identity command
+    Driver->>Guest: uname + os-release + pwd
+    Guest-->>Runtime: NUL-framed identity
+    Runtime-->>System: ready only after exact match
     App->>System: execute(request)
     System->>Runtime: validate state and bounds
     Runtime->>Driver: spawn /bin/sh -lc
@@ -171,7 +175,7 @@ Validation proves only that the bytes match the supplied manifest. A custom mani
 
 `PocketRootSystem` delegates to `RuntimeCoordinator`, then to `IshLinuxRuntime`. The runtime first validates the fakefs layout synchronously. After validation, it enters `.booting` before its first suspension, claims process-global ownership, and sends the synchronous native call to a dedicated serial queue. A layout failure occurs before the state transition.
 
-`ready` means native boot returned. It does not prove that every application-specific guest tool passed a health check.
+`ready` means native boot returned and the built-in identity gate matched the configured architecture, Alpine identity, optional version, and guest working directory. The default v0.3.3 factory pins `aarch64`, `alpine`, `3.19.1`, and the configured cwd. This does not prove every application tool, network, or data dependency is healthy; applications may add domain checks after ready.
 
 ### 5.3 `execute`
 
