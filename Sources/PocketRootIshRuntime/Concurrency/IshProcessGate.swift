@@ -18,7 +18,7 @@ actor IshProcessGate {
         switch state {
         case .available:
             state = .claimed(ownerID)
-        case .claimed(ownerID):
+        case .claimed(let claimedOwnerID) where claimedOwnerID == ownerID:
             return
         case .claimed:
             throw PocketRootError.runtimeFailure(
@@ -31,7 +31,7 @@ actor IshProcessGate {
 
     func requireOwnership(for ownerID: UUID) throws {
         switch state {
-        case .claimed(ownerID):
+        case .claimed(let claimedOwnerID) where claimedOwnerID == ownerID:
             return
         case .terminated:
             throw PocketRootError.restartRequired

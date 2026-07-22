@@ -677,6 +677,40 @@ final class PocketRootIshRuntimeTests: XCTestCase {
         XCTAssertTrue(firstDriver.snapshot.didShutdown)
     }
 
+    func testProcessGateComparesClaimedOwnerIdentifiers() async throws {
+        let processGate = IshProcessGate()
+        let ownerID = UUID()
+        let unrelatedOwnerID = UUID()
+
+        try await processGate.claim(for: ownerID)
+
+        do {
+            try await processGate.claim(for: unrelatedOwnerID)
+            XCTFail("A different identifier must not reclaim the process gate.")
+        } catch let error as PocketRootError {
+            XCTAssertEqual(
+                error,
+                .runtimeFailure(
+                    "The process-global IshEmbed instance is owned by another PocketRoot system."
+                )
+            )
+        }
+
+        do {
+            try await processGate.requireOwnership(for: unrelatedOwnerID)
+            XCTFail("A different identifier must not pass the ownership check.")
+        } catch let error as PocketRootError {
+            XCTAssertEqual(
+                error,
+                .runtimeFailure(
+                    "This PocketRoot system does not own the process-global IshEmbed instance."
+                )
+            )
+        }
+
+        try await processGate.requireOwnership(for: ownerID)
+    }
+
     func testFailedNativeBootConsumesTheProcessSlotConservatively() async throws {
         let rootFSURL = try makeFakeFSFixture()
         let driver = FakeIshRuntimeDriver(bootError: FakeIshRuntimeError.bootFailed)
