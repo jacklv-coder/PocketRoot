@@ -27,7 +27,7 @@ PocketRoot 把可复用 Linux 能力与 UIKit Demo 分离，并把高风险的�
 | 原生平台 | arm64 iOS device 与 arm64 iOS Simulator |
 | 宿主测试声明 | macOS 13，仅用于 package tests |
 
-IshEmbed XCFramework 没有 macOS 或 x86_64 Simulator 切片。macOS fallback 只用于测试 adapter seam。原生路径已在较新 Xcode 上验证；最低 Xcode 16 行为仍以[路线图](Roadmap.md)为准。
+IshEmbed XCFramework 没有 macOS 或 x86_64 Simulator 切片。macOS fallback 只用于测试 adapter seam；SwiftPM 不能按 destination architecture 条件化 product dependency，因此链接实验产品的 App target 必须预先排除 x86_64，而不能依赖运行时探针降级。原生路径已在较新 Xcode 上验证；最低 Xcode 16 行为仍以[路线图](Roadmap.md)为准。
 
 ## 3. 模块依赖
 
@@ -209,9 +209,10 @@ sequenceDiagram
 
 `PocketRootSystem` 是 actor，序列化公共 lifecycle 与命令调用。底层 `IshLinuxRuntime`
 会在第一次 suspension 前更新自己的内部过渡状态，以关闭 boot/shutdown 的 actor
-重入窗口；公开的 `PocketRootSystem.state` 则只在 `boot()` / `shutdown()` 返回或抛错后
-从 `RuntimeCoordinator` 刷新。因此内部 `.booting` / `.shuttingDown` 不能被当作公开、
-实时的进度通知。
+重入窗口；公开的 `PocketRootSystem.state` 在公共调用结束后只发布稳定状态。因此失败关闭的
+命令会公开 `.failed`，但重入调用不会泄漏 `.booting` / `.shuttingDown`。每次刷新带有
+单调递增的代次；若较新的刷新已经开始，较旧的异步快照不能在恢复后覆盖新状态。内部过渡
+状态不能被当作公开、实时的进度通知。
 
 ### RootFS 安装
 

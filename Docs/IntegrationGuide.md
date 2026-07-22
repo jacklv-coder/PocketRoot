@@ -75,12 +75,16 @@ targets: [
 import PocketRootIshRuntime
 
 guard PocketRootIshRuntimeFactory.isAvailable else {
-    // 在 macOS、x86_64 Simulator 或缺少 IshEmbed 时走产品自己的降级路径。
+    // 在已经能够链接本产品的构建中检查 native driver 是否可用。
     return
 }
 ```
 
 macOS fallback 的作用是让宿主测试可以编译 API seam，不代表 macOS 支持 Linux guest。
+更重要的是，`isAvailable` 运行在 SwiftPM 选择并链接依赖之后，不能作为 x86_64
+Simulator 的降级开关。链接实验产品的 App target 必须像仓库内 spike/smoke target
+一样设置 `EXCLUDED_ARCHS[sdk=iphonesimulator*] = x86_64`，或者拆成不依赖实验产品的
+独立 target。Intel Mac 不能构建当前原生 target。
 
 ## 3. 准备 RootFS
 
@@ -269,11 +273,15 @@ print(result.stderr)
 
 ### 状态
 
-下表描述 runtime 状态机。当前公开的 `PocketRootSystem.state` 只在
-`boot()` / `shutdown()` 返回或抛错后从 coordinator 刷新；调用仍在执行时，
+下表描述 runtime 状态机。当前公开的 `PocketRootSystem.state` 在
+`boot()`、`shutdown()`、`execute()` 返回或抛错后只发布稳定状态；调用仍在执行时，
 外部轮询可能继续看到操作前的值，不能把它当作实时进度流。
+命令若因无法确认 guest 退出而失败关闭，`execute()` 抛错前的内部 `.failed` 会在抛错时
+同步到公开 state。
 底层 `IshLinuxRuntime` 会在 suspension 前更新自己的 `.booting` / `.shuttingDown`
-过渡状态来阻止重入，但这些内部值不会在 `await` 过程中实时镜像到公共 state。
+过渡状态来阻止重入；若 actor 重入使另一调用在这时失败，公开刷新会忽略这些过渡值。
+刷新还使用递增代次：较新的刷新开始后，较早取得但延迟返回的快照会被丢弃，不能把
+较新的 `.failed` 覆盖回旧状态。
 
 | 状态 | 含义 |
 | --- | --- |

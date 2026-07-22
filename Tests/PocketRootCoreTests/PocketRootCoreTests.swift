@@ -109,6 +109,83 @@ final class PocketRootCoreTests: XCTestCase {
         XCTAssertEqual(state, .failed("Synthetic shutdown failure."))
     }
 
+    func testSystemRefreshesStateWhenExecuteFailsClosed() async throws {
+        let runtime = FailingExecuteRuntime()
+        let system = PocketRootSystem(runtime: runtime)
+
+        try await system.boot()
+
+        do {
+            _ = try await system.execute(PocketRootCommandRequest(command: "sleep 30"))
+            XCTFail("The injected runtime should fail the command closed.")
+        } catch let error as PocketRootError {
+            XCTAssertEqual(error, .runtimeFailure("Synthetic unconfirmed guest exit."))
+        }
+
+        let state = await system.state
+        XCTAssertEqual(state, .failed("Synthetic unconfirmed guest exit."))
+    }
+
+    func testReentrantExecuteDoesNotPublishTransientBootState() async throws {
+        let bootStarted = expectation(description: "boot entered its suspension")
+        let bootGate = TestAsyncGate()
+        let runtime = SuspendingBootRuntime(bootStarted: bootStarted, bootGate: bootGate)
+        let system = PocketRootSystem(runtime: runtime)
+
+        let bootTask = Task {
+            try await system.boot()
+        }
+        await fulfillment(of: [bootStarted], timeout: 2)
+
+        do {
+            _ = try await system.execute(PocketRootCommandRequest(command: "true"))
+            XCTFail("A command admitted during boot must fail.")
+        } catch let error as PocketRootError {
+            XCTAssertEqual(error, .runtimeFailure("Synthetic boot is still in progress."))
+        }
+
+        let stateWhileBooting = await system.state
+        XCTAssertEqual(stateWhileBooting, .idle)
+
+        await bootGate.open()
+        try await bootTask.value
+        let readyState = await system.state
+        XCTAssertEqual(readyState, .ready)
+    }
+
+    func testStaleCommandRefreshCannotOverwriteNewerFailedState() async throws {
+        let staleStateCaptured = expectation(description: "stale ready state captured")
+        let staleStateGate = TestAsyncGate()
+        let runtime = StaleStateReadRuntime(
+            staleStateCaptured: staleStateCaptured,
+            staleStateGate: staleStateGate
+        )
+        let system = PocketRootSystem(runtime: runtime)
+
+        try await system.boot()
+
+        let staleCommand = Task {
+            try await system.execute(PocketRootCommandRequest(command: "capture-stale-state"))
+        }
+        await fulfillment(of: [staleStateCaptured], timeout: 2)
+
+        do {
+            _ = try await system.execute(PocketRootCommandRequest(command: "fail-closed"))
+            XCTFail("The second command should fail closed.")
+        } catch let error as PocketRootError {
+            XCTAssertEqual(error, .runtimeFailure("Synthetic concurrent failure."))
+        }
+
+        let failedState = await system.state
+        XCTAssertEqual(failedState, .failed("Synthetic concurrent failure."))
+
+        await staleStateGate.open()
+        _ = try await staleCommand.value
+
+        let finalState = await system.state
+        XCTAssertEqual(finalState, .failed("Synthetic concurrent failure."))
+    }
+
     func testRootFSManagerRequiresAProvider() async {
         let manager = RootFSManager()
 
@@ -195,6 +272,146 @@ private actor FailingShutdownRuntime: LinuxRuntime {
     func shutdown() async throws {
         state = .failed("Synthetic shutdown failure.")
         throw PocketRootError.runtimeFailure("Synthetic shutdown failure.")
+    }
+}
+
+@available(macOS 13.0, *)
+private actor FailingExecuteRuntime: LinuxRuntime {
+    private(set) var state: PocketRootRuntimeState = .idle
+
+    func boot(configuration: PocketRootConfiguration) async throws {
+        state = .ready
+    }
+
+    func execute(
+        _ request: PocketRootCommandRequest
+    ) async throws -> PocketRootCommandResult {
+        state = .failed("Synthetic unconfirmed guest exit.")
+        throw PocketRootError.runtimeFailure("Synthetic unconfirmed guest exit.")
+    }
+
+    func makeSession(
+        configuration: PocketRootSessionConfiguration
+    ) async throws -> any PocketRootSession {
+        throw PocketRootError.unsupportedOperation("Not used by this test.")
+    }
+
+    func shutdown() async throws {
+        throw PocketRootError.restartRequired
+    }
+}
+
+@available(macOS 13.0, *)
+private actor SuspendingBootRuntime: LinuxRuntime {
+    private(set) var state: PocketRootRuntimeState = .idle
+
+    private let bootStarted: XCTestExpectation
+    private let bootGate: TestAsyncGate
+
+    init(bootStarted: XCTestExpectation, bootGate: TestAsyncGate) {
+        self.bootStarted = bootStarted
+        self.bootGate = bootGate
+    }
+
+    func boot(configuration: PocketRootConfiguration) async throws {
+        state = .booting
+        bootStarted.fulfill()
+        await bootGate.wait()
+        state = .ready
+    }
+
+    func execute(
+        _ request: PocketRootCommandRequest
+    ) async throws -> PocketRootCommandResult {
+        throw PocketRootError.runtimeFailure("Synthetic boot is still in progress.")
+    }
+
+    func makeSession(
+        configuration: PocketRootSessionConfiguration
+    ) async throws -> any PocketRootSession {
+        throw PocketRootError.unsupportedOperation("Not used by this test.")
+    }
+
+    func shutdown() async throws {
+        throw PocketRootError.unsupportedOperation("Not used by this test.")
+    }
+}
+
+@available(macOS 13.0, *)
+private actor StaleStateReadRuntime: LinuxRuntime {
+    private var storedState: PocketRootRuntimeState = .idle
+    private var suspendNextStateRead = false
+
+    private let staleStateCaptured: XCTestExpectation
+    private let staleStateGate: TestAsyncGate
+
+    init(staleStateCaptured: XCTestExpectation, staleStateGate: TestAsyncGate) {
+        self.staleStateCaptured = staleStateCaptured
+        self.staleStateGate = staleStateGate
+    }
+
+    var state: PocketRootRuntimeState {
+        get async {
+            let snapshot = storedState
+            guard suspendNextStateRead else {
+                return snapshot
+            }
+
+            suspendNextStateRead = false
+            staleStateCaptured.fulfill()
+            await staleStateGate.wait()
+            return snapshot
+        }
+    }
+
+    func boot(configuration: PocketRootConfiguration) async throws {
+        storedState = .ready
+    }
+
+    func execute(
+        _ request: PocketRootCommandRequest
+    ) async throws -> PocketRootCommandResult {
+        switch request.command {
+        case "capture-stale-state":
+            suspendNextStateRead = true
+            return PocketRootCommandResult(exitCode: 0)
+        case "fail-closed":
+            storedState = .failed("Synthetic concurrent failure.")
+            throw PocketRootError.runtimeFailure("Synthetic concurrent failure.")
+        default:
+            throw PocketRootError.unsupportedOperation("Unexpected test command.")
+        }
+    }
+
+    func makeSession(
+        configuration: PocketRootSessionConfiguration
+    ) async throws -> any PocketRootSession {
+        throw PocketRootError.unsupportedOperation("Not used by this test.")
+    }
+
+    func shutdown() async throws {
+        storedState = .idle
+    }
+}
+
+private actor TestAsyncGate {
+    private var isOpen = false
+    private var continuations: [CheckedContinuation<Void, Never>] = []
+
+    func wait() async {
+        guard !isOpen else {
+            return
+        }
+        await withCheckedContinuation { continuation in
+            continuations.append(continuation)
+        }
+    }
+
+    func open() {
+        isOpen = true
+        let pending = continuations
+        continuations.removeAll()
+        pending.forEach { $0.resume() }
     }
 }
 

@@ -53,7 +53,7 @@ See [Architecture](Docs/en/Architecture.md), [Implementation](Docs/en/Implementa
 - iOS 18.0+
 - Homebrew and XcodeGen
 
-macOS 13 is a host-test declaration, not a supported guest platform. IshEmbed has arm64 iOS device and arm64 Simulator slices only. Native behavior has been validated with Xcode 26.1.1 and iOS 18.2 arm64 Simulator; minimum-Xcode native validation remains open.
+macOS 13 is a host-test declaration, not a supported guest platform. IshEmbed has arm64 iOS device and arm64 Simulator slices only. An App target that selects the Experimental products must exclude x86_64 Simulator before SwiftPM product resolution; `isAvailable` is a post-link runtime probe, not a remedy for a missing binary slice. Native behavior has been validated with Xcode 26.1.1 and iOS 18.2 arm64 Simulator; minimum-Xcode native validation remains open.
 
 ## Build from source
 
@@ -123,7 +123,7 @@ Contract:
 5. Commands run through `/bin/sh -lc` and are shell strings, not argv-safe APIs.
 6. Each request owns cwd, environment, timeout, and stderr policy.
 7. Native shutdown ends the entire host app; never use it for routine view/scene cleanup.
-8. `PocketRootSystem.state` refreshes only after `boot()` / `shutdown()` returns or throws. The runtime's internal `.booting` / `.shuttingDown` transitions are not a public real-time progress stream.
+8. Completed public calls publish only stable states. Fail-close exposes `.failed`; reentrant calls cannot leak internal transitions, and older asynchronous snapshots cannot overwrite a newer failure.
 
 See the [Integration Guide](Docs/en/IntegrationGuide.md).
 

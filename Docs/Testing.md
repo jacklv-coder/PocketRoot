@@ -34,7 +34,7 @@ swift test
 
 - command request/configuration 默认值和 command result stream 解码；
 - placeholder boot/execute/shutdown；
-- injected runtime 委托以及 shutdown 失败后的公开状态同步；
+- injected runtime 委托，以及 execute 失败关闭、shutdown 失败后的公开状态同步、重入命令不泄漏过渡态和旧快照不能覆盖较新失败状态；
 - RootFS manager 必须有 provider 以及 prepared metadata 保存。
 
 ### PocketRootResourcesTests

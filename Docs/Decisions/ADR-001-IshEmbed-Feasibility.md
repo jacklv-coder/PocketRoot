@@ -95,7 +95,7 @@ manifest 声明 iOS 14 与 macOS 12，但 release XCFramework 只有：
 | `ios-arm64` | arm64 | iOS device | iOS 14.0 |
 | `ios-arm64-simulator` | arm64 | iOS Simulator | iOS 14.0 |
 
-没有 x86_64 Simulator 或 macOS slice。上游 package 直接在 macOS native link 会失败，因此 PocketRoot 只在 iOS 条件下依赖 binary，并为 host tests 使用 driver seam。
+没有 x86_64 Simulator 或 macOS slice。上游 package 直接在 macOS native link 会失败，因此 PocketRoot 只在 iOS 条件下依赖 binary，并为 host tests 使用 driver seam。SwiftPM manifest 不能按 destination architecture 条件化 product dependency；选择实验产品的 App target 必须在构建设置中排除 x86_64，`isAvailable` 只负责链接后的能力探测。
 
 ### 制品完整性
 
@@ -185,8 +185,9 @@ ARM64 engine 使用预编译 gadget，不在 runtime 生成机器码。该结果
 - lifecycle state 在 suspension 前关闭；
 - active command 存在时拒绝 shutdown。
 
-这里的 lifecycle state 是 adapter 内部状态。公开 `PocketRootSystem.state` 只在
-`boot()` / `shutdown()` 返回或抛错后刷新，不暴露 await 过程中的实时过渡进度。
+这里的 lifecycle state 是 adapter 内部状态。公开 `PocketRootSystem.state` 在 lifecycle
+调用结束后发布最终状态，命令结束后只发布稳定状态；失败关闭会公开 `.failed`，但重入
+命令不会泄漏 await 过程中的内部过渡态。
 
 RootFS promotion 也不被视为一次整体原子替换。journal 不记录 phase，而是保存预期记录
 和旧安装/current 数据；各次同卷 rename 后若中断，下次根据 final 是否匹配预期、backup

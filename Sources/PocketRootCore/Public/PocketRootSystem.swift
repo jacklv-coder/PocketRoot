@@ -6,6 +6,7 @@ public actor PocketRootSystem {
     public private(set) var state: PocketRootRuntimeState = .idle
 
     private let coordinator: RuntimeCoordinator
+    private var stateRefreshGeneration: UInt64 = 0
 
     public init(configuration: PocketRootConfiguration = PocketRootConfiguration()) {
         self.configuration = configuration
@@ -23,9 +24,9 @@ public actor PocketRootSystem {
     public func boot() async throws {
         do {
             try await coordinator.boot(configuration: configuration)
-            state = await coordinator.currentState()
+            await refreshPublishedStableState()
         } catch {
-            state = await coordinator.currentState()
+            await refreshPublishedStableState()
             throw error
         }
     }
@@ -33,16 +34,46 @@ public actor PocketRootSystem {
     public func execute(
         _ request: PocketRootCommandRequest
     ) async throws -> PocketRootCommandResult {
-        try await coordinator.execute(request)
+        do {
+            let result = try await coordinator.execute(request)
+            await refreshPublishedStableState()
+            return result
+        } catch {
+            await refreshPublishedStableState()
+            throw error
+        }
     }
 
     public func shutdown() async throws {
         do {
             try await coordinator.shutdown()
-            state = await coordinator.currentState()
+            await refreshPublishedStableState()
         } catch {
-            state = await coordinator.currentState()
+            await refreshPublishedStableState()
             throw error
+        }
+    }
+
+    private func refreshPublishedStableState() async {
+        stateRefreshGeneration &+= 1
+        let refreshGeneration = stateRefreshGeneration
+        let currentState = await coordinator.currentState()
+
+        // Actor reentrancy lets a newer operation observe and publish a later
+        // runtime state while this lookup is suspended. Never let the older
+        // snapshot overwrite that newer publication when it eventually resumes.
+        guard refreshGeneration == stateRefreshGeneration else {
+            return
+        }
+
+        switch currentState {
+        case .idle, .ready, .terminated, .failed:
+            state = currentState
+        case .preparingRootFS, .booting, .shuttingDown:
+            // A lifecycle call can be suspended while this actor admits a
+            // reentrant command. Keep transient runtime states internal; the
+            // owning lifecycle call publishes its stable result when it ends.
+            break
         }
     }
 }

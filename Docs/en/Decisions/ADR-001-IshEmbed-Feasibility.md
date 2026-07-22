@@ -39,7 +39,7 @@ Do not follow a branch or use semantic-version selection against a fork that had
 
 ## Evidence
 
-The package exposes CIshEmbed, an IshKernel binary, Swift APIs, and RootFS-dependent tests. The released XCFramework has only arm64 iOS device and arm64 Simulator slices; no macOS or x86_64 Simulator.
+The package exposes CIshEmbed, an IshKernel binary, Swift APIs, and RootFS-dependent tests. The released XCFramework has only arm64 iOS device and arm64 Simulator slices; no macOS or x86_64 Simulator. SwiftPM cannot condition the product dependency on destination architecture, so App targets selecting the Experimental product must exclude x86_64 at build time; `isAvailable` is only a post-link probe.
 
 Independent digests:
 
@@ -65,10 +65,10 @@ Static inspection found no MAP_JIT, JIT entitlement, private framework path, or 
 
 IshEmbed is process-global. PocketRoot uses one process owner, serial native execution, lifecycle state closure before suspension, one in-flight command, bounded reads, stream limits, and no shutdown while a command is active.
 
-That lifecycle state is internal to the adapter. Public
-`PocketRootSystem.state` refreshes only after `boot()` / `shutdown()` returns
-or throws; it does not expose real-time transient progress during the awaited
-call.
+That lifecycle state is internal to the adapter. Lifecycle calls publish their
+final state; completed commands publish only stable states. A fail-closed
+command publishes `.failed`, but a reentrant command does not expose transient
+progress from an awaited lifecycle call.
 
 RootFS promotion is likewise not described as one atomic replacement. Its
 journal stores no phase; it records expected and previous install/current

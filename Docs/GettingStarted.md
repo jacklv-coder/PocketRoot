@@ -24,7 +24,7 @@ swift --version
 xcrun --sdk iphonesimulator --show-sdk-version
 ```
 
-原生 IshEmbed 只有 arm64 iOS 真机和 arm64 Simulator 切片。Intel Mac、Rosetta 下的 x86_64 Simulator 和 macOS 进程不能运行真实 guest。普通 Swift Package 宿主测试仍可在声明的 macOS 13 基线上运行。
+原生 IshEmbed 只有 arm64 iOS 真机和 arm64 Simulator 切片。Intel Mac、Rosetta 下的 x86_64 Simulator 和 macOS 进程不能运行真实 guest。链接实验产品的 App target 必须预先排除 x86_64 Simulator；运行时 `isAvailable` 无法绕过 SwiftPM 在链接前选择不到切片的问题。普通 Swift Package 宿主测试仍可在声明的 macOS 13 基线上运行。
 
 ## 2. 获取源码
 

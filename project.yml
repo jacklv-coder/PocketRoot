@@ -39,6 +39,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.jacklv.PocketRootIshRuntimeCompileSpike
         PRODUCT_NAME: PocketRootIshRuntimeCompileSpike
         ARCHS: arm64
+        "EXCLUDED_ARCHS[sdk=iphonesimulator*]": x86_64
         ONLY_ACTIVE_ARCH: YES
         SKIP_INSTALL: YES
         SUPPORTS_MACCATALYST: NO
@@ -63,6 +64,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.jacklv.PocketRootIshRuntimeSmoke
         PRODUCT_NAME: PocketRootIshRuntimeSmoke
         ARCHS: arm64
+        "EXCLUDED_ARCHS[sdk=iphonesimulator*]": x86_64
         ONLY_ACTIVE_ARCH: YES
         SKIP_INSTALL: YES
         SUPPORTS_MACCATALYST: NO

@@ -26,7 +26,7 @@ Check network access to the exact package commit and parent release asset, uncha
 
 ## IshEmbed unavailable or missing module
 
-Native support requires iOS + arm64 + explicit Experimental products. macOS, x86_64 Simulator, Intel Mac, and the default umbrella do not provide a native guest. Check `PocketRootIshRuntimeFactory.isAvailable`.
+Native support requires iOS + arm64 + explicit Experimental products. macOS, x86_64 Simulator, Intel Mac, and the default umbrella do not provide a native guest. `PocketRootIshRuntimeFactory.isAvailable` is useful only after an arm64 target has linked successfully. SwiftPM resolves the binary before application code runs, so an App target selecting the Experimental product must set `EXCLUDED_ARCHS[sdk=iphonesimulator*] = x86_64` or be separated from the portable target. Intel Macs cannot build the current native target.
 
 The upstream package has no macOS XCFramework slice despite its manifest declaration; direct upstream macOS native tests can fail. PocketRoot host tests use injected/unsupported drivers.
 

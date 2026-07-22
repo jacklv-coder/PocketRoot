@@ -77,13 +77,13 @@ swift package resolve
 - `canImport(IshEmbed)`；
 - 显式依赖 `PocketRootIshRuntime` / `PocketRootIshRuntimeIntegration`。
 
-macOS、x86_64 Simulator 和默认 `PocketRoot` 产品不会提供真实 runtime。检查：
+macOS、x86_64 Simulator 和默认 `PocketRoot` 产品不会提供真实 runtime。在已经链接成功的 arm64 target 中可检查：
 
 ```swift
 PocketRootIshRuntimeFactory.isAvailable
 ```
 
-Intel Mac 无法执行当前原生路径。Apple Silicon 上仍要确保 destination 是 arm64 iOS Simulator，不是 Rosetta/x86_64。
+`isAvailable` 不是构建架构选择器：SwiftPM 会先解析并链接 binary，再运行应用代码。链接实验产品的 target 必须设置 `EXCLUDED_ARCHS[sdk=iphonesimulator*] = x86_64` 或与 portable target 分离。Intel Mac 无法构建当前原生 target；Apple Silicon 上仍要确保 destination 是 arm64 iOS Simulator，不是 Rosetta/x86_64。
 
 ## 在上游包直接运行 `swift test` 时链接失败
 

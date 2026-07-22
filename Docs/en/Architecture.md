@@ -19,7 +19,7 @@ The design keeps the default dependency safe, Core independent from UIKit and co
 | Native platforms | arm64 iOS device and arm64 Simulator |
 | Host-test declaration | macOS 13 only |
 
-The XCFramework has no macOS or x86_64 Simulator slice. The macOS fallback tests adapter contracts only.
+The XCFramework has no macOS or x86_64 Simulator slice. The macOS fallback tests adapter contracts only. SwiftPM cannot condition a product dependency on destination architecture, so an App target selecting the Experimental product must exclude x86_64 before linking instead of relying on a runtime feature probe.
 
 ## Module graph
 
@@ -115,9 +115,12 @@ The caller owns the archive before composition. Install and boot are separate. N
 
 `IshLinuxRuntime` updates its own internal transient lifecycle state before its
 first suspension to close boot/shutdown reentrancy. Public
-`PocketRootSystem.state` is different: it refreshes from the coordinator only
-after `boot()` / `shutdown()` returns or throws. Internal `.booting` and
-`.shuttingDown` transitions are therefore not a public real-time progress feed.
+`PocketRootSystem.state` is different: completed public calls publish only
+stable states. A fail-closed command therefore publishes `.failed`, but a
+reentrant call cannot leak internal `.booting` / `.shuttingDown` transitions
+into the public contract. Each asynchronous refresh carries a monotonically
+increasing generation, so an older snapshot cannot resume later and overwrite
+a newer observation.
 
 The runtime uses a process ownership gate, lifecycle state transitions before suspension, one in-flight command, bounded native read waits, and independent Swift result limits. After a session is spawned, pre-exit stdin/read/timeout/overflow failures request termination and require an authoritative `EXITED` event before another command is admitted; otherwise the process gate fails closed and a host restart is required. A negative synthetic exit from pinned supervisor rejection before guest creation is instead surfaced as a provenance-preserving recoverable error. The deadline is created only after synchronous `spawn` and `closeStdin` return. In the pinned v0.3.3 native transport, control writes, terminate, and close may still block, and the unread session inbox has no independent ceiling. `execute()` therefore has neither an end-to-end hard time bound nor complete host-process memory backpressure. Swift Task cancellation is not yet a complete native kill contract.
 

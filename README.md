@@ -56,7 +56,7 @@ flowchart LR
 说明：
 
 - macOS 13 仅是运行 Swift Package 宿主测试的最低声明，不是受支持的 Linux 运行时平台。
-- IshEmbed XCFramework 只有 arm64 iOS 真机和 arm64 iOS Simulator 切片，不支持 x86_64 Simulator 或 macOS。
+- IshEmbed XCFramework 只有 arm64 iOS 真机和 arm64 iOS Simulator 切片，不支持 x86_64 Simulator 或 macOS。链接实验产品的 App target 必须在选择 Swift Package 产品前就排除 x86_64 Simulator；`isAvailable` 是已成功链接后的运行时探针，不能挽救缺失切片的 target。
 - 原生路径已在 Xcode 26.1.1 与 iOS 18.2 arm64 Simulator 验证；最低 Xcode 16 的原生行为验证仍是开放门禁。
 
 ## 从源码开始
@@ -132,7 +132,7 @@ print("stderr:", result.stderr)
 5. 命令通过 `/bin/sh -lc` 执行，所以 `command` 是 shell 字符串，而不是无 shell 解析的 argv API。
 6. 每个请求独立设置工作目录、环境变量、超时和 stderr 合并策略。
 7. 真实 `shutdown()` 会结束整个宿主 App；不要把它用于页面消失、场景切换或普通资源清理。
-8. `PocketRootSystem.state` 只在 `boot()` / `shutdown()` 返回或抛错后刷新；runtime 内部的 `.booting` / `.shuttingDown` 过渡状态不是公开的实时进度流。
+8. 公共调用结束后只发布稳定 state；失败关闭会公开 `.failed`，重入调用不会泄漏 runtime 内部过渡态，旧的异步快照也不能覆盖较新的失败状态。
 
 完整的依赖选择、错误处理和生命周期约束见[应用接入指南](Docs/IntegrationGuide.md)。
 

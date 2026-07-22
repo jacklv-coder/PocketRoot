@@ -19,7 +19,7 @@ swift --version
 xcrun --sdk iphonesimulator --show-sdk-version
 ```
 
-The native IshEmbed binary has arm64 iOS device and arm64 Simulator slices only. It does not run in macOS or an x86_64 Simulator process.
+The native IshEmbed binary has arm64 iOS device and arm64 Simulator slices only. It does not run in macOS or an x86_64 Simulator process. An App target that selects the Experimental product must exclude x86_64 before package linking; a runtime `isAvailable` check cannot repair a missing binary slice.
 
 ## 2. Checkout
 

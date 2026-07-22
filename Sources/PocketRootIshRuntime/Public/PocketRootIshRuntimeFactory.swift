@@ -2,7 +2,12 @@ import PocketRootCore
 
 /// Creates a PocketRoot system backed by the pinned IshEmbed adapter.
 public enum PocketRootIshRuntimeFactory {
-    /// True only when the current build can link the arm64 iOS IshEmbed binary.
+    /// True only after an arm64 iOS build has selected and linked IshEmbed.
+    ///
+    /// This is a runtime feature probe, not an architecture-selection mechanism.
+    /// A target that links the Experimental product must already exclude x86_64
+    /// Simulator builds because SwiftPM cannot condition a product dependency on
+    /// the destination architecture.
     public static var isAvailable: Bool {
         #if os(iOS) && arch(arm64) && canImport(IshEmbed)
         true

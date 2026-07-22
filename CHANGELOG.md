@@ -54,6 +54,8 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
 - 一次性命令在进入 native driver 前拒绝含 NUL 的 C 字符串输入和歧义 environment key。
 - session 建立后的 pre-exit 错误只有在观察到可信 guest `EXITED` 后才可恢复；supervisor 的负数合成状态保留错误来源，固定 transport 的 `(17, 0)` 歧义 marker 会先显式清理再失败关闭并要求重启宿主。
 - ustar extractor 现在也拒绝重复目录项和文件系统等价目录目标；RootFS journal 文档明确不承诺未显式 `fsync` 的掉电持久性。
+- `PocketRootSystem` 现在在 lifecycle/command 成功或抛错后刷新稳定公开 state；失败关闭立即公开 `.failed`，重入调用不会泄漏 lifecycle 过渡态，并用刷新代次阻止较旧快照覆盖较新的失败状态。
+- 原生 spike/smoke target 显式排除 x86_64 Simulator；文档明确 `isAvailable` 是链接后的探针，不能替代 arm64-only binary 的构建架构约束。
 
 ### Security
 

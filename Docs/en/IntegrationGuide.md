@@ -62,6 +62,12 @@ guard PocketRootIshRuntimeFactory.isAvailable else {
 ```
 
 The macOS fallback exists for host contract tests, not for a macOS Linux guest.
+`isAvailable` runs only after SwiftPM has selected and linked dependencies, so it
+cannot provide an x86_64 Simulator fallback for an App target that selects the
+Experimental product. Such a target must set
+`EXCLUDED_ARCHS[sdk=iphonesimulator*] = x86_64`, as the repository's spike and
+smoke targets do, or be split from the portable target. Intel Macs cannot build
+the current native target.
 
 ## 3. Prepare a local RootFS
 
@@ -202,14 +208,18 @@ The result exposes exit code, signal, raw Data streams, UTF-8 convenience string
 
 The runtime state machine contains `idle`, `preparingRootFS`, `booting`,
 `ready`, `shuttingDown`, `terminated`, and `failed(String)`. The public
-`PocketRootSystem.state` refreshes only after `boot()` / `shutdown()` returns
-or throws; polling during an in-flight call can still show the previous value
-and is not a progress stream. Native terminated/restart behavior is normally
+`PocketRootSystem.state` publishes only a stable state after `boot()`,
+`shutdown()`, or `execute()` returns or throws;
+polling during an in-flight call can still show the previous value and is not a
+progress stream. A command that fails closed publishes the
+runtime's `.failed` state as `execute()` throws. Native terminated/restart behavior is normally
 not observable because current shutdown exits the process.
 
 Internally, `IshLinuxRuntime` sets `.booting` / `.shuttingDown` before
-suspension to prevent reentrancy. Those transient internal values are not
-mirrored to public state in real time while the awaited call is in flight.
+suspension to prevent reentrancy. A reentrant refresh ignores those transient
+values. Refreshes also carry increasing generations: once a newer refresh has
+started, an older delayed snapshot is discarded instead of overwriting a newer
+`.failed` observation.
 
 Handle typed `PocketRootError` cases: `runtimeNotBooted`, `rootFSUnavailable`, `runtimeFailure`, `restartRequired`, `invalidCommandRequest`, `commandOutputLimitExceeded`, and `unsupportedOperation`. RootFS preparation can additionally throw typed validation, extraction, and installation errors.
 
