@@ -17,14 +17,16 @@ complete local-RootFS to one-shot-result flow.
 | `PocketRootResources` | RootFS manifest, validation, extraction, and install | No |
 | `PocketRootTerminal` | UIKit terminal placeholder UI | No |
 | `PocketRootAgent` | Provider-agnostic bounded agent loop and OpenAI Responses transport | No |
+| `PocketRootAgentRuntimeTools` | Approval- and policy-gated Linux command adapter | No |
 | `PocketRoot` | Safe umbrella exporting Core, Resources, and Terminal | No |
 | `PocketRootIshRuntime` | Experimental pinned IshEmbed adapter | Yes |
 | `PocketRootIshRuntimeIntegration` | Experimental RootFS/runtime composition | Yes |
 
 Use `PocketRoot` for stable models and UI. Add `PocketRootAgent` explicitly for
-the agent loop and optional OpenAI Responses transport. The Linux command tool
-remains separate follow-up work documented in [Lightweight Agent Loop](Agent.md). A real guest
-requires the explicit integration product. The repository has no stable
+the agent loop and optional OpenAI Responses transport. Add
+`PocketRootAgentRuntimeTools` only when exposing a prepared system through the
+approval-gated command adapter documented in [Lightweight Agent Loop](Agent.md).
+A real guest requires the explicit integration product. The repository has no stable
 release tag yet; pin a reviewed full commit:
 
 ```swift
@@ -39,6 +41,11 @@ targets: [
         name: "YourAppFeature",
         dependencies: [
             .product(name: "PocketRoot", package: "PocketRoot"),
+            .product(name: "PocketRootAgent", package: "PocketRoot"),
+            .product(
+                name: "PocketRootAgentRuntimeTools",
+                package: "PocketRoot"
+            ),
             .product(name: "PocketRootIshRuntime", package: "PocketRoot"),
             .product(
                 name: "PocketRootIshRuntimeIntegration",

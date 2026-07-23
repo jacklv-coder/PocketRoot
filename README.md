@@ -11,16 +11,17 @@ PocketRoot 是面向 iOS 的可嵌入 ARM64 Linux 运行时、终端与上层轻
 
 | 能力 | 状态 | 说明 |
 | --- | --- | --- |
-| Swift Package 模块与公共 API | 可用 | Core、Resources、Terminal、Agent 及默认伞形产品 |
+| Swift Package 模块与公共 API | 可用 | Core、Resources、Terminal、Agent、Agent Runtime Tools 及默认伞形产品 |
 | UIKit Demo 外壳 | 可用 | 展示 System、Terminal、Commands、Diagnostics 四个入口 |
 | RootFS 校验与安全安装 | 可用 | 固定大小和 SHA-256、安全解包、journal 保护的同卷 promotion、复用与中断恢复 |
 | iSH 启动与一次性命令 | 实验性 | 仅 `iOS + arm64`，必须显式依赖实验产品 |
-| 轻量 agent loop | 核心与 OpenAI transport 可用 | 显式依赖 `PocketRootAgent`；宿主提供 credential；不安装 Codex CLI，不默认暴露 shell |
+| 轻量 agent loop | 核心、OpenAI transport 与审批命令工具可用 | Agent 与 Runtime Tools 均显式 opt-in；不安装 Codex CLI，不自动批准 shell |
 | 交互式 PTY 与 SwiftTerm | 未实现 | 会话、输入、resize、signal 和安全关闭仍在规划中 |
 | 真机与公开发行 | 部分通过 / 阻塞 | iPhone 一次性命令基线已通过；仍需 iPad、生命周期、Xcode 16、许可证、SBOM 和 App Store 审查 |
 
 默认 `PocketRoot` 产品不会带入 agent loop 或真实 iSH 运行时，也不会打包或下载 RootFS。
-需要 agent 的应用显式依赖 `PocketRootAgent`；需要真实运行时的应用显式依赖
+需要 agent 的应用显式依赖 `PocketRootAgent`；只有需要审批命令 adapter 时才额外依赖
+`PocketRootAgentRuntimeTools`；需要真实运行时的应用显式依赖
 `PocketRootIshRuntimeIntegration`。`PocketRootSystem.shared` 仍使用安全的占位实现。
 
 ## 实现概览

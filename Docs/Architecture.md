@@ -41,6 +41,8 @@ flowchart TB
     Terminal --> Core
     Resources --> Archive["CPocketRootArchiveSupport<br/>zlib streaming"]
     Agent["PocketRootAgent<br/>有界模型/工具循环"]
+    AgentTools["PocketRootAgentRuntimeTools<br/>审批命令 adapter"] --> Agent
+    AgentTools --> Core
 
     Integration["PocketRootIshRuntimeIntegration<br/>Experimental"] --> Core
     Integration --> Resources
@@ -56,7 +58,8 @@ flowchart TB
 - `PocketRootCore` 位于底层，不依赖 UIKit、Resources 或 IshEmbed。
 - `PocketRootTerminal` 只依赖 Core。
 - `PocketRootResources` 通过私有 C target 使用 zlib，不依赖 runtime。
-- `PocketRootAgent` 当前是独立的纯 Swift loop，不属于安全伞形产品，也不依赖具体模型 provider 或 runtime；后续 command tool adapter 才与 Core 组合。
+- `PocketRootAgent` 是安全伞形产品外的纯 Swift loop 与可选 OpenAI transport，不依赖 runtime。
+- `PocketRootAgentRuntimeTools` 显式依赖 Agent 与 Core，以 policy、逐次审批和资源边界组合命令。
 - `PocketRootIshRuntime` 依赖 Core 和仅 iOS 条件下的 IshEmbed。
 - `PocketRootIshRuntimeIntegration` 是 Resources 与 runtime 的唯一公共组合入口。
 - `PocketRoot` 只导出 Core、Terminal、Resources。
@@ -99,8 +102,17 @@ flowchart TB
 - 整批 call 预检、顺序执行和 cancellation；
 - unknown tool 与普通 tool failure 的结构化回传。
 
-它不提供网络 transport、credential storage 或默认 shell tool，也不在 RootFS 中安装
-Codex CLI。具体边界见[轻量 Agent Loop](Agent.md)。
+它不提供 credential storage 或默认/自动批准的 shell tool，也不在 RootFS 中安装
+Codex CLI。OpenAI transport 位于同一 opt-in 产品中；命令 adapter 则位于单独的
+`PocketRootAgentRuntimeTools`，不自动批准任何请求。具体边界见[轻量 Agent Loop](Agent.md)。
+
+### PocketRootAgentRuntimeTools
+
+源码：`Sources/PocketRootAgentRuntimeTools/`
+
+负责 strict command schema、工具级整批 preflight、cwd/environment/timeout/output
+边界、宿主 allow/deny policy、逐次审批，以及 `PocketRootSystem.execute` 结果的有界
+UTF-8/Base64 映射。它不进入默认伞形产品。
 
 ### PocketRootResources
 

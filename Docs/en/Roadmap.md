@@ -15,8 +15,8 @@ Status:
 
 1. Merged the provider-agnostic bounded `PocketRootAgent` loop.
 2. Completed the OpenAI Responses API transport and host-owned credential contract.
-3. Current: add an approval-, command-policy-, timeout-, and output-gated Linux tool.
-4. Release and pin the soft-shutdown IshEmbed artifact.
+3. Completed the approval-, command-policy-, timeout-, and output-gated Linux tool.
+4. Current: release and pin the soft-shutdown IshEmbed artifact.
 5. Compose the agent, prepared runtime, and Simulator UI in the Demo/App.
 6. Complete signed iPad smoke when hardware is available; that hardware gate does not block the first five items.
 
@@ -110,6 +110,9 @@ Status: **In progress**.
 - Added a native OpenAI Responses transport covering initial input, tool-output continuation, text, and function-call decoding.
 - Added an async host bearer-credential contract with sanitized loader failures and no RootFS or log exposure.
 - Added strict function-schema preflight, request/response body limits, and redirect rejection.
+- Added explicit opt-in `PocketRootAgentRuntimeTools`; commands execute only after structural preflight, host allow/deny policy, and per-call approval.
+- Bounded command, cwd, environment, timeout, and model-visible streams, with Base64 for binary output.
+- Added tool-specific synchronous preflight to whole-batch runner validation and covered policy, approval, cancellation, and no-side-effect paths.
 
 ### Gates
 
@@ -118,7 +121,7 @@ Status: **In progress**.
 | Bounded loop core | Passed | Keep package tests and strict concurrency green |
 | OpenAI transport | Passed | Keep Responses request/response/function-call, strict-schema, error, and body-limit tests green |
 | Credential contract | Passed | Production backend holds the long-lived OpenAI key; mobile host loads only an app-session bearer credential |
-| Linux command tool | Not started | Approval, allow/deny policy, cwd, timeout, output, and cancellation tests |
+| Linux command tool | Passed | Keep approval, allow/deny policy, cwd, timeout, output, whole-batch preflight, and cancellation tests green |
 | Demo/App integration | Not started | Explicit status, tool confirmation, cancellation, error, and final-text UI |
 | Persistence/streaming | Not started | Retention policy, recovery, incremental events, and resource limits |
 
