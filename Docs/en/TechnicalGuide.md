@@ -46,8 +46,8 @@ flowchart LR
     XC --> PR
     RootFS["Reviewed RootFS<br/>local external asset"] --> PR
 
-    DevPkg["ish-arm64-pkg<br/>next-version branch"] --> DevNative["jacklv-coder/ish-arm64<br/>next-version fork"]
-    DevPkg -. "effective only after release and pin update" .-> PR
+    PkgFix["ish-arm64-pkg<br/>reviewed maintenance"] --> NativeFork["jacklv-coder/ish-arm64<br/>native fork"]
+    PkgFix -. "effective after review and exact revision pin" .-> PR
 ```
 
 The textual relationship is:
@@ -58,7 +58,7 @@ The textual relationship is:
 | Packaging source | A pinned revision of [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) | Swift wrapper, C ABI source, and binary-target declaration | The URL in the current declaration may still select a third-party published artifact |
 | Current native artifact | The `v0.4.0-abi.1` URL/checksum | XCFramework final-linked by PocketRoot | Self-hosted fork prerelease; no RootFS |
 | Current native runtime | The exact iSH gitlink recorded by that package revision | The iSH kernel and low-level process, signal, halt, and thread lifecycle | It cannot be replaced by another branch or local checkout |
-| Merged next-version native source | [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) `d63dfc9` and [`jacklv-coder/ish-arm64`](https://github.com/jacklv-coder/ish-arm64) `576ffaf` | CI-validated low-level fixes, ABI, wrapper, and artifact-gate source | It is not in the current consumer chain until a package artifact is released and PocketRoot updates its pin |
+| Post-release package metadata fix | [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) `41e5c0a` | Absolute SSH-over-443 submodule URL and public read-only HTTPS rewrite in CI | It does not change the `v0.4.0-abi.1` binary URL/checksum or native artifact |
 | Guest filesystem | License-reviewed `fs.tar.gz` | Alpine userspace, fakefs data, and guest tools | Storage in the PocketRoot Git repository |
 
 ### Why `ish-arm64-pkg` must sometimes change
@@ -96,7 +96,12 @@ PocketRootIshSystemFactory
 → Swift result
 ```
 
-PocketRoot owns the first half and the product boundary. For the second half, read the corresponding source and gitlink from the package revision currently pinned by PocketRoot. The package repository's `docs/architecture.md` is now merged with the candidate source on main, but it is absent from PocketRoot's current pinned revision and has no corresponding new released artifact. It describes the next-version candidate and is not evidence of current PocketRoot binary behavior.
+PocketRoot owns the first half and the product boundary. For the second half,
+read the corresponding source and gitlink from the package revision currently
+pinned by PocketRoot. The pin contains the package architecture documentation
+and the post-release checkout-metadata fix, while its binary target still
+selects the same `v0.4.0-abi.1` asset. Native binary behavior remains evidenced
+by that Release's corresponding source, hashes, and runtime validation.
 
 ## 3. PocketRoot repository map
 

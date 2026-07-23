@@ -12,7 +12,7 @@ SHA-256 的唯一事实源。branch、moving tag、未验证 release alias 和�
 | 字段 | 审核值 |
 | --- | --- |
 | 仓库 | `https://github.com/jacklv-coder/ish-arm64-pkg.git` |
-| 完整 revision | `4e311bcea4fe806491e76a23c0e4caeeb1c513bf` |
+| 完整 revision | `41e5c0a8b215c18239308c787a4a4de53d685076` |
 | Release | `v0.4.0-abi.1`（prerelease） |
 | Tag peeled commit | `4e311bcea4fe806491e76a23c0e4caeeb1c513bf` |
 | Swift product | `IshEmbed` |
@@ -25,13 +25,15 @@ SHA-256 的唯一事实源。branch、moving tag、未验证 release alias 和�
 ```swift
 .package(
     url: "https://github.com/jacklv-coder/ish-arm64-pkg.git",
-    revision: "4e311bcea4fe806491e76a23c0e4caeeb1c513bf"
+    revision: "41e5c0a8b215c18239308c787a4a4de53d685076"
 )
 ```
 
-该 revision 是只更新 release URL/checksum 的发布提交。它的 parent
-`2858cbf40d9aa10264773f96a6b598703a5533ea` 包含通过 PR 合并的 native lifecycle、
-root `/proc` 与 Codex CLI 路径清理；发布提交本身只修改 `Package.swift`。
+消费 revision 是 `v0.4.0-abi.1` 发布后的 package 元数据修复提交：把
+`third_party/ish` 从相对 URL 改为绝对 SSH-over-443 URL，并为无 SSH 私钥的 GitHub
+CI 使用公开 HTTPS 只读重写。它没有修改 `Package.swift` 的 binary URL/checksum；
+Release tag 仍固定到 `4e311bcea4fe806491e76a23c0e4caeeb1c513bf`，因此消费的原生
+XCFramework 与对应源码资产均未变化。
 
 ## 2. iSH source gitlink
 

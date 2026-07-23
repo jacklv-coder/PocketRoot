@@ -48,7 +48,7 @@ PocketRoot 将 IshEmbed 集成在独立的 `PocketRootIshRuntime` product 后，
 
 ```text
 Repository: https://github.com/jacklv-coder/ish-arm64-pkg.git
-Revision:   4e311bcea4fe806491e76a23c0e4caeeb1c513bf
+Revision:   41e5c0a8b215c18239308c787a4a4de53d685076
 Product:    IshEmbed
 ```
 

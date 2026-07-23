@@ -13,7 +13,7 @@ Audit date: 2026-07-23
 | Field | Audited value |
 | --- | --- |
 | Repository | `https://github.com/jacklv-coder/ish-arm64-pkg.git` |
-| Exact revision | `4e311bcea4fe806491e76a23c0e4caeeb1c513bf` |
+| Exact revision | `41e5c0a8b215c18239308c787a4a4de53d685076` |
 | Release | `v0.4.0-abi.1` prerelease |
 | Tag peeled commit | `4e311bcea4fe806491e76a23c0e4caeeb1c513bf` |
 | Swift product | `IshEmbed` |
@@ -26,14 +26,16 @@ Both `Package.swift` and `Package.resolved` pin the full revision:
 ```swift
 .package(
     url: "https://github.com/jacklv-coder/ish-arm64-pkg.git",
-    revision: "4e311bcea4fe806491e76a23c0e4caeeb1c513bf"
+    revision: "41e5c0a8b215c18239308c787a4a4de53d685076"
 )
 ```
 
-This revision is the release commit that changes only the release URL and
-checksum. Its parent, `2858cbf40d9aa10264773f96a6b598703a5533ea`,
-contains the PR-reviewed native lifecycle, root `/proc`, and Codex CLI path
-cleanup changes.
+The consumed revision is a post-release package-metadata fix. It changes
+`third_party/ish` from a relative URL to an absolute SSH-over-443 URL and uses
+a public read-only HTTPS rewrite in GitHub CI, where no SSH private key exists.
+It does not change the binary URL/checksum in `Package.swift`. The Release tag
+still identifies `4e311bcea4fe806491e76a23c0e4caeeb1c513bf`, so the consumed native
+XCFramework and corresponding-source assets are unchanged.
 
 ## 2. iSH source gitlink
 

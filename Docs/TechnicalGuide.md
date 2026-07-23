@@ -44,8 +44,8 @@ flowchart LR
     XC --> PR
     RootFS["经过审核的 RootFS<br/>本地外部资产"] --> PR
 
-    DevPkg["ish-arm64-pkg<br/>下一版开发分支"] --> DevNative["jacklv-coder/ish-arm64<br/>下一版开发 fork"]
-    DevPkg -. "发布并更新 pin 后才生效" .-> PR
+    PkgFix["ish-arm64-pkg<br/>经过审核的维护变更"] --> NativeFork["jacklv-coder/ish-arm64<br/>原生 fork"]
+    PkgFix -. "审核并固定精确 revision 后生效" .-> PR
 ```
 
 文字关系如下：
@@ -56,7 +56,7 @@ flowchart LR
 | 包装源码层 | [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) 的固定 revision | Swift wrapper、C ABI 源码和 binary target 声明 | 当前声明中的 URL 可以仍指向第三方已发布制品 |
 | 当前原生制品 | `v0.4.0-abi.1` URL/checksum | 被 PocketRoot 最终链接的 XCFramework | 用户 fork 自托管 prerelease，不含 RootFS |
 | 当前原生运行时层 | 上述 package revision 记录的精确 iSH gitlink | iSH 内核、进程、signal、halt 和线程生命周期等底层行为 | 不能用另一个 branch 或本地 checkout 替代 |
-| 已合并的下一版原生源码 | [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) `d63dfc9` 与 [`jacklv-coder/ish-arm64`](https://github.com/jacklv-coder/ish-arm64) `576ffaf` | 已通过 CI 的底层修复、ABI、wrapper 与制品门禁源码 | 在新 package 制品发布且 PocketRoot 更新 pin 前，不属于当前消费链 |
+| 发布后 package 元数据修复 | [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) `41e5c0a` | 绝对 SSH-over-443 子模块 URL、CI 公开 HTTPS 只读重写 | 不改变 `v0.4.0-abi.1` binary URL/checksum 或原生制品 |
 | Guest 文件系统 | 经许可审查的 `fs.tar.gz` | Alpine 用户空间、fakefs 数据与 guest 工具 | 不存放在 PocketRoot Git 仓库中 |
 
 ### 为什么需要修改 `ish-arm64-pkg`
@@ -93,7 +93,10 @@ PocketRootIshSystemFactory
 → Swift result
 ```
 
-PocketRoot 负责链路的前半段和产品边界；后半段必须阅读当前 package revision 的对应源码和 gitlink。包仓库 main 的 `docs/architecture.md` 已随候选源码合并，但不存在于 PocketRoot 当前固定的 package revision 中，也没有对应的新发布制品；它只描述下一版候选，不能作为当前 PocketRoot 二进制行为的证据。
+PocketRoot 负责链路的前半段和产品边界；后半段必须阅读当前 package revision 的对应源码
+和 gitlink。当前固定 revision 包含包仓库的架构文档和发布后的 checkout 元数据修复，但
+binaryTarget 仍指向同一个 `v0.4.0-abi.1` 资产；原生二进制行为仍以该 Release 的对应
+源码、哈希和运行验证为证据。
 
 ## 3. PocketRoot 仓库结构
 
