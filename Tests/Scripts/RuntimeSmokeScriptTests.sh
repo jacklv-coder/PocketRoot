@@ -6,6 +6,7 @@ ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 PARSER="$ROOT_DIR/Scripts/select-ios18-simulator-runtime.awk"
 SIMULATOR_RUNNER="$ROOT_DIR/Scripts/run-runtime-smoke.sh"
 DEVICE_RUNNER="$ROOT_DIR/Scripts/run-runtime-device-smoke.sh"
+PROJECT_SPEC="$ROOT_DIR/project.yml"
 
 assert_runtime() {
     local expected="$1"
@@ -73,6 +74,16 @@ fi
 
 if ! grep -Fq -- 'simctl terminate "$DEVICE_UDID" "$BUNDLE_ID" >/dev/null 2>&1 || true' "$SIMULATOR_RUNNER"; then
     echo "Simulator runner cleanup is not best-effort after durable success." >&2
+    exit 1
+fi
+
+if [[ "$(grep -Fc -- 'ENABLE_DEBUG_DYLIB: NO' "$PROJECT_SPEC")" -lt 2 ]]; then
+    echo "Native runtime harnesses must use a single executable layout." >&2
+    exit 1
+fi
+
+if ! grep -Fq -- 'The native smoke App exited before writing its report.' "$SIMULATOR_RUNNER"; then
+    echo "Simulator runner does not distinguish early App exit from timeout." >&2
     exit 1
 fi
 

@@ -112,18 +112,24 @@ xcrun simctl launch \
 SIMCTL_LAUNCH_PID=$!
 
 REPORT_PATH="$DATA_CONTAINER/Documents/$REPORT_NAME"
+SMOKE_APP_EXITED="false"
 for _ in $(seq 1 $((SMOKE_TIMEOUT_SECONDS * 4))); do
     if [[ -f "$REPORT_PATH" ]]; then
         break
     fi
     if ! kill -0 "$SIMCTL_LAUNCH_PID" >/dev/null 2>&1; then
+        SMOKE_APP_EXITED="true"
         break
     fi
     sleep 0.25
 done
 
 if [[ ! -f "$REPORT_PATH" ]]; then
-    echo "Timed out waiting for the native smoke report." >&2
+    if [[ "$SMOKE_APP_EXITED" == "true" ]]; then
+        echo "The native smoke App exited before writing its report." >&2
+    else
+        echo "Timed out waiting for the native smoke report." >&2
+    fi
     cat "$CONSOLE_LOG" >&2 || true
     xcrun simctl spawn "$DEVICE_UDID" log show \
       --style compact \
