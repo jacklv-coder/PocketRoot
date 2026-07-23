@@ -185,8 +185,7 @@ jobs:
           DEVELOPER_DIR=/Applications/Xcode_16.1.app/Contents/Developer \
             xcodebuild \
               -downloadPlatform iOS \
-              -buildVersion 18.0 \
-              -architectureVariant arm64
+              -buildVersion 18.0
           xcrun simctl list runtimes available
           xcrun simctl list runtimes available \
             | grep -F "iOS 18.0"
