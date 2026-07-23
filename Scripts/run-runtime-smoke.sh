@@ -7,7 +7,9 @@ ARCHIVE_PATH="${1:-${POCKETROOT_ROOTFS_ARCHIVE:-}}"
 DEVICE_UDID="${POCKETROOT_SMOKE_DEVICE:-}"
 CREATED_DEVICE="false"
 SIMCTL_LAUNCH_PID=""
+SIMCTL_LAUNCH_STATUS=""
 BUNDLE_ID="com.jacklv.PocketRootIshRuntimeSmoke"
+APP_PROCESS_NAME="PocketRootIshRuntimeSmoke"
 ARCHIVE_NAME="pocketroot-fs-v0.3.3.tar.gz"
 REPORT_NAME="pocketroot-smoke-result.json"
 PROGRESS_NAME="pocketroot-smoke-progress.txt"
@@ -31,6 +33,43 @@ cleanup() {
     rm -rf "$DERIVED_DATA_ROOT"
 }
 trap cleanup EXIT
+
+capture_simctl_launch_status() {
+    if [[ -z "$SIMCTL_LAUNCH_PID" ]]; then
+        return
+    fi
+    if wait "$SIMCTL_LAUNCH_PID"; then
+        SIMCTL_LAUNCH_STATUS=0
+    else
+        SIMCTL_LAUNCH_STATUS=$?
+    fi
+    SIMCTL_LAUNCH_PID=""
+}
+
+dump_failure_diagnostics() {
+    cat "$CONSOLE_LOG" >&2 || true
+    xcrun simctl spawn "$DEVICE_UDID" log show \
+      --style compact \
+      --last 5m \
+      --predicate \
+      "process == \"$APP_PROCESS_NAME\" OR eventMessage CONTAINS[c] \"$BUNDLE_ID\"" \
+      | tail -400 >&2 || true
+
+    local diagnostic_report_dir="$HOME/Library/Logs/DiagnosticReports"
+    if [[ -d "$diagnostic_report_dir" ]]; then
+        while IFS= read -r -d '' report; do
+            echo "Simulator crash report: $report" >&2
+            sed -n '1,320p' "$report" >&2 || true
+        done < <(
+            find "$diagnostic_report_dir" \
+              -maxdepth 1 \
+              -type f \
+              \( -name "$APP_PROCESS_NAME*.ips" -o -name "$APP_PROCESS_NAME*.crash" \) \
+              -mmin -10 \
+              -print0
+        )
+    fi
+}
 
 if [[ -z "$ARCHIVE_PATH" || ! -f "$ARCHIVE_PATH" ]]; then
     echo "Usage: POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz $0" >&2
@@ -128,7 +167,9 @@ done
 
 if [[ ! -f "$REPORT_PATH" ]]; then
     if [[ "$SMOKE_APP_EXITED" == "true" ]]; then
+        capture_simctl_launch_status
         echo "The native smoke App exited before writing its report." >&2
+        echo "simctl launch exit status: $SIMCTL_LAUNCH_STATUS" >&2
     else
         echo "Timed out waiting for the native smoke report." >&2
     fi
@@ -137,12 +178,7 @@ if [[ ! -f "$REPORT_PATH" ]]; then
         echo "Last native smoke progress:" >&2
         cat "$PROGRESS_PATH" >&2 || true
     fi
-    cat "$CONSOLE_LOG" >&2 || true
-    xcrun simctl spawn "$DEVICE_UDID" log show \
-      --style compact \
-      --last 5m \
-      --predicate 'process == "PocketRootIshRuntimeSmoke"' \
-      | tail -200 >&2 || true
+    dump_failure_diagnostics
     exit 1
 fi
 

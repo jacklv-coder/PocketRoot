@@ -92,6 +92,22 @@ if ! grep -Fq -- 'Last native smoke progress:' "$SIMULATOR_RUNNER"; then
     exit 1
 fi
 
+if ! grep -Fq -- 'simctl launch exit status:' "$SIMULATOR_RUNNER"; then
+    echo "Simulator runner does not report the launch client exit status." >&2
+    exit 1
+fi
+
+if ! grep -Fq -- 'eventMessage CONTAINS[c] \"$BUNDLE_ID\"' "$SIMULATOR_RUNNER"; then
+    echo "Simulator runner does not include system termination events." >&2
+    exit 1
+fi
+
+if ! grep -Fq -- 'Library/Logs/DiagnosticReports' "$SIMULATOR_RUNNER" \
+  || ! grep -Fq -- 'Simulator crash report:' "$SIMULATOR_RUNNER"; then
+    echo "Simulator runner does not print matching crash reports." >&2
+    exit 1
+fi
+
 set +e
 RUNNER_OUTPUT="$($DEVICE_RUNNER 2>&1)"
 RUNNER_STATUS=$?
