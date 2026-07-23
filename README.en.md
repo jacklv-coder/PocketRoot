@@ -18,7 +18,7 @@ adapter, execute bounded one-shot shell commands inside the iOS sandbox.
 | UIKit Demo shell | Available | System, Terminal, Commands, and Diagnostics entry points |
 | RootFS verification and safe install | Available | Fixed digest, secure extraction, journal-protected same-volume promotion, reuse, recovery |
 | iSH boot and one-shot commands | Experimental | `iOS + arm64` and explicit products only |
-| Lightweight agent loop | Core available / transport open | Explicit `PocketRootAgent`; no Codex CLI install or default shell exposure |
+| Lightweight agent loop | Core and OpenAI transport available | Explicit `PocketRootAgent`; host-owned credentials; no Codex CLI install or default shell exposure |
 | Interactive PTY and SwiftTerm | Not implemented | Session input, resize, signal, and safe close remain planned |
 | Physical devices and distribution | Partially passed / blocked | The iPhone one-shot baseline passed; iPad, lifecycle, Xcode 16, license, SBOM, and App Store gates remain |
 

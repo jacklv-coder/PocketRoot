@@ -60,7 +60,7 @@
 - 最低部署版本：iOS 18.0。
 - 默认 `PocketRoot` 产品：可构建，使用占位 Linux 运行时，不包含真实 iSH。
 - `PocketRootIshRuntime` 与 `PocketRootIshRuntimeIntegration`：实验性、显式启用。
-- `PocketRootAgent`：provider-agnostic 有界 agent loop；provider transport 与 Linux command tool 尚未接入。
+- `PocketRootAgent`：provider-agnostic 有界 agent loop 与 OpenAI Responses transport；Linux command tool 尚未接入。
 - RootFS：安全安装机制已完成；二进制未提交、未打包、未由库下载。
 - iOS 18.2 arm64 Simulator：原生 smoke 已通过。
 - 默认 boot identity gate：已验证 `aarch64`、Alpine 身份、可选版本与 guest 工作目录后才 ready。

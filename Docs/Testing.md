@@ -69,6 +69,10 @@ swift test
 - turn、tool call、用户输入、模型文本、ID/name、arguments 和 output 边界；
 - 同一 runner 并发拒绝、最后一轮不执行无法回传结果的 tool；
 - 配置、tool name 与 JSON object schema 校验。
+- OpenAI 首轮与 `previous_response_id`/`function_call_output` 请求映射；
+- Responses 文本、多个 function call、refusal、incomplete 与畸形 payload 解码；
+- strict schema 本地预检、HTTPS endpoint、request/response body 上限；
+- bearer credential 缺失/畸形/loader error 脱敏，非 2xx API error 映射且错误不含 token。
 
 ### Integration 与 Terminal tests
 

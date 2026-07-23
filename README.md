@@ -15,7 +15,7 @@ PocketRoot 是面向 iOS 的可嵌入 ARM64 Linux 运行时、终端与上层轻
 | UIKit Demo 外壳 | 可用 | 展示 System、Terminal、Commands、Diagnostics 四个入口 |
 | RootFS 校验与安全安装 | 可用 | 固定大小和 SHA-256、安全解包、journal 保护的同卷 promotion、复用与中断恢复 |
 | iSH 启动与一次性命令 | 实验性 | 仅 `iOS + arm64`，必须显式依赖实验产品 |
-| 轻量 agent loop | 核心可用 / transport 未接 | 显式依赖 `PocketRootAgent`；不安装 Codex CLI，不默认暴露 shell |
+| 轻量 agent loop | 核心与 OpenAI transport 可用 | 显式依赖 `PocketRootAgent`；宿主提供 credential；不安装 Codex CLI，不默认暴露 shell |
 | 交互式 PTY 与 SwiftTerm | 未实现 | 会话、输入、resize、signal 和安全关闭仍在规划中 |
 | 真机与公开发行 | 部分通过 / 阻塞 | iPhone 一次性命令基线已通过；仍需 iPad、生命周期、Xcode 16、许可证、SBOM 和 App Store 审查 |
 
