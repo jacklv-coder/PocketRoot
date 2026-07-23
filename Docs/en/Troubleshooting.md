@@ -100,6 +100,17 @@ xcrun simctl uninstall "$SMOKE_DEVICE_UDID" com.jacklv.PocketRootIshRuntimeSmoke
 
 Uninstalling also removes the App data container. If the device was shut down before the smoke, run `xcrun simctl shutdown "$SMOKE_DEVICE_UDID"` afterward. Use `simctl delete` only for an exact UDID confirmed as a script-dedicated temporary device, never for a shared development Simulator.
 
+## Physical smoke signing or launch failure
+
+The physical runner requires Xcode to select a valid development profile for `POCKETROOT_DEVELOPMENT_TEAM`; the target must be paired, in Developer Mode, and unlocked. Common failures:
+
+- `No Account for Team`: the selected team has no usable Xcode account/profile. Select the team that can development-sign locally or complete account/signing setup in Xcode.
+- `No profiles`: no development profile matches the bundle ID or device.
+- `Unable to launch ... Locked`: keep the device unlocked and rerun; successful installation does not permit a foreground launch while locked.
+- entitlement validation failure: do not bypass it; verify the application identifier, team identifier, and `get-task-allow`.
+
+On success or failure, the runner uninstalls an installed smoke App and its RootFS by default. `POCKETROOT_KEEP_DEVICE_APP=1` explicitly changes that cleanup behavior.
+
 ## Smoke timeout or missing report
 
 Verify the archive, Simulator boot, app install/launch, console output, storage,

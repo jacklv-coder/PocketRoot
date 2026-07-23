@@ -276,7 +276,7 @@ The native package version and RootFS version are independent axes. The former s
 | Swift-to-native bridge | `IshEmbedDriver.swift` | `Sources/IshEmbed/` and the C ABI in ish-arm64-pkg |
 | Native kernel behavior | The `third_party/ish` gitlink in ish-arm64-pkg | The corresponding ish-arm64 commit |
 | Demo screens | `Demo/PocketRootDemo/` | `project.yml` |
-| Native behavior evidence | `Spikes/PocketRootIshRuntimeSmoke/` | `Scripts/run-runtime-smoke.sh` |
+| Native behavior evidence | `Spikes/PocketRootIshRuntimeSmoke/` | `Scripts/run-runtime-smoke.sh`, `Scripts/run-runtime-device-smoke.sh` |
 
 See [Implementation](Implementation.md) for method-by-method details.
 

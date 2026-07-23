@@ -8,9 +8,16 @@ private struct PocketRootSmokeCheck: Codable, Sendable {
     let detail: String
 }
 
+private struct PocketRootSmokeEnvironment: Codable, Sendable {
+    let deviceFamily: String
+    let systemName: String
+    let systemVersion: String
+}
+
 private struct PocketRootSmokeReport: Codable, Sendable {
     let success: Bool
     let checks: [PocketRootSmokeCheck]
+    let environment: PocketRootSmokeEnvironment
     let error: String?
     let startedAt: Date
     let finishedAt: Date
@@ -28,7 +35,7 @@ private enum PocketRootRuntimeSmokeRunner {
     static let archiveFileName = "pocketroot-fs-v0.3.3.tar.gz"
     static let reportFileName = "pocketroot-smoke-result.json"
 
-    static func run() async -> PocketRootSmokeReport {
+    static func run(environment: PocketRootSmokeEnvironment) async -> PocketRootSmokeReport {
         let startedAt = Date()
         var checks: [PocketRootSmokeCheck] = []
         var system: PocketRootSystem?
@@ -36,8 +43,10 @@ private enum PocketRootRuntimeSmokeRunner {
         do {
             let fileManager = FileManager.default
             try require(
-                UIDevice.current.systemVersion.hasPrefix("18."),
-                "Smoke must run on iOS 18, not \(UIDevice.current.systemVersion)."
+                ProcessInfo.processInfo.isOperatingSystemAtLeast(
+                    OperatingSystemVersion(majorVersion: 18, minorVersion: 0, patchVersion: 0)
+                ),
+                "Smoke requires iOS 18 or newer, not \(environment.systemVersion)."
             )
             let documentsURL = try requireDirectory(
                 fileManager.urls(for: .documentDirectory, in: .userDomainMask).first,
@@ -97,15 +106,15 @@ private enum PocketRootRuntimeSmokeRunner {
             try require(trimmed(workingDirectory.stdout) == "/", "Working directory was not applied.")
             checks.append(PocketRootSmokeCheck(name: "cwd", detail: "/"))
 
-            let environment = try await prepared.system.execute(
+            let guestEnvironment = try await prepared.system.execute(
                 PocketRootCommandRequest(
                     command: "printf '%s' \"$POCKETROOT_SMOKE\"",
                     workingDirectory: "/",
                     environment: ["POCKETROOT_SMOKE": "environment-ok"]
                 )
             )
-            try require(environment.stdout == "environment-ok", "Environment was not applied.")
-            checks.append(PocketRootSmokeCheck(name: "environment", detail: environment.stdout))
+            try require(guestEnvironment.stdout == "environment-ok", "Environment was not applied.")
+            checks.append(PocketRootSmokeCheck(name: "environment", detail: guestEnvironment.stdout))
 
             let streams = try await prepared.system.execute(
                 PocketRootCommandRequest(
@@ -187,6 +196,7 @@ private enum PocketRootRuntimeSmokeRunner {
             let preShutdownReport = PocketRootSmokeReport(
                 success: true,
                 checks: checks,
+                environment: environment,
                 error: nil,
                 startedAt: startedAt,
                 finishedAt: Date()
@@ -213,6 +223,7 @@ private enum PocketRootRuntimeSmokeRunner {
             return PocketRootSmokeReport(
                 success: true,
                 checks: checks,
+                environment: environment,
                 error: nil,
                 startedAt: startedAt,
                 finishedAt: Date()
@@ -221,6 +232,7 @@ private enum PocketRootRuntimeSmokeRunner {
             let report = PocketRootSmokeReport(
                 success: false,
                 checks: checks,
+                environment: environment,
                 error: error.localizedDescription,
                 startedAt: startedAt,
                 finishedAt: Date()
@@ -303,7 +315,12 @@ final class PocketRootIshRuntimeSmokeApp: UIResponder, UIApplicationDelegate {
         statusLabel = label
 
         Task {
-            let report = await PocketRootRuntimeSmokeRunner.run()
+            let environment = PocketRootSmokeEnvironment(
+                deviceFamily: UIDevice.current.model,
+                systemName: UIDevice.current.systemName,
+                systemVersion: UIDevice.current.systemVersion
+            )
+            let report = await PocketRootRuntimeSmokeRunner.run(environment: environment)
             do {
                 try PocketRootRuntimeSmokeRunner.write(report)
                 label.text = report.success

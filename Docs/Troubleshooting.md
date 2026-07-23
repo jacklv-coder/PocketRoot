@@ -266,6 +266,17 @@ xcrun simctl uninstall "$SMOKE_DEVICE_UDID" com.jacklv.PocketRootIshRuntimeSmoke
 
 `uninstall` 会一并删除该 App 的数据容器。如果设备在 smoke 前是关机状态，可再执行 `xcrun simctl shutdown "$SMOKE_DEVICE_UDID"`。只对已确认的脚本专用临时 UDID 使用 `simctl delete`，绝不删除共享开发设备。
 
+## 真机 smoke 签名或启动失败
+
+真机 runner 要求 Xcode 能为 `POCKETROOT_DEVELOPMENT_TEAM` 选择有效 development profile，且目标设备已配对、启用 Developer Mode 并保持解锁。常见错误：
+
+- `No Account for Team`：指定的 team 没有可用 Xcode account/profile；改用实际可开发签名的 team，或先在 Xcode 完成账号与签名设置。
+- `No profiles`：bundle ID 没有匹配的 development profile，或设备不在 profile 中。
+- `Unable to launch ... Locked`：保持设备解锁后重跑；安装成功不代表锁屏状态允许 foreground launch。
+- entitlement 校验失败：不要跳过；确认 profile 的 application identifier、team identifier 和 `get-task-allow`。
+
+runner 在成功或失败退出时默认卸载已安装的 smoke App，从而删除注入的 RootFS。设置 `POCKETROOT_KEEP_DEVICE_APP=1` 会改变这一清理行为。
+
 ## smoke 超时或没有 report
 
 检查：

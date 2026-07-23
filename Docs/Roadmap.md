@@ -59,8 +59,9 @@
 - 对 arm64 Simulator 和 unsigned device 完成完整依赖图最终链接；
 - 在 iOS 18.2 arm64 Simulator boot 固定 fakefs；
 - repository native smoke 通过 13 项 prepare、boot、guest、command、recovery 与 shutdown 检查。
+- 在签名 iPhone 17 Pro（iOS 26.1）通过同一套 13 项 native smoke，并验证开发签名 entitlement 与 `_exit(0)` 进程退出。
 
-这些证据建立了当前 Simulator 一次性命令路径，不覆盖真机、最低 Xcode 16、PTY 或公开发行。
+这些证据建立了当前 Simulator 与单一 iPhone 的一次性命令路径，不覆盖 iPad、完整真机生命周期、最低 Xcode 16、PTY 或公开发行。
 
 ### 当前门禁
 
@@ -77,7 +78,7 @@
 | 默认 post-boot identity gate | 已通过 | `aarch64`、Alpine identity、可选 version 与 command context 通过后才 ready；保持失败占用槽位回归 |
 | Demo 真实 runtime 注入 | 未开始 | 一个 prepared system 注入 System/Commands/Diagnostics，不打包未审查 RootFS |
 | 进程安全 soft shutdown | 进行中 | fork 源码修复已合并；仍需新 XCFramework、checksum、PocketRoot pin 与生命周期重审 |
-| 签名 iPhone | 阻塞 | physical boot 与 command smoke |
+| 签名 iPhone | 已通过 | iPhone 17 Pro / iOS 26.1 / Xcode 26.1.1 的 13 项 signed smoke；runtime/RootFS/签名变化时重跑 |
 | 签名 iPad | 阻塞 | physical boot 与 command smoke |
 | 最低 Xcode 16 原生兼容 | 未开始 | 使用 Xcode 16 重跑 final-link 和 native behavior |
 | App lifecycle 与内存 | 未开始 | foreground/background、jetsam、failure injection、persistence |
@@ -87,8 +88,8 @@
 
 ### 下一步执行顺序
 
-1. **真机基线**
-   在签名 iPhone 与 iPad 上重跑 prepare、boot、guest identity、streams、timeout、limit 和 failure recovery；记录 Xcode/iOS/device/entitlement。
+1. **完成 iPad 真机基线**
+   iPhone 基线已通过；在签名 iPad 上重跑 prepare、boot、guest identity、streams、timeout、limit 和 failure recovery，并记录 Xcode/iPadOS/device/entitlement。
 
 2. **关闭策略**
    决定产品是否接受宿主进程退出。若不接受，patch upstream embed fork，让 shutdown 只结束 kernel thread，限制 native reader/log join，重建并重审 XCFramework。

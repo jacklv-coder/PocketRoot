@@ -74,7 +74,7 @@ Follow the [upstream update procedure](Docs/en/UpstreamDependencies.md). Do not 
 
 Use the [test matrix](Docs/en/Testing.md). Fixes need regression tests. Concurrency work needs strict warnings-as-errors builds. RootFS work needs malicious inputs, rollback, and real assets. Runtime work needs injected-driver and native smoke. Package/native changes need executable final links.
 
-Do not substitute Simulator for physical-device evidence or report skipped gates as passed.
+Do not substitute Simulator for physical-device evidence or report skipped gates as passed. Runtime changes should also use `run-runtime-device-smoke.sh` with explicit archive, device, and development-team inputs when signed hardware is available.
 
 ## Bilingual documentation
 

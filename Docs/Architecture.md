@@ -293,6 +293,7 @@ applicationSupportURL/
 - `PocketRootDemo.xcodeproj`：生成物，不提交。
 - `.github/workflows/ci.yml`：host tests、真实 RootFS test、Demo build 与 arm64 final-link。
 - `Scripts/run-runtime-smoke.sh`：本地 iOS 18 Simulator 原生行为门禁。
+- `Scripts/run-runtime-device-smoke.sh`：签名 iOS 18+ iPhone/iPad 原生行为门禁。
 
 CI 与测试职责见[测试与验证](Testing.md)。动态完成状态见[路线图](Roadmap.md)。
 

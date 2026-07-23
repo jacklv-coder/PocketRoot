@@ -158,7 +158,8 @@ Alpine `apk` 可以下载、安装和执行新增代码。即使初始 RootFS �
 ### Apple 平台
 
 - [ ] Xcode 16 minimum-toolchain native final-link 与行为验证。
-- [ ] signed iPhone 与 iPad smoke。
+- [x] signed iPhone 一次性命令 smoke。
+- [ ] signed iPad smoke 与完整 iPhone/iPad lifecycle。
 - [ ] foreground/background、jetsam、storage pressure。
 - [ ] entitlement、private API、JIT 与 archive scan。
 - [ ] Guideline 2.5.2 书面结论。

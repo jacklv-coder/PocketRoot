@@ -16,7 +16,7 @@ PocketRoot provides embeddable ARM64 Linux runtime and terminal foundations for 
 | RootFS verification and safe install | Available | Fixed digest, secure extraction, journal-protected same-volume promotion, reuse, recovery |
 | iSH boot and one-shot commands | Experimental | `iOS + arm64` and explicit products only |
 | Interactive PTY and SwiftTerm | Not implemented | Session input, resize, signal, and safe close remain planned |
-| Physical devices and distribution | Blocked | iPhone/iPad, Xcode 16, license, SBOM, and App Store gates remain |
+| Physical devices and distribution | Partially passed / blocked | The iPhone one-shot baseline passed; iPad, lifecycle, Xcode 16, license, SBOM, and App Store gates remain |
 
 The default `PocketRoot` product does not include native iSH and never bundles or downloads a RootFS. `PocketRootSystem.shared` uses a safe placeholder. Real runtime applications explicitly depend on `PocketRootIshRuntimeIntegration`.
 
@@ -152,9 +152,14 @@ POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
 
 POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
   ./Scripts/run-runtime-smoke.sh
+
+POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
+POCKETROOT_SMOKE_DEVICE=<physical-device-udid> \
+POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
+  ./Scripts/run-runtime-device-smoke.sh
 ```
 
-The native smoke requires Apple Silicon, iOS 18 Simulator, and the exact local archive. It covers preparation, guest identity, command context, streams, exit, timeout/output-limit recovery, and process-terminal shutdown. See [Testing](Docs/en/Testing.md).
+Both native runners require Apple Silicon and the exact local archive. The first uses an iOS 18 Simulator; the second requires a paired iOS 18+ physical device with Developer Mode and development signing. They cover preparation, guest identity, command context, streams, exit, timeout/output-limit recovery, and process-terminal shutdown. See [Testing](Docs/en/Testing.md).
 
 ## Documentation
 

@@ -155,8 +155,9 @@ The following checks passed for the pinned inputs:
   same-volume promotion, and materialized fakefs validation;
 - caller-path replacement isolation, promotion rollback, and interrupted
   commit/rollback recovery tests;
-- iOS 18.2 Simulator fakefs boot; and
-- the repository-owned PocketRoot adapter smoke on an iOS 18.2 arm64 Simulator.
+- iOS 18.2 Simulator fakefs boot;
+- the repository-owned PocketRoot adapter smoke on an iOS 18.2 arm64 Simulator; and
+- signed installation and the same adapter smoke on an iPhone 17 Pro running iOS 26.1.
 
 The adapter smoke passed 13 checks through the complete composition graph:
 verified v0.3.3 RootFS preparation, boot, `aarch64`, Alpine 3.19.1, working
@@ -166,11 +167,12 @@ post-limit recovery, and process-terminal shutdown. For the final check, the
 report was persisted before shutdown and the host script verified that the pinned iSH
 `_exit(0)` path terminated the smoke App process successfully.
 
+The 2026-07-23 physical-device record used Xcode 26.1.1 (17B100), an iPhone 17 Pro, iOS 26.1 (23B85), and development provisioning. The application-identifier entitlement matched the smoke bundle, `get-task-allow` was true, all 13 device checks passed, and the process exited successfully. Device UDIDs, profiles, and local reports are not committed.
+
 The detailed test contract is maintained in [Testing](Testing.md).
 
 The following checks have not passed yet:
 
-- signed build and execution on a physical iPhone;
 - execution on a physical iPad;
 - host-process-safe native shutdown; the pinned artifact deliberately reaches
   `_exit(0)`, and any soft-shutdown replacement requires a rebuilt, re-audited

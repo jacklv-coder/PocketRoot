@@ -81,6 +81,11 @@ feat: add bounded runtime command output
 
    POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
      ./Scripts/run-runtime-smoke.sh
+
+   POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
+   POCKETROOT_SMOKE_DEVICE=<physical-device-udid> \
+   POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
+     ./Scripts/run-runtime-device-smoke.sh
    ```
 
 6. 检查 scope：

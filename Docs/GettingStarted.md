@@ -161,6 +161,17 @@ xcrun simctl uninstall "$SMOKE_DEVICE_UDID" com.jacklv.PocketRootIshRuntimeSmoke
 
 详细覆盖见[测试与验证](Testing.md)。
 
+在已配对、启用 Developer Mode 且具有 development provisioning 的 iOS 18+ 真机上运行同一套检查：
+
+```bash
+POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
+POCKETROOT_SMOKE_DEVICE=<physical-device-udid> \
+POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
+  ./Scripts/run-runtime-device-smoke.sh
+```
+
+真机 runner 默认在取回报告后卸载测试 App 和注入的 RootFS；设置 `POCKETROOT_KEEP_DEVICE_APP=1` 才会保留。不要把 UDID、provisioning profile 或本地报告提交到仓库。
+
 ## 8. 常用命令
 
 | 目标 | 命令 |
@@ -172,6 +183,7 @@ xcrun simctl uninstall "$SMOKE_DEVICE_UDID" com.jacklv.PocketRootIshRuntimeSmoke
 | 最终链接实验性 runtime | `./Scripts/build-runtime-spike.sh` |
 | 真实 RootFS 集成测试 | `POCKETROOT_ROOTFS_ARCHIVE=... swift test --filter testPinnedReleaseArchiveWhenProvidedByEnvironment` |
 | iOS 18 原生 smoke | `POCKETROOT_ROOTFS_ARCHIVE=... ./Scripts/run-runtime-smoke.sh` |
+| 签名真机原生 smoke | `POCKETROOT_ROOTFS_ARCHIVE=... POCKETROOT_SMOKE_DEVICE=... POCKETROOT_DEVELOPMENT_TEAM=... ./Scripts/run-runtime-device-smoke.sh` |
 | 双语文档和链接检查 | `./Scripts/check-docs.sh` |
 
 ## 9. 不应提交的本地内容

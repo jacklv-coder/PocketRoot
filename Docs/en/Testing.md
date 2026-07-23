@@ -12,8 +12,8 @@ PocketRoot separates host logic, real RootFS, iOS build, native final-link, and 
 | Real asset test | Filtered test with archive env | Exact release archive validates and materializes once | Existing-installation reuse or iSH boot |
 | Demo build | `./Scripts/build.sh` | Umbrella and UIKit build | Experimental graph |
 | Native final link | `./Scripts/build-runtime-spike.sh` | Full graph forms arm64 executables | Physical or guest behavior |
-| Native smoke | `./Scripts/run-runtime-smoke.sh` | Prepare, boot, command bounds, pinned shutdown | Physical, minimum-Xcode, distribution |
-| Physical tests | Future signed runs | Hardware sandbox/lifecycle/resource behavior | Compliance |
+| Simulator native smoke | `./Scripts/run-runtime-smoke.sh` | Prepare, boot, command bounds, pinned shutdown | Physical, minimum-Xcode, distribution |
+| Physical native smoke | `./Scripts/run-runtime-device-smoke.sh` | Same 13 checks, development entitlements, actual process exit | Full lifecycle, memory, iPad, distribution |
 | Documentation | `./Scripts/check-docs.sh` | Pairs, Chinese coverage, relative links | Implementation correctness |
 
 ## Package tests
@@ -103,6 +103,21 @@ The 100 ms check proves recovery after an established session observes its event
 
 The report is persisted before shutdown. The host requires the attached Simulator process to finish successfully, so an ordinary crash is not accepted. This smoke is a local gate, not a GitHub Actions step.
 
+### Signed iPhone/iPad runner
+
+Use explicit physical-device and team identifiers:
+
+```bash
+POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
+POCKETROOT_SMOKE_DEVICE=<physical-device-udid> \
+POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
+  ./Scripts/run-runtime-device-smoke.sh
+```
+
+The paired device must have Developer Mode enabled and support development provisioning. The runner verifies the application identifier and `get-task-allow`, installs with `devicectl`, copies the pinned archive into the App data container, performs an attached launch, and retrieves the JSON report. It uninstalls the App and RootFS data by default; `POCKETROOT_KEEP_DEVICE_APP=1` is the explicit opt-out.
+
+The 2026-07-23 record used Xcode 26.1.1 (17B100), an iPhone 17 Pro, iOS 26.1 (23B85), and development provisioning. Archive size/digest, report environment, all 13 checks, and exit status passed. No UDID, profile, or local report is committed. This closes the signed iPhone one-shot baseline, not iPad, foreground/background, memory/jetsam, storage pressure, or minimum-Xcode 16.
+
 ## CI
 
 GitHub Actions pins the `actions/checkout` action implementation to an exact
@@ -124,12 +139,12 @@ CI does not boot native iSH.
 | Runtime lifecycle/driver | Package + strict build + final links + native smoke |
 | Package/native dependency | Package + Demo + both final links + smoke |
 | project.yml/Demo | Regenerate + Demo build |
-| smoke | Shell syntax + actual smoke |
+| smoke | Shell syntax + Simulator smoke + signed-device smoke when available |
 | docs | Documentation check |
 | upstream/RootFS update | Full suite + supply-chain/compliance reaudit |
 
 ## Evidence language
 
-State the exact environment. Package success does not imply all Simulators, minimum-Xcode native validation, physical iPhone/iPad support, TestFlight readiness, or App Store approval.
+State the exact environment. The recorded iPhone baseline does not imply iPad support, complete physical-device lifecycle, minimum-Xcode native validation, TestFlight readiness, or App Store approval.
 
 See the [roadmap](Roadmap.md) for open gates.

@@ -141,7 +141,8 @@ build script 还会向 base filesystem 和 VM template 写入 public DNS resolve
 - promotion rollback；
 - interrupted commit/rollback recovery；
 - iOS 18.2 Simulator fakefs boot；
-- repository-owned native adapter smoke。
+- repository-owned native adapter smoke；
+- iPhone 17 Pro（iOS 26.1）签名安装与同一 adapter smoke。
 
 native smoke 通过 13 项：
 
@@ -161,11 +162,12 @@ native smoke 通过 13 项：
 
 最后一项在 shutdown 前持久化 report；host script 确认固定 iSH `_exit(0)` 路径让 smoke App process 以成功状态结束。
 
+2026-07-23 的真机记录使用 Xcode 26.1.1（17B100）、iPhone 17 Pro、iOS 26.1（23B85）和 development provisioning。签名 entitlement 的 application identifier 与 smoke bundle 一致，`get-task-allow` 为 true；设备上的 13 项检查与进程退出状态均通过。设备 UDID、profile 和本地报告不提交。
+
 详细测试语义只在[测试与验证](Testing.md)维护。
 
 ## 6. 尚未通过
 
-- signed physical iPhone build 与 execution；
 - physical iPad execution；
 - host-process-safe native shutdown；
 - 声明的 minimum Xcode 16 native final-link 与 behavior；

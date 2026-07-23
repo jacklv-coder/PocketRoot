@@ -25,6 +25,7 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
 - 加入真实 release archive integration test。
 - 加入完整 Experimental graph 的 arm64 Simulator 与 unsigned device final-link gate。
 - 加入 repository-owned iOS 18 native smoke App 和 runner，覆盖 13 项 prepare、boot、guest、command、recovery 与 shutdown。
+- 加入签名 iPhone/iPad smoke runner，通过 `devicectl` 安装、注入固定 RootFS、取回报告并校验 development entitlement；iPhone 17 Pro / iOS 26.1 基线已通过。
 - 提交精确 SwiftPM resolution 到 `Package.resolved`。
 - 加入 IshEmbed 可行性 [ADR-001](Docs/Decisions/ADR-001-IshEmbed-Feasibility.md)。
 - 加入不可变 [上游依赖与制品清单](Docs/UpstreamDependencies.md)。
@@ -59,6 +60,7 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
 - `PocketRootSystem` 现在在 lifecycle/command 成功或抛错后刷新稳定公开 state；失败关闭立即公开 `.failed`，重入调用不会泄漏 lifecycle 过渡态，并用刷新代次阻止较旧快照覆盖较新的失败状态。
 - 原生 spike/smoke target 显式排除 x86_64 Simulator；文档明确 `isAvailable` 是链接后的探针，不能替代 arm64-only binary 的构建架构约束。
 - 原生 smoke runner 按稳定 runtime identifier 自动选择 iOS 18 Simulator，不再依赖 `simctl` 输出的最后一列，并加入多格式 fixture 回归测试。
+- 原生 smoke App 以 iOS 18+ 版本下限取代仅允许 18.x 的错误限制，并把设备 family、系统名和版本写入报告。
 
 ### Security
 
