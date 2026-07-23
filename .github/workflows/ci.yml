@@ -118,3 +118,83 @@ jobs:
             ONLY_ACTIVE_ARCH=YES \
             CODE_SIGNING_ALLOWED=NO \
             build
+
+  minimum-xcode-16:
+    name: Minimum Xcode 16.0
+    runs-on: macos-15
+    timeout-minutes: 90
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_16.0.app/Contents/Developer
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Configure public package submodule checkout
+        run: |
+          git config --global \
+            url."https://github.com/".insteadOf \
+            "ssh://git@ssh.github.com:443/"
+
+      - name: Verify minimum Apple toolchain
+        run: |
+          test "$(uname -m)" = "arm64"
+          test -d "$DEVELOPER_DIR"
+          test "$(xcodebuild -version | sed -n '1p')" = "Xcode 16.0"
+          test "$(xcrun --sdk iphoneos --show-sdk-version)" = "18.0"
+          test "$(xcrun --sdk iphonesimulator --show-sdk-version)" = "18.0"
+          xcodebuild -version
+          swift --version
+
+      - name: Download and verify pinned RootFS release archive
+        env:
+          ROOTFS_SHA256: "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"
+          ROOTFS_BYTE_COUNT: "6581376"
+          ROOTFS_URL: "https://github.com/Lolendor/ish-arm64-pkg/releases/download/v0.3.3/fs.tar.gz"
+        run: |
+          archive="$RUNNER_TEMP/pocketroot-fs-v0.3.3.tar.gz"
+          curl --fail --location --retry 3 \
+            --output "$archive" \
+            "$ROOTFS_URL"
+          test "$(stat -f '%z' "$archive")" = "$ROOTFS_BYTE_COUNT"
+          echo "$ROOTFS_SHA256  $archive" | shasum -a 256 --check
+          echo "POCKETROOT_ROOTFS_ARCHIVE=$archive" >> "$GITHUB_ENV"
+
+      - name: Validate real RootFS install with Xcode 16.0
+        run: |
+          swift test \
+            --filter testPinnedReleaseArchiveWhenProvidedByEnvironment
+
+      - name: Install XcodeGen
+        env:
+          XCODEGEN_VERSION: "2.46.0"
+          XCODEGEN_SHA256: "4d9e34b62172d645eed6457cac13fc222569974098ef4ee9c3368bedf0196806"
+        run: |
+          archive="$RUNNER_TEMP/xcodegen.zip"
+          install_root="$RUNNER_TEMP/xcodegen-install"
+          curl --fail --location --retry 3 \
+            --output "$archive" \
+            "https://github.com/yonaskolb/XcodeGen/releases/download/$XCODEGEN_VERSION/xcodegen.zip"
+          echo "$XCODEGEN_SHA256  $archive" | shasum -a 256 --check
+          unzip -q "$archive" -d "$install_root"
+          echo "$install_root/xcodegen/bin" >> "$GITHUB_PATH"
+
+      - name: Final-link runtime with Xcode 16.0
+        run: ./Scripts/build-runtime-spike.sh
+
+      - name: Install iOS 18.0 Simulator runtime
+        run: |
+          test -d /Applications/Xcode_16.1.app/Contents/Developer
+          DEVELOPER_DIR=/Applications/Xcode_16.1.app/Contents/Developer \
+            xcodebuild \
+              -downloadPlatform iOS \
+              -buildVersion 18.0 \
+              -architectureVariant arm64
+          xcrun simctl list runtimes available
+          xcrun simctl list runtimes available \
+            | grep -F "iOS 18.0"
+
+      - name: Run native smoke with Xcode 16.0
+        env:
+          POCKETROOT_SMOKE_TIMEOUT_SECONDS: "600"
+        run: ./Scripts/run-runtime-smoke.sh
