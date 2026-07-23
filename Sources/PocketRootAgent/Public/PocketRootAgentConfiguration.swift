@@ -4,6 +4,7 @@ public struct PocketRootAgentConfiguration: Sendable, Equatable {
     public let maximumToolCalls: Int
     public let maximumUserInputBytes: Int
     public let maximumModelOutputBytes: Int
+    public let maximumModelIdentifierBytes: Int
     public let maximumToolArgumentsBytes: Int
     public let maximumToolOutputBytes: Int
 
@@ -13,6 +14,7 @@ public struct PocketRootAgentConfiguration: Sendable, Equatable {
         maximumToolCalls: Int = 16,
         maximumUserInputBytes: Int = 64 * 1_024,
         maximumModelOutputBytes: Int = 256 * 1_024,
+        maximumModelIdentifierBytes: Int = 256,
         maximumToolArgumentsBytes: Int = 64 * 1_024,
         maximumToolOutputBytes: Int = 64 * 1_024
     ) {
@@ -21,6 +23,7 @@ public struct PocketRootAgentConfiguration: Sendable, Equatable {
         self.maximumToolCalls = maximumToolCalls
         self.maximumUserInputBytes = maximumUserInputBytes
         self.maximumModelOutputBytes = maximumModelOutputBytes
+        self.maximumModelIdentifierBytes = maximumModelIdentifierBytes
         self.maximumToolArgumentsBytes = maximumToolArgumentsBytes
         self.maximumToolOutputBytes = maximumToolOutputBytes
     }

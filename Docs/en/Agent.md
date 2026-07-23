@@ -14,6 +14,7 @@ The module currently provides:
 - a `user input → model response → tool calls → tool outputs → model` loop;
 - at most one active run per runner;
 - model-turn, tool-call, user-input, model-text, tool-argument, and tool-output limits;
+- byte limits for model-generated response/call IDs plus tool-name format and length validation;
 - response-ID and tool-call-ID replay rejection;
 - whole-batch tool-call validation before the first side effect;
 - structured feedback for unknown tools and ordinary tool failures;
@@ -53,6 +54,8 @@ to the model.
 | Tool calls | 16 |
 | User input | 64 KiB |
 | Model text | 256 KiB |
+| Each response/call ID | 256 bytes |
+| Tool name | 64 ASCII bytes |
 | Each tool's arguments | 64 KiB |
 | Each tool's output | 64 KiB |
 

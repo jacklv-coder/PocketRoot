@@ -389,6 +389,97 @@ final class PocketRootAgentTests: XCTestCase {
         }
     }
 
+    func testRejectsOversizedModelIdentifiersAndInvalidToolNames() async throws {
+        let responseIDRunner = try PocketRootAgentRunner(
+            modelClient: ScriptedModelClient(
+                responses: [
+                    PocketRootAgentModelResponse(
+                        id: "four",
+                        outputText: "done"
+                    )
+                ]
+            ),
+            configuration: PocketRootAgentConfiguration(
+                instructions: "Test",
+                maximumModelIdentifierBytes: 3
+            )
+        )
+        do {
+            _ = try await responseIDRunner.run(userInput: "ok")
+            XCTFail("Oversized response IDs must fail.")
+        } catch let error as PocketRootAgentError {
+            XCTAssertEqual(
+                error,
+                .invalidModelResponse(
+                    "response ID exceeded the 3-byte limit."
+                )
+            )
+        }
+
+        let callIDRunner = try PocketRootAgentRunner(
+            modelClient: ScriptedModelClient(
+                responses: [
+                    PocketRootAgentModelResponse(
+                        id: "r1",
+                        toolCalls: [
+                            PocketRootAgentToolCall(
+                                id: "four",
+                                name: "lookup",
+                                argumentsJSON: "{}"
+                            )
+                        ]
+                    )
+                ]
+            ),
+            configuration: PocketRootAgentConfiguration(
+                instructions: "Test",
+                maximumModelIdentifierBytes: 3
+            )
+        )
+        do {
+            _ = try await callIDRunner.run(userInput: "ok")
+            XCTFail("Oversized tool call IDs must fail.")
+        } catch let error as PocketRootAgentError {
+            XCTAssertEqual(
+                error,
+                .invalidModelResponse(
+                    "tool call ID exceeded the 3-byte limit."
+                )
+            )
+        }
+
+        let oversizedName = String(repeating: "a", count: 65)
+        let toolNameRunner = try PocketRootAgentRunner(
+            modelClient: ScriptedModelClient(
+                responses: [
+                    PocketRootAgentModelResponse(
+                        id: "response-name",
+                        toolCalls: [
+                            PocketRootAgentToolCall(
+                                id: "call-name",
+                                name: oversizedName,
+                                argumentsJSON: "{}"
+                            )
+                        ]
+                    )
+                ]
+            ),
+            configuration: configuration()
+        )
+        do {
+            _ = try await toolNameRunner.run(userInput: "ok")
+            XCTFail("Oversized tool names must fail before they are echoed.")
+        } catch let error as PocketRootAgentError {
+            XCTAssertEqual(
+                error,
+                .invalidModelResponse(
+                    "tool call names must contain 1...64 ASCII letters, "
+                        + "digits, '_' or '-'."
+                )
+            )
+        }
+    }
+
     func testRejectsRepeatedResponseID() async throws {
         let client = ScriptedModelClient(
             responses: [
@@ -498,6 +589,23 @@ final class PocketRootAgentTests: XCTestCase {
                 error as? PocketRootAgentError,
                 .invalidConfiguration(
                     "maximumTurns must be greater than zero."
+                )
+            )
+        }
+
+        XCTAssertThrowsError(
+            try PocketRootAgentRunner(
+                modelClient: ScriptedModelClient(responses: []),
+                configuration: PocketRootAgentConfiguration(
+                    instructions: "Test",
+                    maximumModelIdentifierBytes: 0
+                )
+            )
+        ) { error in
+            XCTAssertEqual(
+                error as? PocketRootAgentError,
+                .invalidConfiguration(
+                    "maximumModelIdentifierBytes must be greater than zero."
                 )
             )
         }

@@ -66,7 +66,7 @@ swift test
 - unknown tool 与普通 tool failure 的结构化恢复；
 - 重复 response ID、跨轮重复 call ID 与同批重复 call ID 拒绝；
 - 整批 call 预检先于任何 tool side effect；
-- turn、tool call、用户输入、模型文本、arguments 和 output 边界；
+- turn、tool call、用户输入、模型文本、ID/name、arguments 和 output 边界；
 - 同一 runner 并发拒绝、最后一轮不执行无法回传结果的 tool；
 - 配置、tool name 与 JSON object schema 校验。
 

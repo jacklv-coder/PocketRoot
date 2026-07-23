@@ -84,6 +84,14 @@ public actor PocketRootAgentRunner {
                     "response ID must not be empty."
                 )
             }
+            guard response.id.utf8.count
+                <= configuration.maximumModelIdentifierBytes
+            else {
+                throw PocketRootAgentError.invalidModelResponse(
+                    "response ID exceeded the "
+                        + "\(configuration.maximumModelIdentifierBytes)-byte limit."
+                )
+            }
             guard seenResponseIDs.insert(response.id).inserted else {
                 throw PocketRootAgentError.invalidModelResponse(
                     "response ID '\(response.id)' was repeated."
@@ -130,6 +138,7 @@ public actor PocketRootAgentRunner {
             for call in response.toolCalls {
                 try Self.validate(
                     call: call,
+                    maximumIdentifierBytes: configuration.maximumModelIdentifierBytes,
                     maximumArgumentsBytes: configuration.maximumToolArgumentsBytes,
                     seenIDs: &validatedCallIDs
                 )
@@ -204,6 +213,11 @@ public actor PocketRootAgentRunner {
                 "maximumModelOutputBytes must be greater than zero."
             )
         }
+        guard configuration.maximumModelIdentifierBytes > 0 else {
+            throw PocketRootAgentError.invalidConfiguration(
+                "maximumModelIdentifierBytes must be greater than zero."
+            )
+        }
         guard configuration.maximumToolArgumentsBytes > 0 else {
             throw PocketRootAgentError.invalidConfiguration(
                 "maximumToolArgumentsBytes must be greater than zero."
@@ -246,6 +260,7 @@ public actor PocketRootAgentRunner {
 
     private static func validate(
         call: PocketRootAgentToolCall,
+        maximumIdentifierBytes: Int,
         maximumArgumentsBytes: Int,
         seenIDs: inout Set<String>
     ) throws {
@@ -254,9 +269,15 @@ public actor PocketRootAgentRunner {
                 "tool call ID must not be empty."
             )
         }
-        guard !call.name.isEmpty else {
+        guard call.id.utf8.count <= maximumIdentifierBytes else {
             throw PocketRootAgentError.invalidModelResponse(
-                "tool call name must not be empty."
+                "tool call ID exceeded the \(maximumIdentifierBytes)-byte limit."
+            )
+        }
+        guard Self.isValidToolName(call.name) else {
+            throw PocketRootAgentError.invalidModelResponse(
+                "tool call names must contain 1...64 ASCII letters, "
+                    + "digits, '_' or '-'."
             )
         }
         guard seenIDs.insert(call.id).inserted else {

@@ -13,6 +13,7 @@
 - `user input → model response → tool calls → tool outputs → model` 循环；
 - 同一个 runner 最多一个进行中的 run；
 - model turn、tool call、用户输入、模型文本、tool arguments 和 tool output 上限；
+- model 生成的 response/call ID 字节上限与 tool name 格式/长度校验；
 - response ID 与 tool call ID 防重放；
 - 整批 tool call 预检，避免后一个畸形 call 让前一个先产生副作用；
 - unknown tool 与普通 tool error 的结构化失败回传；
@@ -55,6 +56,8 @@ Runner 只在没有 tool calls 时接受最终文本。若最后一个允许回�
 | tool calls | 16 |
 | user input | 64 KiB |
 | model text | 256 KiB |
+| 单个 response/call ID | 256 bytes |
+| tool name | 64 ASCII bytes |
 | 单个 tool arguments | 64 KiB |
 | 单个 tool output | 64 KiB |
 
