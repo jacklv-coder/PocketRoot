@@ -179,9 +179,6 @@ jobs:
           unzip -q "$archive" -d "$install_root"
           echo "$install_root/xcodegen/bin" >> "$GITHUB_PATH"
 
-      - name: Final-link runtime with Xcode 16.0
-        run: ./Scripts/build-runtime-spike.sh
-
       - name: Install iOS 18.0 Simulator runtime
         run: |
           test -d /Applications/Xcode_16.1.app/Contents/Developer
@@ -193,6 +190,9 @@ jobs:
           xcrun simctl list runtimes available
           xcrun simctl list runtimes available \
             | grep -F "iOS 18.0"
+
+      - name: Final-link runtime with Xcode 16.0
+        run: ./Scripts/build-runtime-spike.sh
 
       - name: Run native smoke with Xcode 16.0
         env:
