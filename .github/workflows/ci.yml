@@ -123,8 +123,6 @@ jobs:
     name: Minimum Xcode 16.0
     runs-on: macos-15
     timeout-minutes: 90
-    env:
-      DEVELOPER_DIR: /Applications/Xcode_16.0.app/Contents/Developer
 
     steps:
       - name: Check out repository
@@ -139,7 +137,9 @@ jobs:
       - name: Verify minimum Apple toolchain
         run: |
           test "$(uname -m)" = "arm64"
-          test -d "$DEVELOPER_DIR"
+          test -d /Applications/Xcode_16.0.app/Contents/Developer
+          sudo xcode-select \
+            --switch /Applications/Xcode_16.0.app/Contents/Developer
           test "$(xcodebuild -version | sed -n '1p')" = "Xcode 16.0"
           test "$(xcrun --sdk iphoneos --show-sdk-version)" = "18.0"
           test "$(xcrun --sdk iphonesimulator --show-sdk-version)" = "18.0"
@@ -181,11 +181,8 @@ jobs:
 
       - name: Install iOS 18.0 Simulator runtime
         run: |
-          test -d /Applications/Xcode_16.1.app/Contents/Developer
-          DEVELOPER_DIR=/Applications/Xcode_16.1.app/Contents/Developer \
-            xcodebuild \
-              -downloadPlatform iOS \
-              -buildVersion 18.0
+          xcrun simctl list >/dev/null
+          xcodebuild -downloadPlatform iOS
           xcrun simctl list runtimes available
           xcrun simctl list runtimes available \
             | grep -F "iOS 18.0"
