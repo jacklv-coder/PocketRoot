@@ -11,6 +11,7 @@
 | 公共系统 | `PocketRootSystem` | `Sources/PocketRootCore/Public/PocketRootSystem.swift` |
 | 生命周期协调 | `RuntimeCoordinator` | `Sources/PocketRootCore/Runtime/RuntimeCoordinator.swift` |
 | 默认占位 runtime | `PlaceholderLinuxRuntime` | `Sources/PocketRootCore/Runtime/PlaceholderLinuxRuntime.swift` |
+| 轻量 agent loop | `PocketRootAgentRunner` | `Sources/PocketRootAgent/` |
 | RootFS 清单 | `PocketRootRootFSArtifactManifest` | `Sources/PocketRootResources/RootFSArtifactManifest.swift` |
 | Archive 校验 | `PocketRootRootFSValidator` | `Sources/PocketRootResources/RootFSValidator.swift` |
 | gzip/ustar 解包 | `PocketRootGzipTarExtractor` | `Sources/PocketRootResources/RootFSGzipTarExtractor.swift` |

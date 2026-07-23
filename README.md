@@ -2,7 +2,7 @@
 
 [简体中文](README.md) | [English](README.en.md)
 
-PocketRoot 是面向 iOS 的可嵌入 ARM64 Linux 运行时与终端基础设施。项目使用 Swift Package 提供模块化 API，以 iSH/IshEmbed 作为实验性运行时，在 iOS 沙箱中安装经过校验的 Alpine fakefs，并执行有边界的一次性 shell 命令。
+PocketRoot 是面向 iOS 的可嵌入 ARM64 Linux 运行时、终端与上层轻量 agent 基础设施。项目使用 Swift Package 提供模块化 API，以 iSH/IshEmbed 作为实验性运行时，在 iOS 沙箱中安装经过校验的 Alpine fakefs，并执行有边界的一次性 shell 命令。
 
 > [!WARNING]
 > 真实 iSH 集成目前仍是 **实验性（Experimental）** 能力。固定的上游版本在调用 `shutdown()` 时会执行 `_exit(0)`，直接结束整个宿主 App，且不会返回 Swift。当前版本不得用于生产、TestFlight 或公开二进制分发。
@@ -11,14 +11,17 @@ PocketRoot 是面向 iOS 的可嵌入 ARM64 Linux 运行时与终端基础设施
 
 | 能力 | 状态 | 说明 |
 | --- | --- | --- |
-| Swift Package 模块与公共 API | 可用 | Core、Resources、Terminal 及默认伞形产品 |
+| Swift Package 模块与公共 API | 可用 | Core、Resources、Terminal、Agent 及默认伞形产品 |
 | UIKit Demo 外壳 | 可用 | 展示 System、Terminal、Commands、Diagnostics 四个入口 |
 | RootFS 校验与安全安装 | 可用 | 固定大小和 SHA-256、安全解包、journal 保护的同卷 promotion、复用与中断恢复 |
 | iSH 启动与一次性命令 | 实验性 | 仅 `iOS + arm64`，必须显式依赖实验产品 |
+| 轻量 agent loop | 核心可用 / transport 未接 | 显式依赖 `PocketRootAgent`；不安装 Codex CLI，不默认暴露 shell |
 | 交互式 PTY 与 SwiftTerm | 未实现 | 会话、输入、resize、signal 和安全关闭仍在规划中 |
 | 真机与公开发行 | 部分通过 / 阻塞 | iPhone 一次性命令基线已通过；仍需 iPad、生命周期、Xcode 16、许可证、SBOM 和 App Store 审查 |
 
-默认 `PocketRoot` 产品不会带入真实 iSH 运行时，也不会打包或下载 RootFS。`PocketRootSystem.shared` 使用安全的占位实现；需要真实运行时的应用必须显式依赖 `PocketRootIshRuntimeIntegration`。
+默认 `PocketRoot` 产品不会带入 agent loop 或真实 iSH 运行时，也不会打包或下载 RootFS。
+需要 agent 的应用显式依赖 `PocketRootAgent`；需要真实运行时的应用显式依赖
+`PocketRootIshRuntimeIntegration`。`PocketRootSystem.shared` 仍使用安全的占位实现。
 
 ## 实现概览
 
@@ -178,6 +181,7 @@ POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
 | 产品目标、用户、场景与非目标 | [产品规划](Docs/ProductPlan.md) |
 | 从零构建工程和运行 Demo | [快速开始](Docs/GettingStarted.md) |
 | SwiftPM 产品选择与应用接入 | [应用接入指南](Docs/IntegrationGuide.md) |
+| 轻量 agent loop、边界与后续 transport | [轻量 Agent Loop](Docs/Agent.md) |
 | 模块、并发与生命周期设计 | [架构说明](Docs/Architecture.md) |
 | 端到端流程与源码地图 | [实现原理](Docs/Implementation.md) |
 | RootFS 校验、安装和恢复 | [RootFS 安全方案](Docs/RootFS.md) |

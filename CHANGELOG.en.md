@@ -9,6 +9,7 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 ### Added
 
 - Swift Package products for Core, Terminal, Resources, and the safe umbrella.
+- An explicit opt-in `PocketRootAgent` product with a provider-agnostic lightweight loop, turn/tool/input/output bounds, ID replay rejection, whole-batch validation, sequential tool execution, and cancellation propagation; it neither installs Codex CLI nor exposes a default shell tool.
 - Programmatic UIKit Demo with System, Terminal, Commands, and Diagnostics.
 - XcodeGen project source, generation, test, and build scripts.
 - Placeholder runtime, terminal API foundations, and unit tests.

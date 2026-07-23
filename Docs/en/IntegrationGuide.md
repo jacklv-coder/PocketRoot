@@ -2,7 +2,9 @@
 
 [简体中文](../IntegrationGuide.md) | [English](IntegrationGuide.md) | [Documentation](README.md)
 
-This guide documents the current public behavior and the complete local-RootFS to one-shot-result flow.
+This guide documents the current public behavior, distinguishes the safe
+default, explicit agent, and Experimental native products, and covers the
+complete local-RootFS to one-shot-result flow.
 
 > [!CAUTION]
 > The pinned IshEmbed shutdown path calls `_exit(0)`. In a native iOS build, `prepared.system.shutdown()` terminates the entire host app and normally never returns to Swift. Do not put it in view, scene, deinit, or routine cleanup paths.
@@ -14,11 +16,16 @@ This guide documents the current public behavior and the complete local-RootFS t
 | `PocketRootCore` | State, configuration, command, result, and error model | No |
 | `PocketRootResources` | RootFS manifest, validation, extraction, and install | No |
 | `PocketRootTerminal` | UIKit terminal placeholder UI | No |
-| `PocketRoot` | Safe umbrella exporting the three products above | No |
+| `PocketRootAgent` | Provider-agnostic bounded agent loop | No |
+| `PocketRoot` | Safe umbrella exporting Core, Resources, and Terminal | No |
 | `PocketRootIshRuntime` | Experimental pinned IshEmbed adapter | Yes |
 | `PocketRootIshRuntimeIntegration` | Experimental RootFS/runtime composition | Yes |
 
-Use `PocketRoot` for stable models and UI. A real guest requires the explicit integration product. The repository has no stable release tag yet; pin a reviewed full commit:
+Use `PocketRoot` for stable models and UI. Add `PocketRootAgent` explicitly for
+the agent loop; provider transport and the Linux command tool remain separate
+follow-up work documented in [Lightweight Agent Loop](Agent.md). A real guest
+requires the explicit integration product. The repository has no stable
+release tag yet; pin a reviewed full commit:
 
 ```swift
 dependencies: [

@@ -94,6 +94,7 @@ PocketRoot 负责链路的前半段和产品边界；后半段必须阅读当前
 | --- | --- | --- |
 | `Package.swift` | SwiftPM 产品、target 和固定依赖 | 哪些产品安全默认，哪些产品显式启用 iSH |
 | `Sources/PocketRootCore/` | 公共模型、actor、runtime protocol | API 与具体 iSH 实现如何解耦 |
+| `Sources/PocketRootAgent/` | 有界 model/tool loop | 为什么 agent 位于 Core 之上且不安装 Codex CLI |
 | `Sources/PocketRootResources/` | RootFS 清单、验证、解包和安装 | 外部资产如何 fail closed |
 | `Sources/CPocketRootArchiveSupport/` | zlib 流式解压窄 C 接口 | Swift/C 边界和展开大小限制 |
 | `Sources/PocketRootIshRuntime/` | iSH adapter、driver、串行执行与所有权 | 阻塞原生 API 如何接入 Swift Concurrency |
@@ -116,7 +117,15 @@ PocketRoot 负责链路的前半段和产品边界；后半段必须阅读当前
 
 `PocketRootSystem.shared` 使用 `PlaceholderLinuxRuntime`。因此普通应用仅依赖 `PocketRoot` 时，不会因为一次 import 就链接实验性原生二进制。
 
-### 4.2 实验运行时层
+### 4.2 显式 agent 层
+
+- `PocketRootAgent`：provider-agnostic、有资源上限的 model/tool loop。
+- 它不在默认伞形产品中，不提供网络 transport、credential storage 或默认 shell tool。
+
+应用需要 agent 时显式选择该产品。后续 provider 和 Linux command tool 仍分别经过独立
+review；详细边界见[轻量 Agent Loop](Agent.md)。
+
+### 4.3 实验运行时层
 
 - `PocketRootIshRuntime`：把 Core 的 `LinuxRuntime` 协议映射到 IshEmbed。
 - `PocketRootIshRuntimeIntegration`：先安装 RootFS，再创建绑定该安装的 `PocketRootSystem`。

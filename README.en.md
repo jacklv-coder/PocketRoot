@@ -2,7 +2,10 @@
 
 [简体中文](README.md) | [English](README.en.md)
 
-PocketRoot provides embeddable ARM64 Linux runtime and terminal foundations for iOS. Its Swift Package modules can securely install a verified Alpine fakefs and, through the Experimental iSH/IshEmbed adapter, execute bounded one-shot shell commands inside the iOS sandbox.
+PocketRoot provides embeddable ARM64 Linux runtime, terminal, and upper-layer
+lightweight-agent foundations for iOS. Its Swift Package modules can securely
+install a verified Alpine fakefs and, through the Experimental iSH/IshEmbed
+adapter, execute bounded one-shot shell commands inside the iOS sandbox.
 
 > [!WARNING]
 > Native iSH integration is **Experimental**. The pinned upstream build calls `_exit(0)` during `shutdown()`, terminating the entire host app without returning to Swift. This version is not approved for production, TestFlight, or public binary distribution.
@@ -11,14 +14,19 @@ PocketRoot provides embeddable ARM64 Linux runtime and terminal foundations for 
 
 | Capability | Status | Notes |
 | --- | --- | --- |
-| Swift Package modules and public API | Available | Core, Resources, Terminal, and safe umbrella |
+| Swift Package modules and public API | Available | Core, Resources, Terminal, Agent, and safe umbrella |
 | UIKit Demo shell | Available | System, Terminal, Commands, and Diagnostics entry points |
 | RootFS verification and safe install | Available | Fixed digest, secure extraction, journal-protected same-volume promotion, reuse, recovery |
 | iSH boot and one-shot commands | Experimental | `iOS + arm64` and explicit products only |
+| Lightweight agent loop | Core available / transport open | Explicit `PocketRootAgent`; no Codex CLI install or default shell exposure |
 | Interactive PTY and SwiftTerm | Not implemented | Session input, resize, signal, and safe close remain planned |
 | Physical devices and distribution | Partially passed / blocked | The iPhone one-shot baseline passed; iPad, lifecycle, Xcode 16, license, SBOM, and App Store gates remain |
 
-The default `PocketRoot` product does not include native iSH and never bundles or downloads a RootFS. `PocketRootSystem.shared` uses a safe placeholder. Real runtime applications explicitly depend on `PocketRootIshRuntimeIntegration`.
+The default `PocketRoot` product includes neither the agent loop nor native
+iSH and never bundles or downloads a RootFS. Agent applications explicitly
+select `PocketRootAgent`; real runtime applications explicitly select
+`PocketRootIshRuntimeIntegration`. `PocketRootSystem.shared` remains a safe
+placeholder.
 
 ## Implementation overview
 
@@ -169,6 +177,7 @@ Both native runners require Apple Silicon and the exact local archive. The first
 | Users, use cases, MVP, and non-goals | [Product Plan](Docs/en/ProductPlan.md) |
 | Checkout, build, and Demo | [Getting Started](Docs/en/GettingStarted.md) |
 | Product selection and API use | [Integration Guide](Docs/en/IntegrationGuide.md) |
+| Lightweight agent loop, boundaries, and transport plan | [Lightweight Agent Loop](Docs/en/Agent.md) |
 | Modules, concurrency, lifecycle | [Architecture](Docs/en/Architecture.md) |
 | Source-level flows | [Implementation](Docs/en/Implementation.md) |
 | RootFS threat model and recovery | [RootFS Security](Docs/en/RootFS.md) |

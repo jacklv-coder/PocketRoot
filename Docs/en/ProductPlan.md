@@ -20,6 +20,7 @@ PocketRoot is not a full iSH app fork or a general virtualization platform. It s
 2. Add an interactive terminal after session input, output, resize, signal, EOF, cancellation, and shutdown ownership are safe.
 3. Reuse or recover a verified local Linux environment without allowing partial installation to replace the last valid version.
 4. Pin every external input by commit, nested gitlink, size, and SHA-256.
+5. Use a bounded native-Swift agent loop to connect a model with explicitly registered tools. The Linux runtime executes only host-approved, bounded commands and does not install the full Codex CLI in the RootFS.
 
 ## Product value
 
@@ -37,6 +38,7 @@ PocketRoot is not a full iSH app fork or a general virtualization platform. It s
 - Modular Swift Package APIs and a UIKit demonstration shell.
 - Caller-supplied local RootFS archives.
 - iSH boot and bounded one-shot shell commands.
+- A provider-agnostic `PocketRootAgent` loop with turn, tool, input, and output bounds.
 - A default post-boot guest identity gate.
 - Secure RootFS installation and recovery.
 - Experimental final-link and Simulator smoke validation.
@@ -55,7 +57,9 @@ PocketRoot is not a full iSH app fork or a general virtualization platform. It s
 - A macOS iSH guest or x86_64 Simulator support.
 - Multiple parallel iSH kernels.
 - Default network RootFS downloads or unreviewed artifacts.
-- Browser automation, agents, MCP, or cloud command orchestration.
+- Agents, browser automation, MCP, or cloud orchestration inside `PocketRootCore`.
+- Installing Codex CLI, Node.js, or npm in the RootFS as the mobile agent architecture.
+- Executing model-generated shell commands without host approval.
 - Private APIs, sandbox escape, or App Store policy bypass.
 - Production, TestFlight, or public binary distribution before gate closure.
 
@@ -66,11 +70,13 @@ PocketRoot is not a full iSH app fork or a general virtualization platform. It s
 | Public model and coordination | `PocketRootCore` |
 | RootFS resources and installation | `PocketRootResources` |
 | Terminal UI foundation | `PocketRootTerminal` |
+| Upper-layer agent loop | `PocketRootAgent` |
 | Safe default umbrella | `PocketRoot` |
 | Experimental native adapter | `PocketRootIshRuntime` |
 | Experimental RootFS/runtime composition | `PocketRootIshRuntimeIntegration` |
 
-The umbrella product exports Core, Resources, and Terminal only. Native products are explicit opt-ins.
+The umbrella product exports Core, Resources, and Terminal only.
+`PocketRootAgent` and the native products are explicit opt-ins.
 
 ## Release stages
 

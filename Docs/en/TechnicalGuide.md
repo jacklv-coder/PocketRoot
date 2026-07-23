@@ -94,6 +94,7 @@ PocketRoot owns the first half and the product boundary. For the second half, re
 | --- | --- | --- |
 | `Package.swift` | SwiftPM products, targets, and pinned dependencies | Which products are safe by default and which explicitly enable iSH |
 | `Sources/PocketRootCore/` | Public models, actors, and runtime protocol | How the API is decoupled from a concrete iSH implementation |
+| `Sources/PocketRootAgent/` | Bounded model/tool loop | Why agent orchestration stays above Core without installing Codex CLI |
 | `Sources/PocketRootResources/` | RootFS manifest, validation, extraction, and installation | How external assets fail closed |
 | `Sources/CPocketRootArchiveSupport/` | Narrow zlib streaming C interface | The Swift/C boundary and expanded-size ceiling |
 | `Sources/PocketRootIshRuntime/` | iSH adapter, driver, serial execution, and ownership | How blocking native APIs enter Swift Concurrency |
@@ -116,7 +117,16 @@ PocketRoot owns the first half and the product boundary. For the second half, re
 
 `PocketRootSystem.shared` uses `PlaceholderLinuxRuntime`. An application depending only on `PocketRoot` therefore does not link the experimental native binary merely by importing the module.
 
-### 4.2 Experimental runtime layer
+### 4.2 Explicit agent layer
+
+- `PocketRootAgent` is a provider-agnostic, resource-bounded model/tool loop.
+- It is not in the safe umbrella and provides no network transport, credential
+  storage, or default shell tool.
+
+Applications select it explicitly. Provider and Linux command-tool work remain
+separately reviewed follow-ups; see [Lightweight Agent Loop](Agent.md).
+
+### 4.3 Experimental runtime layer
 
 - `PocketRootIshRuntime` maps Core's `LinuxRuntime` protocol to IshEmbed.
 - `PocketRootIshRuntimeIntegration` installs the RootFS and creates a `PocketRootSystem` bound to that installation.

@@ -36,6 +36,9 @@ PocketRoot 希望让 iOS 应用能够以明确、安全、可审核的方式嵌�
 4. **可审计的供应链**
    以完整 commit、nested gitlink、制品大小和 SHA-256 固定所有外部输入；升级时重新执行源码、二进制、运行时和合规审查。
 
+5. **上层轻量 Agent**
+   App 使用原生 Swift 的有界 agent loop 连接模型与显式注册的工具；Linux runtime 只执行经过宿主审批和限额的命令，不在 RootFS 中安装完整 Codex CLI。
+
 ## 用户价值
 
 - 业务代码只依赖稳定的 PocketRoot API，不直接持有 iSH C/Swift 对象。
@@ -54,6 +57,7 @@ PocketRoot 希望让 iOS 应用能够以明确、安全、可审核的方式嵌�
 - UIKit 演示外壳。
 - 本地、调用方提供的固定 RootFS 归档。
 - iSH 启动和一次性 shell 命令。
+- provider-agnostic、有 turn/tool/input/output 边界的 `PocketRootAgent` loop。
 - 默认 post-boot guest identity gate。
 - 安全 RootFS 安装与恢复。
 - 实验性原生最终链接和 Simulator smoke。
@@ -75,7 +79,9 @@ PocketRoot 希望让 iOS 应用能够以明确、安全、可审核的方式嵌�
 - 多个并行 iSH 内核实例。
 - 默认从网络下载 RootFS。
 - 未经审核地执行任意外部制品。
-- 浏览器自动化、Agent、MCP 或云端命令编排。
+- 把 Agent、浏览器自动化、MCP 或云端编排放入 `PocketRootCore`。
+- 在 RootFS 中安装 Codex CLI、Node.js 或 npm 作为手机端 agent 架构。
+- 未经宿主审批就执行模型生成的 shell 命令。
 - 绕过 iOS sandbox、私有 API 或 App Store 规则。
 - 在合规门禁完成前提供生产、TestFlight 或公开二进制。
 
@@ -86,11 +92,13 @@ PocketRoot 希望让 iOS 应用能够以明确、安全、可审核的方式嵌�
 | 公共模型与协调 | 所有接入者 | `PocketRootCore` |
 | RootFS 资源与安装 | 管理本地归档的应用 | `PocketRootResources` |
 | 终端 UI 基础 | UIKit 应用 | `PocketRootTerminal` |
+| 上层 agent loop | 需要模型/工具编排的应用 | `PocketRootAgent` |
 | 安全默认入口 | 只需要稳定 API 的应用 | `PocketRoot` |
 | iSH 原生适配 | 实验性 runtime 维护者 | `PocketRootIshRuntime` |
 | RootFS + iSH 组合 | 实验性应用接入者 | `PocketRootIshRuntimeIntegration` |
 
-默认伞形产品只重新导出 Core、Resources 和 Terminal。两个实验性产品必须显式添加，避免普通消费者意外链接原生 IshEmbed。
+默认伞形产品只重新导出 Core、Resources 和 Terminal。`PocketRootAgent` 与两个实验性
+runtime 产品必须显式添加，避免普通消费者意外引入模型编排或链接原生 IshEmbed。
 
 ## 版本阶段与验收定义
 

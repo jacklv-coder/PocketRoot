@@ -2,25 +2,30 @@
 
 [简体中文](IntegrationGuide.md) | [English](en/IntegrationGuide.md) | [文档中心](README.md)
 
-本指南描述当前公开 API 的真实行为。它区分安全默认产品和实验性 iSH 产品，并给出从本地 RootFS 到一次性命令结果的完整闭环。
+本指南描述当前公开 API 的真实行为。它区分安全默认产品、显式 agent 产品和实验性 iSH 产品，并给出从本地 RootFS 到一次性命令结果的完整闭环。
 
 > [!CAUTION]
 > 固定的 IshEmbed 版本在 `shutdown()` 中最终调用 `_exit(0)`。在真实 iOS 构建中，`prepared.system.shutdown()` 会直接结束整个宿主 App，正常情况下不会返回 Swift。不要把它放在页面退出、scene 切换、deinit 或普通清理路径中。
 
 ## 1. 选择 Swift Package 产品
 
-PocketRoot 暴露六个产品：
+PocketRoot 暴露七个产品：
 
 | 产品 | 用途 | 是否包含真实 iSH |
 | --- | --- | --- |
 | `PocketRootCore` | 状态、配置、命令、结果和错误模型 | 否 |
 | `PocketRootResources` | RootFS 清单、校验、解包和安装 | 否 |
 | `PocketRootTerminal` | UIKit 终端占位 UI | 否 |
-| `PocketRoot` | 默认伞形产品，重新导出前三者 | 否 |
+| `PocketRootAgent` | provider-agnostic 有界 agent loop | 否 |
+| `PocketRoot` | 默认伞形产品，重新导出 Core、Resources 与 Terminal | 否 |
 | `PocketRootIshRuntime` | 固定 IshEmbed 的实验性原生适配 | 是 |
 | `PocketRootIshRuntimeIntegration` | RootFS 安装器与原生适配的组合入口 | 是 |
 
-仅构建业务模型或 UI 时依赖 `PocketRoot`。要启动真实 guest，至少显式依赖 `PocketRootIshRuntimeIntegration`；示例还直接读取 `PocketRootIshRuntimeFactory.isAvailable`，因此同时列出 `PocketRootIshRuntime` 产品。
+仅构建业务模型或 UI 时依赖 `PocketRoot`。需要 agent loop 时额外显式依赖
+`PocketRootAgent`；当前 provider transport 与 Linux command tool 仍按独立 PR 实现，
+具体边界见[轻量 Agent Loop](Agent.md)。要启动真实 guest，至少显式依赖
+`PocketRootIshRuntimeIntegration`；示例还直接读取
+`PocketRootIshRuntimeFactory.isAvailable`，因此同时列出 `PocketRootIshRuntime` 产品。
 
 项目尚未发布稳定 Git tag。远程接入应固定到经过审核的完整 commit：
 
