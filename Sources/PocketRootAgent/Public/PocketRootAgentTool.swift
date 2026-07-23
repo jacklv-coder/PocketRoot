@@ -49,16 +49,27 @@ public struct PocketRootAgentToolOutput: Sendable, Equatable {
 public struct PocketRootAgentTool: Sendable {
     public let definition: PocketRootAgentToolDefinition
 
+    private let preflightHandler: @Sendable (
+        PocketRootAgentToolCall
+    ) throws -> Void
     private let handler: @Sendable (PocketRootAgentToolCall) async throws -> String
 
     public init(
         definition: PocketRootAgentToolDefinition,
+        preflight: @escaping @Sendable (
+            PocketRootAgentToolCall
+        ) throws -> Void = { _ in },
         handler: @escaping @Sendable (
             PocketRootAgentToolCall
         ) async throws -> String
     ) {
         self.definition = definition
+        preflightHandler = preflight
         self.handler = handler
+    }
+
+    func preflight(_ call: PocketRootAgentToolCall) throws {
+        try preflightHandler(call)
     }
 
     func execute(_ call: PocketRootAgentToolCall) async throws -> String {

@@ -119,12 +119,16 @@ PocketRoot owns the first half and the product boundary. For the second half, re
 
 ### 4.2 Explicit agent layer
 
-- `PocketRootAgent` is a provider-agnostic, resource-bounded model/tool loop.
-- It is not in the safe umbrella and provides no network transport, credential
-  storage, or default shell tool.
+- `PocketRootAgent` is a provider-agnostic, resource-bounded model/tool loop
+  with an optional OpenAI Responses transport.
+- `PocketRootAgentRuntimeTools` composes the Core command seam behind host
+  policy and per-call approval.
+- Neither product is in the safe umbrella; neither stores credentials or
+  installs Codex CLI.
 
-Applications select it explicitly. Provider and Linux command-tool work remain
-separately reviewed follow-ups; see [Lightweight Agent Loop](Agent.md).
+Applications select `PocketRootAgent` explicitly and add
+`PocketRootAgentRuntimeTools` only for the command adapter; see
+[Lightweight Agent Loop](Agent.md).
 
 ### 4.3 Experimental runtime layer
 

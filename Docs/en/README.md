@@ -56,7 +56,8 @@ Code, `Package.resolved`, committed manifests, and the designated source-of-trut
 - Minimum deployment target: iOS 18.0.
 - Default `PocketRoot` product: buildable placeholder; no real iSH runtime.
 - `PocketRootIshRuntime` and `PocketRootIshRuntimeIntegration`: Experimental and opt-in.
-- `PocketRootAgent`: provider-agnostic bounded agent loop plus OpenAI Responses transport; the Linux command tool remains open.
+- `PocketRootAgent`: provider-agnostic bounded agent loop plus OpenAI Responses transport.
+- `PocketRootAgentRuntimeTools`: explicit policy- and per-call-approval-gated command adapter.
 - RootFS secure installation: implemented; payload not committed, bundled, or downloaded by the library.
 - iOS 18.2 arm64 Simulator: repository native smoke passed.
 - Default boot identity gate: ready now requires matching `aarch64`, Alpine identity, optional version, and guest working directory.

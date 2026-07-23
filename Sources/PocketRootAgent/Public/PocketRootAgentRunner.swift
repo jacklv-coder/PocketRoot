@@ -142,6 +142,9 @@ public actor PocketRootAgentRunner {
                     maximumArgumentsBytes: configuration.maximumToolArgumentsBytes,
                     seenIDs: &validatedCallIDs
                 )
+                if let tool = toolsByName[call.name] {
+                    try tool.preflight(call)
+                }
             }
             seenToolCallIDs = validatedCallIDs
 

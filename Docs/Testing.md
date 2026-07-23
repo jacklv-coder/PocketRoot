@@ -74,6 +74,15 @@ swift test
 - strict schema 本地预检、HTTPS endpoint、request/response body 上限；
 - bearer credential 缺失/畸形/loader error 脱敏，非 2xx API error 映射且错误不含 token。
 
+### PocketRootAgentRuntimeToolsTests
+
+- strict command schema 与未知字段拒绝；
+- command policy 拒绝不触发审批，审批拒绝不触发 runtime；
+- 审批看到规范化后的最终 cwd、environment、timeout 与 stderr merge 请求；
+- 整批工具级 preflight 在第一条副作用前拒绝后续畸形命令；
+- command/cwd/environment/timeout/output 配额、UTF-8/Base64 结果与截断标记；
+- 非协作审批返回后的取消不执行命令，非协作执行返回后的取消不回传成功。
+
 ### Integration 与 Terminal tests
 
 - RootFS/runtime configuration 对齐；

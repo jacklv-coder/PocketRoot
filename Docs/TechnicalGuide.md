@@ -119,11 +119,12 @@ PocketRoot 负责链路的前半段和产品边界；后半段必须阅读当前
 
 ### 4.2 显式 agent 层
 
-- `PocketRootAgent`：provider-agnostic、有资源上限的 model/tool loop。
-- 它不在默认伞形产品中，不提供网络 transport、credential storage 或默认 shell tool。
+- `PocketRootAgent`：provider-agnostic、有资源上限的 model/tool loop，以及可选 OpenAI Responses transport。
+- `PocketRootAgentRuntimeTools`：把 Core command seam 组合为必须经过 policy 与逐次审批的工具。
+- 两者都不在默认伞形产品中，不提供 credential storage，也不安装 Codex CLI。
 
-应用需要 agent 时显式选择该产品。后续 provider 和 Linux command tool 仍分别经过独立
-review；详细边界见[轻量 Agent Loop](Agent.md)。
+应用需要 agent 时显式选择 `PocketRootAgent`，只有接入命令工具时再选择
+`PocketRootAgentRuntimeTools`；详细边界见[轻量 Agent Loop](Agent.md)。
 
 ### 4.3 实验运行时层
 

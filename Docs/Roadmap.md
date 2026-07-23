@@ -15,8 +15,8 @@
 
 1. 已合并 provider-agnostic `PocketRootAgent` 有界 loop。
 2. 完成 OpenAI Responses API transport 与宿主 credential contract。
-3. 当前：增加带审批、命令策略、超时和输出边界的 Linux command tool。
-4. 发布并固定 soft-shutdown IshEmbed 制品。
+3. 完成带审批、命令策略、超时和输出边界的 Linux command tool。
+4. 当前：发布并固定 soft-shutdown IshEmbed 制品。
 5. 把 agent、prepared runtime 和 Simulator UI 组合进 Demo/App。
 6. 有物理 iPad 后补签名设备 smoke；该硬件门禁不阻塞前五项。
 
@@ -129,6 +129,9 @@
 - 增加原生 OpenAI Responses transport，覆盖首轮、tool output 续接、文本与 function call 解码。
 - 增加宿主异步 bearer credential contract；loader 失败脱敏，credential 不进入 RootFS 或日志。
 - 强制 strict function schema 预检，限制 request/response body，并禁用 HTTP 重定向。
+- 新增显式 opt-in `PocketRootAgentRuntimeTools`，通过结构预检、宿主 allow/deny policy 与逐次审批后才执行命令。
+- 限制 command、cwd、environment、timeout 与 model-visible streams；binary output 使用 Base64。
+- 把工具级同步 preflight 纳入 runner 整批预检，并覆盖 policy、approval、cancellation 与 no-side-effect 路径。
 
 ### 门禁
 
@@ -137,7 +140,7 @@
 | 有界 loop 核心 | 已通过 | package tests 与 strict concurrency 持续通过 |
 | OpenAI transport | 已通过 | 保持 Responses request/response/function-call、严格 schema、错误与 body limit 测试 |
 | Credential contract | 已通过 | 生产由 backend 持有长期 OpenAI key；移动宿主只按需提供 App session bearer credential |
-| Linux command tool | 未开始 | 审批、allow/deny policy、cwd、timeout、output 和 cancellation tests |
+| Linux command tool | 已通过 | 保持审批、allow/deny policy、cwd、timeout、output、整批 preflight 与 cancellation tests |
 | Demo/App 接入 | 未开始 | 明确状态、工具确认、取消、错误与最终文本 UI |
 | 会话持久化/streaming | 未开始 | 数据保留策略、恢复、增量事件与资源上限 |
 

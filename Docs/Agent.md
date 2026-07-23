@@ -19,17 +19,19 @@
 - response ID 与 tool call ID 防重放；
 - 整批 tool call 预检，避免后一个畸形 call 让前一个先产生副作用；
 - unknown tool 与普通 tool error 的结构化失败回传；
-- Swift Task cancellation 传播。
+- Swift Task cancellation 传播；
+- 显式 opt-in `PocketRootAgentRuntimeTools` 产品，提供带宿主策略、逐次审批和资源边界的
+  `run_linux_command` adapter；
+- 工具级同步 preflight 纳入整批 call 预检。
 
 本模块当前不提供：
 
 - credential 存储或登录 UI；
-- 默认 shell tool；
 - 自动批准模型产生的命令；
 - 流式 UI、会话持久化、多 Agent、handoff、MCP 或 tracing。
 
-其余能力按路线图拆成独立 PR。特别是 Linux command tool 必须先定义审批、工作目录、超时、
-输出和允许命令策略，不能把 `PocketRootSystem.execute` 无条件暴露给模型。
+命令工具不是默认能力：应用必须显式依赖 runtime-tools 产品、提供 allow/deny policy，
+并为每次已获 policy 允许的请求实现人工审批。library 没有“自动同意”实现。
 
 ## 核心协议
 
@@ -63,10 +65,17 @@ Runner 只在没有 tool calls 时接受最终文本。若最后一个允许回�
 | 单个 tool output | 64 KiB |
 | OpenAI request body | 2 MiB |
 | OpenAI response body | 2 MiB |
+| command text | 4 KiB |
+| command timeout | 30 seconds |
+| command environment | 16 entries / 8 KiB |
+| returned stdout / stderr | each 16 KiB |
+| encoded command result | 60 KiB |
 
 应用可以通过 `PocketRootAgentConfiguration` 收紧这些值。配置必须在 runner 初始化时通过
 验证；OpenAI transport 的 request/response body 上限由
 `PocketRootOpenAIResponsesConfiguration` 独立配置。超过边界会使本次 run 失败，不会静默截断。
+命令工具的 stdout/stderr 是例外：它会显式返回 `truncated` 标记，以保证编码后的 tool
+output 留在单独配置的上限内。
 
 ## OpenAI Responses transport
 
@@ -116,11 +125,61 @@ let runner = try PocketRootAgentRunner(
 Zero Data Retention 的应用不能使用这一状态模式；后续必须实现完整 response output（包括
 reasoning item）的本地历史回放后再开放该选项。
 
+## 审批保护的 Linux 命令工具
+
+`PocketRootAgentRuntimeTools` 单独依赖 `PocketRootAgent` 与 `PocketRootCore`，不进入默认
+伞形产品。`PocketRootLinuxCommandTool` 的执行顺序固定为：
+
+1. 严格解码参数，拒绝未知字段、控制字符、重复或未允许的环境变量；
+2. 规范化绝对工作目录，并执行 timeout、cwd、environment、stderr merge 和字节上限；
+3. 对同一 model response 的全部工具执行同步 preflight；
+4. 调用 App 提供的 command policy；
+5. policy 允许后，把最终且不会再修改的 `PocketRootLinuxCommand` 交给 App 逐次审批；
+6. 只有 `.approved` 才调用 `PocketRootSystem.execute`。
+
+```swift
+import PocketRootAgent
+import PocketRootAgentRuntimeTools
+
+let commandTool = try PocketRootLinuxCommandTool(
+    executor: prepared.system,
+    configuration: PocketRootLinuxCommandToolConfiguration(
+        defaultWorkingDirectory: "/root",
+        allowedWorkingDirectoryRoots: ["/root"],
+        allowedEnvironmentNames: ["LANG"],
+        maximumTimeoutSeconds: 15
+    ),
+    policy: .exactCommands(["uname -m", "pwd"]),
+    approval: PocketRootLinuxCommandApproval { command in
+        await approvalPresenter.request(command)
+            ? .approved
+            : .denied(reason: "The user denied this command.")
+    }
+)
+
+let runner = try PocketRootAgentRunner(
+    modelClient: modelClient,
+    configuration: agentConfiguration,
+    tools: [commandTool.agentTool]
+)
+```
+
+policy 与审批是两个独立门禁：policy 拒绝时不会打扰用户；policy 允许不代表已获审批。
+`exactCommands` 只做完整字符串匹配，自定义 policy 必须把 shell 字符串视为不可信输入。
+工作目录 root 是请求级词法限制，不是 guest 沙箱；命令仍由 `/bin/sh -lc` 执行，可以访问
+guest 中该用户有权访问的其他路径。
+
+stdout/stderr 先按工具配额截断，再以 UTF-8 或 binary-safe Base64 放入有界 JSON。
+更底层的 native 收集上限仍由 `PocketRootIshRuntimeConfiguration` 决定；工具配额只限制交给
+模型的结果，不会把固定 native transport 尚未解决的阻塞或 inbox 背压变成硬界限。
+Swift Task 在审批后、执行前取消时不会启动命令；命令已进入当前不可取消的 native
+`execute()` 后，取消只能阻止成功结果继续返回，不能撤销已经发生的副作用。
+
 ## 安全原则
 
 1. 模型输出是不可信输入。
 2. tool schema 只描述参数形状，不等于动作授权。
-3. 有副作用的工具必须在 handler 内再次执行授权检查。
+3. 有副作用的工具必须在 handler 内再次执行 policy 与逐次审批。
 4. 一个 response 内的全部 calls 先验证、后顺序执行。
 5. call ID 不允许在同一 run 中重复，避免重放副作用。
 6. 同一个 runner 不并发运行，避免共享模型状态或 Linux runtime 交错。
@@ -129,9 +188,8 @@ reasoning item）的本地历史回放后再开放该选项。
 
 ## 下一步
 
-1. 增加带审批与命令策略的 `PocketRootSystem` tool adapter。
-2. 发布并固定 soft-shutdown IshEmbed 制品。
-3. 在 Demo/App 中组合 agent、prepared runtime、状态与取消 UI。
-4. 后续独立设计 streaming、`store: false` 历史回放与会话持久化。
+1. 发布并固定 soft-shutdown IshEmbed 制品。
+2. 在 Demo/App 中组合 agent、prepared runtime、审批、状态与取消 UI。
+3. 后续独立设计 streaming、`store: false` 历史回放与会话持久化。
 
 动态顺序和完成状态以[路线图](Roadmap.md)为准。

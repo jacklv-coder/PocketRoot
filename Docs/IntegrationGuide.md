@@ -9,7 +9,7 @@
 
 ## 1. 选择 Swift Package 产品
 
-PocketRoot 暴露七个产品：
+PocketRoot 暴露八个产品：
 
 | 产品 | 用途 | 是否包含真实 iSH |
 | --- | --- | --- |
@@ -17,13 +17,14 @@ PocketRoot 暴露七个产品：
 | `PocketRootResources` | RootFS 清单、校验、解包和安装 | 否 |
 | `PocketRootTerminal` | UIKit 终端占位 UI | 否 |
 | `PocketRootAgent` | provider-agnostic 有界 agent loop 与 OpenAI Responses transport | 否 |
+| `PocketRootAgentRuntimeTools` | 审批与策略保护的 Linux command adapter | 否 |
 | `PocketRoot` | 默认伞形产品，重新导出 Core、Resources 与 Terminal | 否 |
 | `PocketRootIshRuntime` | 固定 IshEmbed 的实验性原生适配 | 是 |
 | `PocketRootIshRuntimeIntegration` | RootFS 安装器与原生适配的组合入口 | 是 |
 
 仅构建业务模型或 UI 时依赖 `PocketRoot`。需要 agent loop 时额外显式依赖
-`PocketRootAgent`；OpenAI Responses transport 已可选使用，Linux command tool 仍按独立 PR 实现，
-具体边界见[轻量 Agent Loop](Agent.md)。要启动真实 guest，至少显式依赖
+`PocketRootAgent`；需要把已准备的 system 作为审批保护的命令工具交给 agent 时，再显式依赖
+`PocketRootAgentRuntimeTools`。具体门禁见[轻量 Agent Loop](Agent.md)。要启动真实 guest，至少显式依赖
 `PocketRootIshRuntimeIntegration`；示例还直接读取
 `PocketRootIshRuntimeFactory.isAvailable`，因此同时列出 `PocketRootIshRuntime` 产品。
 
@@ -41,6 +42,11 @@ targets: [
         name: "YourAppFeature",
         dependencies: [
             .product(name: "PocketRoot", package: "PocketRoot"),
+            .product(name: "PocketRootAgent", package: "PocketRoot"),
+            .product(
+                name: "PocketRootAgentRuntimeTools",
+                package: "PocketRoot"
+            ),
             .product(name: "PocketRootIshRuntime", package: "PocketRoot"),
             .product(
                 name: "PocketRootIshRuntimeIntegration",

@@ -32,6 +32,8 @@ flowchart TB
     Terminal --> Core
     Resources --> Archive["CPocketRootArchiveSupport"]
     Agent["PocketRootAgent<br/>Bounded model/tool loop"]
+    AgentTools["PocketRootAgentRuntimeTools<br/>Approval command adapter"] --> Agent
+    AgentTools --> Core
     Integration["PocketRootIshRuntimeIntegration<br/>Experimental"] --> Core
     Integration --> Resources
     Integration --> Runtime["PocketRootIshRuntime<br/>Experimental"]
@@ -43,7 +45,8 @@ flowchart TB
 - Core has no UIKit, Resources, or IshEmbed dependency.
 - Terminal depends on Core.
 - Resources uses a private zlib C target and no runtime.
-- Agent is currently an independent pure-Swift loop outside the safe umbrella, with no concrete provider or runtime dependency; a later command-tool adapter composes it with Core.
+- Agent is a pure-Swift loop plus optional OpenAI transport outside the safe umbrella, with no runtime dependency.
+- AgentRuntimeTools explicitly depends on Agent and Core to compose commands behind policy, per-call approval, and resource bounds.
 - IshRuntime depends on Core and conditionally on IshEmbed for iOS.
 - IshRuntimeIntegration is the public Resources/runtime composition boundary.
 - The umbrella exports Core, Terminal, and Resources only.
@@ -59,10 +62,17 @@ Public state, configuration, command/result/error model, `PocketRootSystem` acto
 
 A provider-agnostic, non-streaming model/tool loop with bounded turns, calls,
 inputs, arguments, and outputs; response/call ID replay rejection; whole-batch
-validation; sequential tool execution; cancellation; and structured unknown-tool
-or ordinary tool-failure feedback. It has no network transport, credential
-storage, or default shell tool and does not install Codex CLI in the RootFS.
+validation; sequential tool execution; cancellation; structured unknown-tool
+or ordinary tool-failure feedback; and an optional OpenAI transport. It stores
+no credentials and does not install Codex CLI in the RootFS.
 See [Lightweight Agent Loop](Agent.md).
+
+### PocketRootAgentRuntimeTools
+
+An explicit product for strict command schemas, tool-specific whole-batch
+preflight, cwd/environment/timeout/output bounds, host allow/deny policy,
+per-call approval, and bounded UTF-8/Base64 mapping of
+`PocketRootSystem.execute` results. It is not in the safe umbrella.
 
 ### PocketRootResources
 

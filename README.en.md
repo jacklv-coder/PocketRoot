@@ -14,17 +14,18 @@ adapter, execute bounded one-shot shell commands inside the iOS sandbox.
 
 | Capability | Status | Notes |
 | --- | --- | --- |
-| Swift Package modules and public API | Available | Core, Resources, Terminal, Agent, and safe umbrella |
+| Swift Package modules and public API | Available | Core, Resources, Terminal, Agent, Agent Runtime Tools, and safe umbrella |
 | UIKit Demo shell | Available | System, Terminal, Commands, and Diagnostics entry points |
 | RootFS verification and safe install | Available | Fixed digest, secure extraction, journal-protected same-volume promotion, reuse, recovery |
 | iSH boot and one-shot commands | Experimental | `iOS + arm64` and explicit products only |
-| Lightweight agent loop | Core and OpenAI transport available | Explicit `PocketRootAgent`; host-owned credentials; no Codex CLI install or default shell exposure |
+| Lightweight agent loop | Core, OpenAI transport, and approval-gated command tool available | Agent and Runtime Tools are explicit opt-ins; no Codex CLI install or automatic shell approval |
 | Interactive PTY and SwiftTerm | Not implemented | Session input, resize, signal, and safe close remain planned |
 | Physical devices and distribution | Partially passed / blocked | The iPhone one-shot baseline passed; iPad, lifecycle, Xcode 16, license, SBOM, and App Store gates remain |
 
 The default `PocketRoot` product includes neither the agent loop nor native
 iSH and never bundles or downloads a RootFS. Agent applications explicitly
-select `PocketRootAgent`; real runtime applications explicitly select
+select `PocketRootAgent`. Select `PocketRootAgentRuntimeTools` only for the
+approval-gated command adapter; real runtime applications explicitly select
 `PocketRootIshRuntimeIntegration`. `PocketRootSystem.shared` remains a safe
 placeholder.
 
