@@ -10,6 +10,7 @@ SIMCTL_LAUNCH_PID=""
 BUNDLE_ID="com.jacklv.PocketRootIshRuntimeSmoke"
 ARCHIVE_NAME="pocketroot-fs-v0.3.3.tar.gz"
 REPORT_NAME="pocketroot-smoke-result.json"
+PROGRESS_NAME="pocketroot-smoke-progress.txt"
 EXPECTED_SHA256="be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"
 EXPECTED_BYTE_COUNT="6581376"
 SMOKE_TIMEOUT_SECONDS="${POCKETROOT_SMOKE_TIMEOUT_SECONDS:-300}"
@@ -101,6 +102,7 @@ DATA_CONTAINER="$(xcrun simctl get_app_container "$DEVICE_UDID" "$BUNDLE_ID" dat
 mkdir -p "$DATA_CONTAINER/Documents"
 install -m 0644 "$ARCHIVE_PATH" "$DATA_CONTAINER/Documents/$ARCHIVE_NAME"
 rm -f "$DATA_CONTAINER/Documents/$REPORT_NAME"
+rm -f "$DATA_CONTAINER/Documents/$PROGRESS_NAME"
 
 CONSOLE_LOG="$DERIVED_DATA_ROOT/native-smoke-console.log"
 xcrun simctl launch \
@@ -129,6 +131,11 @@ if [[ ! -f "$REPORT_PATH" ]]; then
         echo "The native smoke App exited before writing its report." >&2
     else
         echo "Timed out waiting for the native smoke report." >&2
+    fi
+    PROGRESS_PATH="$DATA_CONTAINER/Documents/$PROGRESS_NAME"
+    if [[ -f "$PROGRESS_PATH" ]]; then
+        echo "Last native smoke progress:" >&2
+        cat "$PROGRESS_PATH" >&2 || true
     fi
     cat "$CONSOLE_LOG" >&2 || true
     xcrun simctl spawn "$DEVICE_UDID" log show \

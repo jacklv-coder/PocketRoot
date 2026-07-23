@@ -87,6 +87,11 @@ if ! grep -Fq -- 'The native smoke App exited before writing its report.' "$SIMU
     exit 1
 fi
 
+if ! grep -Fq -- 'Last native smoke progress:' "$SIMULATOR_RUNNER"; then
+    echo "Simulator runner does not report the last durable progress marker." >&2
+    exit 1
+fi
+
 set +e
 RUNNER_OUTPUT="$($DEVICE_RUNNER 2>&1)"
 RUNNER_STATUS=$?

@@ -34,6 +34,7 @@ private struct PocketRootSmokeFailure: LocalizedError {
 private enum PocketRootRuntimeSmokeRunner {
     static let archiveFileName = "pocketroot-fs-v0.3.3.tar.gz"
     static let reportFileName = "pocketroot-smoke-result.json"
+    static let progressFileName = "pocketroot-smoke-progress.txt"
 
     static func run(environment: PocketRootSmokeEnvironment) async -> PocketRootSmokeReport {
         let startedAt = Date()
@@ -60,6 +61,7 @@ private enum PocketRootRuntimeSmokeRunner {
             ).appendingPathComponent("PocketRootSmoke", isDirectory: true)
             let archiveURL = documentsURL.appendingPathComponent(archiveFileName)
 
+            writeProgress("preparing-rootfs")
             let prepared = try await PocketRootIshSystemFactory.prepareSystem(
                 archiveURL: archiveURL,
                 applicationSupportURL: applicationSupportURL,
@@ -75,6 +77,7 @@ private enum PocketRootRuntimeSmokeRunner {
                 )
             )
 
+            writeProgress("booting")
             try await prepared.system.boot()
             try require(
                 await prepared.system.state == .ready,
@@ -82,6 +85,7 @@ private enum PocketRootRuntimeSmokeRunner {
             )
             checks.append(PocketRootSmokeCheck(name: "boot", detail: "ready"))
 
+            writeProgress("running-command-checks")
             let architecture = try await prepared.system.execute(
                 PocketRootCommandRequest(command: "/bin/uname -m", workingDirectory: "/")
             )
@@ -186,6 +190,7 @@ private enum PocketRootRuntimeSmokeRunner {
             // v0.4.0-abi.1 must return after soft-halting and joining the
             // embedded kernel. Do not persist success until both the terminal
             // state and the no-reboot contract have been observed.
+            writeProgress("shutting-down")
             try await prepared.system.shutdown()
 
             try require(
@@ -207,6 +212,7 @@ private enum PocketRootRuntimeSmokeRunner {
                 )
             }
 
+            writeProgress("completed")
             return PocketRootSmokeReport(
                 success: true,
                 checks: checks,
@@ -249,6 +255,18 @@ private enum PocketRootRuntimeSmokeRunner {
             throw PocketRootSmokeFailure(message: "Documents directory is unavailable.")
         }
         return documentsURL.appendingPathComponent(reportFileName)
+    }
+
+    static func writeProgress(_ stage: String) {
+        NSLog("PocketRoot native smoke progress: %@", stage)
+        guard let documentsURL = FileManager.default.urls(
+            for: .documentDirectory,
+            in: .userDomainMask
+        ).first else {
+            return
+        }
+        let progressURL = documentsURL.appendingPathComponent(progressFileName)
+        try? Data(stage.utf8).write(to: progressURL, options: .atomic)
     }
 
     private static func requireDirectory(_ url: URL?, name: String) throws -> URL {
