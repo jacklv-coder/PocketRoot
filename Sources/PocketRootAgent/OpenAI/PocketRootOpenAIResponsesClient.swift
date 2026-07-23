@@ -435,7 +435,10 @@ extension PocketRootOpenAIResponsesClient: PocketRootAgentModelClient {
                 response.error?.message,
                 credential: credential
             )
-                ?? response.incompleteDetails?.reason
+                ?? redact(
+                    response.incompleteDetails?.reason,
+                    credential: credential
+                )
                 ?? "status was '\(response.status)'."
             throw PocketRootOpenAIResponsesError.invalidResponse(detail)
         }

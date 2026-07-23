@@ -485,6 +485,36 @@ final class PocketRootOpenAIResponsesClientTests: XCTestCase {
             )
         }
 
+        let credentialEchoClient = try makeClient(
+            recorder: OpenAIRequestRecorder(),
+            token: "private-token",
+            result: try makeHTTPResult(
+                statusCode: 200,
+                body: """
+                {
+                  "id": "resp_incomplete_credential_echo",
+                  "status": "incomplete",
+                  "incomplete_details": {
+                    "reason": "Credential private-token reached its limit."
+                  },
+                  "output": []
+                }
+                """
+            )
+        )
+        do {
+            _ = try await credentialEchoClient.createResponse(basicRequest())
+            XCTFail("An incomplete response must not expose credentials.")
+        } catch let error as PocketRootOpenAIResponsesError {
+            XCTAssertEqual(
+                error,
+                .invalidResponse(
+                    "Credential [REDACTED] reached its limit."
+                )
+            )
+            XCTAssertFalse(error.localizedDescription.contains("private-token"))
+        }
+
         let malformedClient = try makeClient(
             recorder: OpenAIRequestRecorder(),
             result: try makeHTTPResult(
