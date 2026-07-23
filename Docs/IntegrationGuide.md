@@ -16,13 +16,13 @@ PocketRoot 暴露七个产品：
 | `PocketRootCore` | 状态、配置、命令、结果和错误模型 | 否 |
 | `PocketRootResources` | RootFS 清单、校验、解包和安装 | 否 |
 | `PocketRootTerminal` | UIKit 终端占位 UI | 否 |
-| `PocketRootAgent` | provider-agnostic 有界 agent loop | 否 |
+| `PocketRootAgent` | provider-agnostic 有界 agent loop 与 OpenAI Responses transport | 否 |
 | `PocketRoot` | 默认伞形产品，重新导出 Core、Resources 与 Terminal | 否 |
 | `PocketRootIshRuntime` | 固定 IshEmbed 的实验性原生适配 | 是 |
 | `PocketRootIshRuntimeIntegration` | RootFS 安装器与原生适配的组合入口 | 是 |
 
 仅构建业务模型或 UI 时依赖 `PocketRoot`。需要 agent loop 时额外显式依赖
-`PocketRootAgent`；当前 provider transport 与 Linux command tool 仍按独立 PR 实现，
+`PocketRootAgent`；OpenAI Responses transport 已可选使用，Linux command tool 仍按独立 PR 实现，
 具体边界见[轻量 Agent Loop](Agent.md)。要启动真实 guest，至少显式依赖
 `PocketRootIshRuntimeIntegration`；示例还直接读取
 `PocketRootIshRuntimeFactory.isAvailable`，因此同时列出 `PocketRootIshRuntime` 产品。

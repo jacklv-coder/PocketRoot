@@ -13,9 +13,9 @@
 
 ## 当前执行序列
 
-1. 合并 provider-agnostic `PocketRootAgent` 有界 loop。
-2. 增加 OpenAI Responses API transport 与宿主 credential contract。
-3. 增加带审批、命令策略、超时和输出边界的 Linux command tool。
+1. 已合并 provider-agnostic `PocketRootAgent` 有界 loop。
+2. 完成 OpenAI Responses API transport 与宿主 credential contract。
+3. 当前：增加带审批、命令策略、超时和输出边界的 Linux command tool。
 4. 发布并固定 soft-shutdown IshEmbed 制品。
 5. 把 agent、prepared runtime 和 Simulator UI 组合进 Demo/App。
 6. 有物理 iPad 后补签名设备 smoke；该硬件门禁不阻塞前五项。
@@ -126,14 +126,17 @@
 - 拒绝重复 response/call ID；完整预检一批 calls 后再顺序执行。
 - unknown tool 与普通 tool error 作为结构化结果交回模型。
 - 同一 runner 拒绝并发 run，并传播 Swift Task cancellation。
+- 增加原生 OpenAI Responses transport，覆盖首轮、tool output 续接、文本与 function call 解码。
+- 增加宿主异步 bearer credential contract；loader 失败脱敏，credential 不进入 RootFS 或日志。
+- 强制 strict function schema 预检，限制 request/response body，并禁用 HTTP 重定向。
 
 ### 门禁
 
 | 门禁 | 状态 | 退出条件 |
 | --- | --- | --- |
 | 有界 loop 核心 | 已通过 | package tests 与 strict concurrency 持续通过 |
-| OpenAI transport | 未开始 | Responses API request/response/function-call contract 与 mock URLProtocol tests |
-| Credential contract | 未开始 | 宿主提供短期 credential；仓库、RootFS 和 App binary 不硬编码长期 key |
+| OpenAI transport | 已通过 | 保持 Responses request/response/function-call、严格 schema、错误与 body limit 测试 |
+| Credential contract | 已通过 | 生产由 backend 持有长期 OpenAI key；移动宿主只按需提供 App session bearer credential |
 | Linux command tool | 未开始 | 审批、allow/deny policy、cwd、timeout、output 和 cancellation tests |
 | Demo/App 接入 | 未开始 | 明确状态、工具确认、取消、错误与最终文本 UI |
 | 会话持久化/streaming | 未开始 | 数据保留策略、恢复、增量事件与资源上限 |

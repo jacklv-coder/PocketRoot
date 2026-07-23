@@ -13,9 +13,9 @@ Status:
 
 ## Current execution sequence
 
-1. Merge the provider-agnostic bounded `PocketRootAgent` loop.
-2. Add an OpenAI Responses API transport and host-owned credential contract.
-3. Add an approval-, command-policy-, timeout-, and output-gated Linux tool.
+1. Merged the provider-agnostic bounded `PocketRootAgent` loop.
+2. Completed the OpenAI Responses API transport and host-owned credential contract.
+3. Current: add an approval-, command-policy-, timeout-, and output-gated Linux tool.
 4. Release and pin the soft-shutdown IshEmbed artifact.
 5. Compose the agent, prepared runtime, and Simulator UI in the Demo/App.
 6. Complete signed iPad smoke when hardware is available; that hardware gate does not block the first five items.
@@ -107,14 +107,17 @@ Status: **In progress**.
 - Rejected repeated response/call IDs and preflighted each complete call batch before sequential execution.
 - Returned unknown-tool and ordinary tool failures to the model as structured results.
 - Rejected concurrent runs on one runner and propagated Swift Task cancellation.
+- Added a native OpenAI Responses transport covering initial input, tool-output continuation, text, and function-call decoding.
+- Added an async host bearer-credential contract with sanitized loader failures and no RootFS or log exposure.
+- Added strict function-schema preflight, request/response body limits, and redirect rejection.
 
 ### Gates
 
 | Gate | Status | Exit condition |
 | --- | --- | --- |
 | Bounded loop core | Passed | Keep package tests and strict concurrency green |
-| OpenAI transport | Not started | Responses request/response/function-call contract plus mock URLProtocol tests |
-| Credential contract | Not started | Host supplies short-lived credentials; no long-lived key in the repository, RootFS, or App binary |
+| OpenAI transport | Passed | Keep Responses request/response/function-call, strict-schema, error, and body-limit tests green |
+| Credential contract | Passed | Production backend holds the long-lived OpenAI key; mobile host loads only an app-session bearer credential |
 | Linux command tool | Not started | Approval, allow/deny policy, cwd, timeout, output, and cancellation tests |
 | Demo/App integration | Not started | Explicit status, tool confirmation, cancellation, error, and final-text UI |
 | Persistence/streaming | Not started | Retention policy, recovery, incremental events, and resource limits |
