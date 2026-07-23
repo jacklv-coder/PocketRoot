@@ -21,8 +21,9 @@
 
 1. [快速开始](GettingStarted.md)：环境准备、克隆、构建和 Demo 说明。
 2. [应用接入指南](IntegrationGuide.md)：选择 Swift Package 产品并完成 `prepare → boot → execute`。
-3. [RootFS 安全方案](RootFS.md)：归档来源、校验、安装、存储和恢复。
-4. [故障排查](Troubleshooting.md)：架构、哈希、状态、超时和关闭问题。
+3. [轻量 Agent Loop](Agent.md)：上层模型/工具循环、资源边界与安全原则。
+4. [RootFS 安全方案](RootFS.md)：归档来源、校验、安装、存储和恢复。
+5. [故障排查](Troubleshooting.md)：架构、哈希、状态、超时和关闭问题。
 
 ### 工程维护者
 
@@ -44,6 +45,7 @@
 | [架构说明](Architecture.md) | 当前模块、依赖、并发与生命周期设计 |
 | [实现原理](Implementation.md) | 源码到行为的端到端映射 |
 | [应用接入指南](IntegrationGuide.md) | 对外使用方式、API 语义和示例 |
+| [轻量 Agent Loop](Agent.md) | 上层 agent loop 协议、资源边界、安全原则与后续拆分 |
 | [RootFS 安全方案](RootFS.md) | RootFS 输入边界、安装算法和存储模型 |
 | [测试与验证](Testing.md) | 测试命令、环境、覆盖范围和证据 |
 | [上游依赖清单](UpstreamDependencies.md) | revision、gitlink、URL、大小和哈希 |
@@ -58,6 +60,7 @@
 - 最低部署版本：iOS 18.0。
 - 默认 `PocketRoot` 产品：可构建，使用占位 Linux 运行时，不包含真实 iSH。
 - `PocketRootIshRuntime` 与 `PocketRootIshRuntimeIntegration`：实验性、显式启用。
+- `PocketRootAgent`：provider-agnostic 有界 agent loop；provider transport 与 Linux command tool 尚未接入。
 - RootFS：安全安装机制已完成；二进制未提交、未打包、未由库下载。
 - iOS 18.2 arm64 Simulator：原生 smoke 已通过。
 - 默认 boot identity gate：已验证 `aarch64`、Alpine 身份、可选版本与 guest 工作目录后才 ready。

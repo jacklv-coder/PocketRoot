@@ -10,6 +10,7 @@ This document maps public APIs to source and explains the end-to-end implementat
 | --- | --- |
 | Public system and coordinator | `Sources/PocketRootCore/` |
 | Placeholder runtime | `Sources/PocketRootCore/Runtime/PlaceholderLinuxRuntime.swift` |
+| Lightweight agent loop | `Sources/PocketRootAgent/` |
 | RootFS manifest, validation, extraction, install | `Sources/PocketRootResources/` |
 | zlib primitive | `Sources/CPocketRootArchiveSupport/` |
 | Native factory and adapter | `Sources/PocketRootIshRuntime/` |

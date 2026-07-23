@@ -31,6 +31,7 @@ flowchart TB
     Umbrella --> Resources["PocketRootResources"]
     Terminal --> Core
     Resources --> Archive["CPocketRootArchiveSupport"]
+    Agent["PocketRootAgent<br/>Bounded model/tool loop"]
     Integration["PocketRootIshRuntimeIntegration<br/>Experimental"] --> Core
     Integration --> Resources
     Integration --> Runtime["PocketRootIshRuntime<br/>Experimental"]
@@ -42,6 +43,7 @@ flowchart TB
 - Core has no UIKit, Resources, or IshEmbed dependency.
 - Terminal depends on Core.
 - Resources uses a private zlib C target and no runtime.
+- Agent is currently an independent pure-Swift loop outside the safe umbrella, with no concrete provider or runtime dependency; a later command-tool adapter composes it with Core.
 - IshRuntime depends on Core and conditionally on IshEmbed for iOS.
 - IshRuntimeIntegration is the public Resources/runtime composition boundary.
 - The umbrella exports Core, Terminal, and Resources only.
@@ -52,6 +54,15 @@ flowchart TB
 ### PocketRootCore
 
 Public state, configuration, command/result/error model, `PocketRootSystem` actor, runtime and session abstractions, and the safe placeholder.
+
+### PocketRootAgent
+
+A provider-agnostic, non-streaming model/tool loop with bounded turns, calls,
+inputs, arguments, and outputs; response/call ID replay rejection; whole-batch
+validation; sequential tool execution; cancellation; and structured unknown-tool
+or ordinary tool-failure feedback. It has no network transport, credential
+storage, or default shell tool and does not install Codex CLI in the RootFS.
+See [Lightweight Agent Loop](Agent.md).
 
 ### PocketRootResources
 
@@ -75,7 +86,8 @@ A MainActor-isolated UIKit placeholder contract. It has no SwiftTerm or PTY impl
 
 ### PocketRoot
 
-The safe umbrella. It intentionally omits both Experimental products.
+The safe umbrella. It intentionally omits `PocketRootAgent` and both
+Experimental products.
 
 ### PocketRootDemo
 

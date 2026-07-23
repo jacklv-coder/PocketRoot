@@ -32,6 +32,10 @@ let package = Package(
             targets: ["PocketRootIshRuntimeIntegration"]
         ),
         .library(
+            name: "PocketRootAgent",
+            targets: ["PocketRootAgent"]
+        ),
+        .library(
             name: "PocketRoot",
             targets: ["PocketRoot"]
         )
@@ -88,6 +92,9 @@ let package = Package(
             ]
         ),
         .target(
+            name: "PocketRootAgent"
+        ),
+        .target(
             name: "PocketRoot",
             dependencies: [
                 "PocketRootCore",
@@ -126,6 +133,12 @@ let package = Package(
                 "PocketRootCore",
                 "PocketRootResources",
                 "PocketRootIshRuntimeIntegration"
+            ]
+        ),
+        .testTarget(
+            name: "PocketRootAgentTests",
+            dependencies: [
+                "PocketRootAgent"
             ]
         )
     ]

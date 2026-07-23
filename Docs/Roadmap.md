@@ -11,6 +11,15 @@
 - **未开始**：尚无可依赖实现。
 - **阻塞**：需要外部资源、上游修改、硬件、法律或产品决定。
 
+## 当前执行序列
+
+1. 合并 provider-agnostic `PocketRootAgent` 有界 loop。
+2. 增加 OpenAI Responses API transport 与宿主 credential contract。
+3. 增加带审批、命令策略、超时和输出边界的 Linux command tool。
+4. 发布并固定 soft-shutdown IshEmbed 制品。
+5. 把 agent、prepared runtime 和 Simulator UI 组合进 Demo/App。
+6. 有物理 iPad 后补签名设备 smoke；该硬件门禁不阻塞前五项。
+
 ## 里程碑 1：工程基础
 
 状态：**已通过**。
@@ -86,26 +95,53 @@
 | License-reviewed RootFS | 阻塞 | license、NOTICE、对应源码和 SBOM 完整 |
 | App Store 2.5.2 | 阻塞 | guest download/execute policy 有书面结论 |
 
-### 下一步执行顺序
+### 剩余 runtime 执行顺序
 
-1. **完成 iPad 真机基线**
-   iPhone 基线已通过；在签名 iPad 上重跑 prepare、boot、guest identity、streams、timeout、limit 和 failure recovery，并记录 Xcode/iPadOS/device/entitlement。
+1. **发布关闭修复**
+   上游 soft-shutdown 与 root `/proc` 修复已合并；发布新 XCFramework，更新 PocketRoot pin 并重跑生命周期审查。
 
-2. **关闭策略**
-   决定产品是否接受宿主进程退出。若不接受，patch upstream embed fork，让 shutdown 只结束 kernel thread，限制 native reader/log join，重建并重审 XCFramework。
-
-3. **最低工具链**
+2. **最低工具链**
    使用声明的 Xcode 16 重跑完整 final-link、RootFS install 和 native smoke。
 
-4. **Demo 注入**
-   增加 opt-in smoke configuration，把同一个 prepared system 注入 System、Commands 与 Diagnostics，不把 RootFS 放进默认 target。
+3. **Demo 注入**
+   在 command tool 完成后，把同一个 prepared system 注入 Agent、System、Commands 与 Diagnostics，不把 RootFS 放进默认 target。
 
-5. **故障与资源硬化**
+4. **故障与资源硬化**
    增加 Task cancellation、ENOSPC、power-loss、storage pressure、long output 与 memory peak。
+
+5. **iPad 真机基线**
+   有签名 iPad 后重跑 prepare、boot、guest identity、streams、timeout、limit 和 failure recovery，并记录 Xcode/iPadOS/device/entitlement。
 
 完成上述闭环后，才能把“一次性命令”提升到 Developer Preview 候选。
 
-## 里程碑 3：交互式终端
+## 里程碑 3：上层轻量 Agent
+
+状态：**进行中**。
+
+### 已完成
+
+- 新增显式 opt-in `PocketRootAgent` 产品，不进入 `PocketRootCore` 或默认伞形产品。
+- 实现 provider-agnostic model client、非流式 tool loop 与上一 response ID 续接。
+- 限制 turn、tool call、用户输入、模型文本、tool arguments 和 tool output。
+- 拒绝重复 response/call ID；完整预检一批 calls 后再顺序执行。
+- unknown tool 与普通 tool error 作为结构化结果交回模型。
+- 同一 runner 拒绝并发 run，并传播 Swift Task cancellation。
+
+### 门禁
+
+| 门禁 | 状态 | 退出条件 |
+| --- | --- | --- |
+| 有界 loop 核心 | 已通过 | package tests 与 strict concurrency 持续通过 |
+| OpenAI transport | 未开始 | Responses API request/response/function-call contract 与 mock URLProtocol tests |
+| Credential contract | 未开始 | 宿主提供短期 credential；仓库、RootFS 和 App binary 不硬编码长期 key |
+| Linux command tool | 未开始 | 审批、allow/deny policy、cwd、timeout、output 和 cancellation tests |
+| Demo/App 接入 | 未开始 | 明确状态、工具确认、取消、错误与最终文本 UI |
+| 会话持久化/streaming | 未开始 | 数据保留策略、恢复、增量事件与资源上限 |
+
+详细设计见[轻量 Agent Loop](Agent.md)。这个里程碑不改变 `PocketRootCore`
+边界，也不要求在 RootFS 中安装 Codex CLI。
+
+## 里程碑 4：交互式终端
 
 状态：**未开始**。
 
@@ -136,7 +172,7 @@
 - iPhone/iPad keyboard、resize、VoiceOver 可用；
 - timeout/limit/cancellation 错误可恢复。
 
-## 里程碑 4：硬化与发行候选
+## 里程碑 5：硬化与发行候选
 
 状态：**未开始 / 受阻塞门禁约束**。
 
@@ -178,4 +214,6 @@
 
 ## 不属于 PocketRootCore 的范围
 
-Agent、浏览器自动化、MCP、云端编排和业务工作流不进入 PocketRootCore。它们可以由上层应用基于稳定 command/session API 构建。
+Agent、浏览器自动化、MCP、云端编排和业务工作流不进入
+`PocketRootCore`。轻量 agent loop 位于显式 opt-in 的 `PocketRootAgent`，并通过稳定
+command/session API 与 runtime 组合。

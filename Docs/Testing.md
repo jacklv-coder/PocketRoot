@@ -60,6 +60,16 @@ swift test
 - active one-shot command 与 shutdown 顺序、output-limit error 映射、supervisor 负数合成状态保留来源且保持 ready、共享 process gate 的退出无法确认失败关闭、terminal spawn transport error 映射，以及固定 transport 歧义 broken-pipe marker 拒绝；
 - injected-driver shutdown 后的 terminated / `restartRequired` contract。
 
+### PocketRootAgentTests
+
+- 首轮最终文本与 tool call 后续 response ID/call ID 回传；
+- unknown tool 与普通 tool failure 的结构化恢复；
+- 重复 response ID、跨轮重复 call ID 与同批重复 call ID 拒绝；
+- 整批 call 预检先于任何 tool side effect；
+- turn、tool call、用户输入、模型文本、ID/name、arguments 和 output 边界；
+- 同一 runner 并发拒绝、最后一轮不执行无法回传结果的 tool；
+- 配置、tool name 与 JSON object schema 校验。
+
 ### Integration 与 Terminal tests
 
 - RootFS/runtime configuration 对齐；
@@ -255,6 +265,7 @@ CI 不执行原生 boot，不证明真机，也不取代本地 smoke。
 | Core public API 或 actor | `swift test` + strict concurrency build |
 | RootFS manifest/validator/extractor/installer | `swift test` + 真实 archive test + runtime final-link + native smoke |
 | IshRuntime lifecycle/command/driver | `swift test` + strict build + runtime final-link + native smoke |
+| Agent loop/model/tool contract | `swift test` + strict build + 文档检查 |
 | Package.swift 或 native dependency | `swift test` + Demo build + 两个 arm64 final-link + native smoke |
 | project.yml 或 Demo | regenerate + Demo build |
 | smoke App/runner | shell syntax + Simulator smoke + 可用时 signed device smoke |

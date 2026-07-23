@@ -11,6 +11,15 @@ Status:
 - **Not started**: no dependable implementation yet.
 - **Blocked**: waiting on upstream work, hardware, legal review, or product decision.
 
+## Current execution sequence
+
+1. Merge the provider-agnostic bounded `PocketRootAgent` loop.
+2. Add an OpenAI Responses API transport and host-owned credential contract.
+3. Add an approval-, command-policy-, timeout-, and output-gated Linux tool.
+4. Release and pin the soft-shutdown IshEmbed artifact.
+5. Compose the agent, prepared runtime, and Simulator UI in the Demo/App.
+6. Complete signed iPad smoke when hardware is available; that hardware gate does not block the first five items.
+
 ## Milestone 1: Project foundation
 
 Status: **Passed**.
@@ -76,17 +85,44 @@ This establishes the current Simulator and single-iPhone one-shot paths, not iPa
 | License-reviewed RootFS | Blocked | Complete license, NOTICE, source, and SBOM |
 | App Store 2.5.2 | Blocked | Written guest download/execute policy decision |
 
-### Next sequence
+### Remaining runtime sequence
 
-1. Complete the iPad baseline. The iPhone baseline passed; repeat signed preparation, boot, guest, command, and recovery checks on iPad with recorded toolchain and entitlements.
-2. Decide whether host-process exit is acceptable; otherwise rebuild a soft-shutdown artifact with bounded joins and repeat audits.
-3. Repeat full final-link, install, and native smoke with minimum Xcode 16.
-4. Add opt-in Demo injection of one prepared system across System, Commands, and Diagnostics.
-5. Add complete cancellation, ENOSPC, power-loss, storage-pressure, long-output, and memory-peak coverage.
+1. Publish the merged soft-shutdown and root `/proc` fixes, update the PocketRoot pin, and repeat lifecycle review.
+2. Repeat full final-link, install, and native smoke with minimum Xcode 16.
+3. After the command tool is complete, inject one prepared system across Agent, System, Commands, and Diagnostics without bundling a RootFS.
+4. Add complete cancellation, ENOSPC, power-loss, storage-pressure, long-output, and memory-peak coverage.
+5. When a signed iPad is available, repeat preparation, boot, guest, command, and recovery checks with recorded toolchain and entitlements.
 
 Closing these makes one-shot execution a Developer Preview candidate.
 
-## Milestone 3: Interactive terminal
+## Milestone 3: Upper-layer lightweight agent
+
+Status: **In progress**.
+
+### Completed
+
+- Added an explicit opt-in `PocketRootAgent` product outside Core and the safe umbrella.
+- Added a provider-agnostic model client, non-streaming tool loop, and prior-response continuation.
+- Bounded turns, calls, user input, model text, tool arguments, and tool output.
+- Rejected repeated response/call IDs and preflighted each complete call batch before sequential execution.
+- Returned unknown-tool and ordinary tool failures to the model as structured results.
+- Rejected concurrent runs on one runner and propagated Swift Task cancellation.
+
+### Gates
+
+| Gate | Status | Exit condition |
+| --- | --- | --- |
+| Bounded loop core | Passed | Keep package tests and strict concurrency green |
+| OpenAI transport | Not started | Responses request/response/function-call contract plus mock URLProtocol tests |
+| Credential contract | Not started | Host supplies short-lived credentials; no long-lived key in the repository, RootFS, or App binary |
+| Linux command tool | Not started | Approval, allow/deny policy, cwd, timeout, output, and cancellation tests |
+| Demo/App integration | Not started | Explicit status, tool confirmation, cancellation, error, and final-text UI |
+| Persistence/streaming | Not started | Retention policy, recovery, incremental events, and resource limits |
+
+See [Lightweight Agent Loop](Agent.md). This milestone does not move agent
+orchestration into `PocketRootCore` and does not install Codex CLI in the RootFS.
+
+## Milestone 4: Interactive terminal
 
 Status: **Not started**.
 
@@ -110,7 +146,7 @@ Do not adopt the high-level upstream terminal wrapper or SwiftTerm before native
 
 Acceptance requires predictable session lifecycle, ownership across app transitions, no use-after-free or unbounded reads, shutdown behind all sessions, usable device keyboards/resize/VoiceOver, and recoverable errors.
 
-## Milestone 4: Hardening and distribution candidate
+## Milestone 5: Hardening and distribution candidate
 
 Status: **Not started / gated**.
 
@@ -131,4 +167,7 @@ A Beta or Distribution Candidate can be defined only after every distribution bl
 - Do not describe Simulator success as physical-device support.
 - Do not describe technical validation as legal or App Review approval.
 
-Agents, browser automation, MCP, cloud orchestration, and product workflows remain outside PocketRootCore.
+Agents, browser automation, MCP, cloud orchestration, and product workflows
+remain outside `PocketRootCore`. The lightweight loop lives in the explicit
+`PocketRootAgent` product and composes with the runtime through stable
+command/session APIs.

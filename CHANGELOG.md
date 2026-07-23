@@ -9,6 +9,7 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
 ### Added
 
 - 建立 `PocketRootCore`、`PocketRootTerminal`、`PocketRootResources` 和 `PocketRoot` Swift Package 产品。
+- 新增显式 opt-in `PocketRootAgent` 产品，提供 provider-agnostic、有 turn/tool/input/output 上限、ID 防重放、整批预检、顺序工具执行与取消传播的轻量 agent loop；不安装 Codex CLI，也不默认暴露 shell。
 - 建立纯 UIKit Demo，包含 System、Terminal、Commands、Diagnostics。
 - 加入 XcodeGen `project.yml`、工程生成、测试和构建脚本。
 - 加入 placeholder runtime、terminal API 基础与单元测试。

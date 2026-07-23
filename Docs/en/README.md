@@ -17,8 +17,9 @@ This is the English documentation hub for PocketRoot. The Chinese documents at t
 
 1. [Getting started](GettingStarted.md) for prerequisites, builds, and the Demo.
 2. [Integration guide](IntegrationGuide.md) for Swift Package product selection and the `prepare → boot → execute` flow.
-3. [RootFS security](RootFS.md) for archive ownership, verification, installation, storage, and recovery.
-4. [Troubleshooting](Troubleshooting.md) for architecture, hash, state, timeout, and shutdown issues.
+3. [Lightweight Agent Loop](Agent.md) for upper-layer model/tool orchestration, resource bounds, and safety principles.
+4. [RootFS security](RootFS.md) for archive ownership, verification, installation, storage, and recovery.
+5. [Troubleshooting](Troubleshooting.md) for architecture, hash, state, timeout, and shutdown issues.
 
 ### Maintainers
 
@@ -40,6 +41,7 @@ This is the English documentation hub for PocketRoot. The Chinese documents at t
 | [Architecture](Architecture.md) | Current module, dependency, concurrency, and lifecycle design |
 | [Implementation](Implementation.md) | Source-to-behavior mapping |
 | [Integration guide](IntegrationGuide.md) | Public usage, API semantics, and examples |
+| [Lightweight Agent Loop](Agent.md) | Upper-layer loop protocol, resource bounds, safety principles, and staged follow-up work |
 | [RootFS security](RootFS.md) | RootFS input boundary, install algorithm, and storage model |
 | [Testing](Testing.md) | Test commands, environments, scope, and evidence |
 | [Upstream dependencies](UpstreamDependencies.md) | Revisions, gitlinks, URLs, sizes, and hashes |
@@ -54,6 +56,7 @@ Code, `Package.resolved`, committed manifests, and the designated source-of-trut
 - Minimum deployment target: iOS 18.0.
 - Default `PocketRoot` product: buildable placeholder; no real iSH runtime.
 - `PocketRootIshRuntime` and `PocketRootIshRuntimeIntegration`: Experimental and opt-in.
+- `PocketRootAgent`: provider-agnostic bounded agent loop; provider transport and Linux command tool remain open.
 - RootFS secure installation: implemented; payload not committed, bundled, or downloaded by the library.
 - iOS 18.2 arm64 Simulator: repository native smoke passed.
 - Default boot identity gate: ready now requires matching `aarch64`, Alpine identity, optional version, and guest working directory.

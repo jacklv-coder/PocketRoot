@@ -40,6 +40,7 @@ flowchart TB
 
     Terminal --> Core
     Resources --> Archive["CPocketRootArchiveSupport<br/>zlib streaming"]
+    Agent["PocketRootAgent<br/>有界模型/工具循环"]
 
     Integration["PocketRootIshRuntimeIntegration<br/>Experimental"] --> Core
     Integration --> Resources
@@ -55,6 +56,7 @@ flowchart TB
 - `PocketRootCore` 位于底层，不依赖 UIKit、Resources 或 IshEmbed。
 - `PocketRootTerminal` 只依赖 Core。
 - `PocketRootResources` 通过私有 C target 使用 zlib，不依赖 runtime。
+- `PocketRootAgent` 当前是独立的纯 Swift loop，不属于安全伞形产品，也不依赖具体模型 provider 或 runtime；后续 command tool adapter 才与 Core 组合。
 - `PocketRootIshRuntime` 依赖 Core 和仅 iOS 条件下的 IshEmbed。
 - `PocketRootIshRuntimeIntegration` 是 Resources 与 runtime 的唯一公共组合入口。
 - `PocketRoot` 只导出 Core、Terminal、Resources。
@@ -83,6 +85,22 @@ flowchart TB
 - 不直接持有 IshEmbed 类型。
 
 默认公开初始化器和 `PocketRootSystem.shared` 都使用 placeholder。真实系统只能由 package 内 runtime factory 组合。
+
+### PocketRootAgent
+
+源码：`Sources/PocketRootAgent/`
+
+负责：
+
+- provider-agnostic model client contract；
+- 有 turn/tool/input/output 边界的非流式 agent loop；
+- tool definition、JSON arguments 与 tool output；
+- response/call ID 防重放；
+- 整批 call 预检、顺序执行和 cancellation；
+- unknown tool 与普通 tool failure 的结构化回传。
+
+它不提供网络 transport、credential storage 或默认 shell tool，也不在 RootFS 中安装
+Codex CLI。具体边界见[轻量 Agent Loop](Agent.md)。
 
 ### PocketRootResources
 
@@ -159,7 +177,8 @@ tar 解析、路径策略和 fakefs 校验仍由 Swift 层负责。
 
 源码：`Sources/PocketRoot/`
 
-安全伞形 import，重新导出 Core、Terminal、Resources。它故意不导出两个 Experimental runtime 产品。
+安全伞形 import，重新导出 Core、Terminal、Resources。它故意不导出
+`PocketRootAgent` 或两个 Experimental runtime 产品。
 
 ### PocketRootDemo
 
