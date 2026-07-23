@@ -16,7 +16,7 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 - XcodeGen project source, generation, test, and build scripts.
 - Placeholder runtime, terminal API foundations, and unit tests.
 - Unified iOS 18 deployment baseline.
-- Experimental `PocketRootIshRuntime` pinned to IshEmbed revision `6f96f02c71830914c2a608258a26a8ef0833d026`.
+- Experimental `PocketRootIshRuntime` pinned to IshEmbed revision `4e311bcea4fe806491e76a23c0e4caeeb1c513bf` and the `v0.4.0-abi.1` XCFramework.
 - Experimental `PocketRootIshRuntimeIntegration` composing caller-local RootFS installation and native runtime.
 - Process ownership, serial native execution, and lifecycle reentrancy protection.
 - One-shot cwd, environment, stderr merge, exit, signal, timeout, and stream mapping.
@@ -41,10 +41,13 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 - Roadmap owns dynamic status, Upstream owns pins/hashes, Testing owns evidence, and ADRs own frozen decisions.
 - Contribution Git fetch/push uses SSH.
 - Documentation now states that the default shared system is a placeholder and applications must retain the system returned by composition.
-- Pinned native shutdown is explicitly process-terminal and not routine UI cleanup.
-- The merged native ABI candidate is recorded without changing PocketRoot's current revision or binary behavior because no pinnable artifact exists yet.
+- Native shutdown now soft-halts, joins, and returns `.terminated`; the host process still permits one lifecycle.
+- The self-hosted XCFramework and corresponding-source assets, exact size/hash, nested iSH gitlink, and separate RootFS pin are recorded.
 - One-shot commands and the optional boot supervisor path reject NUL-containing C-string inputs before entering the native driver; command environments also reject ambiguous keys.
-- Pre-exit post-spawn failures now require an authoritative guest `EXITED` before recovery; direct not-running, protocol, or broken-pipe spawn failures also fail closed; negative synthetic supervisor states preserve error provenance, while pinned transport's ambiguous `(17, 0)` marker explicitly cleans up and fails the runtime closed.
+- Wire v4 returns supervisor rejection, broken pipe, and native backlog overflow
+  as typed errors. Normal guest exit 17 is returned; negative `EXITED` fails
+  closed. PocketRoot maps native backlog limits and conservatively closes its
+  process gate because the void close ABI cannot report instance fail-close.
 - RootFS attribute-read failures during boot preflight map to typed `rootFSUnavailable` and leave the runtime idle before the native process slot is claimed.
 - The process gate now compares owner UUIDs explicitly, with a direct regression test rejecting another runtime's claim and ownership check.
 - The ustar extractor now records parent directories implicitly created by file/directory entries and rejects later duplicate entries or filesystem-equivalent directory targets; RootFS journal documentation no longer promises power-loss durability without explicit `fsync`.

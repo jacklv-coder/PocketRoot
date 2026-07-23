@@ -148,7 +148,7 @@ POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
 指定现有设备；这种情况下脚本会启动设备并在运行前重装 smoke App，但结束
 后不会卸载 App、删除注入数据或恢复原来的开关机状态。
 `POCKETROOT_SMOKE_TIMEOUT_SECONDS` 只调整等待 JSON report 的时间，
-不包含工程生成、构建、Simulator boot，也不会改变 report 之后固定 20 秒的 App 退出检查。
+不包含工程生成、构建、Simulator boot，也不会改变 report 之后固定 20 秒的 runner 清理检查。
 
 对指定的现有设备，可用精确 UDID 卸载 smoke App 并一并删除其注入数据：
 

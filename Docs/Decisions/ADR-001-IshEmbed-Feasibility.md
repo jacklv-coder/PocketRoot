@@ -4,6 +4,7 @@
 
 - 状态：**已接受，仅限实验性集成**
 - 日期：2026-07-21
+- 修订：2026-07-23，固定自托管 `v0.4.0-abi.1` soft-shutdown 制品
 - 基线：iOS 18.0、arm64
 - 决策范围：runtime 可行性、供应链固定方式和发行门禁
 
@@ -47,17 +48,18 @@ PocketRoot 将 IshEmbed 集成在独立的 `PocketRootIshRuntime` product 后，
 
 ```text
 Repository: https://github.com/jacklv-coder/ish-arm64-pkg.git
-Revision:   6f96f02c71830914c2a608258a26a8ef0833d026
+Revision:   4e311bcea4fe806491e76a23c0e4caeeb1c513bf
 Product:    IshEmbed
 ```
 
 固定 nested iSH gitlink：
 
 ```text
-2f075626049d989dc9ac350a35c09f0b18930ffc
+576ffaf2574310b5fb2d148aab39ddcd2b8fe67d
 ```
 
-不能跟随 branch，也不能在 fork 上使用 `from: "0.3.3"`，因为审核时 fork 没有 tag/release。变更必须执行完整供应链更新流程。
+不能跟随 branch 或 moving tag。当前 prerelease tag 只用于发布身份，消费仍固定完整
+revision；后续变更必须执行完整供应链更新流程。
 
 ## 备选方案
 
@@ -88,12 +90,12 @@ Product:    IshEmbed
 - `IshEmbed` Swift API/session/helper；
 - RootFS-dependent integration tests。
 
-manifest 声明 iOS 14 与 macOS 12，但 release XCFramework 只有：
+manifest 声明 iOS 18.0，release XCFramework 只有：
 
 | Identifier | Architecture | Platform | Binary minimum |
 | --- | --- | --- | --- |
-| `ios-arm64` | arm64 | iOS device | iOS 14.0 |
-| `ios-arm64-simulator` | arm64 | iOS Simulator | iOS 14.0 |
+| `ios-arm64` | arm64 | iOS device | iOS 18.0 |
+| `ios-arm64-simulator` | arm64 | iOS Simulator | iOS 18.0 |
 
 没有 x86_64 Simulator 或 macOS slice。上游 package 直接在 macOS native link 会失败，因此 PocketRoot 只在 iOS 条件下依赖 binary，并为 host tests 使用 driver seam。SwiftPM manifest 不能按 destination architecture 条件化 product dependency；选择实验产品的 App target 必须在构建设置中排除 x86_64，`isAvailable` 只负责链接后的能力探测。
 
@@ -103,7 +105,8 @@ manifest 声明 iOS 14 与 macOS 12，但 release XCFramework 只有：
 
 | Artifact | SHA-256 |
 | --- | --- |
-| `libIshKernel.xcframework.zip` | `f747c2e85c3b6082e102fb45aa62797f52146a3bc5eb1a0c386b74bc156d4fca` |
+| `libIshKernel.xcframework.zip` | `5bd6f691ed2af1e157118b26f62b962a3568ebe96a608d75f5b2f661d07e1450` |
+| `IshEmbed-corresponding-source.tar.gz` | `52b10b3b1dfedf221b4af37b125cde9b5fd03cc819944ab2d77d9893f6a76122` |
 | `fs.tar.gz` | `be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4` |
 
 XCFramework digest 与 upstream manifest 一致。RootFS digest 不在 upstream Swift manifest 中，因此 PocketRoot 单独提交 manifest 并 fail closed。
@@ -156,9 +159,11 @@ PocketRoot 进一步实现：
 - stderr merge；
 - timeout 与 post-timeout recovery；
 - output limit 与 post-limit recovery；
-- process-terminal shutdown。
+- 返回 Swift 的 soft shutdown 与同进程 `restartRequired`。
 
-shutdown 之前先持久化 report，因为固定 iSH 路径会 `_exit(0)`。host script 另外验证 App process 及时成功退出。
+成功 report 只在 shutdown 返回、状态为 `.terminated` 且再次执行得到
+`restartRequired` 后写入。host script 主动结束测试 App，不把进程退出当成 native
+lifecycle 证据。
 
 完整清单和命令见[测试与验证](../Testing.md)。
 
@@ -195,28 +200,18 @@ RootFS promotion 也不被视为一次整体原子替换。journal 不记录 pha
 `meta.db`、`data/` 和 `.pocketroot-rootfs.json`。有效版本的复用不依赖原有
 `current.json` 正确；缺失或不匹配时会修复。
 
-### 进程终止式 shutdown
+### Single-lifecycle soft shutdown
 
-固定 revision 中，guest PID 1 halt 最终到达 `_exit(0)`：
+固定 revision 会停止 supervisor、soft-halt embedded kernel、bounded join 原生线程并
+返回 Swift：
 
-- `IshInstance.shutdown()` 结束整个宿主 App；
-- Swift 调用正常情况下不返回；
-- 不能实现 “shutdown 后 restart”；
-- `terminated` 与 `restartRequired` 只在 injected driver 或 future soft shutdown 可观察。
+- `IshInstance.shutdown()` 成功后 PocketRoot 发布 `.terminated`；
+- 调用方可以在返回后执行宿主清理；
+- iSH 的进程级全局状态仍不允许同一进程再次 boot；
+- active call/session 会得到 busy 或由 PocketRoot 在更高层拒绝。
 
-在默认产品集成前，必须二选一：
-
-1. 产品明确接受宿主进程退出，并把它作为公开契约；或
-2. patch iSH fork，使 embedded shutdown 只退出 kernel thread。
-
-soft-shutdown build 还必须：
-
-- bounded native reader/log joins；
-- 新 source revision；
-- 新 XCFramework；
-- 新 checksum；
-- source/binary re-audit；
-- Simulator 与 physical-device lifecycle 回归。
+新制品、revision、checksum、对应源码和 Simulator 测试已完成；签名 iPhone/iPad、
+持续生命周期和故障注入仍按路线图继续，不因此把 Experimental 产品加入默认 umbrella。
 
 ### Session/PTY
 

@@ -33,19 +33,29 @@ protocol IshRuntimeDriver: Sendable {
 
 enum IshRuntimeDriverError: LocalizedError, Equatable {
     case outputLimitExceeded(stream: String, limit: Int)
-    case supervisorCommandRejected(syntheticExitCode: Int32)
-    case ambiguousTransportExitMarker
+    case nativeOutputLimitExceeded(maximumBytes: Int, maximumFrames: Int)
+    case supervisorCommandRejected(String)
     case sessionTerminationUnconfirmed(String)
+
+    var requiresRuntimeRestart: Bool {
+        switch self {
+        case .nativeOutputLimitExceeded, .sessionTerminationUnconfirmed:
+            return true
+        case .outputLimitExceeded, .supervisorCommandRejected:
+            return false
+        }
+    }
 
     var errorDescription: String? {
         switch self {
         case .outputLimitExceeded(let stream, let limit):
             return "Command \(stream) exceeded the \(limit)-byte output limit."
-        case .supervisorCommandRejected(let syntheticExitCode):
+        case .nativeOutputLimitExceeded(let maximumBytes, let maximumFrames):
+            return "The native session backlog exceeded its bounded "
+                + "\(maximumBytes)-byte or \(maximumFrames)-frame limit."
+        case .supervisorCommandRejected(let message):
             return "The guest supervisor rejected the command before execution "
-                + "(synthetic exit code \(syntheticExitCode))."
-        case .ambiguousTransportExitMarker:
-            return "The pinned transport reported its ambiguous broken-pipe EXITED marker."
+                + "(\(message))."
         case .sessionTerminationUnconfirmed(let reason):
             return "Guest process termination could not be confirmed: \(reason)"
         }
@@ -54,11 +64,6 @@ enum IshRuntimeDriverError: LocalizedError, Equatable {
 
 enum IshRuntimeTransportPolicy {
     private static let terminalSpawnErrorCodes: Set<Int32> = [-9, -11, -17]
-
-    // ish_read_event in the pinned v0.3.3 transport synthesizes this pair when
-    // the supervisor pipe breaks. Because the Swift event cannot distinguish
-    // it from a guest `exit 17`, the pair is never treated as authoritative.
-    static let ambiguousBrokenPipeExitCode: Int32 = 17
 
     static func terminalSpawnFailure(
         code: Int32,
@@ -77,16 +82,14 @@ enum IshRuntimeTransportPolicy {
         exitCode: Int32,
         signal: Int32
     ) throws {
-        guard exitCode != ambiguousBrokenPipeExitCode || signal != 0 else {
-            throw IshRuntimeDriverError.ambiguousTransportExitMarker
-        }
-        // The pinned host translates supervisor ERROR frames into
-        // EXITED(-errno, 0). Guest wait status cannot produce a negative exit
-        // code, so preserve this as a recoverable supervisor rejection rather
-        // than exposing it as a normal guest result.
+        // The pinned v4 transport returns protocol and supervisor failures as
+        // typed IshError values. EXITED is reserved for guest wait status, so a
+        // negative payload is a protocol-integrity failure rather than a guest
+        // result.
         guard exitCode >= 0 else {
-            throw IshRuntimeDriverError.supervisorCommandRejected(
-                syntheticExitCode: exitCode
+            throw IshRuntimeDriverError.sessionTerminationUnconfirmed(
+                "the native transport reported invalid guest exit code "
+                    + "\(exitCode) with signal \(signal)"
             )
         }
     }

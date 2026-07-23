@@ -4,6 +4,7 @@
 
 - Status: Accepted for Experimental integration only
 - Date: 2026-07-21
+- Amended: 2026-07-23 to pin the self-hosted `v0.4.0-abi.1` soft-shutdown artifact
 - Baseline: iOS 18.0, arm64
 - Scope: runtime feasibility, supply-chain pinning, and release gates
 
@@ -23,12 +24,13 @@ Pin:
 
 ```text
 Repository: https://github.com/jacklv-coder/ish-arm64-pkg.git
-Revision:   6f96f02c71830914c2a608258a26a8ef0833d026
+Revision:   4e311bcea4fe806491e76a23c0e4caeeb1c513bf
 Product:    IshEmbed
-iSH gitlink: 2f075626049d989dc9ac350a35c09f0b18930ffc
+iSH gitlink: 576ffaf2574310b5fb2d148aab39ddcd2b8fe67d
 ```
 
-Do not follow a branch or use semantic-version selection against a fork that had no audited tag/release.
+Do not follow a branch or moving tag. The prerelease tag identifies the
+release; consumption still pins the full revision.
 
 ## Alternatives
 
@@ -45,7 +47,8 @@ Independent digests:
 
 | Artifact | SHA-256 |
 | --- | --- |
-| `libIshKernel.xcframework.zip` | `f747c2e85c3b6082e102fb45aa62797f52146a3bc5eb1a0c386b74bc156d4fca` |
+| `libIshKernel.xcframework.zip` | `5bd6f691ed2af1e157118b26f62b962a3568ebe96a608d75f5b2f661d07e1450` |
+| `IshEmbed-corresponding-source.tar.gz` | `52b10b3b1dfedf221b4af37b125cde9b5fd03cc819944ab2d77d9893f6a76122` |
 | `fs.tar.gz` | `be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4` |
 
 The Alpine 3.19.1 aarch64 source minirootfs digest is `7ef5eef3a5b1d198dfb1610cde1ef5b0755ff5d838fb1e5e1b9f42b59214820f`.
@@ -79,7 +82,11 @@ the final version directory, so `rootfs/<version>` directly contains
 `meta.db`, `data/`, and `.pocketroot-rootfs.json`. A valid version can be reused
 even when `current.json` is missing or mismatched; reuse repairs it.
 
-The pinned guest halt path reaches `_exit(0)`. Native shutdown terminates the host app and normally never returns. The runtime cannot restart in-process. Before default integration, the product must explicitly accept that contract or rebuild a soft-shutdown artifact with bounded joins, new source/binary pins, and repeated Simulator/physical tests.
+Pinned v0.4.0-abi.1 stops the supervisor, soft-halts the embedded kernel,
+performs a bounded native join, and returns to Swift. PocketRoot publishes
+`.terminated`, but process-global iSH state still prevents another boot in the
+same host process. The new source, binary, checksum, corresponding-source, and
+Simulator gates passed; signed-device and sustained-lifecycle work remains.
 
 PTY support is deferred because native session pointer ownership and high-level terminal read/close races are not yet proven. A live registry, bounded reads, input/resize/signal/EOF, cancellation, idempotent close, and close-before-shutdown are prerequisites.
 
@@ -91,6 +98,9 @@ Distribution remains blocked. See [release and compliance](../ReleaseCompliance.
 
 ## Consequences
 
-The project gains real evidence behind a narrow adapter while default clients stay safe. It accepts an additional binary supply chain, arm64-only native validation, process-terminal shutdown, deferred PTY/Demo integration, and substantial compliance work.
+The project gains real evidence behind a narrow adapter while default clients
+stay safe. It accepts an additional binary supply chain, arm64-only native
+validation, a single-lifecycle soft shutdown, deferred PTY/Demo integration,
+and substantial compliance work.
 
 Revisit this decision when changing pins/artifacts/RootFS, adding soft shutdown or PTY/SwiftTerm, exporting Experimental products by default, or enabling any external distribution. Dynamic gates remain in the [roadmap](../Roadmap.md).

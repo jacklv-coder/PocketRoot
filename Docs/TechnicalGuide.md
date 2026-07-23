@@ -27,7 +27,11 @@ PocketRoot 是一个最低支持 iOS 18 的 Swift 模块化工程：它在 iOS �
 
 当前真实 iSH 路径仍是实验能力。默认 `PocketRoot` 产品不会链接 iSH，也不会打包或下载 RootFS。
 
-本文所说的命令“有界”目前只指 session 建立后的 event-read loop 使用 deadline，且 Swift 已收集结果有 stdout/stderr 配额。超时或超限后的恢复还要求明确观察到 `EXITED`；无法确认时 runtime 会失败关闭并要求重启宿主。deadline 不覆盖此前同步 `spawn` / `closeStdin`，当前固定 v0.3.3 的 control write、terminate 和 close 仍可能阻塞，native session backlog 也无独立上限。因此 `execute()` 还没有端到端硬时间界限，整个宿主进程也没有完整内存硬上限；这些缺口必须由后续原生包更新和持续负载测试关闭。
+本文所说的命令“有界”包括 session 建立后的 event-read deadline、Swift stdout/stderr
+配额、每 session 4 MiB/4096 帧 native 输出积压和 4 MiB/256 帧 control 总预算。
+超时或产品配额超限后的恢复仍要求明确观察到 `EXITED`；无法确认时 runtime 会失败关闭。
+PocketRoot deadline 在同步 `spawn` / `closeStdin` 返回后才开始，因此还不是完整端到端命令
+deadline；持续负载下的宿主峰值内存和 jetsam 也仍需验证。
 
 ## 2. 三个仓库和一个外部资产
 
@@ -50,14 +54,17 @@ flowchart LR
 | --- | --- | --- | --- |
 | 产品与集成层 | [`jacklv-coder/PocketRoot`](https://github.com/jacklv-coder/PocketRoot) | Swift 公共 API、RootFS 安装、iSH adapter、Demo、集成测试和产品文档 | 构建 iSH 原生二进制 |
 | 包装源码层 | [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) 的固定 revision | Swift wrapper、C ABI 源码和 binary target 声明 | 当前声明中的 URL 可以仍指向第三方已发布制品 |
-| 当前原生制品 | 上述 revision 的 `Package.swift` 所记录的 URL/checksum；当前是 Lolendor v0.3.3 release | 被 PocketRoot 最终链接的 XCFramework | 不包含用户 fork 中尚未发布的修改 |
+| 当前原生制品 | `v0.4.0-abi.1` URL/checksum | 被 PocketRoot 最终链接的 XCFramework | 用户 fork 自托管 prerelease，不含 RootFS |
 | 当前原生运行时层 | 上述 package revision 记录的精确 iSH gitlink | iSH 内核、进程、signal、halt 和线程生命周期等底层行为 | 不能用另一个 branch 或本地 checkout 替代 |
 | 已合并的下一版原生源码 | [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) `d63dfc9` 与 [`jacklv-coder/ish-arm64`](https://github.com/jacklv-coder/ish-arm64) `576ffaf` | 已通过 CI 的底层修复、ABI、wrapper 与制品门禁源码 | 在新 package 制品发布且 PocketRoot 更新 pin 前，不属于当前消费链 |
 | Guest 文件系统 | 经许可审查的 `fs.tar.gz` | Alpine 用户空间、fakefs 数据与 guest 工具 | 不存放在 PocketRoot Git 仓库中 |
 
 ### 为什么需要修改 `ish-arm64-pkg`
 
-`ish-arm64-pkg` 虽然来源于另一个项目，但 PocketRoot 会编译固定 package revision 的 Swift wrapper，并链接该 revision 的 `Package.swift` 通过 URL/checksum 指定的 XCFramework。当前 revision 的二进制 URL 仍指向 Lolendor v0.3.3 release；它不是用户 fork 当前工作树重新发布的产物。只修改 PocketRoot 无法修复该二进制内部的线程退出、session I/O、背压、supervisor 或 C ABI 问题。这里描述的是下一版开发流程，不表示这些改动已经进入当前 PocketRoot pin。
+`ish-arm64-pkg` 虽然来源于另一个项目，但 PocketRoot 会编译固定 package revision 的
+Swift wrapper，并链接该 revision 的 `Package.swift` 通过 URL/checksum 指定的
+XCFramework。当前 pin 指向用户 fork 的 `v0.4.0-abi.1`，并以独立对应源码资产记录
+nested iSH、musl 与构建输入。RootFS 仍是单独固定的 parent v0.3.3 资产。
 
 因此原生改动必须按依赖方向推进：
 
@@ -185,7 +192,7 @@ sequenceDiagram
 
 `PocketRootSystem` 把请求转给 `RuntimeCoordinator`，再进入 `IshLinuxRuntime`。runtime 先同步校验 fakefs 布局；校验通过后，在第一次 suspension 前进入 `.booting`，随后申请进程级所有权，并把同步原生调用送到专用串行队列。布局校验失败发生在状态切换前。
 
-`ready` 表示 native boot 已返回，并且内置 identity gate 已匹配配置的架构、Alpine 身份、可选版本和 guest 工作目录。默认 v0.3.3 factory 固定为 `aarch64`、`alpine`、`3.19.1` 与所配置工作目录。该门禁不等于每个业务工具、网络或数据都健康，应用仍可在 ready 后追加自己的领域检查。
+`ready` 表示 native boot 已返回，并且内置 identity gate 已匹配配置的架构、Alpine 身份、可选版本和 guest 工作目录。内置 v0.3.3 RootFS 清单固定为 `aarch64`、`alpine`、`3.19.1` 与所配置工作目录。该门禁不等于每个业务工具、网络或数据都健康，应用仍可在 ready 后追加自己的领域检查。
 
 ### 5.3 `execute`
 
@@ -203,13 +210,24 @@ sequenceDiagram
 - 没有第二个一次性命令在途；
 - 当前 system 仍拥有全局 iSH 实例。
 
-driver 先同步完成 `spawn` 和 `closeStdin`，之后才创建 deadline 并分段读取事件。spawn 直接返回 not-running、protocol 或 broken-pipe 时已无法信任原生 transport，PocketRoot 会在 session 尚未建立时失败关闭 runtime。session 建立后的关闭 stdin、非 timeout read、deadline 和输出超限错误都会请求终止并确认退出；下一块数据会使累计结果超过产品 stdout/stderr 配额时停止扩充 Swift `Data`，恰好等于 limit 的结果仍被接受。pre-exit 错误必须读到可信 `EXITED` 才作为可恢复结果返回。固定 supervisor 在创建 guest 前拒绝 spawn 时会把 `ERROR` 合成为负数 exit，PocketRoot 将其保留为可恢复 supervisor error；固定 v0.3.3 transport 的 broken pipe 则会合成为同样的 `(exitCode: 17, signal: 0)` 事件，所以该歧义组合显式请求终止并尝试二次确认后保守失败关闭。这个机制限制的是 session 建立后的读取阶段和已消费结果缓冲；当前固定 transport 的 spawn/control/terminate/close 仍可能阻塞，未读 inbox 也可能在 producer 快于 consumer 时增长，所以不能把请求 timeout 或产品配额表述成 `execute()` 的端到端时间/内存硬界限。
+driver 先同步完成 `spawn` 和 `closeStdin`，之后创建 deadline 并分段读取事件。spawn
+直接返回 not-running、protocol 或 broken-pipe 时已无法信任 transport，PocketRoot 会在
+session 尚未建立时失败关闭 runtime。session 建立后的关闭 stdin、非 timeout read、
+deadline 和产品输出超限都会请求终止并确认退出。v4 transport 将 supervisor rejection、
+broken pipe 与 native backlog overflow 作为类型化错误返回；正常 guest `exit 17` 是合法
+结果，负数 `EXITED` 则被视为协议完整性失败。native backlog overflow 会请求有界
+session 清理并保留 byte/frame 来源；由于上游 `session.close()` 是 void，Swift 无法确认
+清理是否升级为 instance fail-close，因此 PocketRoot 会保守终结 process gate 并要求重启。
+PocketRoot 请求 timeout 尚未覆盖 spawn/closeStdin 前阶段，所以不能描述成端到端命令
+deadline。
 
 ### 5.4 `shutdown`
 
 关闭语义取决于 PocketRoot 当前固定的原生制品。学习或调试时，先查 `Package.swift` 和[上游依赖清单](UpstreamDependencies.md)，不要把尚未发布或尚未接入的 fork 代码当成当前产品行为。
 
-当前文档所固定的旧制品采用进程终止式 shutdown；软关闭只有在新原生 revision、XCFramework、checksum 和 PocketRoot adapter 全部更新并通过测试后，才算进入当前实现。
+当前固定的 `v0.4.0-abi.1` 会停止 supervisor、soft-halt embedded kernel、bounded join
+原生线程并返回 Swift。成功后公共状态为 `.terminated`；iSH 的进程级全局状态仍只允许
+一次有效 boot/shutdown，因此同一宿主进程不能再次 boot。
 
 ## 6. 并发与生命周期模型
 

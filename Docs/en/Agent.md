@@ -4,7 +4,9 @@
 
 `PocketRootAgent` is an optional Swift Package product above `PocketRootCore`.
 It bounds orchestration between model turns and local tools. It does not install
-Codex CLI, Node.js, or npm inside the Linux RootFS.
+Codex CLI inside the Linux RootFS. Applications may explicitly review and
+install Node.js/npm as general guest packages, but they are not required by
+this agent loop.
 
 ## Current boundary
 
@@ -197,8 +199,9 @@ cancellation can suppress its successful result but cannot undo side effects.
 
 ## Next work
 
-1. Release and pin the soft-shutdown IshEmbed artifact.
-2. Compose the agent, prepared runtime, approval, state, and cancellation UI in the Demo/App.
-3. Design streaming, `store: false` history replay, and durable conversations separately.
+Native Agent Loop and further App composition are paused by the current product
+decision and are outside this runtime-pin change. Agent UI, streaming,
+`store: false` history replay, and durable conversations remain separate work
+when that track resumes.
 
 See the [roadmap](Roadmap.md) for dynamic ordering and completion.

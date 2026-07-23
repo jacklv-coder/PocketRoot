@@ -12,8 +12,8 @@ PocketRoot 把验证分成宿主逻辑、真实 RootFS、iOS 构建、完整原�
 | 真实 RootFS 资产测试 | 带环境变量的 filtered test | macOS | 精确 release archive 可校验并完成首次物化 | 已有安装可复用或 iSH 能 boot |
 | 默认 Demo 构建 | `./Scripts/build.sh` | Xcode + iOS SDK | 伞形产品和 UIKit Demo 可构建 | 实验 runtime 已链接 |
 | 原生最终链接 | `./Scripts/build-runtime-spike.sh` | Apple toolchain | 完整实验依赖图可生成 iOS 可执行文件 | 真机或 guest 行为 |
-| Simulator 原生 smoke | `./Scripts/run-runtime-smoke.sh` | Apple Silicon + iOS 18 Simulator + archive | prepare、boot、命令边界和固定 shutdown 行为 | 真机、Xcode 16 或发行可用 |
-| 物理设备原生 smoke | `./Scripts/run-runtime-device-smoke.sh` | 签名 iOS 18+ iPhone/iPad + archive | 同一 13 项检查、development entitlement 与实际进程退出 | 完整 lifecycle、memory、iPad 或发行可用 |
+| Simulator 原生 smoke | `./Scripts/run-runtime-smoke.sh` | Apple Silicon + iOS 18 Simulator + archive | prepare、boot、命令边界和 soft shutdown 返回 | 真机、Xcode 16 或发行可用 |
+| 物理设备原生 smoke | `./Scripts/run-runtime-device-smoke.sh` | 签名 iOS 18+ iPhone/iPad + archive | 同一 13 项检查、development entitlement 与 shutdown 返回 | 完整 lifecycle、memory、iPad 或发行可用 |
 | 文档检查 | `./Scripts/check-docs.sh` | macOS/Linux shell | 中英文成对、中文覆盖和相对链接 | 技术实现正确 |
 
 ## 2. 宿主 Swift Package 测试
@@ -57,7 +57,9 @@ swift test
 - boot 前 execute 拒绝、timeout 边界校验和亚毫秒 clamp、含 NUL/歧义环境 key 的请求拒绝；
 - process-global ownership（含不同 UUID 的直接 claim/ownership 拒绝）、native boot 失败后占用槽位、并发 boot/reentrancy；
 - 默认/自定义 manifest 的健康配置选择，post-boot identity request、错误架构/OS/版本/cwd、规范化 cwd 别名、timeout、signal/exit、output limit、无效 UTF-8、重复 os-release 键、畸形 NUL framing，以及无效配置、相对 cwd、含 NUL supervisor 路径不占槽位；
-- active one-shot command 与 shutdown 顺序、output-limit error 映射、supervisor 负数合成状态保留来源且保持 ready、共享 process gate 的退出无法确认失败关闭、terminal spawn transport error 映射，以及固定 transport 歧义 broken-pipe marker 拒绝；
+- active one-shot command 与 shutdown 顺序、Swift output-limit 与 native byte/frame backlog error 映射、
+  类型化 supervisor rejection 保留来源并保持 ready、guest exit 17 回归、负数
+  `EXITED` 拒绝、共享 process gate 的退出无法确认失败关闭和 terminal spawn error 映射；
 - injected-driver shutdown 后的 terminated / `restartRequired` contract。
 
 ### PocketRootAgentTests
@@ -186,7 +188,7 @@ POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
 | --- | --- |
 | `POCKETROOT_ROOTFS_ARCHIVE` | archive 路径；也可使用第一个参数 |
 | `POCKETROOT_SMOKE_DEVICE` | 指定现有 Simulator UDID |
-| `POCKETROOT_SMOKE_TIMEOUT_SECONDS` | 启动 App 后等待 JSON report 的秒数，默认 300；不含工程生成、构建、Simulator boot 和 report 后固定 20 秒进程退出检查 |
+| `POCKETROOT_SMOKE_TIMEOUT_SECONDS` | 启动 App 后等待 JSON report 的秒数，默认 300；不含工程生成、构建、Simulator boot 和 report 后固定 20 秒 runner 清理检查 |
 | `POCKETROOT_KEEP_SIMULATOR` | 设为 `1` 时保留脚本创建的临时 Simulator |
 
 未指定设备时，脚本创建临时 iPhone 16 Simulator，构建、安装和启动 smoke
@@ -229,11 +231,16 @@ xcrun simctl shutdown "$SMOKE_DEVICE_UDID"
 10. timeout 后下一条命令成功；
 11. 64-byte stdout limit；
 12. output-limit termination 后下一条命令成功；
-13. shutdown 请求触发宿主 App 进程退出。
+13. shutdown 返回 Swift，状态变为 `.terminated`，随后 smoke App 主动成功结束。
 
 第 9 项证明已经建立的 session 在 event-read loop 中观察到 deadline 后可以恢复；它不覆盖此前的同步 spawn/control write，也不证明 terminate/close 具有相同端到端硬时限。该缺口在[路线图](Roadmap.md)中作为原生 control path 门禁维护。
 
-最后一项先原子写入 report，再调用 native shutdown。host 脚本要求 attached `simctl --console` 进程在限定时间内以成功状态结束，因此普通 crash 不能冒充通过。
+成功 report 只在 shutdown 返回、状态为 `.terminated` 且再次执行得到
+`restartRequired` 后写入；host 脚本读取成功证据后主动停止空闲 smoke App 并等待
+console client 结束。shutdown 前的 crash 不会产生成功 report，不能冒充通过。
+
+2026-07-23，`v0.4.0-abi.1` 在 iOS 18.2 arm64 Simulator 通过全部 13 项；shutdown
+记录为 `returned, terminated, restart required`。
 
 该 smoke 是仓库维护的本地门禁，不在 GitHub Actions 中运行。
 
@@ -250,7 +257,9 @@ POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
 
 runner 要求设备已配对、启用 Developer Mode 且能用 development profile 签名。它生成并签名 `PocketRootIshRuntimeSmoke`，验证 application identifier 与 `get-task-allow`，通过 `devicectl` 安装 App、把固定 archive 复制到 App data container、attached launch 并取回 JSON report。默认结束后卸载 smoke App 并删除其 RootFS 数据；只有显式设置 `POCKETROOT_KEEP_DEVICE_APP=1` 才保留。
 
-2026-07-23 记录：Xcode 26.1.1（17B100）、iPhone 17 Pro、iOS 26.1（23B85）、development provisioning；固定 archive 大小与 SHA-256 通过，报告记录 iPhone / iOS 26.1，13 项检查通过，attached process 以 0 退出。未提交 UDID、profile 或本地报告。该证据关闭一次性命令的 signed iPhone 基线，不关闭 iPad、foreground/background、memory/jetsam、storage pressure 或最低 Xcode 16 门禁。
+2026-07-23 的签名 iPhone 记录使用旧 v0.3.3 runtime 基线；它证明设备 runner、archive
+与签名链路，但 runtime pin 变化后必须用 v0.4.0-abi.1 重跑，不能作为新 soft shutdown
+的真机证据。
 
 ## 8. GitHub Actions
 

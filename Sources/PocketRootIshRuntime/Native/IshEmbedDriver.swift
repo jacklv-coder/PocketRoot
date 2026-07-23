@@ -66,6 +66,21 @@ struct IshEmbedDriver: IshRuntimeDriver {
                     // ISH_ERR_TIMEOUT: poll again so the wall-clock deadline is
                     // enforced without an unbounded native read.
                     continue
+                } catch IshError.raw(let code, let message) where code == -15 {
+                    // Wire v4 surfaces supervisor ERROR as a typed terminal
+                    // status rather than synthesizing an EXITED payload.
+                    throw IshRuntimeDriverError.supervisorCommandRejected(
+                        "IshError \(code): \(message)"
+                    )
+                } catch IshError.raw(let code, _) where code == -18 {
+                    // The native reader has terminalized this session and
+                    // requested bounded fail-close cleanup after its output
+                    // backlog was exhausted. The deferred close completes or
+                    // escalates that cleanup before releasing the session.
+                    throw IshRuntimeDriverError.nativeOutputLimitExceeded(
+                        maximumBytes: 4 * 1_024 * 1_024,
+                        maximumFrames: 4_096
+                    )
                 }
 
                 switch event {
@@ -99,18 +114,17 @@ struct IshEmbedDriver: IshRuntimeDriver {
             }
         } catch let error as IshRuntimeDriverError {
             switch error {
-            case .ambiguousTransportExitMarker:
-                // The event may be a real guest `exit 17` or a dead reader
-                // transport. Explicitly request termination and attempt to
-                // observe a second authoritative exit before failing closed.
-                try terminateAndConfirmExit(session)
-                throw IshRuntimeDriverError.sessionTerminationUnconfirmed(
-                    "the pinned transport emitted an ambiguous EXITED marker"
-                )
             case .supervisorCommandRejected:
-                // In pinned v0.3.3, negative synthetic exits come only from a
-                // supervisor ERROR emitted after spawn was rejected and its
-                // session was freed; no guest process exists to terminate.
+                // ERROR is terminal in wire v4. The supervisor either rejected
+                // the spawn or force-closed the tracked session; deferred close
+                // releases the host handle without sending a second terminate.
+                throw error
+            case .nativeOutputLimitExceeded:
+                // Native already requested SESSION_CLOSE when it published the
+                // terminal backlog status. Deferred close waits for reap and
+                // fail-closes the instance if that acknowledgement is missing.
+                // Because close is void, the runtime conservatively requires a
+                // restart for every native backlog overflow.
                 throw error
             case .sessionTerminationUnconfirmed:
                 throw error
@@ -184,11 +198,9 @@ struct IshEmbedDriver: IshRuntimeDriver {
     }
 
     func shutdown() throws {
-        // The pinned iSH kernel's halt path ends in _exit(0). On a real iOS
-        // build this call normally terminates the entire host App process and
-        // therefore does not return. The return path remains useful for test
-        // drivers and for a future upstream implementation with softer
-        // shutdown semantics.
+        // v0.4.0-abi.1 asks the supervisor to stop, soft-halts the embedded
+        // kernel, joins its pthread, and returns to Swift. The underlying iSH
+        // process-global state still permits only one boot/shutdown lifecycle.
         try IshInstance.shared.shutdown()
     }
 }

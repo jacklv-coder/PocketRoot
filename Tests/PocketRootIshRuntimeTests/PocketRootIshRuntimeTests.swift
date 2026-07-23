@@ -840,11 +840,51 @@ final class PocketRootIshRuntimeTests: XCTestCase {
         }
     }
 
+    func testNativeBacklogLimitMapsToPublicErrorAndFailsClosed() async throws {
+        let rootFSURL = try makeFakeFSFixture()
+        let driver = FakeIshRuntimeDriver(
+            executeError: IshRuntimeDriverError.nativeOutputLimitExceeded(
+                maximumBytes: 4 * 1_024 * 1_024,
+                maximumFrames: 4_096
+            )
+        )
+        let runtime = IshLinuxRuntime(
+            configuration: .init(rootFSURL: rootFSURL),
+            driver: driver
+        )
+        try await runtime.boot(configuration: PocketRootConfiguration())
+
+        do {
+            _ = try await runtime.execute(PocketRootCommandRequest(command: "yes"))
+            XCTFail("The native backlog limit should be surfaced.")
+        } catch let error as PocketRootError {
+            XCTAssertEqual(
+                error,
+                .runtimeFailure(
+                    "The native session backlog exceeded its bounded "
+                        + "4194304-byte or 4096-frame limit."
+                )
+            )
+        }
+
+        let state = await runtime.state
+        guard case .failed = state else {
+            return XCTFail("Native backlog overflow should fail the runtime closed.")
+        }
+
+        do {
+            try await runtime.boot(configuration: PocketRootConfiguration())
+            XCTFail("A fail-closed runtime should require a restart.")
+        } catch let error as PocketRootError {
+            XCTAssertEqual(error, .restartRequired)
+        }
+    }
+
     func testSupervisorCommandRejectionPreservesProvenanceAndReadyState() async throws {
         let rootFSURL = try makeFakeFSFixture()
         let driver = FakeIshRuntimeDriver(
             executeError: IshRuntimeDriverError.supervisorCommandRejected(
-                syntheticExitCode: -12
+                "IshError -15: supervisor reported error"
             )
         )
         let runtime = IshLinuxRuntime(
@@ -861,7 +901,7 @@ final class PocketRootIshRuntimeTests: XCTestCase {
                 error,
                 .runtimeFailure(
                     "The guest supervisor rejected the command before execution "
-                        + "(synthetic exit code -12)."
+                        + "(IshError -15: supervisor reported error)."
                 )
             )
         }
@@ -929,18 +969,13 @@ final class PocketRootIshRuntimeTests: XCTestCase {
         }
     }
 
-    func testTransportPolicyRejectsAmbiguousBrokenPipeExitMarker() throws {
-        XCTAssertThrowsError(
+    func testTransportPolicyAcceptsGuestExit17AndRejectsNegativeExit() throws {
+        XCTAssertNoThrow(
             try IshRuntimeTransportPolicy.validateAuthoritativeExit(
                 exitCode: 17,
                 signal: 0
             )
-        ) { error in
-            XCTAssertEqual(
-                error as? IshRuntimeDriverError,
-                .ambiguousTransportExitMarker
-            )
-        }
+        )
 
         XCTAssertThrowsError(
             try IshRuntimeTransportPolicy.validateAuthoritativeExit(
@@ -950,7 +985,10 @@ final class PocketRootIshRuntimeTests: XCTestCase {
         ) { error in
             XCTAssertEqual(
                 error as? IshRuntimeDriverError,
-                .supervisorCommandRejected(syntheticExitCode: -12)
+                .sessionTerminationUnconfirmed(
+                    "the native transport reported invalid guest exit code "
+                        + "-12 with signal 0"
+                )
             )
         }
 

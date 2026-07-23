@@ -206,7 +206,9 @@ package actor IshLinuxRuntime: LinuxRuntime {
                 timedOut: result.timedOut
             )
         } catch {
-            if case IshRuntimeDriverError.sessionTerminationUnconfirmed = error {
+            if let driverError = error as? IshRuntimeDriverError,
+               driverError.requiresRuntimeRestart
+            {
                 await processGate.markTerminated(for: ownerID)
                 runtimeState = .failed(error.localizedDescription)
             }
@@ -249,10 +251,9 @@ package actor IshLinuxRuntime: LinuxRuntime {
 
         do {
             try await processGate.requireOwnership(for: ownerID)
-            // The pinned native implementation reaches _exit(0) while
-            // shutting down PID 1, so a real iOS process normally ends inside
-            // this call. The post-call state transition supports injected
-            // drivers and a future upstream implementation that can return.
+            // v0.4.0-abi.1 returns after supervisor exit, kernel soft-halt, and
+            // a bounded pthread join. The process-global runtime remains
+            // single-lifecycle, so successful shutdown is terminal.
             try await executor.perform { [driver] in
                 try driver.shutdown()
             }

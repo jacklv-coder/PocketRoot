@@ -3,7 +3,8 @@
 [简体中文](Agent.md) | [English](en/Agent.md) | [文档中心](README.md)
 
 `PocketRootAgent` 是位于 `PocketRootCore` 之上的可选 Swift Package 产品。它负责模型回合与
-本地工具之间的有界调度，不在 Linux RootFS 中安装 Codex CLI、Node.js 或 npm。
+本地工具之间的有界调度，不在 Linux RootFS 中安装 Codex CLI。Node.js/npm 可作为应用
+显式审核和安装的通用 guest package，但不是此 agent loop 的必需 runtime。
 
 ## 当前边界
 
@@ -188,8 +189,7 @@ Swift Task 在审批后、执行前取消时不会启动命令；命令已进入
 
 ## 下一步
 
-1. 发布并固定 soft-shutdown IshEmbed 制品。
-2. 在 Demo/App 中组合 agent、prepared runtime、审批、状态与取消 UI。
-3. 后续独立设计 streaming、`store: false` 历史回放与会话持久化。
+原生 Agent Loop 与进一步 App 组合当前按产品决定暂停，不属于本轮 runtime pin。
+恢复后再独立设计 agent UI、streaming、`store: false` 历史回放与会话持久化。
 
 动态顺序和完成状态以[路线图](Roadmap.md)为准。

@@ -183,29 +183,11 @@ private enum PocketRootRuntimeSmokeRunner {
             )
             checks.append(PocketRootSmokeCheck(name: "post-output-limit", detail: "ready"))
 
-            // The pinned iSH kernel deliberately calls _exit(0) when PID 1
-            // shuts down. Persist the successful command report before asking
-            // the native runtime to terminate the host App process. The host
-            // script separately verifies that this process actually exits.
-            checks.append(
-                PocketRootSmokeCheck(
-                    name: "shutdown",
-                    detail: "host-process exit requested"
-                )
-            )
-            let preShutdownReport = PocketRootSmokeReport(
-                success: true,
-                checks: checks,
-                environment: environment,
-                error: nil,
-                startedAt: startedAt,
-                finishedAt: Date()
-            )
-            try write(preShutdownReport)
+            // v0.4.0-abi.1 must return after soft-halting and joining the
+            // embedded kernel. Do not persist success until both the terminal
+            // state and the no-reboot contract have been observed.
             try await prepared.system.shutdown()
 
-            // This fallback is reachable only if a future upstream runtime
-            // changes shutdown to return instead of terminating the process.
             try require(
                 await prepared.system.state == .terminated,
                 "Shutdown did not produce the terminal state."
@@ -217,7 +199,12 @@ private enum PocketRootRuntimeSmokeRunner {
                 )
                 throw PocketRootSmokeFailure(message: "A terminated runtime executed a command.")
             } catch PocketRootError.restartRequired {
-                checks.append(PocketRootSmokeCheck(name: "restart", detail: "required"))
+                checks.append(
+                    PocketRootSmokeCheck(
+                        name: "shutdown",
+                        detail: "returned, terminated, restart required"
+                    )
+                )
             }
 
             return PocketRootSmokeReport(
@@ -237,8 +224,7 @@ private enum PocketRootRuntimeSmokeRunner {
                 startedAt: startedAt,
                 finishedAt: Date()
             )
-            // A native cleanup shutdown also exits the App process, so failure
-            // evidence must be durable before attempting that cleanup.
+            // Persist failure evidence before best-effort native cleanup.
             try? write(report)
             if let system {
                 try? await system.shutdown()

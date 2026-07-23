@@ -5,8 +5,8 @@ import PocketRootResources
 
 /// The verified RootFS installation and the system configured to boot it.
 public struct PocketRootPreparedIshSystem: Sendable {
-    /// The Experimental native system. Its pinned iSH shutdown path exits the
-    /// entire host App process and does not return to Swift.
+    /// The Experimental native system. Shutdown returns after native cleanup,
+    /// then leaves this process-global runtime permanently terminated.
     public let system: PocketRootSystem
     public let installation: PocketRootRootFSInstallation
 

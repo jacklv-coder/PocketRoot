@@ -186,8 +186,7 @@ while [[ "$SECONDS" -lt "$REPORT_DEADLINE" ]]; do
         if [[ "$LAUNCH_EXIT_OBSERVED" == "true" ]]; then
             break
         fi
-        # The report write and process exit can race the preceding copy, so
-        # permit one final bounded copy attempt after observing the exit.
+        # Permit one final bounded copy attempt if the console client ends.
         LAUNCH_EXIT_OBSERVED="true"
         sleep 0.25
     else
@@ -207,31 +206,12 @@ if [[ "$REPORT_SUCCESS" != "true" ]]; then
     exit 1
 fi
 
-# A successful report is persisted immediately before the audited native
-# shutdown request. Require the attached client to observe prompt process exit.
-APP_EXITED="false"
-for _ in $(seq 1 80); do
-    if ! kill -0 "$LAUNCH_CLIENT_PID" >/dev/null 2>&1; then
-        APP_EXITED="true"
-        break
-    fi
-    sleep 0.25
-done
-if [[ "$APP_EXITED" != "true" ]]; then
-    cat "$CONSOLE_LOG" >&2 || true
-    echo "Native shutdown did not terminate the physical-device smoke App." >&2
-    exit 1
-fi
-
-set +e
-wait "$LAUNCH_CLIENT_PID"
-LAUNCH_STATUS=$?
-set -e
+# Success is written only after soft shutdown returned, `.terminated` was
+# observed, and a later command returned restartRequired. Detach the console
+# client; normal cleanup uninstalls the otherwise idle test App.
+kill "$LAUNCH_CLIENT_PID" >/dev/null 2>&1 || true
+wait "$LAUNCH_CLIENT_PID" >/dev/null 2>&1 || true
 LAUNCH_CLIENT_PID=""
 cat "$CONSOLE_LOG"
-if [[ "$LAUNCH_STATUS" -ne 0 ]]; then
-    echo "Native smoke App exited with devicectl status $LAUNCH_STATUS." >&2
-    exit 1
-fi
 
 echo "Physical-device native smoke passed on $DEVICE_ID."

@@ -12,8 +12,8 @@ PocketRoot separates host logic, real RootFS, iOS build, native final-link, and 
 | Real asset test | Filtered test with archive env | Exact release archive validates and materializes once | Existing-installation reuse or iSH boot |
 | Demo build | `./Scripts/build.sh` | Umbrella and UIKit build | Experimental graph |
 | Native final link | `./Scripts/build-runtime-spike.sh` | Full graph forms arm64 executables | Physical or guest behavior |
-| Simulator native smoke | `./Scripts/run-runtime-smoke.sh` | Prepare, boot, command bounds, pinned shutdown | Physical, minimum-Xcode, distribution |
-| Physical native smoke | `./Scripts/run-runtime-device-smoke.sh` | Same 13 checks, development entitlements, actual process exit | Full lifecycle, memory, iPad, distribution |
+| Simulator native smoke | `./Scripts/run-runtime-smoke.sh` | Prepare, boot, command bounds, returning soft shutdown | Physical, minimum-Xcode, distribution |
+| Physical native smoke | `./Scripts/run-runtime-device-smoke.sh` | Same 13 checks, development entitlements, returning soft shutdown | Sustained lifecycle, memory, iPad, distribution |
 | Documentation | `./Scripts/check-docs.sh` | Pairs, Chinese coverage, relative links | Implementation correctness |
 
 ## Package tests
@@ -27,7 +27,12 @@ Coverage includes the following relevant boundaries:
 - Core tests cover request/configuration defaults, result-stream decoding, placeholder lifecycle behavior, injected-runtime delegation, public-state refresh after fail-closed execute and failed shutdown, rejection of transient-state publication by a reentrant command, rejection of stale refresh overwrite after a newer failure, plus RootFS-provider/metadata coordination.
 - Resources tests cover the pinned manifest and gated bundled provider; archive existence, symlink rejection, byte count, and SHA-256; required fakefs layout and metadata-symlink rejection; successful gzip/ustar extraction, traversal cleanup, explicit-directory-after-implicit-parent rejection, duplicate-directory and case-aliased-directory rejection on insensitive volumes, archive symlink entry/source rejection, and the expanded-byte limit.
 - Synthetic Resources fixtures cover first install and reuse, private archive-snapshot isolation and byte bounds, reserved versions, corrupt replacement, failed upgrade/promotion rollback, interrupted transaction recovery, and a single installation under concurrent preparation.
-- Injected runtime tests cover configuration and host availability, missing/symlinked fakefs plus typed attribute-read preflight failures without slot consumption, boot and `/bin/sh -lc` request mapping, built-in/custom-manifest health-default selection, the post-boot identity request, architecture/OS/version/cwd mismatch, canonical cwd aliases, timeout, signal/exit, health output limits, invalid UTF-8, duplicate os-release keys, malformed NUL framing, invalid configuration/relative cwd/NUL supervisor path without slot consumption, execute-before-boot, timeout validation/clamping, ambiguous C-string input rejection, process ownership including direct rejection of a different owner UUID, failed/concurrent boot admission, active-command shutdown ordering, output-limit mapping, provenance-preserving recoverable supervisor rejection, shared-gate unconfirmed-exit fail-closed behavior, terminal spawn transport-error mapping, rejection of the pinned transport's ambiguous broken-pipe marker, and terminated/`restartRequired` behavior.
+- Injected runtime tests cover configuration and host availability, fakefs
+  preflight, boot/command mapping, identity gates, timeout and C-string
+  validation, ownership and concurrent admission, active-command shutdown,
+  Swift output-limit and native byte/frame backlog error mapping, typed recoverable supervisor rejection,
+  valid guest exit 17, rejection of negative `EXITED`, unconfirmed-exit
+  fail-close, terminal spawn errors, and terminated/`restartRequired`.
 - Agent tests cover direct final text, response/call ID continuation, structured unknown-tool and ordinary-tool failures, repeated response/call IDs, whole-batch validation before side effects, turn/call/input/model/identifier/name/argument/output limits, rejection of concurrent runs and unfinishable last-turn tools, plus configuration, name, and object-schema validation. OpenAI transport tests cover initial and continuation request mapping, text/function-call/refusal/incomplete/malformed response decoding, strict schema preflight, HTTPS and body limits, credential sanitization, and non-2xx errors without token exposure.
 - Agent runtime-tool tests cover the strict command schema, unknown-field rejection, policy and approval no-side-effect paths, normalized final approval requests, whole-batch tool-specific preflight, command/cwd/environment/timeout/output bounds, UTF-8/Base64 result encoding and truncation, plus cancellation after non-cooperative approval and execution.
 - Integration and Terminal tests cover preparation/configuration alignment and the placeholder terminal configuration, theme, transcript, and clear behavior.
@@ -73,7 +78,7 @@ archive. The archive may be the first argument.
 `POCKETROOT_SMOKE_DEVICE` selects an existing device.
 `POCKETROOT_SMOKE_TIMEOUT_SECONDS` changes only the default 300-second JSON
 report wait after App launch. It does not bound project generation, the build,
-Simulator boot, or the fixed 20-second post-report process-exit check. A
+Simulator boot, or the fixed 20-second post-report runner-cleanup check. A
 script-created Simulator is deleted on script exit unless
 `POCKETROOT_KEEP_SIMULATOR=1`. A caller-supplied Simulator is booted, has the
 old smoke App uninstalled before the new one is installed, and retains the new
@@ -99,11 +104,20 @@ If the device was shut down before the smoke, restore that state with
 UDID confirmed to be a script-dedicated temporary device, never for a shared
 development Simulator.
 
-The 13 checks cover preparation, ready boot, aarch64, Alpine 3.19.1, cwd, environment, split streams and exit 7, merged stderr, 100 ms timeout and recovery, 64-byte output limit and recovery, and host-process exit on shutdown.
+The 13 checks cover preparation, ready boot, aarch64, Alpine 3.19.1, cwd,
+environment, split streams and exit 7, merged stderr, 100 ms timeout and
+recovery, 64-byte output limit and recovery, and soft shutdown returning
+`.terminated` before the smoke App exits successfully.
 
 The 100 ms check proves recovery after an established session observes its event-read deadline. It does not cover the earlier synchronous spawn/control write or prove that terminate/close have the same end-to-end hard limit. The [Roadmap](Roadmap.md) tracks that native control-path gate.
 
-The report is persisted before shutdown. The host requires the attached Simulator process to finish successfully, so an ordinary crash is not accepted. This smoke is a local gate, not a GitHub Actions step.
+Success is written only after shutdown returns `.terminated` and another
+command produces `restartRequired`. The host then explicitly stops the idle
+smoke App and waits for the console client. A pre-success crash cannot produce
+a passing report. This is a local gate, not a GitHub Actions step.
+
+On 2026-07-23, `v0.4.0-abi.1` passed all 13 checks on an iOS 18.2 arm64
+Simulator; shutdown recorded `returned, terminated, restart required`.
 
 ### Signed iPhone/iPad runner
 

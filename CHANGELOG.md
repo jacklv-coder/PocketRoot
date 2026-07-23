@@ -16,7 +16,7 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
 - 加入 XcodeGen `project.yml`、工程生成、测试和构建脚本。
 - 加入 placeholder runtime、terminal API 基础与单元测试。
 - 统一 package、Demo、tests 和 CI 的 iOS 18.0 deployment baseline。
-- 固定 Experimental `PocketRootIshRuntime` 到 IshEmbed revision `6f96f02c71830914c2a608258a26a8ef0833d026`。
+- 固定 Experimental `PocketRootIshRuntime` 到 IshEmbed revision `4e311bcea4fe806491e76a23c0e4caeeb1c513bf` 与 `v0.4.0-abi.1` XCFramework。
 - 加入 Experimental `PocketRootIshRuntimeIntegration`，组合调用方本地 RootFS 与原生 runtime。
 - 加入 process-wide ownership、serial native execution、lifecycle reentrancy protection。
 - 加入一次性命令的 cwd、environment、stderr merge、exit、signal、timeout 和 stream mapping。
@@ -53,10 +53,13 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
 - 明确文档事实源：Roadmap 管动态状态，Upstream 管 revision/hash，Testing 管证据，ADR 管冻结决策。
 - Git 贡献流程明确使用 SSH fetch/push。
 - 明确默认 `PocketRootSystem.shared` 是 placeholder，真实 system 必须保存 `prepareSystem` 返回实例。
-- 明确固定 native `shutdown()` 为进程终止式行为，不应作为普通 UI cleanup。
-- 记录已合并但尚无可固定制品的 native ABI 候选；PocketRoot 当前 revision 与二进制行为保持不变。
+- native `shutdown()` 现在 soft-halt/join 后返回 `.terminated`；同一宿主进程仍只允许一次 lifecycle。
+- 记录自托管 XCFramework 与对应源码资产、精确大小/hash、nested iSH gitlink 和 RootFS 独立 pin。
 - 一次性命令和 boot 的可选 supervisor 路径在进入 native driver 前拒绝含 NUL 的 C 字符串输入；命令环境还拒绝歧义 key。
-- session 建立后的 pre-exit 错误只有在观察到可信 guest `EXITED` 后才可恢复；spawn 直接返回 not-running、protocol 或 broken-pipe 时也会失败关闭；supervisor 的负数合成状态保留错误来源，固定 transport 的 `(17, 0)` 歧义 marker 会先显式清理再失败关闭并要求重启宿主。
+- v4 transport 将 supervisor rejection、broken pipe 与 native backlog overflow 作为
+  类型化错误；正常 guest `exit 17` 可返回，负数 `EXITED` 失败关闭。PocketRoot 同时
+  映射 native backlog limit；因 void close 无法证明清理是否升级为 instance fail-close，
+  该路径会保守关闭 process gate。
 - RootFS boot 预检期间的文件属性读取错误统一映射为 typed `rootFSUnavailable`，并在申请原生进程槽位前保持 `idle`。
 - process gate 使用显式 UUID 比较确认当前 owner，并以独立回归测试拒绝其他 runtime 的 claim 与 ownership 检查。
 - ustar extractor 现在也登记文件/目录条目隐式创建的父目录，并拒绝后续重复目录项和文件系统等价目录目标；RootFS journal 文档明确不承诺未显式 `fsync` 的掉电持久性。

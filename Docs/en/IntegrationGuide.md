@@ -7,7 +7,10 @@ default, explicit agent, and Experimental native products, and covers the
 complete local-RootFS to one-shot-result flow.
 
 > [!CAUTION]
-> The pinned IshEmbed shutdown path calls `_exit(0)`. In a native iOS build, `prepared.system.shutdown()` terminates the entire host app and normally never returns to Swift. Do not put it in view, scene, deinit, or routine cleanup paths.
+> Pinned `v0.4.0-abi.1` soft-halts and joins the embedded kernel, then
+> `prepared.system.shutdown()` returns to Swift. The same host process cannot
+> boot again after success. Do not trigger it accidentally from view, scene,
+> deinit, or routine cleanup paths.
 
 ## 1. Choose products
 
@@ -180,7 +183,7 @@ guard await system.state == .ready else {
 
 After native boot returns, `boot()` automatically runs a fixed post-boot identity command. When `healthCheck` is omitted or nil, only the exact built-in `.ishEmbedV0_3_3` manifest selects the same-name gate and strictly requires `aarch64`, `alpine`, and `3.19.1`; a custom manifest receives the version-agnostic `.alpineARM64` default and should explicitly pass the version reviewed for that RootFS. Identity values must be non-empty and NUL-free, timeout must be in `(0, 60]` seconds, and guest `workDirectory` must be an absolute NUL-free path. An optional `supervisorGuestPath` must also be NUL-free and is validated before the process slot is claimed or native boot begins.
 
-The identity command has independent 4 KiB stdout/stderr caps. Swift parses `os-release` as data, the working directory is passed as argv, and actual plus target `pwd -P` values are compared so path aliases do not false-fail; expected identity values are never interpolated into shell text. A failure after native boot conservatively sets failed, consumes the process-global slot, and requires a host restart. This is a consistency check over base guest information and command context inside an already validated RootFS, not an independent provenance/security proof or an application-tool, network, or data check. A synchronous control write in the pinned v0.3.3 transport can still outlive the configured health timeout.
+The identity command has independent 4 KiB stdout/stderr caps. Swift parses `os-release` as data, the working directory is passed as argv, and actual plus target `pwd -P` values are compared so path aliases do not false-fail; expected identity values are never interpolated into shell text. A failure after native boot conservatively sets failed, consumes the process-global slot, and requires a host restart. This is a consistency check over base guest information and command context inside an already validated RootFS, not an independent provenance/security proof or an application-tool, network, or data check. Native control queues are bounded, but the health timeout begins after spawn/closeStdin and is not an end-to-end deadline.
 
 ## 5. Execute one-shot commands
 
@@ -208,9 +211,19 @@ Contract:
 - One runtime accepts one one-shot command at a time.
 - Timeout must be positive and no longer than 24 hours; positive sub-millisecond values become 1 ms.
 - Timeout starts in the event-read loop only after the session is established and stdin is closed; expiry attempts termination and, when the call returns, reports `timedOut == true` with partial output.
-- In pinned v0.3.3, spawn, control writes, terminate, and close may still block. The request timeout is therefore not an end-to-end watchdog for `execute()` and remains an Experimental read-loop deadline until native transport hardening is integrated.
+- Native control queues, session backlogs, and lifecycle reserve are bounded.
+  The request timeout still begins after `spawn`/`closeStdin`, so it is not an
+  end-to-end watchdog for `execute()`.
 - Command, cwd, and environment keys/values must contain no NUL; environment keys must also be nonempty and contain no `=`. Validation happens before the native driver to prevent silent C-string truncation.
-- A direct not-running, protocol, or broken-pipe spawn failure leaves neither native transport nor guest state trustworthy, so PocketRoot immediately fails the runtime closed. After session spawn, close-stdin failures, non-timeout read failures, timeout, and output overflow all terminate the session first. The runtime remains recoverable only when it observes an authoritative guest `EXITED`. A negative synthetic exit from pinned supervisor rejection before guest creation is instead surfaced as a provenance-preserving recoverable runtime error, never as a guest exit code. Pinned v0.3.3 also uses `(exitCode: 17, signal: 0)` for transport broken pipe, so that ambiguous pair explicitly requests termination and then fails closed. Failed termination or exit confirmation likewise locks the runtime in `failed` and requires a host-process restart.
+- Direct not-running, protocol, or broken-pipe spawn failures fail the runtime
+  closed. Later close-stdin, non-timeout read, request-timeout, and product-cap
+  failures terminate and confirm exit. Wire v4 returns supervisor rejection,
+  broken pipe, and native-backlog overflow as typed errors. Guest exit 17 is
+  valid; a negative `EXITED` payload is a protocol-integrity failure. Native
+  backlog overflow requests bounded cleanup and preserves byte/frame
+  provenance, but void `session.close()` cannot prove whether cleanup escalated
+  to instance fail-close. PocketRoot therefore closes its process gate and
+  requires a restart.
 - Merged stderr is returned in stdout with an empty stderr buffer.
 - Default stdout/stderr caps are 8 MiB/4 MiB. Exceeding a cap throws `commandOutputLimitExceeded`.
 - Swift Task cancellation is not yet a complete native-kill contract.
@@ -242,11 +255,14 @@ Do not branch only on localized strings.
 ## 7. Shutdown
 
 ```swift
-// Invoke only if the product deliberately wants the host app process to exit.
+// Invoke after every active command has completed.
 try await system.shutdown()
 ```
 
-Wait for active commands first. The current build cannot boot again after shutdown, and shutdown must not be used for ordinary UI cleanup. Applications that cannot accept process exit should avoid native shutdown until a soft-shutdown artifact exists.
+Shutdown stops the supervisor, soft-halts and joins the kernel, returns to
+Swift, and publishes `.terminated`. The same host process cannot boot again.
+Do not trigger this terminal lifecycle transition accidentally from ordinary UI
+cleanup.
 
 ## 8. Interactive sessions are not implemented
 
@@ -293,7 +309,7 @@ and SwiftTerm gates.
 - Caller-owned regular RootFS file matching the manifest.
 - Ordered preparation, built-in boot identity gate, and application-specific health checks.
 - Positive command timeout and handling for exit, signal, timeout, and output limits.
-- Explicit acceptance or avoidance of process-terminal shutdown.
+- Acceptance of the single-lifecycle contract: no reboot in the same host process after shutdown.
 - No claim that Simulator evidence proves physical-device or distribution readiness.
 - All [release and compliance](ReleaseCompliance.md) gates closed before distribution.
 

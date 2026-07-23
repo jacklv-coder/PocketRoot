@@ -27,7 +27,10 @@ PocketRoot is not a full iSH app fork or a general virtualization platform. It s
 - Application code uses PocketRoot APIs instead of holding iSH native objects.
 - Experimental native binaries are never linked by the default product.
 - The caller owns network retrieval and authorization; PocketRoot never downloads a RootFS implicitly.
-- The executor for blocking native work, process ownership, the post-establishment read-loop deadline, and Swift result buffers have explicit boundaries; end-to-end native control-path time bounds and transport-backlog backpressure remain open gates.
+- The executor for blocking native work, process ownership, the post-establishment
+  read-loop deadline, Swift result buffers, native session backlogs, and the
+  control queue have explicit boundaries. The request timeout does not yet
+  cover the entire command lifecycle before spawn/closeStdin completes.
 - Build evidence, hashes, constraints, and release gates are traceable from the repository.
 
 ## Scope
@@ -48,7 +51,7 @@ PocketRoot is not a full iSH app fork or a general virtualization platform. It s
 - Application-specific guest tool, network, and data health checks.
 - Real runtime injection into the Demo.
 - Interactive `PocketRootSession`, PTY, and SwiftTerm.
-- A soft shutdown or an explicit decision to accept host-process exit.
+- Sustained lifecycle and fault-injection validation for soft shutdown.
 - Physical-device lifecycle, memory, performance, and fault testing.
 - Controlled distribution after all compliance gates are satisfied.
 
@@ -58,7 +61,10 @@ PocketRoot is not a full iSH app fork or a general virtualization platform. It s
 - Multiple parallel iSH kernels.
 - Default network RootFS downloads or unreviewed artifacts.
 - Agents, browser automation, MCP, or cloud orchestration inside `PocketRootCore`.
-- Installing Codex CLI, Node.js, or npm in the RootFS as the mobile agent architecture.
+- Installing Codex CLI in the RootFS as the mobile agent architecture.
+- Treating Node.js/npm as a required agent runtime or installing them
+  automatically; applications may still review and install them explicitly as
+  general guest packages.
 - Executing model-generated shell commands without host approval.
 - Private APIs, sandbox escape, or App Store policy bypass.
 - Production, TestFlight, or public binary distribution before gate closure.
@@ -130,7 +136,7 @@ than download counts:
 
 | Risk | Strategy |
 | --- | --- |
-| Native shutdown exits the host app | Keep Experimental; accept the contract or rebuild a soft-shutdown artifact |
+| Native runtime permits one lifecycle per process | Soft shutdown returns `.terminated`; reboot requires a new host process |
 | Limited XCFramework slices | Publish the arm64 support matrix and require final links |
 | Complex RootFS licensing | Do not commit or bundle; pin hashes and block distribution |
 | Process-global iSH singleton | Process ownership gate and serial native executor |

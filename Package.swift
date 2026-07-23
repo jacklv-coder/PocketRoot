@@ -47,7 +47,7 @@ let package = Package(
     dependencies: [
         .package(
             url: "https://github.com/jacklv-coder/ish-arm64-pkg.git",
-            revision: "6f96f02c71830914c2a608258a26a8ef0833d026"
+            revision: "4e311bcea4fe806491e76a23c0e4caeeb1c513bf"
         )
     ],
     targets: [
