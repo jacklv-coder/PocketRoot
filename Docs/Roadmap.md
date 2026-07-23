@@ -16,9 +16,10 @@
 1. 已合并 provider-agnostic `PocketRootAgent` 有界 loop。
 2. 完成 OpenAI Responses API transport 与宿主 credential contract。
 3. 完成带审批、命令策略、超时和输出边界的 Linux command tool。
-4. 当前：发布并固定 soft-shutdown IshEmbed 制品。
-5. 把 agent、prepared runtime 和 Simulator UI 组合进 Demo/App。
-6. 有物理 iPad 后补签名设备 smoke；该硬件门禁不阻塞前五项。
+4. 已发布并固定 soft-shutdown IshEmbed `v0.4.0-abi.1` 制品。
+5. 当前：完成新 pin 的 Codex CR、CI 与 PR 合并；final-link、Simulator lifecycle 与文档已闭环。
+6. 原生 Agent Loop/App 组合按产品决定暂停；不阻塞 runtime 独立验证。
+7. 有物理 iPad 后补签名设备 smoke；该硬件门禁不阻塞前六项。
 
 ## 里程碑 1：工程基础
 
@@ -68,7 +69,8 @@
 - 对 arm64 Simulator 和 unsigned device 完成完整依赖图最终链接；
 - 在 iOS 18.2 arm64 Simulator boot 固定 fakefs；
 - repository native smoke 通过 13 项 prepare、boot、guest、command、recovery 与 shutdown 检查。
-- 在签名 iPhone 17 Pro（iOS 26.1）通过同一套 13 项 native smoke，并验证开发签名 entitlement 与 `_exit(0)` 进程退出。
+- 旧 v0.3.3 基线曾在签名 iPhone 17 Pro（iOS 26.1）通过同一套 13 项 native smoke；
+  新 v0.4.0-abi.1 仍需重跑签名设备验证。
 
 这些证据建立了当前 Simulator 与单一 iPhone 的一次性命令路径，不覆盖 iPad、完整真机生命周期、最低 Xcode 16、PTY 或公开发行。
 
@@ -79,15 +81,15 @@
 | iOS 18 基线 | 已通过 | 持续保持 package、Demo、tests、CI 一致 |
 | 不可变 IshEmbed revision | 已通过 | 只通过完整供应链更新流程变更 |
 | 一次性命令 adapter | 已通过 | 保持 lifecycle、timeout、output-limit coverage |
-| 原生 transport 背压 | 进行中 | 发布并接入具有 protocol/session/stdin/log 有界队列的新制品，再完成持续输出与内存峰值测试 |
-| 原生 control path 端到端时间界限 | 进行中 | 发布并接入 nonblocking writer/有界控制操作，覆盖 spawn、terminate、close 阻塞回归 |
-| iOS 18 Simulator 原生行为 | 已通过 | runtime/RootFS 变更时重跑 13 项 smoke |
+| 原生 transport 背压 | 进行中 | 已接入有界 protocol/session/stdin/log/control queue；仍需持续输出与内存峰值测试 |
+| 原生 control path 端到端时间界限 | 进行中 | native control 已有界；PocketRoot 请求 deadline 仍需覆盖 spawn/closeStdin 前阶段 |
+| iOS 18 Simulator 原生行为 | 已通过 | v0.4.0-abi.1 已重跑 13 项 soft-shutdown smoke；后续变更继续回归 |
 | RootFS 安全安装与恢复 | 已通过 | 保持真实资产、snapshot、rollback、recovery coverage；补 ENOSPC |
 | RootFS/runtime composition | 已通过 | 保持 caller-controlled、no-download、no-auto-boot |
 | 默认 post-boot identity gate | 已通过 | `aarch64`、Alpine identity、可选 version 与 command context 通过后才 ready；保持失败占用槽位回归 |
 | Demo 真实 runtime 注入 | 未开始 | 一个 prepared system 注入 System/Commands/Diagnostics，不打包未审查 RootFS |
-| 进程安全 soft shutdown | 进行中 | fork 源码修复已合并；仍需新 XCFramework、checksum、PocketRoot pin 与生命周期重审 |
-| 签名 iPhone | 已通过 | iPhone 17 Pro / iOS 26.1 / Xcode 26.1.1 的 13 项 signed smoke；runtime/RootFS/签名变化时重跑 |
+| 进程安全 soft shutdown | 已通过 | v0.4.0-abi.1 soft-halt/join 返回 Swift；同进程仍只允许一次 lifecycle |
+| 签名 iPhone | 进行中 | 旧 v0.3.3 基线已通过；v0.4.0-abi.1 变更后需要重跑 |
 | 签名 iPad | 阻塞 | physical boot 与 command smoke |
 | 最低 Xcode 16 原生兼容 | 未开始 | 使用 Xcode 16 重跑 final-link 和 native behavior |
 | App lifecycle 与内存 | 未开始 | foreground/background、jetsam、failure injection、persistence |
@@ -97,17 +99,17 @@
 
 ### 剩余 runtime 执行顺序
 
-1. **发布关闭修复**
-   上游 soft-shutdown 与 root `/proc` 修复已合并；发布新 XCFramework，更新 PocketRoot pin 并重跑生命周期审查。
+1. **关闭新 pin**
+   final-link 与 Simulator smoke 已通过；完成 Codex CR、CI 与 PR 合并。
 
 2. **最低工具链**
    使用声明的 Xcode 16 重跑完整 final-link、RootFS install 和 native smoke。
 
-3. **Demo 注入**
-   在 command tool 完成后，把同一个 prepared system 注入 Agent、System、Commands 与 Diagnostics，不把 RootFS 放进默认 target。
-
-4. **故障与资源硬化**
+3. **故障与资源硬化**
    增加 Task cancellation、ENOSPC、power-loss、storage pressure、long output 与 memory peak。
+
+4. **暂停的 App 组合**
+   原生 Agent Loop/App 组合恢复后，再把 prepared system 接入 UI；不把 RootFS 放进默认 target。
 
 5. **iPad 真机基线**
    有签名 iPad 后重跑 prepare、boot、guest identity、streams、timeout、limit 和 failure recovery，并记录 Xcode/iPadOS/device/entitlement。

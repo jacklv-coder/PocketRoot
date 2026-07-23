@@ -46,7 +46,7 @@ The retry boundary depends on where boot failed:
 
 ## Already booted or restart required
 
-Centralize one prepared system and lifecycle owner. There is one iSH kernel per process. A boot after the native slot was consumed, or after an injected-driver shutdown returned and marked it terminated, produces `restartRequired`. The current real native shutdown exits the host process, and the current build cannot implement shutdown then boot; restart the host app.
+Centralize one prepared system and lifecycle owner. There is one iSH kernel per process. A boot after the native slot was consumed, or after either real native or injected-driver shutdown returned and marked it terminated, produces `restartRequired`. The current build intentionally cannot implement shutdown then boot; restart the host app.
 
 ## RootFS size/hash failure
 
@@ -67,7 +67,11 @@ A failed candidate intentionally preserves the old installation. Do not manually
 
 ## Invalid timeout or partial timeout output
 
-Timeout must be positive and no longer than 24 hours. Positive sub-millisecond values become 1 ms. It starts constraining the event-read loop only after synchronous `spawn` and `closeStdin` return. In pinned v0.3.3, control writes, terminate, and close may still block, so it is not an end-to-end watchdog for `execute()`. A timed-out result is returned only after an authoritative guest `EXITED` and can contain partial collected output; failed confirmation fails the runtime closed. Check `timedOut` first without assuming every native operation had the same deadline.
+Timeout must be positive and no longer than 24 hours. Positive sub-millisecond
+values become 1 ms. It constrains the event-read loop only after synchronous
+`spawn` and `closeStdin`. Native control queues are bounded, but this is still
+not an end-to-end `execute()` watchdog. A timed-out result requires an
+authoritative guest `EXITED` and may contain partial output.
 
 ## Output limit
 
@@ -77,9 +81,13 @@ Defaults are 8 MiB stdout and 4 MiB stderr. Overflow terminates the session and 
 
 The current runtime accepts one one-shot command. Queue requests in the application and wait before shutdown. Interactive multi-session support does not exist.
 
-## App exits during shutdown
+## Boot is rejected after shutdown
 
-Expected pinned behavior: guest halt reaches `_exit(0)` and terminates the host app. Avoid native shutdown unless the product intentionally wants that. See [ADR-001](Decisions/ADR-001-IshEmbed-Feasibility.md).
+This is the pinned v0.4.0-abi.1 single-lifecycle contract. Shutdown soft-halts,
+joins, and returns `.terminated`, but process-global iSH state prevents another
+boot in the same host process. Later calls return `restartRequired`; restart
+the host process for a new runtime. See
+[ADR-001](Decisions/ADR-001-IshEmbed-Feasibility.md).
 
 ## Smoke cannot find a Simulator
 
@@ -117,7 +125,7 @@ Verify the archive, Simulator boot, app install/launch, console output, storage,
 and report. Increase only the JSON-report wait with
 `POCKETROOT_SMOKE_TIMEOUT_SECONDS=600` when justified; this variable does not
 bound project generation, the build, Simulator boot, or the fixed 20-second
-post-report exit check. Missing reports and crashes are failures.
+post-report runner-cleanup check. Missing reports and crashes are failures.
 
 ## Local pass, CI failure
 

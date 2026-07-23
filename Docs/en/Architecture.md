@@ -84,7 +84,10 @@ A private zlib streaming primitive with expanded-byte limits and partial-output 
 
 ### PocketRootIshRuntime
 
-The Experimental mapping from Core's package-scoped runtime contract to pinned IshEmbed: fakefs preflight, process ownership, serial blocking execution, boot, bounded one-shot commands, stream/exit/signal mapping, and process-terminal shutdown.
+The Experimental mapping from Core's package-scoped runtime contract to pinned
+IshEmbed: fakefs preflight, process ownership, serial blocking execution, boot,
+bounded one-shot commands, stream/exit/signal mapping, and a returning
+single-lifecycle soft shutdown.
 
 ### PocketRootIshRuntimeIntegration
 
@@ -129,7 +132,10 @@ sequenceDiagram
     Runtime-->>App: command result
 ```
 
-The caller owns the archive before composition. Install and boot are separate. Native return alone is not ready: the configured identity gate must match first. One-shot output is bounded and is not an interactive session. Native shutdown is omitted from a returning flow because the pinned artifact exits the host process.
+The caller owns the archive before composition. Install and boot are separate.
+Native return alone is not ready: the configured identity gate must match
+first. One-shot output is bounded and is not an interactive session. Native
+shutdown returns `.terminated`, but the same host process cannot boot again.
 
 ## Concurrency
 
@@ -144,7 +150,19 @@ into the public contract. Each asynchronous refresh carries a monotonically
 increasing generation, so an older snapshot cannot resume later and overwrite
 a newer observation.
 
-The runtime uses a process ownership gate, lifecycle state transitions before suspension, one in-flight command, bounded native read waits, and independent Swift result limits. A direct not-running, protocol, or broken-pipe spawn failure closes the process gate and requires a host restart. After a session is spawned, pre-exit stdin/read/timeout/overflow failures request termination and require an authoritative `EXITED` event before another command is admitted; otherwise the process gate fails closed and a host restart is required. A negative synthetic exit from pinned supervisor rejection before guest creation is instead surfaced as a provenance-preserving recoverable error. The deadline is created only after synchronous `spawn` and `closeStdin` return. In the pinned v0.3.3 native transport, control writes, terminate, and close may still block, and the unread session inbox has no independent ceiling. `execute()` therefore has neither an end-to-end hard time bound nor complete host-process memory backpressure. Swift Task cancellation is not yet a complete native kill contract.
+The runtime uses process ownership, pre-suspension lifecycle transitions, one
+in-flight command, bounded reads, and Swift result limits. Direct not-running,
+protocol, or broken-pipe spawn failures close the process gate. Later
+stdin/read/request-timeout/product-overflow failures terminate and require
+authoritative `EXITED` confirmation. Wire v4 returns supervisor rejection and
+native backlog overflow as typed terminal errors. Guest exit 17 is valid; a
+negative `EXITED` is an integrity failure. Supervisor rejection remains
+recoverable; native backlog overflow closes the PocketRoot process gate because
+the void close ABI cannot prove whether cleanup escalated to instance
+fail-close. Native limits include a 4 MiB/4096 frame backlog per session and a
+4 MiB/256 frame total control budget. The PocketRoot deadline begins after
+synchronous `spawn` and `closeStdin`, so it is not yet end-to-end. Swift Task
+cancellation and sustained-load peak memory remain open.
 
 ## Lifecycle
 
@@ -159,13 +177,14 @@ stateDiagram-v2
     booting --> failed: boot or identity error
     ready --> ready: execute()
     ready --> shuttingDown: shutdown()
-    shuttingDown --> terminated: test/future returning driver
-    shuttingDown --> [*]: pinned native _exit(0)
+    shuttingDown --> terminated: soft-halt + bounded join returns
     failed --> [*]: restart host
     terminated --> [*]: restart host
 ```
 
-Execution requires ready. Active commands block shutdown. The pinned native shutdown exits the app, so Swift normally cannot observe terminated or boot again.
+Execution requires ready. Active commands block shutdown. Pinned native
+shutdown returns `.terminated`; process-global iSH state prevents another boot
+in the same host process.
 
 ## RootFS storage
 

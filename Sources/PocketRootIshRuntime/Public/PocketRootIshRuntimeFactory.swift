@@ -19,11 +19,10 @@ public enum PocketRootIshRuntimeFactory {
     @available(macOS 13.0, *)
     /// Creates the Experimental process-global native runtime.
     ///
-    /// - Important: At the pinned upstream revision, calling `shutdown()` on
-    ///   the returned system deliberately terminates the entire host App with
-    ///   `_exit(0)`. Native shutdown does not return to Swift. This product
-    ///   must remain opt-in until the host-process termination contract is
-    ///   accepted or replaced by a rebuilt upstream artifact.
+    /// - Important: Native shutdown now returns after soft-halting and joining
+    ///   the embedded kernel, but the process-global iSH state still permits
+    ///   only one boot/shutdown lifecycle. Create a new host process to boot
+    ///   again after the returned system reaches `.terminated`.
     public static func makeSystem(
         configuration: PocketRootConfiguration = PocketRootConfiguration(),
         runtimeConfiguration: PocketRootIshRuntimeConfiguration

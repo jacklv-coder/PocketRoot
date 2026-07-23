@@ -138,10 +138,10 @@ if [[ "$(plutil -extract success raw -o - "$REPORT_PATH")" != "true" ]]; then
     exit 1
 fi
 
-# The audited native shutdown path deliberately exits the host process. The
-# report is written immediately before requesting shutdown. `simctl --console`
-# stays attached until the App exits and propagates its status, so require both
-# prompt termination and a successful exit instead of accepting a crash.
+# Success is written only after native shutdown returned, `.terminated` was
+# observed, and a later command returned restartRequired. Stop the otherwise
+# idle smoke App explicitly; process exit is cleanup, not lifecycle evidence.
+xcrun simctl terminate "$DEVICE_UDID" "$BUNDLE_ID" >/dev/null 2>&1 || true
 APP_EXITED="false"
 for _ in $(seq 1 80); do
     if ! kill -0 "$SIMCTL_LAUNCH_PID" >/dev/null 2>&1; then
@@ -151,17 +151,11 @@ for _ in $(seq 1 80); do
     sleep 0.25
 done
 if [[ "$APP_EXITED" != "true" ]]; then
-    echo "Native shutdown did not terminate the smoke App process." >&2
+    echo "The verified smoke App did not stop during runner cleanup." >&2
     cat "$CONSOLE_LOG" >&2 || true
     exit 1
 fi
 
-set +e
-wait "$SIMCTL_LAUNCH_PID"
-LAUNCH_STATUS=$?
-set -e
+wait "$SIMCTL_LAUNCH_PID" >/dev/null 2>&1 || true
+SIMCTL_LAUNCH_PID=""
 cat "$CONSOLE_LOG"
-if [[ "$LAUNCH_STATUS" -ne 0 ]]; then
-    echo "Native smoke App exited with status $LAUNCH_STATUS." >&2
-    exit 1
-fi

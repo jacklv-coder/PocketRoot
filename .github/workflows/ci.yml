@@ -23,6 +23,12 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - name: Configure public package submodule checkout
+        run: |
+          git config --global \
+            url."https://github.com/".insteadOf \
+            "ssh://git@ssh.github.com:443/"
+
       - name: Validate bilingual documentation
         run: ./Scripts/check-docs.sh
 

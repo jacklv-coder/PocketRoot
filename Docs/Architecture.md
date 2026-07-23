@@ -152,7 +152,7 @@ tar 解析、路径策略和 fakefs 校验仍由 Swift 层负责。
 - fakefs 启动前检查；
 - 进程级 ownership gate；
 - 阻塞原生调用串行执行；
-- boot、一次性命令和进程终止式 shutdown；
+- boot、一次性命令和返回 Swift 的 single-lifecycle soft shutdown；
 - shell、环境、cwd、timeout、stream、exit 和 signal 映射；
 - stdout/stderr 独立上限。
 
@@ -232,7 +232,7 @@ sequenceDiagram
 - 安装完成不代表 native runtime 已启动。
 - native boot 返回也不单独代表 ready；内置 identity gate 必须匹配配置。
 - 一次性命令收集有界输出；不是交互 session。
-- shutdown 未画入正常返回流程，因为固定上游会结束宿主进程。
+- shutdown 会正常返回 `.terminated`，但同一宿主进程不能再次 boot。
 
 ## 6. 并发模型
 
@@ -259,9 +259,16 @@ IshEmbed 暴露同步、进程级 API。adapter 使用：
 - `commandInFlight`：同一 runtime 只允许一个 one-shot；
 - bounded poll：native read 最长约 250 ms 后回到 deadline 检查；
 - stdout/stderr limits：超限终止 session。
-- 退出确认：session 建立后的 stdin/read/timeout/超限错误先终止并确认可信 `EXITED`；无法确认时失败关闭整个进程 gate。固定 supervisor 在创建 guest 前拒绝命令时返回的负数合成 exit 作为保留来源的可恢复错误处理。
+- 退出确认：session 建立后的 stdin/read/timeout/产品超限错误先终止并确认可信
+  `EXITED`；无法确认时失败关闭整个进程 gate。v4 supervisor rejection 是可恢复的
+  类型化 terminal error；native backlog overflow 虽会请求有界清理，但 void close 无法
+  证明是否升级为 instance fail-close，因此 PocketRoot 会保守关闭 process gate。
 
-这些机制避免并发 boot、命令越过 shutdown，并限制 session 建立后 event-read loop 的等待和 Swift 已收集结果的大小。spawn 直接返回 not-running、protocol 或 broken-pipe 会关闭 process gate 并要求重启宿主。deadline 在同步 `spawn` 与 `closeStdin` 返回后才创建；当前固定 v0.3.3 native transport 的 control write、terminate、close 仍可能阻塞，未读 session inbox 也没有独立容量上限。因此当前不能宣称 `execute()` 具有端到端硬时间界限或整个宿主进程具备完整内存背压。Swift Task cancellation 也尚未成为完整 native kill 契约。
+这些机制避免并发 boot、命令越过 shutdown，并限制 event-read wait、Swift 结果、
+每 session 4 MiB/4096 帧 native backlog 和 4 MiB/256 帧 control 总预算。spawn 直接
+返回 not-running、protocol 或 broken-pipe 会关闭 process gate。deadline 在同步 `spawn`
+与 `closeStdin` 后创建，所以尚不是完整端到端命令界限；Swift Task cancellation、持续
+负载峰值内存和 jetsam 也仍是开放门禁。
 
 ## 7. 生命周期
 
@@ -275,8 +282,7 @@ stateDiagram-v2
     booting --> failed: boot or identity error
     ready --> ready: execute()
     ready --> shuttingDown: shutdown()
-    shuttingDown --> terminated: returning test/future driver
-    shuttingDown --> [*]: pinned native _exit(0)
+    shuttingDown --> terminated: soft-halt + bounded join returns
     failed --> [*]: restart host app
     terminated --> [*]: restart host app
 ```
@@ -286,7 +292,7 @@ stateDiagram-v2
 - `execute` 只在 `ready` 接受。
 - boot 失败但已经占用全局进程时，通常必须重启宿主 App。
 - active command 存在时拒绝 shutdown。
-- 固定 native shutdown 结束整个进程；Swift 通常看不到 `terminated`。
+- 固定 native shutdown 返回 `.terminated`；同进程仍不能再次 boot。
 - “shutdown 后 boot” 不是当前能力。
 - 默认 placeholder 的 shutdown 只保持 idle，不代表 native shutdown 语义。
 

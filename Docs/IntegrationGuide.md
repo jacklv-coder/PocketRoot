@@ -5,7 +5,9 @@
 本指南描述当前公开 API 的真实行为。它区分安全默认产品、显式 agent 产品和实验性 iSH 产品，并给出从本地 RootFS 到一次性命令结果的完整闭环。
 
 > [!CAUTION]
-> 固定的 IshEmbed 版本在 `shutdown()` 中最终调用 `_exit(0)`。在真实 iOS 构建中，`prepared.system.shutdown()` 会直接结束整个宿主 App，正常情况下不会返回 Swift。不要把它放在页面退出、scene 切换、deinit 或普通清理路径中。
+> 固定的 `v0.4.0-abi.1` 会 soft-halt 并 join embedded kernel，然后从
+> `prepared.system.shutdown()` 返回 Swift。成功后同一宿主进程不能再次 boot；不要把它
+> 放在页面退出、scene 切换、deinit 或无意触发的普通清理路径中。
 
 ## 1. 选择 Swift Package 产品
 
@@ -221,7 +223,7 @@ guard await system.state == .ready else {
 
 `boot()` 在原生 boot 返回后自动执行固定的 post-boot identity command。`healthCheck` 省略或为 `nil` 时，只有精确的内置 `.ishEmbedV0_3_3` manifest 会自动选择同名健康配置，并严格要求 `aarch64`、`alpine` 和 `3.19.1`；自定义 manifest 默认使用不固定版本的 `.alpineARM64`，应显式传入与已审查 RootFS 对应的版本配置。架构、OS ID 和可选版本必须是非空且不含 NUL 的字符串，timeout 必须在 `(0, 60]` 秒，guest `workDirectory` 必须是无 NUL 的绝对路径；可选 `supervisorGuestPath` 也不能含 NUL，且会在占用进程槽位和进入原生 boot 前校验。
 
-健康命令有独立的 4 KiB stdout/stderr 上限；`os-release` 作为数据由 Swift 解析，工作目录通过 argv 传入并以双方 `pwd -P` 结果比较，因此路径别名不会误判且预期值不会被插入 shell。失败发生在 native boot 之后时，runtime 保守进入 `.failed` 并消耗进程级槽位，必须重启宿主 App。该门禁是已验证 RootFS 内基础信息与命令上下文的一致性检查，不是独立的来源/安全证明，也不证明业务工具、网络或数据健康；固定 v0.3.3 transport 的同步 control write 也仍可能让检查超出配置 timeout。
+健康命令有独立的 4 KiB stdout/stderr 上限；`os-release` 作为数据由 Swift 解析，工作目录通过 argv 传入并以双方 `pwd -P` 结果比较，因此路径别名不会误判且预期值不会被插入 shell。失败发生在 native boot 之后时，runtime 保守进入 `.failed` 并消耗进程级槽位，必须重启宿主 App。该门禁是已验证 RootFS 内基础信息与命令上下文的一致性检查，不是独立的来源/安全证明，也不证明业务工具、网络或数据健康。native control queue 已有界，但健康 timeout 仍在 spawn/closeStdin 后开始，不是完整端到端 deadline。
 
 IshEmbed 是进程级单例。即使创建多个 `PocketRootSystem`，同一个 App 进程中也只有一个对象能获得原生 runtime ownership。
 
@@ -259,9 +261,16 @@ print(result.stderr)
 - timeout 必须大于 0 且不超过 24 小时。
 - 大于 0 但不足 1 毫秒的 timeout 会提升为 1 毫秒，避免上游把 0 毫秒解释为无限等待。
 - session 建立并关闭 stdin 后，event-read loop 才开始计算 timeout；到期时尝试终止 session，成功返回时包含 `timedOut == true` 和已经收集的输出。
-- 当前固定 v0.3.3 的 `spawn`、control write、terminate 和 close 仍可能阻塞，所以请求 timeout 不是整个 `execute()` 的端到端 watchdog；在原生 transport 硬化完成前只能把它当作实验性 read-loop deadline。
+- native control queue、session backlog 与 lifecycle reserve 已有界；请求 timeout 仍在
+  `spawn`/`closeStdin` 后开始，所以不是整个 `execute()` 的端到端 watchdog。
 - command、cwd 和 environment key/value 不能包含 NUL；environment key 还必须非空且不含 `=`。这些输入在进入 native driver 前校验，避免 C 字符串静默截断。
-- spawn 直接返回 not-running、protocol 或 broken-pipe 时，PocketRoot 无法证明原生 transport 与 guest 状态，runtime 会立即失败关闭。session 建立后的关闭 stdin、非 timeout 读取、timeout 或输出超限错误都会先终止 session；只有观察到可信 guest `EXITED` 才会恢复为 `ready`。固定 supervisor 在创建 guest 前拒绝 spawn 时会产生负数合成 exit，PocketRoot 将其作为保留来源的可恢复 runtime error，而不是 guest 退出码。固定 v0.3.3 用 `(exitCode: 17, signal: 0)` 同时表示 transport broken pipe，该歧义组合会显式请求终止后失败关闭；终止或退出确认失败也会把 runtime 锁定为 `failed`，后续启动要求重启宿主进程。
+- spawn 直接返回 not-running、protocol 或 broken-pipe 时，PocketRoot 无法证明
+  transport 与 guest 状态，runtime 会立即失败关闭。session 建立后的关闭 stdin、非
+  timeout 读取、请求 timeout 或产品输出超限都会终止并确认退出。v4 transport 将
+  supervisor rejection、broken pipe 与 native backlog overflow 作为类型化错误；
+  guest `exit 17` 是合法结果，负数 `EXITED` 是协议完整性失败。native backlog overflow
+  会请求有界 session 清理并保留 byte/frame 来源，但 void `session.close()` 无法向 Swift
+  证明是否升级成 instance fail-close，所以 PocketRoot 会终结 process gate 并要求重启。
 - `mergeStandardError == true` 时 stderr 合并到 stdout，`standardError` 为空。
 - 默认 stdout 上限 8 MiB，stderr 上限 4 MiB；通过 `prepareSystem` 参数调整。
 - 超过输出上限会终止 session，并抛出 `PocketRootError.commandOutputLimitExceeded`。
@@ -301,7 +310,7 @@ print(result.stderr)
 | `.booting` | 原生启动进行中 |
 | `.ready` | 可接受一次性命令 |
 | `.shuttingDown` | 关闭已开始，不接受新操作 |
-| `.terminated` | 只在测试 driver 或未来 soft shutdown 返回时可观察 |
+| `.terminated` | v0.4.0-abi.1 soft shutdown 成功返回；同进程不能再次 boot |
 | `.failed(String)` | 启动或关闭失败，通常需要重启宿主 App |
 
 ### 错误
@@ -346,20 +355,18 @@ RootFS 安装阶段还可能抛出：
 当前真实 iOS 路径：
 
 ```swift
-// 只在产品明确希望结束整个 App 进程时调用。
+// 等待所有命令结束后显式关闭这一进程唯一的 iSH lifecycle。
 try await system.shutdown()
-
-// 固定上游版本通常不会执行到这里。
+assert(await system.state == .terminated)
 ```
 
 重要约束：
 
 - 关闭前必须等待在途一次性命令结束。
-- 原生 `shutdown()` 最终关闭 guest PID 1，并通过 `_exit(0)` 结束宿主 App。
+- 原生 `shutdown()` 关闭 guest PID 1、soft-halt kernel、bounded join 后返回 Swift。
 - 当前不能做 “shutdown 后 boot”。
-- 不要在 background、scene disconnect 或 ViewController 生命周期里自动调用。
-- 如果产品不能接受整个 App 退出，应暂时不调用真实 shutdown，并等待 soft-shutdown artifact。
-- iOS 不鼓励应用自行终止；该行为也是默认集成和发行门禁之一。
+- 不要在 background、scene disconnect 或 ViewController 生命周期里无意自动调用。
+- shutdown 返回后可以完成宿主资源清理，但若还需要 Linux runtime，必须新建宿主进程。
 
 ## 8. 尚未支持的会话 API
 
@@ -419,7 +426,7 @@ navigationController?.pushViewController(
 - [ ] RootFS 获取、许可和存储策略由 App 明确负责。
 - [ ] `prepareSystem`、内置 boot identity gate 和业务专属健康检查按顺序执行。
 - [ ] 每个命令有正数 timeout，并处理非零 exit、signal、timeout 和输出超限。
-- [ ] 产品明确接受或避免进程终止式 `shutdown()`。
+- [ ] 产品接受 shutdown 后同一宿主进程不能再次 boot 的单 lifecycle 契约。
 - [ ] 没有把 Simulator 结果当作真机或发行结论。
 - [ ] 发布前完成[发行与合规](ReleaseCompliance.md)中的全部阻塞项。
 

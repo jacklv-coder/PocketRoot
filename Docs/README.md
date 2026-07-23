@@ -84,8 +84,8 @@
 | --- | --- | --- |
 | 实验性 | Experimental | 表示必须显式启用且不具备发行承诺 |
 | 一次性命令 | one-shot command | 启动子进程、收集有界输出并等待退出 |
-| 进程终止式关闭 | process-terminal shutdown | 关闭 guest 时同时结束宿主 App |
-| 软关闭 | soft shutdown | 未来不结束宿主进程的实现 |
+| 单生命周期关闭 | single-lifecycle shutdown | soft shutdown 返回，但同一宿主进程不能再次 boot |
+| 软关闭 | soft shutdown | 不结束宿主进程、完成原生线程清理后返回 Swift |
 | 最终链接 | final link | 生成可执行 App，区别于只生成静态归档 |
 | 制品 | artifact | XCFramework、RootFS 等外部输入 |
 | `arm64` | `arm64` | Apple 平台构建架构 |

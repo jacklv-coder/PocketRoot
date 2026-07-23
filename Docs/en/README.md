@@ -80,8 +80,8 @@ See the [roadmap](Roadmap.md) for the current status.
 | --- | --- | --- |
 | 实验性 | Experimental | Requires explicit opt-in and carries no distribution commitment |
 | 一次性命令 | one-shot command | Starts a child process, collects bounded output, and waits for exit |
-| 进程终止式关闭 | process-terminal shutdown | Shutting down the guest also terminates the host App process |
-| 软关闭 | soft shutdown | A future shutdown implementation that preserves the host process |
+| 单生命周期关闭 | single-lifecycle shutdown | Soft shutdown returns, but the same host process cannot boot again |
+| 软关闭 | soft shutdown | Preserves the host process and returns after native cleanup |
 | 最终链接 | final link | Produces an executable App rather than only a static archive |
 | 制品 | artifact | An external input such as an XCFramework or RootFS |
 | `arm64` | `arm64` | Apple-platform build architecture |

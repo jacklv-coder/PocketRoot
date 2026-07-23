@@ -125,7 +125,7 @@ native process slot，就不能再次 boot。IshEmbed 是进程级单例，多�
 表示当前宿主进程不能再次启动 native runtime，常见原因：
 
 - native driver boot 在占用 process-global 槽位后失败；
-- injected driver 的 shutdown 已返回并将 process gate 标记为 terminated（当前真实 native shutdown 会直接结束宿主进程）；
+- 当前真实 native shutdown 或 injected driver 的 shutdown 已返回，并将 process gate 标记为 terminated；
 - 其他 system 已终结全局 iSH 实例，当前 system 看到的 process gate 已是 terminated。
 
 当前解决方式是重新启动宿主 App。不要实现 `shutdown(); boot()`。
@@ -192,7 +192,9 @@ timeout 必须：
 
 0、负数或超过 86,400 秒会抛 `invalidCommandRequest`。正数但不足 1 毫秒会 clamp 到 1 毫秒。
 
-该 timeout 在同步 `spawn` 和 `closeStdin` 返回后才开始约束 event-read loop。当前固定 v0.3.3 的 control write、terminate 和 close 仍可能阻塞，因此它不是整个 `execute()` 的端到端 watchdog。若表现为 session 尚未建立就一直等待，应优先检查原生 control transport，而不是只增大 timeout。
+该 timeout 在同步 `spawn` 和 `closeStdin` 返回后才开始约束 event-read loop。native
+control queue 已有界，但请求 timeout 仍不是整个 `execute()` 的端到端 watchdog。
+若问题发生在 session 建立前，应检查 spawn/control 状态，而不是只增大 timeout。
 
 使用明确边界：
 
@@ -231,11 +233,12 @@ adapter 会终止当前 session 并抛 typed error。解决方向：
 
 等待当前 `execute` 返回后再 shutdown。PocketRoot 故意禁止 shutdown 越过仍在读写的 native session。
 
-## 调用 shutdown 后 App 立即退出
+## shutdown 返回后无法再次 boot
 
-这是固定上游的已知、已记录行为，不是普通 Swift crash。guest PID 1 halt 最终调用 `_exit(0)`。
-
-当前不要在常规 UI 或 App lifecycle cleanup 中调用。若产品不能接受宿主进程退出，只能避免调用并等待 soft-shutdown rebuild。参见 [ADR-001](Decisions/ADR-001-IshEmbed-Feasibility.md)。
+这是固定 `v0.4.0-abi.1` 的 single-lifecycle 契约。shutdown 会 soft-halt/join 并返回
+`.terminated`，但 iSH 进程级全局状态不允许同一宿主进程再次 boot；后续调用会得到
+`restartRequired`。需要新 runtime 时重启宿主进程。参见
+[ADR-001](Decisions/ADR-001-IshEmbed-Feasibility.md)。
 
 ## smoke 找不到 iOS 18 Simulator
 
@@ -289,7 +292,7 @@ runner 在成功或失败退出时默认卸载已安装的 smoke App，从而删
 - App Documents 中的 `pocketroot-smoke-result.json`；
 - 宿主磁盘和 Simulator storage。
 
-临时提高 App 启动后的 JSON report 等待时间（不影响工程生成、构建、Simulator boot，也不改变 report 后固定 20 秒的退出检查）：
+临时提高 App 启动后的 JSON report 等待时间（不影响工程生成、构建、Simulator boot，也不改变 report 后固定 20 秒的 runner 清理检查）：
 
 ```bash
 POCKETROOT_SMOKE_TIMEOUT_SECONDS=600 \

@@ -95,7 +95,7 @@ The current code does not provide a complete product-level privacy policy.
 - [ ] Scan entitlements, private APIs, JIT behavior, and exported archives.
 - [ ] Record a written Guideline 2.5.2 disposition.
 - [ ] Review privacy manifests, networking, and data retention.
-- [ ] Decide whether process-terminal shutdown is an acceptable product contract.
+- [x] Record the returning soft-shutdown and no-reboot-in-process single-lifecycle contract.
 
 ### Delivery material
 

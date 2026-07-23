@@ -5,7 +5,10 @@
 PocketRoot 是面向 iOS 的可嵌入 ARM64 Linux 运行时、终端与上层轻量 agent 基础设施。项目使用 Swift Package 提供模块化 API，以 iSH/IshEmbed 作为实验性运行时，在 iOS 沙箱中安装经过校验的 Alpine fakefs，并执行有边界的一次性 shell 命令。
 
 > [!WARNING]
-> 真实 iSH 集成目前仍是 **实验性（Experimental）** 能力。固定的上游版本在调用 `shutdown()` 时会执行 `_exit(0)`，直接结束整个宿主 App，且不会返回 Swift。当前版本不得用于生产、TestFlight 或公开二进制分发。
+> 真实 iSH 集成目前仍是 **实验性（Experimental）** 能力。固定的
+> `v0.4.0-abi.1` 已支持返回 Swift 的 soft shutdown，但每个宿主进程仍只允许一次有效
+> boot/shutdown；iPad、最低 Xcode、持续负载和发行合规门禁尚未闭环。当前版本不得用于
+> 生产、TestFlight 或公开二进制分发。
 
 ## 当前能做什么
 
@@ -44,8 +47,8 @@ flowchart LR
 - RootFS 在私有、同卷 staging 中解包；校验通过后，通过文件型 journal 保护的多步同卷 rename 完成可恢复、可回滚的 promotion。每次 rename 和记录写入各自具有原子性，但整个替换流程不是一次整体原子操作；当前未显式 `fsync` 文件和目录，因此不承诺突然掉电时的持久性。
 - IshEmbed 是进程级单例；PocketRoot 只允许一个原生运行时所有者和一个在途命令。
 - 同步原生调用在串行阻塞队列中执行，不阻塞主线程和 Swift cooperative executor。
-- `boot()` 只有在固定 post-boot 命令验证 guest 架构、Alpine 身份和命令上下文后才报告 `ready`；默认 v0.3.3 组合还严格要求 Alpine `3.19.1`。
-- session 建立后的 event-read loop 使用 deadline，Swift 已收集的 stdout/stderr 有产品配额；pre-exit 错误必须先确认可信 `EXITED` 才允许继续执行，否则 runtime 失败关闭并要求重启宿主。spawn 直接报告 not-running、protocol 或 broken-pipe 也视为 transport 已不可信并失败关闭。supervisor 在 guest 创建前拒绝命令的负数合成状态会保留为可恢复错误；固定 v0.3.3 的 `(exitCode: 17, signal: 0)` 与 transport broken pipe 有歧义，因此显式清理后失败关闭。当前原生 transport 的 spawn/control/terminate/close 仍可能阻塞，未读 inbox 也无独立上限，因此端到端时间界限和完整内存背压仍是开放门禁。
+- `boot()` 只有在固定 post-boot 命令验证 guest 架构、Alpine 身份和命令上下文后才报告 `ready`；内置 v0.3.3 RootFS 清单还严格要求 Alpine `3.19.1`。
+- session 建立后的 event-read loop 使用 deadline，Swift 结果有独立 stdout/stderr 配额；新 native transport 另有每 session 4 MiB/4096 帧输出积压、4 MiB/256 帧 control 总预算及 lifecycle reserve。supervisor/transport failure 以类型化错误返回，正常 guest `exit 17` 不再与 broken pipe 混淆。PocketRoot 对无法确认 guest 已退出的路径仍失败关闭；请求 timeout 目前从 session 建立后开始，因此仍不是覆盖此前 spawn/closeStdin 的端到端命令 deadline。
 
 完整实现见[架构说明](Docs/Architecture.md)、[实现原理](Docs/Implementation.md)和 [RootFS 安全方案](Docs/RootFS.md)。
 
@@ -132,10 +135,10 @@ print("stderr:", result.stderr)
 1. `archiveURL` 必须指向调用方已经获得并完成授权审查的本地普通文件。
 2. `prepareSystem` 只校验、安装并组合系统；它不会下载 RootFS，也不会启动运行时。
 3. 安装器在 `applicationSupportURL/rootfs/<version>` 下直接保存 `meta.db`、`data/` 和 `.pocketroot-rootfs.json`，不会再保留一层 `fs/`。版本目录和安装记录有效时即可复用；`current.json` 缺失或不匹配会在复用时修复。
-4. `boot()` 必须显式调用；它会在同一原生串行队列执行默认健康门禁，固定 v0.3.3 factory 只有观察到 `aarch64`、Alpine `3.19.1` 和配置的 guest 工作目录后才返回 `ready`。
+4. `boot()` 必须显式调用；它会在同一原生串行队列执行默认健康门禁，内置 v0.3.3 RootFS 清单只有观察到 `aarch64`、Alpine `3.19.1` 和配置的 guest 工作目录后才返回 `ready`。
 5. 命令通过 `/bin/sh -lc` 执行，所以 `command` 是 shell 字符串，而不是无 shell 解析的 argv API。
 6. 每个请求独立设置工作目录、环境变量、超时和 stderr 合并策略。
-7. 真实 `shutdown()` 会结束整个宿主 App；不要把它用于页面消失、场景切换或普通资源清理。
+7. 真实 `shutdown()` 会 soft-halt 并 join 原生 kernel 后返回；成功后状态为 `.terminated`，同一宿主进程不能再次 boot。
 8. 公共调用结束后只发布稳定 state；失败关闭会公开 `.failed`，重入调用不会泄漏 runtime 内部过渡态，旧的异步快照也不能覆盖较新的失败状态。
 
 完整的依赖选择、错误处理和生命周期约束见[应用接入指南](Docs/IntegrationGuide.md)。
@@ -172,7 +175,7 @@ POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
   ./Scripts/run-runtime-device-smoke.sh
 ```
 
-两个 smoke runner 都要求 Apple Silicon 和精确匹配固定清单的本地归档；前者使用 iOS 18 Simulator，后者要求已配对、已启用 Developer Mode 且可开发签名的 iOS 18+ 真机。它们验证 RootFS 准备、启动、guest 身份、命令上下文、输出、退出码、超时恢复、输出上限恢复和进程终止式关闭。详细矩阵见[测试与验证](Docs/Testing.md)。
+两个 smoke runner 都要求 Apple Silicon 和精确匹配固定清单的本地归档；前者使用 iOS 18 Simulator，后者要求已配对、已启用 Developer Mode 且可开发签名的 iOS 18+ 真机。它们验证 RootFS 准备、启动、guest 身份、命令上下文、输出、退出码、超时恢复、输出上限恢复和返回 Swift 的 soft shutdown。详细矩阵见[测试与验证](Docs/Testing.md)。
 
 ## 文档导航
 

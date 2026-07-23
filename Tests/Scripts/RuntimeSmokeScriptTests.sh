@@ -4,6 +4,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 PARSER="$ROOT_DIR/Scripts/select-ios18-simulator-runtime.awk"
+SIMULATOR_RUNNER="$ROOT_DIR/Scripts/run-runtime-smoke.sh"
 DEVICE_RUNNER="$ROOT_DIR/Scripts/run-runtime-device-smoke.sh"
 
 assert_runtime() {
@@ -33,7 +34,7 @@ assert_runtime \
 assert_runtime "" \
   "iOS 17.5 (17.5 - 21F79) - com.apple.CoreSimulator.SimRuntime.iOS-17-5"
 
-bash -n "$ROOT_DIR/Scripts/run-runtime-smoke.sh"
+bash -n "$SIMULATOR_RUNNER"
 bash -n "$DEVICE_RUNNER"
 
 if ! grep -Fq -- "-allowProvisioningDeviceRegistration" "$DEVICE_RUNNER"; then
@@ -62,6 +63,16 @@ fi
 if ! grep -Fq -- 'REPORT_DEADLINE=$((SECONDS + SMOKE_TIMEOUT_SECONDS))' "$DEVICE_RUNNER" \
   || ! grep -Fq -- '--timeout "$COPY_TIMEOUT_SECONDS"' "$DEVICE_RUNNER"; then
     echo "Physical-device report polling does not use one bounded deadline." >&2
+    exit 1
+fi
+
+if ! grep -Fq -- 'Success is written only after soft shutdown returned' "$DEVICE_RUNNER"; then
+    echo "Physical-device runner does not require post-shutdown success evidence." >&2
+    exit 1
+fi
+
+if ! grep -Fq -- 'simctl terminate "$DEVICE_UDID" "$BUNDLE_ID" >/dev/null 2>&1 || true' "$SIMULATOR_RUNNER"; then
+    echo "Simulator runner cleanup is not best-effort after durable success." >&2
     exit 1
 fi
 

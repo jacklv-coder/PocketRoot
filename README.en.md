@@ -8,7 +8,7 @@ install a verified Alpine fakefs and, through the Experimental iSH/IshEmbed
 adapter, execute bounded one-shot shell commands inside the iOS sandbox.
 
 > [!WARNING]
-> Native iSH integration is **Experimental**. The pinned upstream build calls `_exit(0)` during `shutdown()`, terminating the entire host app without returning to Swift. This version is not approved for production, TestFlight, or public binary distribution.
+> Native iSH integration is **Experimental**. Pinned `v0.4.0-abi.1` has a soft shutdown that returns to Swift, but each host process still permits only one valid boot/shutdown lifecycle. iPad, minimum-Xcode, sustained-load, and distribution gates remain open. This version is not approved for production, TestFlight, or public binary distribution.
 
 ## Capability status
 
@@ -49,8 +49,8 @@ Design principles:
 - Extraction occurs in private same-volume staging. An on-disk journal protects the multi-step, same-volume rename promotion so it can recover or roll back. Each rename and record write is atomic on its own, but the sequence is not one atomic operation. Files and directories are not explicitly `fsync`ed, so sudden-power-loss durability is not promised.
 - IshEmbed is process-global: one native owner and one in-flight command.
 - Synchronous native work runs on a serial blocking executor away from the main and Swift cooperative executors.
-- `boot()` reports `ready` only after a fixed post-boot command verifies guest architecture, Alpine identity, and command context. The default v0.3.3 composition also requires Alpine `3.19.1` exactly.
-- The event-read loop uses a deadline after session establishment, and Swift applies product budgets to collected stdout/stderr. Pre-exit failures must confirm an authoritative `EXITED` before another command is admitted; otherwise the runtime fails closed and requires a host restart. A direct not-running, protocol, or broken-pipe spawn failure also marks the transport untrustworthy and fails closed. Negative synthetic states from supervisor rejection before guest creation remain recoverable provenance-preserving errors. Pinned v0.3.3 makes `(exitCode: 17, signal: 0)` ambiguous with transport broken pipe, so that pair explicitly cleans up and fails closed. Native spawn/control/terminate/close may still block and the unread inbox has no independent ceiling, so end-to-end time bounds and complete memory backpressure remain open gates.
+- `boot()` reports `ready` only after a fixed post-boot command verifies guest architecture, Alpine identity, and command context. The built-in v0.3.3 RootFS manifest also requires Alpine `3.19.1` exactly.
+- The event-read loop uses a post-establishment deadline and Swift stdout/stderr budgets. The native transport adds a 4 MiB/4096-frame output backlog per session, a 4 MiB/256-frame total control budget, and lifecycle reserve. Supervisor and transport failures are typed, so a normal guest exit 17 is no longer confused with broken pipe. PocketRoot still fails closed when guest exit cannot be proven. The request timeout starts after spawn/closeStdin and is therefore not yet an end-to-end command deadline.
 
 See [Architecture](Docs/en/Architecture.md), [Implementation](Docs/en/Implementation.md), and [RootFS Security](Docs/en/RootFS.md).
 
@@ -128,10 +128,10 @@ Contract:
 1. `archiveURL` is a caller-owned reviewed local regular file.
 2. Preparation verifies, installs, and composes; it does not download or boot.
 3. `applicationSupportURL/rootfs/<version>` directly contains `meta.db`, `data/`, and `.pocketroot-rootfs.json`; there is no retained `fs/` layer. A valid version directory and installation record can be reused even when `current.json` is missing or mismatched; reuse repairs it.
-4. Boot is explicit and runs the default health gate on the same serial native executor. The pinned v0.3.3 factory returns `ready` only after observing `aarch64`, Alpine `3.19.1`, and the configured guest working directory.
+4. Boot is explicit and runs the default health gate on the same serial native executor. The built-in v0.3.3 RootFS manifest returns `ready` only after observing `aarch64`, Alpine `3.19.1`, and the configured guest working directory.
 5. Commands run through `/bin/sh -lc` and are shell strings, not argv-safe APIs.
 6. Each request owns cwd, environment, timeout, and stderr policy.
-7. Native shutdown ends the entire host app; never use it for routine view/scene cleanup.
+7. Native shutdown soft-halts and joins the kernel before returning. It publishes `.terminated`, and the same host process cannot boot again.
 8. Completed public calls publish only stable states. Fail-close exposes `.failed`; reentrant calls cannot leak internal transitions, and older asynchronous snapshots cannot overwrite a newer failure.
 
 See the [Integration Guide](Docs/en/IntegrationGuide.md).
@@ -168,7 +168,7 @@ POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
   ./Scripts/run-runtime-device-smoke.sh
 ```
 
-Both native runners require Apple Silicon and the exact local archive. The first uses an iOS 18 Simulator; the second requires a paired iOS 18+ physical device with Developer Mode and development signing. They cover preparation, guest identity, command context, streams, exit, timeout/output-limit recovery, and process-terminal shutdown. See [Testing](Docs/en/Testing.md).
+Both native runners require Apple Silicon and the exact local archive. The first uses an iOS 18 Simulator; the second requires a paired iOS 18+ physical device with Developer Mode and development signing. They cover preparation, guest identity, command context, streams, exit, timeout/output-limit recovery, and soft shutdown that returns to Swift. See [Testing](Docs/en/Testing.md).
 
 ## Documentation
 

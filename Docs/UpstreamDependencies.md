@@ -2,203 +2,132 @@
 
 [简体中文](UpstreamDependencies.md) | [English](en/UpstreamDependencies.md) | [文档中心](README.md)
 
-本文是 PocketRoot 实验性 runtime **不可变 revision、nested gitlink、制品 URL、大小和 SHA-256 的权威且唯一事实源**。其他文档为便于接入、安全核验或故障排查而复制的数值只是本文的引用快照；如有冲突，以本文和 committed manifest 为准。branch、未验证 tag、moving release alias 和本地缓存不能作为有效 pin。
+本文是 PocketRoot 实验性 runtime 的不可变 revision、nested gitlink、制品 URL、大小和
+SHA-256 的唯一事实源。branch、moving tag、未验证 release alias 和本地缓存都不是有效 pin。
 
-审核日期：2026-07-21
+审核日期：2026-07-23
 
 ## 1. IshEmbed Swift Package
 
 | 字段 | 审核值 |
 | --- | --- |
-| 使用的仓库 | `https://github.com/jacklv-coder/ish-arm64-pkg.git` |
-| Fork parent | `https://github.com/Lolendor/ish-arm64-pkg.git` |
-| 完整 revision | `6f96f02c71830914c2a608258a26a8ef0833d026` |
-| Parent release 对应 | `v0.3.3` peeled commit |
-| 审核时 fork tags | 无 |
-| 审核时 fork releases | 无 |
+| 仓库 | `https://github.com/jacklv-coder/ish-arm64-pkg.git` |
+| 完整 revision | `41e5c0a8b215c18239308c787a4a4de53d685076` |
+| Release | `v0.4.0-abi.1`（prerelease） |
+| Tag peeled commit | `4e311bcea4fe806491e76a23c0e4caeeb1c513bf` |
 | Swift product | `IshEmbed` |
-| Manifest platform | iOS 14、macOS 12 |
-| 实际 native binary support | iOS arm64 device、arm64 Simulator |
+| Manifest platform | iOS 18.0 |
+| Native slices | iOS arm64 device、arm64 Simulator |
 | 系统链接依赖 | `sqlite3` |
 
-`Package.swift` 使用完整 revision：
+`Package.swift` 与 `Package.resolved` 都固定完整 revision：
 
 ```swift
 .package(
     url: "https://github.com/jacklv-coder/ish-arm64-pkg.git",
-    revision: "6f96f02c71830914c2a608258a26a8ef0833d026"
+    revision: "41e5c0a8b215c18239308c787a4a4de53d685076"
 )
 ```
 
-该 revision 与 parent `v0.3.3` peeled commit 相同。审核时用户 fork 没有 tag 或 release，因此不能对该 fork 使用 `from: "0.3.3"`。
+消费 revision 是 `v0.4.0-abi.1` 发布后的 package 元数据修复提交：把
+`third_party/ish` 从相对 URL 改为绝对 SSH-over-443 URL，并为无 SSH 私钥的 GitHub
+CI 使用公开 HTTPS 只读重写。它没有修改 `Package.swift` 的 binary URL/checksum；
+Release tag 仍固定到 `4e311bcea4fe806491e76a23c0e4caeeb1c513bf`，因此消费的原生
+XCFramework 与对应源码资产均未变化。
 
-固定 fork 仍从 parent repository 的 `v0.3.3` GitHub Release 下载 binary target。fork Git source 并没有镜像 release asset，仓库内 release script 也硬编码 parent repository。当前依赖已固定，但尚未自托管。
-
-### 已合并但尚未进入消费链的候选
-
-2026-07-22，用户 fork 的原生 ABI 过渡已合并到 `ish-arm64-pkg/main`：
-
-| 字段 | 候选值 |
-| --- | --- |
-| package main commit | `d63dfc9018369ffd60fc6bf442f0d2529fc5df25` |
-| nested iSH gitlink | `576ffaf2574310b5fb2d148aab39ddcd2b8fe67d` |
-| package PR | `jacklv-coder/ish-arm64-pkg#1` |
-| iSH PR | `jacklv-coder/ish-arm64#2` |
-| 状态 | 源码与 CI 已合并；无 tag、release 或可供 PocketRoot 固定的新 XCFramework |
-
-该候选加入有界 native 队列、session 生命周期、内容寻址 supervisor 校验、join/soft-halt 与 iOS 18 制品门禁，但**不属于当前 PocketRoot 二进制行为**。`Package.swift` 和 `Package.resolved` 继续固定 `6f96f02...`；只有新 XCFramework、URL/checksum、许可证/对应源码材料和 PocketRoot 最终链接/行为复核全部完成后才能更新。
-
-## 2. iSH source submodule
+## 2. iSH source gitlink
 
 | 字段 | 审核值 |
 | --- | --- |
-| 仓库 | `https://github.com/Lolendor/ish-arm64.git` |
+| 仓库 | `https://github.com/jacklv-coder/ish-arm64.git` |
 | Package 内路径 | `third_party/ish` |
-| 完整 gitlink | `2f075626049d989dc9ac350a35c09f0b18930ffc` |
+| 完整 gitlink | `576ffaf2574310b5fb2d148aab39ddcd2b8fe67d` |
 | 记录 branch | `embed-chroot-containment` |
 
-审核时记录 branch 已比固定 gitlink 前进两个 commit。那些 commit 不在 `v0.3.3` XCFramework 中，不能在没有新 source/binary audit 时替换。
+对应源码归档记录 parent package revision、该 gitlink、Zig `0.16.0` 与静态 supervisor
+使用的 musl 源码。重建不能用 recursive branch checkout 代替这些精确身份。
 
-iSH submodule 递归声明其他 source dependency，包括：
+## 3. v0.4.0-abi.1 发布资产
 
-- `ish-app/libapps`；
-- `libarchive/libarchive`；
-- Linux headers submodule（配置 `update = none`）。
+Release：
+`https://github.com/jacklv-coder/ish-arm64-pkg/releases/tag/v0.4.0-abi.1`
 
-可复现 source archive 必须记录所有 gitlink，不能只做 recursive branch checkout。
-
-## 3. Binary artifacts
-
-Source release：
-
-`https://github.com/Lolendor/ish-arm64-pkg/releases/tag/v0.3.3`
-
-| Artifact | 审核大小 | SHA-256 | 用途 |
+| Artifact | 大小 | SHA-256 | 用途 |
 | --- | ---: | --- | --- |
-| `libIshKernel.xcframework.zip` | 2,121,180 bytes | `f747c2e85c3b6082e102fb45aa62797f52146a3bc5eb1a0c386b74bc156d4fca` | SwiftPM binary target |
-| `fs.tar.gz` | 6,581,376 bytes | `be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4` | candidate fakefs seed |
+| `libIshKernel.xcframework.zip` | 2,446,031 bytes | `5bd6f691ed2af1e157118b26f62b962a3568ebe96a608d75f5b2f661d07e1450` | SwiftPM binary target |
+| `IshEmbed-corresponding-source.tar.gz` | 2,350,872 bytes | `52b10b3b1dfedf221b4af37b125cde9b5fd03cc819944ab2d77d9893f6a76122` | 对应源码 |
 
-XCFramework slice：
+XCFramework 只有 `ios-arm64` 和 `ios-arm64-simulator` 两个 arm64 slice，minimum OS
+为 iOS 18.0；没有 x86_64 Simulator 或 macOS slice。SwiftPM 用 manifest checksum
+验证 zip。发布事务还验证：
 
-| Library identifier | 架构 | Platform variant | Binary minimum OS |
-| --- | --- | --- | --- |
-| `ios-arm64` | arm64 | iOS device | 14.0 |
-| `ios-arm64-simulator` | arm64 | iOS Simulator | 14.0 |
+- tag peeled commit、Release target 与默认分支都等于精确发布提交；
+- Release 为公开 prerelease、不是 draft，且只有上述两个资产；
+- 从公开 URL 重新下载后，两项 digest 与发布记录一致；
+- device/simulator Mach-O、ABI 符号与 iOS 18 最终链接；
+- Package.swift binaryTarget 在 arm64 iOS Simulator 的 17 个测试中 12 个通过，
+  5 个因未提供 RootFS 按预期 skip，0 failure。
+- PocketRoot 完整实验依赖图在 arm64 Simulator 与 unsigned device 最终链接；
+- iOS 18.2 Simulator 使用固定 v0.3.3 RootFS 通过 13 项 native smoke，其中 shutdown
+  返回 Swift、状态为 `.terminated`，后续命令得到 `restartRequired`。
 
-没有 x86_64 Simulator 或 macOS library。object load command 记录 SDK 26.2。完整 consumer 在 Xcode 26.1.1、iOS 18 deployment target 上完成独立最终链接。
+本 Release **不包含 RootFS**。
 
-SwiftPM 校验 XCFramework checksum；PocketRoot 另外校验 RootFS。调用方、bundle 或 CI 提供的制品只要大小或 digest 不匹配 committed manifest，就 fail closed。
+## 4. 单独固定的 Alpine RootFS
 
-## 4. Alpine RootFS
+PocketRoot 的内置 RootFS manifest 仍固定 parent `v0.3.3` 的 Alpine 3.19.1 aarch64
+`fs.tar.gz`；更新 runtime/XCFramework 不会隐式替换 guest 文件系统：
 
-审核 fakefs 基于 Alpine `3.19.1 aarch64`。build script 使用的官方 minirootfs：
-
-```text
-alpine-minirootfs-3.19.1-aarch64.tar.gz
-SHA-256 7ef5eef3a5b1d198dfb1610cde1ef5b0755ff5d838fb1e5e1b9f42b59214820f
-```
-
-上游 build script 允许 `ALPINE_SHA256` 为空；这种配置只记录下载结果 digest，而不是验证预期值。任何 PocketRoot-controlled rebuild 必须显式设置并验证上述 digest，或经过独立审查的新 digest。
-
-release archive 包含：
-
-- fakefs `meta.db` 与 `data/`；
-- guest `/sbin/ishsv` supervisor；
-- `/srv/vms/.template` 下重复 VM template。
-
-对审核后解包的 `meta.db` 执行 SQLite `PRAGMA integrity_check`，结果为 `ok`。当前 installer 每次安装不重复该检查；运行时内容真实性由固定 archive SHA-256 保证。
-
-### Guest package 与许可证 family
-
-| Components | 声明 license family |
+| 字段 | 审核值 |
 | --- | --- |
-| Alpine baselayout、apk-tools、BusyBox、scanelf | GPL-2.0-only |
-| musl-utils | MIT、BSD-2-Clause、GPL-2.0-or-later |
-| musl、Alpine keys | MIT/BSD variants |
-| OpenSSL libraries | Apache-2.0 |
-| CA certificate bundle | MPL-2.0、MIT |
-| zlib | Zlib |
+| URL | `https://github.com/Lolendor/ish-arm64-pkg/releases/download/v0.3.3/fs.tar.gz` |
+| 大小 | 6,581,376 bytes |
+| SHA-256 | `be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4` |
+| Guest identity | Alpine `3.19.1`、`aarch64` |
 
-archive 不含完整 license bundle、NOTICE set 或 machine-readable SBOM。公开分发还必须提供适用 copyleft package 的对应源码。
+该 archive 含 fakefs `meta.db`、`data/`、旧 `/sbin/ishsv` 与 VM template。新 runtime
+在默认配置下验证并安装自己内嵌、内容寻址的 supervisor，不会把 RootFS 当作新 Release
+的一部分。RootFS 仍由调用方在本地提供；library 不下载、不提交也不打包它。
 
-build script 还会向 base filesystem 和 VM template 写入 public DNS resolver。产品集成必须在发行前决定：
+Node.js/npm 不在 runtime 或 RootFS 中默认预装，但可作为调用方明确安装的通用 guest
+package。Codex CLI 不属于手机端架构，IshEmbed 不提供其安装、provision 或配置路径。
 
-- 保持该行为；
-- runtime 动态派生 resolver；
-- 或暴露用户控制策略。
+## 5. 当前行为与验证边界
 
-## 5. 验证记录
+新制品已经进入 PocketRoot pin，并提供：
 
-对固定输入已完成：
+- kernel soft-halt、bounded join，`shutdown()` 返回 Swift；
+- 每宿主进程一次有效 boot/shutdown，成功关闭后仍必须重启宿主进程才能再次 boot；
+- 类型化 supervisor/transport error；正常 guest `exit 17` 不再与 broken pipe 混淆；
+- 每 session 4 MiB/4096 帧 native 输出积压上限；
+- 4 MiB/256 帧 control 总预算与 lifecycle reserve；
+- 有界 stdin/log 队列、完整 session close 与无法确认清理时的 instance fail-close；
+- root `/proc` 在 supervisor 启动前挂载；
+- 默认 bundled supervisor 的内容摘要验证。
 
-- fork relationship 与 commit identity；
-- release asset digest；
-- XCFramework architecture 与 minimum version；
-- 完整 PocketRoot integration graph 的 arm64 iOS 18 Simulator final link；
-- 同一 graph 的 unsigned arm64 device final link；
-- 真实 release archive validation、secure extraction、journal 保护的同卷 promotion 和 materialized fakefs validation；
-- caller-path replacement isolation；
-- promotion rollback；
-- interrupted commit/rollback recovery；
-- iOS 18.2 Simulator fakefs boot；
-- repository-owned native adapter smoke；
-- iPhone 17 Pro（iOS 26.1）签名安装与同一 adapter smoke。
-
-native smoke 通过 13 项：
-
-1. verified v0.3.3 RootFS preparation；
-2. boot；
-3. `aarch64`；
-4. Alpine `3.19.1`；
-5. working directory；
-6. environment；
-7. split stdout/stderr 与 exit 7；
-8. merged stderr；
-9. 100 ms timeout；
-10. post-timeout recovery；
-11. 64-byte stdout limit；
-12. post-limit recovery；
-13. process-terminal shutdown。
-
-最后一项在 shutdown 前持久化 report；host script 确认固定 iSH `_exit(0)` 路径让 smoke App process 以成功状态结束。
-
-2026-07-23 的真机记录使用 Xcode 26.1.1（17B100）、iPhone 17 Pro、iOS 26.1（23B85）和 development provisioning。签名 entitlement 的 application identifier 与 smoke bundle 一致，`get-task-allow` 为 true；设备上的 13 项检查与进程退出状态均通过。设备 UDID、profile 和本地报告不提交。
-
-详细测试语义只在[测试与验证](Testing.md)维护。
-
-## 6. 尚未通过
+PocketRoot 仍保持 Experimental。尚未闭环的门禁：
 
 - physical iPad execution；
-- host-process-safe native shutdown；
-- 声明的 minimum Xcode 16 native final-link 与 behavior；
-- 完整 PTY、signal、resize、cancellation 与 shutdown lifecycle；
-- sustained workload memory 与 jetsam；
-- 完整 license/NOTICE/SBOM/corresponding-source；
+- minimum Xcode 16 的 native final-link 与行为；
+- Swift Task 到 native command 的完整取消契约；
+- 完整 PTY、resize、signal、interactive session 生命周期；
+- sustained workload、峰值内存与 jetsam；
+- RootFS license/NOTICE/SBOM/对应源码；
 - App Store Review Guideline 2.5.2 结论。
 
-固定 artifact 的 shutdown 故意到达 `_exit(0)`。任何 soft-shutdown replacement 都必须：
+## 6. 依赖更新流程
 
-- 重建 XCFramework；
-- 记录新 revision 与 checksum；
-- 限制 thread joins；
-- 重新做 source/binary audit；
-- 重跑 Simulator 和 physical-device lifecycle。
+任何上游变化都必须：
 
-动态门禁状态见[路线图](Roadmap.md)。
-
-## 7. 依赖更新流程
-
-任何上游变化都是供应链变更，必须：
-
-1. 解析完整不可变 package commit 和所有 nested gitlink；
+1. 固定完整 package commit 与所有 nested gitlink；
 2. 审查相对当前 revision 的 source diff；
-3. 重建或取得能证明 source correspondence 的 artifact；
-4. 独立计算并记录所有 artifact size/hash；
-5. 检查每个 XCFramework slice、SDK 和 minimum deployment；
-6. 在 minimum iOS Simulator runtime final-link 与 boot；
-7. 在 physical iPhone/iPad 重跑 boot、command、PTY、cancellation、shutdown；
-8. 生成 license、NOTICE、corresponding-source 与 SBOM；
-9. 更新 `Package.resolved`、manifest 与测试；
-10. 更新 [ADR-001](Decisions/ADR-001-IshEmbed-Feasibility.md)、[路线图](Roadmap.md)和[发行与合规](ReleaseCompliance.md)。
+3. 获得可证明 source correspondence 的 artifact；
+4. 独立计算并记录 size/hash；
+5. 检查全部 XCFramework slice、SDK 与 minimum deployment；
+6. 在 arm64 iOS Simulator 和 unsigned device 完成最终链接；
+7. 重跑 host tests、native smoke、shutdown/lifecycle 与错误路径；
+8. 在可用的 physical iPhone/iPad 上重跑签名验证；
+9. 更新 `Package.resolved`、测试、ADR、路线图和合规材料；
+10. 在 CR、CI 与 P1/P2 清零后才合并。
 
-任何 branch、moving tag、locally cached binary 或 unrecorded RootFS 都不能绕过该流程。
+任何 branch、moving tag、locally cached binary 或未记录 RootFS 都不能绕过该流程。

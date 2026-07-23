@@ -100,7 +100,7 @@ v0.3.3 archive. It may also receive the archive as its first argument.
 `POCKETROOT_SMOKE_TIMEOUT_SECONDS` changes only the default 300-second
 JSON-report wait after App launch, not the
 project generation, build, Simulator boot, or the fixed 20-second post-report
-process-exit check. A script-created device is deleted on script exit unless
+runner-cleanup check. A script-created device is deleted on script exit unless
 `POCKETROOT_KEEP_SIMULATOR=1`; a caller-supplied device is booted, has the old
 smoke App replaced, and retains the new App, injected data, and resulting boot
 state.

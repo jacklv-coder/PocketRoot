@@ -44,7 +44,9 @@ PocketRoot 希望让 iOS 应用能够以明确、安全、可审核的方式嵌�
 - 业务代码只依赖稳定的 PocketRoot API，不直接持有 iSH C/Swift 对象。
 - 默认产品不加载实验性二进制，应用必须显式选择真实运行时。
 - RootFS 的网络获取和授权策略由应用控制，PocketRoot 不隐式下载。
-- 阻塞原生调用所在 executor、并发所有权、session 建立后的 read-loop deadline 和 Swift 结果缓冲都有明确边界；原生 control path 的端到端时间界限和 transport 积压背压仍是开放门禁。
+- 阻塞原生调用所在 executor、并发所有权、session 建立后的 read-loop deadline、Swift
+  结果缓冲、native session 积压和 control queue 都有明确边界；请求 timeout 尚未覆盖
+  spawn/closeStdin 之前的整个命令生命周期。
 - 构建、测试、制品哈希、限制与开放门禁可从仓库文档追溯。
 
 ## 产品边界
@@ -68,7 +70,7 @@ PocketRoot 希望让 iOS 应用能够以明确、安全、可审核的方式嵌�
 - Demo 的真实运行时依赖注入。
 - 交互式 `PocketRootSession` 与 PTY 生命周期。
 - SwiftTerm bridge。
-- 软关闭或明确接受进程终止式关闭。
+- soft shutdown 的持续生命周期与故障注入验证。
 - 真机生命周期、内存、性能和故障注入。
 - 满足许可证与发行要求后的受控分发。
 
@@ -80,7 +82,9 @@ PocketRoot 希望让 iOS 应用能够以明确、安全、可审核的方式嵌�
 - 默认从网络下载 RootFS。
 - 未经审核地执行任意外部制品。
 - 把 Agent、浏览器自动化、MCP 或云端编排放入 `PocketRootCore`。
-- 在 RootFS 中安装 Codex CLI、Node.js 或 npm 作为手机端 agent 架构。
+- 在 RootFS 中安装 Codex CLI 作为手机端 agent 架构。
+- 把 Node.js/npm 当作必需 agent runtime 或由库自动安装；应用仍可把它们作为明确审核、
+  显式安装的通用 guest package。
 - 未经宿主审批就执行模型生成的 shell 命令。
 - 绕过 iOS sandbox、私有 API 或 App Store 规则。
 - 在合规门禁完成前提供生产、TestFlight 或公开二进制。
@@ -178,7 +182,7 @@ runtime 产品必须显式添加，避免普通消费者意外引入模型编排
 
 | 风险 | 当前策略 |
 | --- | --- |
-| 原生 `shutdown()` 结束宿主 App | 保持实验性；决定接受契约或重建 soft-shutdown artifact |
+| 原生 runtime 每进程只允许一次 lifecycle | soft shutdown 返回后发布 `.terminated`；再次 boot 需要新宿主进程 |
 | XCFramework 平台切片有限 | 明确 arm64 支持矩阵；用真实最终链接验证 |
 | RootFS 来源与许可证复杂 | 不提交、不默认打包；固定哈希；设置发行门禁 |
 | iSH 是进程级单例 | 进程级 ownership gate 与串行执行器 |

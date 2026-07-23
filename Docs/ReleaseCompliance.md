@@ -164,7 +164,7 @@ Alpine `apk` 可以下载、安装和执行新增代码。即使初始 RootFS �
 - [ ] entitlement、private API、JIT 与 archive scan。
 - [ ] Guideline 2.5.2 书面结论。
 - [ ] 隐私清单、网络与数据保留评审。
-- [ ] 明确进程终止式 shutdown 是否可接受。
+- [x] 记录 soft shutdown 返回与同进程不可再次 boot 的 single-lifecycle 契约。
 
 ### 交付材料
 

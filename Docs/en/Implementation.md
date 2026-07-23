@@ -75,7 +75,7 @@ state. `PocketRootSystem.state` does not continuously synchronize while
 The same boundary applies to internal shutting-down state. Public state is not
 a real-time progress feed.
 
-The direct runtime default requires `aarch64` and Alpine. With no explicit health configuration, the integration factory additionally requires version `3.19.1` only for the exact built-in v0.3.3 manifest; a custom manifest receives the version-agnostic Alpine ARM64 gate and should pass an explicit health configuration to pin its reviewed version. This checks consistency of base guest information and the configured command context inside an already validated RootFS; it is not an independent provenance or security proof and does not cover application-specific tools or services. The health timeout still shares the pinned native spawn/control path and is not an end-to-end hard bound over a blocked synchronous control write.
+The direct runtime default requires `aarch64` and Alpine. With no explicit health configuration, the integration factory additionally requires version `3.19.1` only for the exact built-in v0.3.3 RootFS manifest; a custom manifest receives the version-agnostic Alpine ARM64 gate and should pass an explicit health configuration to pin its reviewed version. This checks consistency of base guest information and the configured command context inside an already validated RootFS; it is not an independent provenance or security proof and does not cover application-specific tools or services. Native control queues are bounded, but the health timeout begins after spawn/closeStdin and is not an end-to-end deadline.
 
 ## One-shot execution
 
@@ -87,17 +87,32 @@ The adapter spawns:
 ["/bin/sh", "-lc", request.command]
 ```
 
-It closes stdin and polls events with bounded read waits. A direct not-running, protocol, or broken-pipe error from `spawn` means the native transport is no longer trustworthy; it maps to unconfirmed termination and fails the entire runtime closed, while attributable nonterminal pre-session errors preserve their original failure. The deadline is created only after synchronous `spawn` and `closeStdin` return. stdout/stderr are accumulated under independent caps. After the session is spawned, close-stdin failures, non-timeout read failures, deadline expiry, and cap overflow all request termination and drain events until an authoritative `EXITED`; only then can the original error return as recoverable. Pinned v0.3.3 also folds a supervisor `ERROR` issued before guest creation into `EXITED(-errno, 0)`; negative synthetic exits are therefore surfaced as provenance-preserving recoverable errors rather than guest results. Its reader synthesizes `(exitCode: 17, signal: 0)` for a broken transport; that ambiguous pair explicitly requests termination and attempts another confirmation, then fails closed because it cannot establish a trustworthy guest exit. If termination or exit confirmation fails, the runtime permanently terminates its process gate and requires a host restart. Other exit events map exit code and signal, and the session is always closed. In the pinned v0.3.3 transport, spawn/control/terminate/close can still block, so this deadline is a read-loop boundary rather than an end-to-end time bound for `execute()`.
+It closes stdin and polls events with bounded reads. Direct not-running,
+protocol, or broken-pipe errors from `spawn` make the transport untrustworthy
+and fail the runtime closed; other pre-session failures preserve their source.
+The deadline begins after synchronous `spawn` and `closeStdin`. stdout/stderr
+have independent caps. Later close-stdin, non-timeout read, request-timeout,
+and product-cap failures terminate the session and require authoritative
+`EXITED` confirmation. Wire v4 returns supervisor rejection, broken pipe, and
+native backlog overflow as typed terminal errors. Guest exit 17 is valid; a
+negative `EXITED` payload is a protocol-integrity failure. Supervisor rejection
+remains recoverable. Native backlog overflow requests bounded cleanup, but the
+void close ABI cannot prove whether cleanup escalated to instance fail-close,
+so PocketRoot permanently closes the process gate.
 
 The command is a shell string; quoting and injection policy belong to the caller.
 
 ## Shutdown
 
-The actor rejects shutdown while a command is active, changes state before suspension, verifies ownership, and calls native shutdown on the serial executor. The pinned implementation reaches `_exit(0)`, so the app normally exits inside that call. The returning terminated path exists for tests and a future soft-shutdown build.
+The actor rejects shutdown while a command is active, changes state before
+suspension, verifies ownership, and calls native shutdown on the serial
+executor. Pinned v0.4.0-abi.1 stops the supervisor, soft-halts the kernel,
+performs a bounded join, and returns. State becomes `.terminated`; the same
+host process cannot boot another iSH lifecycle.
 
 ## Demo, final link, and smoke
 
-The default Demo stays asset-free and placeholder-backed. The compile spike proves the complete native graph final-links. The smoke injects a verified archive into a dedicated App, runs composition and command checks, persists its report before shutdown, and lets the host verify process exit.
+The default Demo stays asset-free and placeholder-backed. The compile spike proves the complete native graph final-links. The smoke injects a verified archive into a dedicated App, runs composition and command checks, waits for soft shutdown to return, verifies `.terminated` and `restartRequired`, and only then persists a successful report. The host explicitly stops the otherwise idle test App during cleanup.
 
 ## Invariants
 
@@ -111,9 +126,11 @@ The default Demo stays asset-free and placeholder-backed. The compile spike prov
 - Internal runtime lifecycle state closes before suspension; public system state is not a real-time progress feed.
 - One-shot commands have positive time and finite output.
 - Shutdown cannot overtake an active command.
-- Native shutdown is host-process terminal.
+- Native shutdown returns `.terminated`, and the same process cannot boot again.
 - SwiftTerm waits for proven PTY ownership.
 
 ## Open implementation
 
-Complete Task cancellation, public interactive sessions, session registry, bounded PTY reads, input/resize/signal/EOF, close-before-shutdown, soft-shutdown artifact integration, Demo injection, and physical-device hardening remain open. See the [roadmap](Roadmap.md).
+Complete Task cancellation, public interactive sessions, session registry,
+bounded PTY reads, input/resize/signal/EOF, Demo injection, and new-artifact
+physical-device hardening remain open. See the [roadmap](Roadmap.md).

@@ -16,9 +16,10 @@ Status:
 1. Merged the provider-agnostic bounded `PocketRootAgent` loop.
 2. Completed the OpenAI Responses API transport and host-owned credential contract.
 3. Completed the approval-, command-policy-, timeout-, and output-gated Linux tool.
-4. Current: release and pin the soft-shutdown IshEmbed artifact.
-5. Compose the agent, prepared runtime, and Simulator UI in the Demo/App.
-6. Complete signed iPad smoke when hardware is available; that hardware gate does not block the first five items.
+4. Published and pinned soft-shutdown IshEmbed `v0.4.0-abi.1`.
+5. Current: finish Codex CR, CI, and PR merge for the new pin; final-link, Simulator lifecycle, and documentation are closed.
+6. Native Agent Loop/App composition is paused by product decision and does not block independent runtime validation.
+7. Complete signed iPad smoke when hardware is available; that gate does not block the first six items.
 
 ## Milestone 1: Project foundation
 
@@ -58,7 +59,8 @@ Status: **Experimental, in progress**.
 - Final-linked the full graph for arm64 Simulator and unsigned device.
 - Booted on iOS 18.2 arm64 Simulator.
 - Passed the repository 13-check native smoke.
-- Passed the same signed 13-check smoke on an iPhone 17 Pro running iOS 26.1, including development entitlements and the pinned `_exit(0)` process exit.
+- The older v0.3.3 baseline passed the same signed 13-check smoke on an iPhone
+  17 Pro running iOS 26.1; v0.4.0-abi.1 still requires a signed-device rerun.
 
 This establishes the current Simulator and single-iPhone one-shot paths, not iPad, complete physical-device lifecycle, minimum-Xcode, PTY, or distribution readiness.
 
@@ -69,15 +71,15 @@ This establishes the current Simulator and single-iPhone one-shot paths, not iPa
 | iOS 18 baseline | Passed | Keep package, Demo, tests, and CI aligned |
 | Immutable IshEmbed pin | Passed | Change only through the supply-chain update procedure |
 | One-shot adapter | Passed | Preserve lifecycle, timeout, and output-limit coverage |
-| Native transport backpressure | In progress | Publish and integrate an artifact with bounded protocol/session/stdin/log queues, then complete sustained-output and peak-memory tests |
-| End-to-end native control-path time bound | In progress | Publish and integrate the nonblocking writer/bounded control operations and cover blocked spawn, terminate, and close regressions |
-| iOS 18 Simulator native behavior | Passed | Rerun the 13-check smoke for runtime/RootFS changes |
+| Native transport backpressure | In progress | Bounded protocol/session/stdin/log/control queues are integrated; sustained-output and peak-memory tests remain |
+| End-to-end native control-path time bound | In progress | Native control is bounded; PocketRoot's request deadline still needs to cover pre-spawn/closeStdin stages |
+| iOS 18 Simulator native behavior | Passed | v0.4.0-abi.1 passed the 13-check soft-shutdown smoke; keep rerunning after changes |
 | Secure RootFS install/recovery | Passed | Preserve real-asset/snapshot/rollback/recovery; add ENOSPC |
 | RootFS/runtime composition | Passed | Keep caller-controlled, no-download, no-auto-boot |
 | Default post-boot identity gate | Passed | Require aarch64, Alpine identity, optional version, and command context before ready; retain failed-slot regression coverage |
 | Real Demo runtime injection | Not started | Inject one prepared system without bundling an unreviewed RootFS |
-| Host-safe soft shutdown | In progress | Fork source fixes are merged; new XCFramework, checksum, PocketRoot pin, and lifecycle audit remain |
-| Signed iPhone | Passed | 13-check signed smoke on iPhone 17 Pro / iOS 26.1 / Xcode 26.1.1; rerun for runtime, RootFS, or signing changes |
+| Host-safe soft shutdown | Passed | v0.4.0-abi.1 soft-halts, joins, and returns to Swift; the process remains single-lifecycle |
+| Signed iPhone | In progress | The v0.3.3 baseline passed; rerun is required after the v0.4.0-abi.1 runtime change |
 | Signed iPad | Blocked | Physical boot and command smoke |
 | Minimum Xcode 16 native | Not started | Repeat final-link and behavior |
 | App lifecycle and memory | Not started | Background/foreground, jetsam, failure, persistence |
@@ -87,10 +89,10 @@ This establishes the current Simulator and single-iPhone one-shot paths, not iPa
 
 ### Remaining runtime sequence
 
-1. Publish the merged soft-shutdown and root `/proc` fixes, update the PocketRoot pin, and repeat lifecycle review.
+1. Final-link and Simulator smoke passed; complete Codex CR, CI, and PR merge.
 2. Repeat full final-link, install, and native smoke with minimum Xcode 16.
-3. After the command tool is complete, inject one prepared system across Agent, System, Commands, and Diagnostics without bundling a RootFS.
-4. Add complete cancellation, ENOSPC, power-loss, storage-pressure, long-output, and memory-peak coverage.
+3. Add complete cancellation, ENOSPC, power-loss, storage-pressure, long-output, and memory-peak coverage.
+4. When Native Agent Loop/App composition resumes, connect a prepared system to UI without bundling a RootFS.
 5. When a signed iPad is available, repeat preparation, boot, guest, command, and recovery checks with recorded toolchain and entitlements.
 
 Closing these makes one-shot execution a Developer Preview candidate.

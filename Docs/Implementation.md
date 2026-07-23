@@ -77,7 +77,7 @@ flowchart TD
 - `supervisorGuestPath` → 可选 guest supervisor；进入原生 boot 前拒绝 NUL，避免 C 字符串静默截断。
 - `kernelLogFileDescriptor` → iSH kernel log FD，默认 `-1`。
 - stdout/stderr limits → 每个 native session 的最大累计输出。
-- `healthCheck` → `boot()` 返回前必须匹配的 guest 架构、OS ID、可选版本和最多 60 秒的检查超时；固定 v0.3.3 factory 默认要求 `aarch64`、`alpine`、`3.19.1`。
+- `healthCheck` → `boot()` 返回前必须匹配的 guest 架构、OS ID、可选版本和最多 60 秒的检查超时；内置 v0.3.3 RootFS 清单默认要求 `aarch64`、`alpine`、`3.19.1`。
 
 `systemConfiguration` 中的 rootFSVersion 会被 manifest version 替换，避免系统配置与实际安装漂移；default working directory 与 command timeout 被保留。但当前每个 `PocketRootCommandRequest` 仍使用自己的值。
 
@@ -203,7 +203,7 @@ IshInstance.shared.boot(
 )
 ```
 
-默认健康命令使用固定脚本、绝对 `/bin/uname`/`/bin/cat`、固定 `PATH`/`LC_ALL`、独立超时和 4 KiB stdout/stderr 上限；预期值和绝对工作目录通过 argv/Swift 比较，不拼接进 shell。`os-release` 只作为数据解析，重复键、畸形引用、无效 UTF-8 或 NUL framing 都失败关闭；规范化后的 `pwd -P` 比较允许尾斜杠、`.`、`..` 和符号链接别名。该门禁证明已校验 RootFS 内基础 guest 信息与命令上下文的一致性，不是独立的来源或安全证明，也不证明应用自定义工具或网络服务健康。它仍复用当前 native spawn/control path，所以在固定 v0.3.3 transport 上，健康超时和普通命令 timeout 一样不是覆盖同步 control write 的端到端硬上限。
+默认健康命令使用固定脚本、绝对 `/bin/uname`/`/bin/cat`、固定 `PATH`/`LC_ALL`、独立超时和 4 KiB stdout/stderr 上限；预期值和绝对工作目录通过 argv/Swift 比较，不拼接进 shell。`os-release` 只作为数据解析，重复键、畸形引用、无效 UTF-8 或 NUL framing 都失败关闭；规范化后的 `pwd -P` 比较允许尾斜杠、`.`、`..` 和符号链接别名。该门禁证明已校验 RootFS 内基础 guest 信息与命令上下文的一致性，不是独立的来源或安全证明，也不证明应用自定义工具或网络服务健康。native control queue 已有界，但 PocketRoot 的健康 timeout 仍在 spawn/closeStdin 完成后开始，因此不是完整端到端 deadline。
 
 ## 6. execute 实现
 
@@ -231,7 +231,11 @@ env = nil or request.environment
 
 因此 shell quoting 和 injection 风险属于调用方。
 
-`IshEmbedDriver` 使用 `IshInstance.shared.spawn`，然后立即关闭 stdin。spawn 直接返回 not-running、protocol 或 broken-pipe 代表原生 transport 已不可再信任，会映射为退出无法确认并失败关闭整个 runtime；其他可明确归因的 pre-session 错误仍按原错误返回。driver 不使用上游一次性收集全部输出的便利 API，而是循环读取 session event。当前 deadline 只在同步 `spawn` 和 `closeStdin` 都返回后创建；固定 v0.3.3 的 control write 可能阻塞，所以请求 timeout 不是整个 `execute()` 的端到端硬上限。
+`IshEmbedDriver` 使用 `IshInstance.shared.spawn`，然后立即关闭 stdin。spawn 直接返回
+not-running、protocol 或 broken-pipe 代表 transport 已不可再信任，会映射为退出无法确认
+并失败关闭整个 runtime；其他 pre-session 错误保留原来源。driver 循环读取 session event，
+不使用一次性收集全部输出的便利 API。deadline 在同步 `spawn` 和 `closeStdin` 返回后创建；
+native control queue 虽然有界，请求 timeout 仍不是整个 `execute()` 的端到端硬上限。
 
 ### 6.3 bounded read
 
@@ -240,11 +244,17 @@ env = nil or request.environment
 - stdout event → 检查累计 stdout limit 后 append；
 - stderr event → 检查累计 stderr limit 后 append；
 - timeout read error → 继续检查 deadline；
-- exited event → 校验来源后处理：非负 guest wait status 返回结果；负数是 supervisor 在创建 guest 前拒绝 spawn 的合成状态，抛保留来源的可恢复错误；固定 v0.3.3 的 `(exitCode: 17, signal: 0)` 同时可能表示 transport broken pipe，因此先显式请求终止并尝试二次确认，最终保守失败关闭；
+- exited event → 非负 guest wait status 返回结果；`exit 17` 是普通 guest 结果；负数
+  `EXITED` 不符合 v4 transport 契约，作为退出无法确认的协议完整性失败关闭；
 - deadline 到期 → terminate session，观察到 `EXITED` 后返回 `timedOut = true`；
 - stream 超限 → terminate session，观察到 `EXITED` 后抛 typed output-limit error。
 
-`defer` 最终调用 `session.close()`。session 建立后的 `closeStdin`、非 timeout read、超时和超限等 pre-exit 错误路径都会请求终止；只有明确读到可信 `EXITED`，原错误才可作为可恢复错误返回。唯一不再终止的异常是上述负数 supervisor rejection：固定实现只在 spawn 创建 guest 之前发出该 `ERROR`，并已释放对应 session，因此可以保留来源后恢复。terminate 失败、确认窗口内没有退出事件、读取退出事件失败或读到上述歧义 transport marker 时，runtime 进入 `failed`，进程 gate 永久关闭并要求重启宿主，避免旧 guest 进程与新命令重叠。但当前固定 transport 的 `terminate` / `close` 也可能受阻塞 control write 影响；上述 deadline 只证明 event-read loop 的观察边界，不证明所有 native control 操作都在请求时间内返回。
+`defer` 最终调用 `session.close()`。session 建立后的 `closeStdin`、非 timeout read、请求
+超时和产品配额超限都会请求终止；只有明确读到可信 `EXITED` 才可恢复。v4 supervisor
+rejection 是类型化 terminal status，可保持 runtime `ready`。native backlog overflow 会
+请求有界清理，但 `session.close()` 的 void ABI 无法证明清理是否升级为 instance
+fail-close，因此 PocketRoot 对该错误始终进入 `failed` 并永久关闭进程 gate。terminate
+失败、确认窗口内没有退出事件、读取失败或负数 `EXITED` 同样失败关闭。
 
 ## 7. shutdown 实现
 
@@ -256,12 +266,9 @@ env = nil or request.environment
 4. 确认 process ownership；
 5. 在 serial native executor 调用 `IshInstance.shared.shutdown()`。
 
-固定上游的 guest halt 最终执行 `_exit(0)`。真实 App 通常在第 5 步内部退出。后续 `.terminated` 代码只服务于：
-
-- injected test driver；
-- 未来会返回 Swift 的 soft-shutdown build。
-
-因此当前不能依赖 shutdown 后的 Swift cleanup，也不能重启 runtime。
+固定的 `v0.4.0-abi.1` 会等待 supervisor 退出、soft-halt kernel 并 bounded join 原生线程，
+然后返回 Swift。runtime 发布 `.terminated`，调用方可在返回后完成宿主清理；但 iSH
+进程级全局状态仍只支持一次 lifecycle，因此不能在同一进程再次 boot。
 
 ## 8. Demo 与 smoke 为什么分开
 
@@ -277,7 +284,7 @@ native smoke 负责行为证据：
 4. 在 iOS 18 Simulator 运行 `prepare → boot → execute`；
 5. 持久化 JSON report；
 6. 最后调用 shutdown；
-7. host 确认 App 进程按固定 `_exit(0)` 行为退出。
+7. host 确认 shutdown 返回、report 已更新且 App 仍存活到主动结束。
 
 这种分离避免默认 Demo 无意包含尚未完成合规审查的资产或原生能力。
 
@@ -293,7 +300,7 @@ native smoke 负责行为证据：
 - runtime 内部 lifecycle 状态必须在 suspension 前关闭重入窗口；公共 system state 不是实时进度流。
 - 一次性命令必须有正 timeout 和有限输出。
 - active command 不能被 shutdown 越过。
-- 真实 shutdown 被视为宿主进程终止。
+- 真实 shutdown 返回 `.terminated`，且同一进程不可再次 boot。
 - 未完成 PTY ownership 前不连接 SwiftTerm。
 
 ## 10. 尚待实现
