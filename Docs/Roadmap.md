@@ -18,8 +18,9 @@
 3. 完成带审批、命令策略、超时和输出边界的 Linux command tool。
 4. 已发布并固定 IshEmbed `v0.4.0-abi.4`，完成一次性命令 Swift Task 取消、native
    退出确认和取消后恢复。
-5. 当前：RootFS 容量预检、全写入/promotion ENOSPC、显式文件/目录持久化以及确定性
-   power-loss 切点矩阵已完成；继续真机 storage pressure/强制断电、持续输出和峰值内存硬化。
+5. 当前：RootFS 容量预检、全写入/promotion ENOSPC、显式文件/目录持久化、确定性
+   power-loss 切点矩阵和 8 MiB 持续二进制输出基线已完成；继续真机 storage
+   pressure/强制断电与峰值内存硬化。
 6. 原生 Agent Loop/App 组合按产品决定暂停；不阻塞 runtime 独立验证。
 7. 有物理 iPad 后补签名设备 smoke；该硬件门禁不阻塞前六项。
 
@@ -70,7 +71,7 @@
 - 对精确 v0.3.3 release archive 完成真实资产测试；
 - 对 arm64 Simulator 和 unsigned device 完成完整依赖图最终链接；
 - 在 iOS 18.2 arm64 Simulator boot 固定 fakefs；
-- repository native smoke 通过 14 项 prepare、boot、guest、command、recovery 与 shutdown 检查。
+- repository native smoke 通过 16 项 prepare、boot、guest、持续输出、stream limit、command、recovery 与 shutdown 检查。
 - 旧 v0.3.3 基线曾在签名 iPhone 17 Pro（iOS 26.1）通过当时的 13 项 native smoke；
   新 v0.4.0-abi.4 仍需重跑签名设备验证。
 
@@ -84,9 +85,9 @@
 | 不可变 IshEmbed revision | 已通过 | 只通过完整供应链更新流程变更 |
 | 一次性命令 adapter | 已通过 | 保持 lifecycle、timeout、output-limit coverage |
 | 一次性命令取消 | 已通过 | 队列前取消不进入 native；活动取消确认 `EXITED`；清理失败保持 fail-close |
-| 原生 transport 背压 | 进行中 | 已接入有界 protocol/session/stdin/log/control queue；仍需持续输出与内存峰值测试 |
+| 原生 transport 背压 | 进行中 | 已接入有界 protocol/session/stdin/log/control queue，并通过跨越 4 MiB backlog 的 8 MiB 二进制输出基线；仍需峰值内存测试 |
 | 原生 control path 端到端时间界限 | 进行中 | native control 已有界；PocketRoot 请求 deadline 仍需覆盖 spawn/closeStdin 前阶段 |
-| iOS 18 Simulator 原生行为 | 已通过 | v0.4.0-abi.4 已重跑 14 项 soft-shutdown smoke；后续变更继续回归 |
+| iOS 18 Simulator 原生行为 | 已通过 | v0.4.0-abi.4 已重跑 16 项 soft-shutdown smoke；后续变更继续回归 |
 | RootFS 安全安装与恢复 | 已通过 | 保持真实资产、snapshot、容量预检、rollback 和 recovery coverage |
 | RootFS/runtime composition | 已通过 | 保持 caller-controlled、no-download、no-auto-boot |
 | 默认 post-boot identity gate | 已通过 | `aarch64`、Alpine identity、可选 version 与 command context 通过后才 ready；保持失败占用槽位回归 |
@@ -94,7 +95,7 @@
 | 进程安全 soft shutdown | 已通过 | v0.4.0-abi.4 soft-halt/join 返回 Swift；同进程仍只允许一次 lifecycle |
 | 签名 iPhone | 进行中 | 旧 v0.3.3 基线已通过；v0.4.0-abi.4 变更后需要重跑 |
 | 签名 iPad | 阻塞 | physical boot 与 command smoke |
-| 最低 Xcode 16 原生兼容 | 已通过 | Xcode 16.0 / iOS 18.0 SDK 完成 RootFS install、Simulator/device final-link 和 14 项 native smoke |
+| 最低 Xcode 16 原生兼容 | 已通过 | Xcode 16.0 / iOS 18.0 SDK 完成 RootFS install、Simulator/device final-link 和 16 项 native smoke |
 | App lifecycle 与内存 | 未开始 | foreground/background、jetsam、failure injection、persistence |
 | RootFS ENOSPC/掉电 | 进行中 | 峰值空间预检、全 ENOSPC、七点持久化屏障和确定性掉电切点已覆盖；补真机 storage pressure/强制断电 |
 | License-reviewed RootFS | 阻塞 | license、NOTICE、对应源码和 SBOM 完整 |
@@ -103,7 +104,7 @@
 ### 后续 runtime 执行顺序
 
 1. **故障与资源硬化**
-   继续真机 storage pressure/强制断电、long output 与 memory peak。
+   保持 8 MiB sustained-output 回归，继续真机 storage pressure/强制断电与 memory peak。
 
 2. **暂停的 App 组合**
    原生 Agent Loop/App 组合恢复后，再把 prepared system 接入 UI；不把 RootFS 放进默认 target。

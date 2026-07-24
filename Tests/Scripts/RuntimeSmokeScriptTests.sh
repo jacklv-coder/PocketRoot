@@ -89,6 +89,13 @@ if ! grep -Fq -- 'try fileManager.createDirectory(' "$SMOKE_APP" \
     exit 1
 fi
 
+if ! grep -Fq -- '/bin/dd if=/dev/zero bs=65536 count=128 2>/dev/null' "$SMOKE_APP" \
+  || ! grep -Fq -- '/bin/dd if=/dev/zero bs=65536 count=129 2>/dev/null' "$SMOKE_APP" \
+  || ! grep -Fq -- 'sustainedOutput.standardOutput.allSatisfy { $0 == 0 }' "$SMOKE_APP"; then
+    echo "Native smoke does not verify sustained binary output byte-for-byte." >&2
+    exit 1
+fi
+
 if ! grep -Fq -- 'The native smoke App exited before writing its report.' "$SIMULATOR_RUNNER"; then
     echo "Simulator runner does not distinguish early App exit from timeout." >&2
     exit 1

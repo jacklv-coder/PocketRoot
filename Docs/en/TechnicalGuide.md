@@ -33,7 +33,9 @@ session, and a 4 MiB/256-frame total control budget. Recovery after request
 timeout or product-budget overflow still requires an observed `EXITED`;
 otherwise the runtime fails closed. The PocketRoot deadline begins only after
 synchronous `spawn` / `closeStdin`, so it is not yet an end-to-end command
-deadline. Sustained-load peak memory and jetsam behavior also remain open.
+deadline. An 8 MiB byte-exact binary-stdout smoke crosses the native backlog
+and proves continuous consumption without measuring peak memory. Sustained-load
+peak memory and jetsam behavior remain open.
 
 ## 2. Three repositories and one external asset
 

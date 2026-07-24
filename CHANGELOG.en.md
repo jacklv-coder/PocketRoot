@@ -27,7 +27,7 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 - fakefs validation, versioned installation, verified reuse, and journal-protected same-volume promotion with rollback and interrupted recovery.
 - Real release-archive integration test.
 - arm64 Simulator and unsigned-device final-link gates for the full Experimental graph.
-- Repository iOS 18 native smoke covering 14 preparation, boot, guest, command, cancellation, recovery, and shutdown checks.
+- Repository iOS 18 native smoke covering 16 preparation, boot, guest, 8 MiB sustained binary-output, stdout/stderr overflow, command, cancellation, recovery, and shutdown checks.
 - A signed iPhone/iPad runner that installs through `devicectl`, injects the pinned RootFS, retrieves the report, and verifies development entitlements; the iPhone 17 Pro / iOS 26.1 baseline passed.
 - Exact SwiftPM resolution in `Package.resolved`.
 - IshEmbed [ADR-001](Docs/en/Decisions/ADR-001-IshEmbed-Feasibility.md) and immutable [upstream inventory](Docs/en/UpstreamDependencies.md).
