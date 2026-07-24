@@ -248,6 +248,8 @@ native control queue 虽然有界，请求 timeout 仍不是整个 `execute()` �
   `EXITED` 不符合 v4 transport 契约，作为退出无法确认的协议完整性失败关闭；
 - deadline 到期 → terminate session，观察到 `EXITED` 后返回 `timedOut = true`；
 - stream 超限 → terminate session，观察到 `EXITED` 后抛 typed output-limit error。
+- Swift Task 取消 → 线程安全 token 唤醒最多 250 ms 的 poll 检查，terminate session，
+  观察到 `EXITED` 后抛 `CancellationError`。
 
 `defer` 最终调用 `session.close()`。session 建立后的 `closeStdin`、非 timeout read、请求
 超时和产品配额超限都会请求终止；只有明确读到可信 `EXITED` 才可恢复。v4 supervisor
@@ -255,6 +257,10 @@ rejection 是类型化 terminal status，可保持 runtime `ready`。native back
 请求有界清理，但 `session.close()` 的 void ABI 无法证明清理是否升级为 instance
 fail-close，因此 PocketRoot 对该错误始终进入 `failed` 并永久关闭进程 gate。terminate
 失败、确认窗口内没有退出事件、读取失败或负数 `EXITED` 同样失败关闭。
+
+`BlockingIshExecutor.performCancellable` 在入队前、队列开始执行时和 native 返回后都检查
+取消。已经在队列中但未开始的命令不会 spawn；活动命令的取消只有在 driver 完成上述
+terminate/EXITED 流程后才返回。清理错误优先于 `CancellationError`，从而保持 fail-close。
 
 ## 7. shutdown 实现
 
@@ -266,7 +272,7 @@ fail-close，因此 PocketRoot 对该错误始终进入 `failed` 并永久关闭
 4. 确认 process ownership；
 5. 在 serial native executor 调用 `IshInstance.shared.shutdown()`。
 
-固定的 `v0.4.0-abi.3` 会等待 supervisor 退出、soft-halt kernel 并 bounded join 原生线程，
+固定的 `v0.4.0-abi.4` 会等待 supervisor 退出、soft-halt kernel 并 bounded join 原生线程，
 然后返回 Swift。runtime 发布 `.terminated`，调用方可在返回后完成宿主清理；但 iSH
 进程级全局状态仍只支持一次 lifecycle，因此不能在同一进程再次 boot。
 
@@ -281,7 +287,7 @@ native smoke 负责行为证据：
 1. host 脚本验证本地 archive；
 2. 生成 smoke App；
 3. 把 archive 注入 App Documents；
-4. 在 iOS 18 Simulator 运行 `prepare → boot → execute`；
+4. 在 iOS 18 Simulator 运行 `prepare → boot → execute → cancel → recover`；
 5. 持久化 JSON report；
 6. 最后调用 shutdown；
 7. host 确认 shutdown 返回、report 已更新且 App 仍存活到主动结束。
@@ -305,12 +311,10 @@ native smoke 负责行为证据：
 
 ## 10. 尚待实现
 
-- Swift Task cancellation 到 native terminate 的完整契约；
 - interactive session public entry point；
 - live session registry；
 - bounded PTY read、input、resize、signal、EOF；
 - close-all-before-shutdown；
-- soft shutdown 与 bounded native joins；
 - Demo prepared-system dependency injection；
 - 真机生命周期与性能硬化。
 

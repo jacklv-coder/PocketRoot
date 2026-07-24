@@ -4,7 +4,7 @@
 
 - 状态：**已接受，仅限实验性集成**
 - 日期：2026-07-21
-- 修订：2026-07-24，固定自托管 `v0.4.0-abi.3` 有界 uname 维护制品
+- 修订：2026-07-24，固定自托管 `v0.4.0-abi.4` 阻塞 syscall 中断维护制品
 - 基线：iOS 18.0、arm64
 - 决策范围：runtime 可行性、供应链固定方式和发行门禁
 
@@ -48,14 +48,14 @@ PocketRoot 将 IshEmbed 集成在独立的 `PocketRootIshRuntime` product 后，
 
 ```text
 Repository: https://github.com/jacklv-coder/ish-arm64-pkg.git
-Revision:   7cb201eed14b77b1a5b60a2498de25eb66710b1a
+Revision:   1c761d4c6de4ceb5ec9f15a4a958be9207ace756
 Product:    IshEmbed
 ```
 
 固定 nested iSH gitlink：
 
 ```text
-5f7535ee945a96aaabd0d59e063f04443ba759df
+c36dfd25462737b45559eb48d4b09f799471572e
 ```
 
 不能跟随 branch 或 moving tag。当前 prerelease tag 只用于发布身份，消费仍固定完整
@@ -105,8 +105,8 @@ manifest 声明 iOS 18.0，release XCFramework 只有：
 
 | Artifact | SHA-256 |
 | --- | --- |
-| `libIshKernel.xcframework.zip` | `daa5beeb6cfd0469d0c7aab3556e5b2e3f6d3a62f75210dd625b155f8bfed3c6` |
-| `IshEmbed-corresponding-source.tar.gz` | `3f6558abe447c39887920adc6512a98e05c6f1456773dd1e4c468725388efdea` |
+| `libIshKernel.xcframework.zip` | `ea27510ee68d38c3838efda4958bb80cfc9e85510d478aaca6e80fcb51763ba6` |
+| `IshEmbed-corresponding-source.tar.gz` | `0fdf3845bc5b151527f9bfcea818bee088e3db6b68f3a4c698d1638ca1a760a5` |
 | `fs.tar.gz` | `be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4` |
 
 XCFramework digest 与 upstream manifest 一致。RootFS digest 不在 upstream Swift manifest 中，因此 PocketRoot 单独提交 manifest 并 fail closed。
@@ -210,9 +210,11 @@ RootFS promotion 也不被视为一次整体原子替换。journal 不记录 pha
 - iSH 的进程级全局状态仍不允许同一进程再次 boot；
 - active call/session 会得到 busy 或由 PocketRoot 在更高层拒绝。
 
-ABI.3 还对固定 65-byte uname 字段执行有界复制，避免长宿主 hostname 触发
-fortified libc trap，并包含 ABI.2 的 `/proc` 生命周期锁修复；这些维护变更不改变公开
-C ABI 或 Swift API。新制品、revision、checksum、对应源码和 Simulator 测试已完成；
+ABI.4 在 embedded bootstrap 和 guest task 线程解除内部 SIGUSR1 屏蔽，使 guest signal
+可打断阻塞中的宿主 syscall。它同时包含 ABI.3 的固定 65-byte uname 有界复制和 ABI.2
+的 `/proc` 生命周期锁修复；这些维护变更不改变公开 C ABI 或 Swift API。PocketRoot
+将 Swift Task 取消桥接到 one-shot native session，确认可信 `EXITED` 后才返回取消，
+无法确认清理则失败关闭。新制品、revision、checksum、对应源码和 Simulator 测试已完成；
 签名 iPhone/iPad 和持续生命周期/故障注入仍按路线图继续，不因此把
 Experimental 产品加入默认 umbrella。
 
@@ -225,7 +227,7 @@ Experimental 产品加入默认 umbrella。
 - live session registry；
 - bounded reads；
 - input/output/signal/resize/EOF contract；
-- cancellation；
+- interactive read/close cancellation；
 - idempotent close；
 - close all sessions before shutdown；
 - native pointer ownership tests。

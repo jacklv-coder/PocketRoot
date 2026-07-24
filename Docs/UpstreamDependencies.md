@@ -12,9 +12,9 @@ SHA-256 的唯一事实源。branch、moving tag、未验证 release alias 和�
 | 字段 | 审核值 |
 | --- | --- |
 | 仓库 | `https://github.com/jacklv-coder/ish-arm64-pkg.git` |
-| 完整 revision | `7cb201eed14b77b1a5b60a2498de25eb66710b1a` |
-| Release | `v0.4.0-abi.3`（prerelease） |
-| Tag peeled commit | `7cb201eed14b77b1a5b60a2498de25eb66710b1a` |
+| 完整 revision | `1c761d4c6de4ceb5ec9f15a4a958be9207ace756` |
+| Release | `v0.4.0-abi.4`（prerelease） |
+| Tag peeled commit | `1c761d4c6de4ceb5ec9f15a4a958be9207ace756` |
 | Swift product | `IshEmbed` |
 | Manifest platform | iOS 18.0 |
 | Native slices | iOS arm64 device、arm64 Simulator |
@@ -25,14 +25,14 @@ SHA-256 的唯一事实源。branch、moving tag、未验证 release alias 和�
 ```swift
 .package(
     url: "https://github.com/jacklv-coder/ish-arm64-pkg.git",
-    revision: "7cb201eed14b77b1a5b60a2498de25eb66710b1a"
+    revision: "1c761d4c6de4ceb5ec9f15a4a958be9207ace756"
 )
 ```
 
-消费 revision 就是 `v0.4.0-abi.3` 的 manifest-only release commit；该提交只把
-`Package.swift` 的 binary target URL/checksum 切到已经公开且独立验证的 ABI.3
+消费 revision 就是 `v0.4.0-abi.4` 的 manifest-only release commit；该提交只把
+`Package.swift` 的 binary target URL/checksum 切到已经公开且独立验证的 ABI.4
 资产。Release tag peeled commit、Release target 与 `origin/main` 都是
-`7cb201eed14b77b1a5b60a2498de25eb66710b1a`。包仓库继续使用绝对 SSH-over-443
+`1c761d4c6de4ceb5ec9f15a4a958be9207ace756`。包仓库继续使用绝对 SSH-over-443
 submodule URL；无 SSH 私钥的 GitHub CI 只在 checkout 时应用公开 HTTPS 只读重写。
 
 ## 2. iSH source gitlink
@@ -41,21 +41,21 @@ submodule URL；无 SSH 私钥的 GitHub CI 只在 checkout 时应用公开 HTTP
 | --- | --- |
 | 仓库 | `https://github.com/jacklv-coder/ish-arm64.git` |
 | Package 内路径 | `third_party/ish` |
-| 完整 gitlink | `5f7535ee945a96aaabd0d59e063f04443ba759df` |
+| 完整 gitlink | `c36dfd25462737b45559eb48d4b09f799471572e` |
 | 记录 branch | `embed-chroot-containment` |
 
 对应源码归档记录 parent package revision、该 gitlink、Zig `0.16.0` 与静态 supervisor
 使用的 musl 源码。重建不能用 recursive branch checkout 代替这些精确身份。
 
-## 3. v0.4.0-abi.3 发布资产
+## 3. v0.4.0-abi.4 发布资产
 
 Release：
-`https://github.com/jacklv-coder/ish-arm64-pkg/releases/tag/v0.4.0-abi.3`
+`https://github.com/jacklv-coder/ish-arm64-pkg/releases/tag/v0.4.0-abi.4`
 
 | Artifact | 大小 | SHA-256 | 用途 |
 | --- | ---: | --- | --- |
-| `libIshKernel.xcframework.zip` | 2,448,357 bytes | `daa5beeb6cfd0469d0c7aab3556e5b2e3f6d3a62f75210dd625b155f8bfed3c6` | SwiftPM binary target |
-| `IshEmbed-corresponding-source.tar.gz` | 2,356,871 bytes | `3f6558abe447c39887920adc6512a98e05c6f1456773dd1e4c468725388efdea` | 对应源码 |
+| `libIshKernel.xcframework.zip` | 2,448,345 bytes | `ea27510ee68d38c3838efda4958bb80cfc9e85510d478aaca6e80fcb51763ba6` | SwiftPM binary target |
+| `IshEmbed-corresponding-source.tar.gz` | 2,358,617 bytes | `0fdf3845bc5b151527f9bfcea818bee088e3db6b68f3a4c698d1638ca1a760a5` | 对应源码 |
 
 XCFramework 只有 `ios-arm64` 和 `ios-arm64-simulator` 两个 arm64 slice，minimum OS
 为 iOS 18.0；没有 x86_64 Simulator 或 macOS slice。SwiftPM 用 manifest checksum
@@ -68,10 +68,11 @@ XCFramework 只有 `ios-arm64` 和 `ios-arm64-simulator` 两个 arm64 slice，mi
 - Package.swift binaryTarget 在 arm64 iOS Simulator 的 17 个测试中 12 个通过，
   5 个因未提供 RootFS 按预期 skip，0 failure。
 - PocketRoot 完整实验依赖图在 arm64 Simulator 与 unsigned device 最终链接；
-- iOS 18.2 Simulator 使用固定 v0.3.3 RootFS 通过 13 项 native smoke，其中 shutdown
-  返回 Swift、状态为 `.terminated`，后续命令得到 `restartRequired`。
+- iOS 18.2 Simulator 使用固定 v0.3.3 RootFS 通过 14 项 native smoke，其中阻塞命令
+  取消后可恢复执行，shutdown 返回 Swift、状态为 `.terminated`，后续命令得到
+  `restartRequired`。
 - Xcode 16.0 / iOS 18.0 SDK 在 arm64 hosted runner 上完成真实 RootFS install、
-  Simulator/device final-link，并通过同一套 13 项 native smoke。
+  Simulator/device final-link，并通过同一套 14 项 native smoke。
 
 本 Release **不包含 RootFS**。
 
@@ -99,6 +100,8 @@ package。Codex CLI 不属于手机端架构，IshEmbed 不提供其安装、pro
 新制品已经进入 PocketRoot pin，并提供：
 
 - kernel soft-halt、bounded join，`shutdown()` 返回 Swift；
+- embedded bootstrap 与 guest task 线程解除内部 SIGUSR1 屏蔽，使 guest signal
+  可打断 `poll`、`nanosleep` 等阻塞宿主 syscall；
 - 固定 65-byte `uname` 字段的有界复制，避免长宿主 hostname 触发 fortified libc
   `SIGTRAP`；同时包含 ABI.2 的 `/proc` 生命周期锁修复；
 - 每宿主进程一次有效 boot/shutdown，成功关闭后仍必须重启宿主进程才能再次 boot；
@@ -112,7 +115,7 @@ package。Codex CLI 不属于手机端架构，IshEmbed 不提供其安装、pro
 PocketRoot 仍保持 Experimental。尚未闭环的门禁：
 
 - physical iPad execution；
-- Swift Task 到 native command 的完整取消契约；
+- interactive session 的 read/close 取消契约；
 - 完整 PTY、resize、signal、interactive session 生命周期；
 - sustained workload、峰值内存与 jetsam；
 - RootFS license/NOTICE/SBOM/对应源码；

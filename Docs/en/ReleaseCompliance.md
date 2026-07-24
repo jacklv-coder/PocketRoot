@@ -18,9 +18,9 @@ A native-enabled app may contain PocketRoot source, ish-arm64-pkg source, a stat
 
 The package repository carries GPL identifiers and a GPL-3.0 statement but did not provide a complete top-level license/notice set at audit. The pinned iSH source has GPL and `LICENSE.IOS` terms. Binary/source correspondence needs a durable reproducible record.
 
-The current audit pins IshEmbed `v0.4.0-abi.3` release commit
-`7cb201eed14b77b1a5b60a2498de25eb66710b1a` and iSH gitlink
-`5f7535ee945a96aaabd0d59e063f04443ba759df`; the upstream inventory records
+The current audit pins IshEmbed `v0.4.0-abi.4` release commit
+`1c761d4c6de4ceb5ec9f15a4a958be9207ace756` and iSH gitlink
+`c36dfd25462737b45559eb48d4b09f799471572e`; the upstream inventory records
 the XCFramework and corresponding-source asset sizes and digests. The Release
 provides a corresponding-source asset, but product-level RootFS compliance
 material and the complete distributable combination remain open, so this does
@@ -94,7 +94,7 @@ The current code does not provide a complete product-level privacy policy.
 
 ### Apple platforms
 
-- [x] Complete RootFS install, native final links, and the 13-check smoke with
+- [x] Complete RootFS install, native final links, and the 14-check smoke with
   the minimum Xcode 16 toolchain.
 - [x] Run the signed iPhone one-shot smoke.
 - [ ] Run the signed iPad smoke and complete iPhone/iPad lifecycle coverage.

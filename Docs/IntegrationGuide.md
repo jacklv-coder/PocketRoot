@@ -5,7 +5,7 @@
 本指南描述当前公开 API 的真实行为。它区分安全默认产品、显式 agent 产品和实验性 iSH 产品，并给出从本地 RootFS 到一次性命令结果的完整闭环。
 
 > [!CAUTION]
-> 固定的 `v0.4.0-abi.3` 会 soft-halt 并 join embedded kernel，然后从
+> 固定的 `v0.4.0-abi.4` 会 soft-halt 并 join embedded kernel，然后从
 > `prepared.system.shutdown()` 返回 Swift。成功后同一宿主进程不能再次 boot；不要把它
 > 放在页面退出、scene 切换、deinit 或无意触发的普通清理路径中。
 
@@ -274,7 +274,9 @@ print(result.stderr)
 - `mergeStandardError == true` 时 stderr 合并到 stdout，`standardError` 为空。
 - 默认 stdout 上限 8 MiB，stderr 上限 4 MiB；通过 `prepareSystem` 参数调整。
 - 超过输出上限会终止 session，并抛出 `PocketRootError.commandOutputLimitExceeded`。
-- Swift Task cancellation 尚不是完整的原生命令取消契约，不应把取消 Task 当成可靠的 native kill。
+- 取消执行命令的 Swift Task 会请求终止 native session；只有确认可信 `EXITED` 后才抛
+  `CancellationError`，成功取消后 runtime 保持 `.ready`。无法确认清理时会抛 runtime
+  failure 并失败关闭。取消不回滚命令此前已经产生的副作用。
 
 `PocketRootConfiguration.defaultWorkingDirectory` 和 `commandTimeout` 当前不会自动覆盖每个 `PocketRootCommandRequest` 的字段。需要统一策略时，请在应用层构造请求工厂。
 
@@ -310,7 +312,7 @@ print(result.stderr)
 | `.booting` | 原生启动进行中 |
 | `.ready` | 可接受一次性命令 |
 | `.shuttingDown` | 关闭已开始，不接受新操作 |
-| `.terminated` | v0.4.0-abi.3 soft shutdown 成功返回；同进程不能再次 boot |
+| `.terminated` | v0.4.0-abi.4 soft shutdown 成功返回；同进程不能再次 boot |
 | `.failed(String)` | 启动或关闭失败，通常需要重启宿主 App |
 
 ### 错误

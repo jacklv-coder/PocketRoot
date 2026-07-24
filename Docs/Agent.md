@@ -173,8 +173,9 @@ guest 中该用户有权访问的其他路径。
 stdout/stderr 先按工具配额截断，再以 UTF-8 或 binary-safe Base64 放入有界 JSON。
 更底层的 native 收集上限仍由 `PocketRootIshRuntimeConfiguration` 决定；工具配额只限制交给
 模型的结果，不会把固定 native transport 尚未解决的阻塞或 inbox 背压变成硬界限。
-Swift Task 在审批后、执行前取消时不会启动命令；命令已进入当前不可取消的 native
-`execute()` 后，取消只能阻止成功结果继续返回，不能撤销已经发生的副作用。
+Swift Task 在审批后、执行前取消时不会启动命令；命令已进入 native `execute()` 后，
+取消会终止 session，并在确认 guest `EXITED` 后返回。无法确认清理时 runtime 失败关闭。
+取消不能撤销已经发生的文件、网络或其他副作用。
 
 ## 安全原则
 

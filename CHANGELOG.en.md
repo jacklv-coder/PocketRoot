@@ -16,7 +16,7 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 - XcodeGen project source, generation, test, and build scripts.
 - Placeholder runtime, terminal API foundations, and unit tests.
 - Unified iOS 18 deployment baseline.
-- Experimental `PocketRootIshRuntime` pinned to IshEmbed revision `7cb201eed14b77b1a5b60a2498de25eb66710b1a` and the `v0.4.0-abi.3` XCFramework.
+- Experimental `PocketRootIshRuntime` pinned to IshEmbed revision `1c761d4c6de4ceb5ec9f15a4a958be9207ace756` and the `v0.4.0-abi.4` XCFramework.
 - Experimental `PocketRootIshRuntimeIntegration` composing caller-local RootFS installation and native runtime.
 - Process ownership, serial native execution, and lifecycle reentrancy protection.
 - One-shot cwd, environment, stderr merge, exit, signal, timeout, and stream mapping.
@@ -27,7 +27,7 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 - fakefs validation, versioned installation, verified reuse, and journal-protected same-volume promotion with rollback and interrupted recovery.
 - Real release-archive integration test.
 - arm64 Simulator and unsigned-device final-link gates for the full Experimental graph.
-- Repository iOS 18 native smoke covering 13 preparation, boot, guest, command, recovery, and shutdown checks.
+- Repository iOS 18 native smoke covering 14 preparation, boot, guest, command, cancellation, recovery, and shutdown checks.
 - A signed iPhone/iPad runner that installs through `devicectl`, injects the pinned RootFS, retrieves the report, and verifies development entitlements; the iPhone 17 Pro / iOS 26.1 baseline passed.
 - Exact SwiftPM resolution in `Package.resolved`.
 - IshEmbed [ADR-001](Docs/en/Decisions/ADR-001-IshEmbed-Feasibility.md) and immutable [upstream inventory](Docs/en/UpstreamDependencies.md).
@@ -42,10 +42,14 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 - Contribution Git fetch/push uses SSH.
 - Documentation now states that the default shared system is a placeholder and applications must retain the system returned by composition.
 - Native shutdown now soft-halts, joins, and returns `.terminated`; the host process still permits one lifecycle.
-- IshEmbed moves to ABI.3, including the ABI.2 `/proc` lifecycle-lock fix and
-  bounded copies into fixed 65-byte `uname` fields so long host names cannot
-  trigger a fortified-libc `SIGTRAP`; the public C ABI and Swift API are
-  unchanged.
+- IshEmbed moves to ABI.4, unblocking internal SIGUSR1 on the embedded
+  bootstrap and guest task threads so guest signals can interrupt blocking host
+  syscalls. It also includes ABI.3's bounded 65-byte uname copies and ABI.2's
+  `/proc` lifecycle-lock fix; the public C ABI and Swift API are unchanged.
+- One-shot commands support Swift Task cancellation. Queued commands may cancel
+  before native entry; active commands terminate their session and return
+  `CancellationError` only after trusted `EXITED`. Unconfirmed cleanup fails
+  closed, while successful cancellation leaves the runtime ready.
 - CI adds and passes a minimum-Xcode 16.0 full final-link, RootFS-install, and
   native-smoke gate. Node.js/npm remain optional caller-managed guest packages; Codex CLI is
   not part of the mobile installation path.

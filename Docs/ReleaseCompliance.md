@@ -46,9 +46,9 @@ PocketRoot 的实验性 iSH runtime、XCFramework 和候选 RootFS 当前仅用�
 - release XCFramework 是静态二进制输入；
 - source-to-binary correspondence 必须进一步固化并可提供。
 
-当前审计记录固定 IshEmbed `v0.4.0-abi.3` release commit
-`7cb201eed14b77b1a5b60a2498de25eb66710b1a`、iSH gitlink
-`5f7535ee945a96aaabd0d59e063f04443ba759df`，并在上游依赖清单中记录 XCFramework
+当前审计记录固定 IshEmbed `v0.4.0-abi.4` release commit
+`1c761d4c6de4ceb5ec9f15a4a958be9207ace756`、iSH gitlink
+`c36dfd25462737b45559eb48d4b09f799471572e`，并在上游依赖清单中记录 XCFramework
 和 corresponding-source 资产的大小与摘要。Release 已提供对应源码资产，但产品级
 RootFS 合规材料和完整可分发组合仍未闭环，因此不会解除发行阻塞。
 
@@ -163,7 +163,7 @@ Alpine `apk` 可以下载、安装和执行新增代码。即使初始 RootFS �
 
 ### Apple 平台
 
-- [x] Xcode 16 minimum-toolchain RootFS install、native final-link 与 13 项 smoke。
+- [x] Xcode 16 minimum-toolchain RootFS install、native final-link 与 14 项 smoke。
 - [x] signed iPhone 一次性命令 smoke。
 - [ ] signed iPad smoke 与完整 iPhone/iPad lifecycle。
 - [ ] foreground/background、jetsam、storage pressure。

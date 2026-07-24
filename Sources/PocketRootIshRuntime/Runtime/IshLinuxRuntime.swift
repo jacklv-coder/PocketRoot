@@ -195,8 +195,11 @@ package actor IshLinuxRuntime: LinuxRuntime {
         )
 
         do {
-            let result = try await executor.perform { [driver] in
-                try driver.execute(driverRequest)
+            let result = try await executor.performCancellable { [driver] cancellation in
+                try driver.execute(
+                    driverRequest,
+                    cancellation: cancellation
+                )
             }
             return PocketRootCommandResult(
                 exitCode: result.exitCode,
@@ -206,6 +209,9 @@ package actor IshLinuxRuntime: LinuxRuntime {
                 timedOut: result.timedOut
             )
         } catch {
+            if error is CancellationError {
+                throw CancellationError()
+            }
             if let driverError = error as? IshRuntimeDriverError,
                driverError.requiresRuntimeRestart
             {
@@ -251,7 +257,7 @@ package actor IshLinuxRuntime: LinuxRuntime {
 
         do {
             try await processGate.requireOwnership(for: ownerID)
-            // v0.4.0-abi.3 returns after supervisor exit, kernel soft-halt, and
+            // v0.4.0-abi.4 returns after supervisor exit, kernel soft-halt, and
             // a bounded pthread join. The process-global runtime remains
             // single-lifecycle, so successful shutdown is terminal.
             try await executor.perform { [driver] in

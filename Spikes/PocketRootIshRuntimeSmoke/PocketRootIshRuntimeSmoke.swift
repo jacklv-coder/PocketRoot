@@ -187,7 +187,59 @@ private enum PocketRootRuntimeSmokeRunner {
             )
             checks.append(PocketRootSmokeCheck(name: "post-output-limit", detail: "ready"))
 
-            // v0.4.0-abi.3 must return after soft-halting and joining the
+            writeProgress("running-cancellation-check")
+            let cancellationCommand = Task {
+                try await prepared.system.execute(
+                    PocketRootCommandRequest(
+                        command: "exec sleep 30",
+                        workingDirectory: "/",
+                        timeout: .seconds(60)
+                    )
+                )
+            }
+            await Task.yield()
+            try await Task.sleep(for: .milliseconds(500))
+            let cancellationClock = ContinuousClock()
+            let cancellationStartedAt = cancellationClock.now
+            cancellationCommand.cancel()
+            do {
+                _ = try await cancellationCommand.value
+                throw PocketRootSmokeFailure(
+                    message: "A cancelled native command returned success."
+                )
+            } catch is CancellationError {
+                // Success means the native driver terminated and reaped the
+                // guest command before propagating Swift Task cancellation.
+            }
+            let cancellationDuration = cancellationStartedAt.duration(
+                to: cancellationClock.now
+            )
+            try require(
+                cancellationDuration < .seconds(7),
+                "Native cancellation exceeded seven seconds: \(cancellationDuration)."
+            )
+            try require(
+                await prepared.system.state == .ready,
+                "Runtime was not ready after command cancellation."
+            )
+            let afterCancellation = try await prepared.system.execute(
+                PocketRootCommandRequest(
+                    command: "printf 'after-cancellation-ok'",
+                    workingDirectory: "/"
+                )
+            )
+            try require(
+                afterCancellation.stdout == "after-cancellation-ok",
+                "Runtime did not recover after command cancellation."
+            )
+            checks.append(
+                PocketRootSmokeCheck(
+                    name: "cancellation",
+                    detail: "native termination confirmed, runtime ready"
+                )
+            )
+
+            // v0.4.0-abi.4 must return after soft-halting and joining the
             // embedded kernel. Do not persist success until both the terminal
             // state and the no-reboot contract have been observed.
             writeProgress("shutting-down")

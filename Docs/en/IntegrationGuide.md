@@ -7,7 +7,7 @@ default, explicit agent, and Experimental native products, and covers the
 complete local-RootFS to one-shot-result flow.
 
 > [!CAUTION]
-> Pinned `v0.4.0-abi.3` soft-halts and joins the embedded kernel, then
+> Pinned `v0.4.0-abi.4` soft-halts and joins the embedded kernel, then
 > `prepared.system.shutdown()` returns to Swift. The same host process cannot
 > boot again after success. Do not trigger it accidentally from view, scene,
 > deinit, or routine cleanup paths.
@@ -226,7 +226,10 @@ Contract:
   requires a restart.
 - Merged stderr is returned in stdout with an empty stderr buffer.
 - Default stdout/stderr caps are 8 MiB/4 MiB. Exceeding a cap throws `commandOutputLimitExceeded`.
-- Swift Task cancellation is not yet a complete native-kill contract.
+- Cancelling the Swift Task requests native-session termination and throws
+  `CancellationError` only after a trusted `EXITED` event. Successful
+  cancellation keeps the runtime ready; unconfirmed cleanup fails it closed.
+  Cancellation does not undo side effects that already occurred.
 - `PocketRootConfiguration` defaults do not automatically override each request; build an application request factory if needed.
 
 The result exposes exit code, signal, raw Data streams, UTF-8 convenience strings, and timeout state.

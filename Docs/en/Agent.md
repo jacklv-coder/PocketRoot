@@ -183,8 +183,9 @@ UTF-8 or binary-safe Base64. Native collection limits still come from
 `PocketRootIshRuntimeConfiguration`; tool limits bound model-visible results
 but do not turn the pinned transport's blocking or inbox backpressure gaps into
 hard limits. Cancellation after approval but before execution skips the
-command. Once the currently non-cancellable native `execute()` has started,
-cancellation can suppress its successful result but cannot undo side effects.
+command. Once native `execute()` has started, cancellation terminates the
+session and returns only after guest `EXITED` is confirmed; unconfirmed cleanup
+fails the runtime closed. It cannot undo side effects that already happened.
 
 ## Security principles
 
