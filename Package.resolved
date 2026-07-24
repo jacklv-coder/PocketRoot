@@ -6,7 +6,7 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/jacklv-coder/ish-arm64-pkg.git",
       "state" : {
-        "revision" : "c071295c711a46f16508ff816907d0598e012396"
+        "revision" : "7cb201eed14b77b1a5b60a2498de25eb66710b1a"
       }
     }
   ],

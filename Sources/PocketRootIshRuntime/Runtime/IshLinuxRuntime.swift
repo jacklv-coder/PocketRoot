@@ -251,7 +251,7 @@ package actor IshLinuxRuntime: LinuxRuntime {
 
         do {
             try await processGate.requireOwnership(for: ownerID)
-            // v0.4.0-abi.1 returns after supervisor exit, kernel soft-halt, and
+            // v0.4.0-abi.3 returns after supervisor exit, kernel soft-halt, and
             // a bounded pthread join. The process-global runtime remains
             // single-lifecycle, so successful shutdown is terminal.
             try await executor.perform { [driver] in

@@ -7,7 +7,7 @@ default, explicit agent, and Experimental native products, and covers the
 complete local-RootFS to one-shot-result flow.
 
 > [!CAUTION]
-> Pinned `v0.4.0-abi.1` soft-halts and joins the embedded kernel, then
+> Pinned `v0.4.0-abi.3` soft-halts and joins the embedded kernel, then
 > `prepared.system.shutdown()` returns to Swift. The same host process cannot
 > boot again after success. Do not trigger it accidentally from view, scene,
 > deinit, or routine cleanup paths.

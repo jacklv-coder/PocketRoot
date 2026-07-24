@@ -83,7 +83,7 @@ The current runtime accepts one one-shot command. Queue requests in the applicat
 
 ## Boot is rejected after shutdown
 
-This is the pinned v0.4.0-abi.1 single-lifecycle contract. Shutdown soft-halts,
+This is the pinned v0.4.0-abi.3 single-lifecycle contract. Shutdown soft-halts,
 joins, and returns `.terminated`, but process-global iSH state prevents another
 boot in the same host process. Later calls return `restartRequired`; restart
 the host process for a new runtime. See

@@ -54,16 +54,16 @@ flowchart LR
 | --- | --- | --- | --- |
 | 产品与集成层 | [`jacklv-coder/PocketRoot`](https://github.com/jacklv-coder/PocketRoot) | Swift 公共 API、RootFS 安装、iSH adapter、Demo、集成测试和产品文档 | 构建 iSH 原生二进制 |
 | 包装源码层 | [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) 的固定 revision | Swift wrapper、C ABI 源码和 binary target 声明 | 当前声明中的 URL 可以仍指向第三方已发布制品 |
-| 当前原生制品 | `v0.4.0-abi.1` URL/checksum | 被 PocketRoot 最终链接的 XCFramework | 用户 fork 自托管 prerelease，不含 RootFS |
+| 当前原生制品 | `v0.4.0-abi.3` URL/checksum | 被 PocketRoot 最终链接的 XCFramework | 用户 fork 自托管 prerelease，不含 RootFS |
 | 当前原生运行时层 | 上述 package revision 记录的精确 iSH gitlink | iSH 内核、进程、signal、halt 和线程生命周期等底层行为 | 不能用另一个 branch 或本地 checkout 替代 |
-| 发布后 package 元数据修复 | [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) `41e5c0a` | 绝对 SSH-over-443 子模块 URL、CI 公开 HTTPS 只读重写 | 不改变 `v0.4.0-abi.1` binary URL/checksum 或原生制品 |
+| 当前 release commit | [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) `7cb201e` | manifest-only 固定 ABI.3 URL/checksum | 与 tag、Release target 和 `main` 一致 |
 | Guest 文件系统 | 经许可审查的 `fs.tar.gz` | Alpine 用户空间、fakefs 数据与 guest 工具 | 不存放在 PocketRoot Git 仓库中 |
 
 ### 为什么需要修改 `ish-arm64-pkg`
 
 `ish-arm64-pkg` 虽然来源于另一个项目，但 PocketRoot 会编译固定 package revision 的
 Swift wrapper，并链接该 revision 的 `Package.swift` 通过 URL/checksum 指定的
-XCFramework。当前 pin 指向用户 fork 的 `v0.4.0-abi.1`，并以独立对应源码资产记录
+XCFramework。当前 pin 指向用户 fork 的 `v0.4.0-abi.3`，并以独立对应源码资产记录
 nested iSH、musl 与构建输入。RootFS 仍是单独固定的 parent v0.3.3 资产。
 
 因此原生改动必须按依赖方向推进：
@@ -94,9 +94,10 @@ PocketRootIshSystemFactory
 ```
 
 PocketRoot 负责链路的前半段和产品边界；后半段必须阅读当前 package revision 的对应源码
-和 gitlink。当前固定 revision 包含包仓库的架构文档和发布后的 checkout 元数据修复，但
-binaryTarget 仍指向同一个 `v0.4.0-abi.1` 资产；原生二进制行为仍以该 Release 的对应
-源码、哈希和运行验证为证据。
+和 gitlink。当前固定 revision 是 `v0.4.0-abi.3` 的 manifest-only release commit，
+其 binaryTarget 指向已独立验证的 ABI.3 资产；原生二进制行为以该 Release 的对应源码、
+哈希和运行验证为证据。ABI.3 对固定大小的 uname 字段执行有界复制，并包含 ABI.2 的
+`/proc` 生命周期锁修复。
 
 ## 3. PocketRoot 仓库结构
 
@@ -228,7 +229,7 @@ deadline。
 
 关闭语义取决于 PocketRoot 当前固定的原生制品。学习或调试时，先查 `Package.swift` 和[上游依赖清单](UpstreamDependencies.md)，不要把尚未发布或尚未接入的 fork 代码当成当前产品行为。
 
-当前固定的 `v0.4.0-abi.1` 会停止 supervisor、soft-halt embedded kernel、bounded join
+当前固定的 `v0.4.0-abi.3` 会停止 supervisor、soft-halt embedded kernel、bounded join
 原生线程并返回 Swift。成功后公共状态为 `.terminated`；iSH 的进程级全局状态仍只允许
 一次有效 boot/shutdown，因此同一宿主进程不能再次 boot。
 

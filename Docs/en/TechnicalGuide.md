@@ -56,16 +56,16 @@ The textual relationship is:
 | --- | --- | --- | --- |
 | Product and integration | [`jacklv-coder/PocketRoot`](https://github.com/jacklv-coder/PocketRoot) | Public Swift API, RootFS installation, iSH adapter, Demo, integration tests, and product docs | Building the native iSH binary |
 | Packaging source | A pinned revision of [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) | Swift wrapper, C ABI source, and binary-target declaration | The URL in the current declaration may still select a third-party published artifact |
-| Current native artifact | The `v0.4.0-abi.1` URL/checksum | XCFramework final-linked by PocketRoot | Self-hosted fork prerelease; no RootFS |
+| Current native artifact | The `v0.4.0-abi.3` URL/checksum | XCFramework final-linked by PocketRoot | Self-hosted fork prerelease; no RootFS |
 | Current native runtime | The exact iSH gitlink recorded by that package revision | The iSH kernel and low-level process, signal, halt, and thread lifecycle | It cannot be replaced by another branch or local checkout |
-| Post-release package metadata fix | [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) `41e5c0a` | Absolute SSH-over-443 submodule URL and public read-only HTTPS rewrite in CI | It does not change the `v0.4.0-abi.1` binary URL/checksum or native artifact |
+| Current release commit | [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) `7cb201e` | Manifest-only pin to the ABI.3 URL/checksum | Matches the tag, Release target, and `main` |
 | Guest filesystem | License-reviewed `fs.tar.gz` | Alpine userspace, fakefs data, and guest tools | Storage in the PocketRoot Git repository |
 
 ### Why `ish-arm64-pkg` must sometimes change
 
 Although `ish-arm64-pkg` originated elsewhere, PocketRoot compiles the Swift
 wrapper at an exact revision and links the XCFramework selected by its
-URL/checksum. The current pin uses the fork's `v0.4.0-abi.1`; a separate
+URL/checksum. The current pin uses the fork's `v0.4.0-abi.3`; a separate
 corresponding-source asset records nested iSH, musl, and build inputs. RootFS
 remains the separately pinned parent v0.3.3 asset.
 
@@ -98,10 +98,11 @@ PocketRootIshSystemFactory
 
 PocketRoot owns the first half and the product boundary. For the second half,
 read the corresponding source and gitlink from the package revision currently
-pinned by PocketRoot. The pin contains the package architecture documentation
-and the post-release checkout-metadata fix, while its binary target still
-selects the same `v0.4.0-abi.1` asset. Native binary behavior remains evidenced
-by that Release's corresponding source, hashes, and runtime validation.
+pinned by PocketRoot. The pin is the manifest-only release commit for
+`v0.4.0-abi.3`, and its binary target selects the independently verified ABI.3
+asset. Native behavior remains evidenced by that Release's corresponding
+source, hashes, and runtime validation. ABI.3 bounds copies into fixed-size
+uname fields and includes the ABI.2 `/proc` lifecycle-lock fix.
 
 ## 3. PocketRoot repository map
 
@@ -240,7 +241,7 @@ pre-spawn/closeStdin stage.
 
 Shutdown semantics depend on the native artifact currently pinned by PocketRoot. While learning or debugging, inspect `Package.swift` and [Upstream Dependencies](UpstreamDependencies.md) first. Do not treat fork code that is not yet released and integrated as current product behavior.
 
-Pinned `v0.4.0-abi.1` stops the supervisor, soft-halts the embedded kernel,
+Pinned `v0.4.0-abi.3` stops the supervisor, soft-halts the embedded kernel,
 performs a bounded join, and returns to Swift. Public state becomes
 `.terminated`; process-global iSH state still permits only one valid
 boot/shutdown lifecycle, so the same host process cannot boot again.

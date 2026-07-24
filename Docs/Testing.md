@@ -239,7 +239,7 @@ xcrun simctl shutdown "$SMOKE_DEVICE_UDID"
 `restartRequired` 后写入；host 脚本读取成功证据后主动停止空闲 smoke App 并等待
 console client 结束。shutdown 前的 crash 不会产生成功 report，不能冒充通过。
 
-2026-07-23，`v0.4.0-abi.1` 在 iOS 18.2 arm64 Simulator 通过全部 13 项；shutdown
+2026-07-24，`v0.4.0-abi.3` 在 iOS 18.2 arm64 Simulator 通过全部 13 项；shutdown
 记录为 `returned, terminated, restart required`。
 
 该 smoke 是仓库维护的本地门禁，不在 GitHub Actions 中运行。
@@ -258,7 +258,7 @@ POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
 runner 要求设备已配对、启用 Developer Mode 且能用 development profile 签名。它生成并签名 `PocketRootIshRuntimeSmoke`，验证 application identifier 与 `get-task-allow`，通过 `devicectl` 安装 App、把固定 archive 复制到 App data container、attached launch 并取回 JSON report。默认结束后卸载 smoke App 并删除其 RootFS 数据；只有显式设置 `POCKETROOT_KEEP_DEVICE_APP=1` 才保留。
 
 2026-07-23 的签名 iPhone 记录使用旧 v0.3.3 runtime 基线；它证明设备 runner、archive
-与签名链路，但 runtime pin 变化后必须用 v0.4.0-abi.1 重跑，不能作为新 soft shutdown
+与签名链路，但 runtime pin 变化后必须用 v0.4.0-abi.3 重跑，不能作为新 soft shutdown
 的真机证据。
 
 ## 8. GitHub Actions

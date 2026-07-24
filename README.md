@@ -6,7 +6,7 @@ PocketRoot 是面向 iOS 的可嵌入 ARM64 Linux 运行时、终端与上层轻
 
 > [!WARNING]
 > 真实 iSH 集成目前仍是 **实验性（Experimental）** 能力。固定的
-> `v0.4.0-abi.1` 已支持返回 Swift 的 soft shutdown，但每个宿主进程仍只允许一次有效
+> `v0.4.0-abi.3` 已支持返回 Swift 的 soft shutdown，但每个宿主进程仍只允许一次有效
 > boot/shutdown；iPad、最低 Xcode、持续负载和发行合规门禁尚未闭环。当前版本不得用于
 > 生产、TestFlight 或公开二进制分发。
 

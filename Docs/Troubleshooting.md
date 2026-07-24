@@ -235,7 +235,7 @@ adapter 会终止当前 session 并抛 typed error。解决方向：
 
 ## shutdown 返回后无法再次 boot
 
-这是固定 `v0.4.0-abi.1` 的 single-lifecycle 契约。shutdown 会 soft-halt/join 并返回
+这是固定 `v0.4.0-abi.3` 的 single-lifecycle 契约。shutdown 会 soft-halt/join 并返回
 `.terminated`，但 iSH 进程级全局状态不允许同一宿主进程再次 boot；后续调用会得到
 `restartRequired`。需要新 runtime 时重启宿主进程。参见
 [ADR-001](Decisions/ADR-001-IshEmbed-Feasibility.md)。

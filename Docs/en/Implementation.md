@@ -106,7 +106,7 @@ The command is a shell string; quoting and injection policy belong to the caller
 
 The actor rejects shutdown while a command is active, changes state before
 suspension, verifies ownership, and calls native shutdown on the serial
-executor. Pinned v0.4.0-abi.1 stops the supervisor, soft-halts the kernel,
+executor. Pinned v0.4.0-abi.3 stops the supervisor, soft-halts the kernel,
 performs a bounded join, and returns. State becomes `.terminated`; the same
 host process cannot boot another iSH lifecycle.
 

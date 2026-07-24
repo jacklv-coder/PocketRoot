@@ -5,16 +5,16 @@
 本文是 PocketRoot 实验性 runtime 的不可变 revision、nested gitlink、制品 URL、大小和
 SHA-256 的唯一事实源。branch、moving tag、未验证 release alias 和本地缓存都不是有效 pin。
 
-审核日期：2026-07-23
+审核日期：2026-07-24
 
 ## 1. IshEmbed Swift Package
 
 | 字段 | 审核值 |
 | --- | --- |
 | 仓库 | `https://github.com/jacklv-coder/ish-arm64-pkg.git` |
-| 完整 revision | `41e5c0a8b215c18239308c787a4a4de53d685076` |
-| Release | `v0.4.0-abi.1`（prerelease） |
-| Tag peeled commit | `4e311bcea4fe806491e76a23c0e4caeeb1c513bf` |
+| 完整 revision | `7cb201eed14b77b1a5b60a2498de25eb66710b1a` |
+| Release | `v0.4.0-abi.3`（prerelease） |
+| Tag peeled commit | `7cb201eed14b77b1a5b60a2498de25eb66710b1a` |
 | Swift product | `IshEmbed` |
 | Manifest platform | iOS 18.0 |
 | Native slices | iOS arm64 device、arm64 Simulator |
@@ -25,15 +25,15 @@ SHA-256 的唯一事实源。branch、moving tag、未验证 release alias 和�
 ```swift
 .package(
     url: "https://github.com/jacklv-coder/ish-arm64-pkg.git",
-    revision: "41e5c0a8b215c18239308c787a4a4de53d685076"
+    revision: "7cb201eed14b77b1a5b60a2498de25eb66710b1a"
 )
 ```
 
-消费 revision 是 `v0.4.0-abi.1` 发布后的 package 元数据修复提交：把
-`third_party/ish` 从相对 URL 改为绝对 SSH-over-443 URL，并为无 SSH 私钥的 GitHub
-CI 使用公开 HTTPS 只读重写。它没有修改 `Package.swift` 的 binary URL/checksum；
-Release tag 仍固定到 `4e311bcea4fe806491e76a23c0e4caeeb1c513bf`，因此消费的原生
-XCFramework 与对应源码资产均未变化。
+消费 revision 就是 `v0.4.0-abi.3` 的 manifest-only release commit；该提交只把
+`Package.swift` 的 binary target URL/checksum 切到已经公开且独立验证的 ABI.3
+资产。Release tag peeled commit、Release target 与 `origin/main` 都是
+`7cb201eed14b77b1a5b60a2498de25eb66710b1a`。包仓库继续使用绝对 SSH-over-443
+submodule URL；无 SSH 私钥的 GitHub CI 只在 checkout 时应用公开 HTTPS 只读重写。
 
 ## 2. iSH source gitlink
 
@@ -41,21 +41,21 @@ XCFramework 与对应源码资产均未变化。
 | --- | --- |
 | 仓库 | `https://github.com/jacklv-coder/ish-arm64.git` |
 | Package 内路径 | `third_party/ish` |
-| 完整 gitlink | `576ffaf2574310b5fb2d148aab39ddcd2b8fe67d` |
+| 完整 gitlink | `5f7535ee945a96aaabd0d59e063f04443ba759df` |
 | 记录 branch | `embed-chroot-containment` |
 
 对应源码归档记录 parent package revision、该 gitlink、Zig `0.16.0` 与静态 supervisor
 使用的 musl 源码。重建不能用 recursive branch checkout 代替这些精确身份。
 
-## 3. v0.4.0-abi.1 发布资产
+## 3. v0.4.0-abi.3 发布资产
 
 Release：
-`https://github.com/jacklv-coder/ish-arm64-pkg/releases/tag/v0.4.0-abi.1`
+`https://github.com/jacklv-coder/ish-arm64-pkg/releases/tag/v0.4.0-abi.3`
 
 | Artifact | 大小 | SHA-256 | 用途 |
 | --- | ---: | --- | --- |
-| `libIshKernel.xcframework.zip` | 2,446,031 bytes | `5bd6f691ed2af1e157118b26f62b962a3568ebe96a608d75f5b2f661d07e1450` | SwiftPM binary target |
-| `IshEmbed-corresponding-source.tar.gz` | 2,350,872 bytes | `52b10b3b1dfedf221b4af37b125cde9b5fd03cc819944ab2d77d9893f6a76122` | 对应源码 |
+| `libIshKernel.xcframework.zip` | 2,448,357 bytes | `daa5beeb6cfd0469d0c7aab3556e5b2e3f6d3a62f75210dd625b155f8bfed3c6` | SwiftPM binary target |
+| `IshEmbed-corresponding-source.tar.gz` | 2,356,871 bytes | `3f6558abe447c39887920adc6512a98e05c6f1456773dd1e4c468725388efdea` | 对应源码 |
 
 XCFramework 只有 `ios-arm64` 和 `ios-arm64-simulator` 两个 arm64 slice，minimum OS
 为 iOS 18.0；没有 x86_64 Simulator 或 macOS slice。SwiftPM 用 manifest checksum
@@ -97,6 +97,8 @@ package。Codex CLI 不属于手机端架构，IshEmbed 不提供其安装、pro
 新制品已经进入 PocketRoot pin，并提供：
 
 - kernel soft-halt、bounded join，`shutdown()` 返回 Swift；
+- 固定 65-byte `uname` 字段的有界复制，避免长宿主 hostname 触发 fortified libc
+  `SIGTRAP`；同时包含 ABI.2 的 `/proc` 生命周期锁修复；
 - 每宿主进程一次有效 boot/shutdown，成功关闭后仍必须重启宿主进程才能再次 boot；
 - 类型化 supervisor/transport error；正常 guest `exit 17` 不再与 broken pipe 混淆；
 - 每 session 4 MiB/4096 帧 native 输出积压上限；

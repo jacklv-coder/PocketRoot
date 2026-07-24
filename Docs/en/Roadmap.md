@@ -16,7 +16,7 @@ Status:
 1. Merged the provider-agnostic bounded `PocketRootAgent` loop.
 2. Completed the OpenAI Responses API transport and host-owned credential contract.
 3. Completed the approval-, command-policy-, timeout-, and output-gated Linux tool.
-4. Published and pinned soft-shutdown IshEmbed `v0.4.0-abi.1`.
+4. Published and pinned soft-shutdown IshEmbed `v0.4.0-abi.3`.
 5. Current: finish Codex CR, CI, and PR merge for the new pin; final-link, Simulator lifecycle, and documentation are closed.
 6. Native Agent Loop/App composition is paused by product decision and does not block independent runtime validation.
 7. Complete signed iPad smoke when hardware is available; that gate does not block the first six items.
@@ -60,7 +60,7 @@ Status: **Experimental, in progress**.
 - Booted on iOS 18.2 arm64 Simulator.
 - Passed the repository 13-check native smoke.
 - The older v0.3.3 baseline passed the same signed 13-check smoke on an iPhone
-  17 Pro running iOS 26.1; v0.4.0-abi.1 still requires a signed-device rerun.
+  17 Pro running iOS 26.1; v0.4.0-abi.3 still requires a signed-device rerun.
 
 This establishes the current Simulator and single-iPhone one-shot paths, not iPad, complete physical-device lifecycle, minimum-Xcode, PTY, or distribution readiness.
 
@@ -73,15 +73,15 @@ This establishes the current Simulator and single-iPhone one-shot paths, not iPa
 | One-shot adapter | Passed | Preserve lifecycle, timeout, and output-limit coverage |
 | Native transport backpressure | In progress | Bounded protocol/session/stdin/log/control queues are integrated; sustained-output and peak-memory tests remain |
 | End-to-end native control-path time bound | In progress | Native control is bounded; PocketRoot's request deadline still needs to cover pre-spawn/closeStdin stages |
-| iOS 18 Simulator native behavior | Passed | v0.4.0-abi.1 passed the 13-check soft-shutdown smoke; keep rerunning after changes |
+| iOS 18 Simulator native behavior | Passed | v0.4.0-abi.3 passed the 13-check soft-shutdown smoke; keep rerunning after changes |
 | Secure RootFS install/recovery | Passed | Preserve real-asset/snapshot/rollback/recovery; add ENOSPC |
 | RootFS/runtime composition | Passed | Keep caller-controlled, no-download, no-auto-boot |
 | Default post-boot identity gate | Passed | Require aarch64, Alpine identity, optional version, and command context before ready; retain failed-slot regression coverage |
 | Real Demo runtime injection | Not started | Inject one prepared system without bundling an unreviewed RootFS |
-| Host-safe soft shutdown | Passed | v0.4.0-abi.1 soft-halts, joins, and returns to Swift; the process remains single-lifecycle |
-| Signed iPhone | In progress | The v0.3.3 baseline passed; rerun is required after the v0.4.0-abi.1 runtime change |
+| Host-safe soft shutdown | Passed | v0.4.0-abi.3 soft-halts, joins, and returns to Swift; the process remains single-lifecycle |
+| Signed iPhone | In progress | The v0.3.3 baseline passed; rerun is required after the v0.4.0-abi.3 runtime change |
 | Signed iPad | Blocked | Physical boot and command smoke |
-| Minimum Xcode 16 native | Not started | Repeat final-link and behavior |
+| Minimum Xcode 16 native | In progress | PR CI must complete the full final-link, RootFS install, and native smoke with Xcode 16.0 |
 | App lifecycle and memory | Not started | Background/foreground, jetsam, failure, persistence |
 | RootFS ENOSPC/power faults | Not started | Storage-pressure transaction fault matrix |
 | License-reviewed RootFS | Blocked | Complete license, NOTICE, source, and SBOM |
@@ -89,11 +89,14 @@ This establishes the current Simulator and single-iPhone one-shot paths, not iPa
 
 ### Remaining runtime sequence
 
-1. Final-link and Simulator smoke passed; complete Codex CR, CI, and PR merge.
-2. Repeat full final-link, install, and native smoke with minimum Xcode 16.
-3. Add complete cancellation, ENOSPC, power-loss, storage-pressure, long-output, and memory-peak coverage.
-4. When Native Agent Loop/App composition resumes, connect a prepared system to UI without bundling a RootFS.
-5. When a signed iPad is available, repeat preparation, boot, guest, command, and recovery checks with recorded toolchain and entitlements.
+1. Local final-link, RootFS install, Simulator smoke, and dependency evidence
+   are complete; finish Codex CR, Xcode 16/full CI, and PR merge.
+2. Add complete cancellation, ENOSPC, power-loss, storage-pressure,
+   long-output, and memory-peak coverage.
+3. When Native Agent Loop/App composition resumes, connect a prepared system
+   to UI without bundling a RootFS.
+4. When a signed iPad is available, repeat preparation, boot, guest, command,
+   and recovery checks with recorded toolchain and entitlements.
 
 Closing these makes one-shot execution a Developer Preview candidate.
 

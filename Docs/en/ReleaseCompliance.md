@@ -18,6 +18,14 @@ A native-enabled app may contain PocketRoot source, ish-arm64-pkg source, a stat
 
 The package repository carries GPL identifiers and a GPL-3.0 statement but did not provide a complete top-level license/notice set at audit. The pinned iSH source has GPL and `LICENSE.IOS` terms. Binary/source correspondence needs a durable reproducible record.
 
+The current audit pins IshEmbed `v0.4.0-abi.3` release commit
+`7cb201eed14b77b1a5b60a2498de25eb66710b1a` and iSH gitlink
+`5f7535ee945a96aaabd0d59e063f04443ba759df`; the upstream inventory records
+the XCFramework and corresponding-source asset sizes and digests. The Release
+provides a corresponding-source asset, but product-level RootFS compliance
+material and the complete distributable combination remain open, so this does
+not unblock distribution.
+
 The Alpine archive includes GPL-2.0-only, GPL-2.0-or-later, Apache-2.0, MPL-2.0, MIT, BSD, and Zlib families. It lacks a complete license bundle, NOTICE set, machine-readable SBOM, and established corresponding-source bundle.
 
 ## Repository safeguards

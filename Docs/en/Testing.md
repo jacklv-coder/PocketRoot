@@ -116,7 +116,7 @@ command produces `restartRequired`. The host then explicitly stops the idle
 smoke App and waits for the console client. A pre-success crash cannot produce
 a passing report. This is a local gate, not a GitHub Actions step.
 
-On 2026-07-23, `v0.4.0-abi.1` passed all 13 checks on an iOS 18.2 arm64
+On 2026-07-24, `v0.4.0-abi.3` passed all 13 checks on an iOS 18.2 arm64
 Simulator; shutdown recorded `returned, terminated, restart required`.
 
 ### Signed iPhone/iPad runner
