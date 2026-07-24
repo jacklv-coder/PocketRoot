@@ -259,7 +259,7 @@ PocketRoot 同时面对 Swift actor 和同步 C API，关键不是“多开线�
 | `BlockingIshExecutor` | 把同步原生调用移出主线程和 Swift cooperative executor |
 | `commandInFlight` | 当前阶段禁止两个一次性命令并行 |
 | `IshCommandCancellation` | 把 Swift Task 取消桥接到同步 driver，并在确认 guest 退出后再完成取消 |
-| timeout/output limits | deadline 约束 session 建立后的 read loop，配额约束 Swift 已收集结果；都不等同于当前 native control path 的端到端时间/内存硬界限 |
+| timeout/output limits | 统一 deadline 从 driver 入口覆盖 finite SPAWN、stdin close 与 read loop；到期后的 terminate/`EXITED` 确认使用独立的固定有界清理窗口，Swift 配额与 native backlog/control 预算共同限制输出和控制积压 |
 
 典型状态方向：
 

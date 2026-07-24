@@ -279,7 +279,7 @@ PocketRoot combines Swift actors with synchronous C APIs. The key question is no
 | `BlockingIshExecutor` | Keeps synchronous native calls off the main and Swift cooperative executors |
 | `commandInFlight` | Prevents concurrent one-shot commands in the current phase |
 | `IshCommandCancellation` | Bridges Swift Task cancellation into the synchronous driver and completes only after guest exit is confirmed |
-| Timeout and output limits | The deadline bounds the post-establishment read loop and budgets bound consumed Swift results; neither is an end-to-end time or memory bound for the current native control path |
+| Timeout and output limits | One deadline covers finite SPAWN, stdin close, and the read loop from driver entry; termination and `EXITED` confirmation after expiry use a separate fixed bounded cleanup window, while Swift budgets and native backlog/control budgets jointly bound output and control backlog |
 
 Typical state direction:
 
