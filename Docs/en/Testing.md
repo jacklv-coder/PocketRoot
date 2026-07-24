@@ -13,7 +13,7 @@ PocketRoot separates host logic, real RootFS, iOS build, native final-link, and 
 | Demo build | `./Scripts/build.sh` | Umbrella and UIKit build | Experimental graph |
 | Native final link | `./Scripts/build-runtime-spike.sh` | Full graph forms arm64 executables | Physical or guest behavior |
 | Simulator native smoke | `./Scripts/run-runtime-smoke.sh` | Prepare, boot, command bounds, returning soft shutdown | Other toolchains, physical devices, distribution |
-| Physical native smoke | `./Scripts/run-runtime-device-smoke.sh` | Same 17 checks with optional process suspend/resume, UIKit lifecycle, forced-relaunch persistence, or bounded storage-failure recovery; development entitlements and returning soft shutdown | Real storage pressure/power cut, jetsam, iPad, distribution |
+| Physical native smoke | `./Scripts/run-runtime-device-smoke.sh` | Same 17 checks with optional process suspend/resume, UIKit lifecycle, forced-relaunch persistence, bounded storage-failure recovery, or bounded memory-warning recovery; development entitlements and returning soft shutdown | Real storage/memory pressure, power cut, jetsam, iPad, distribution |
 | Documentation | `./Scripts/check-docs.sh` | Pairs, Chinese coverage, relative links | Implementation correctness |
 
 ## Package tests
@@ -160,6 +160,14 @@ must be empty after each failure before the same directory completes a normal
 install, boot, and the standard 17 checks. This bounded injection does not fill
 the device and is not real storage pressure or a physical power cut.
 
+With the mutually exclusive `POCKETROOT_SMOKE_MEMORY_WARNING=1`, an eighteenth
+check deterministically invokes the public
+`UIApplicationDelegate.applicationDidReceiveMemoryWarning(_:)` callback while
+one guest command is active. Fresh callback evidence, the full active-command
+output, a later command, `.ready`, shutdown, and peak memory must all pass.
+This repository-owned injection does not create real memory pressure and does
+not prove system low-memory delivery, jetsam, or relaunch recovery.
+
 The sustained-output check proves that Swift can continuously consume binary
 output without truncation or corruption merely because it exceeds the 4 MiB
 native backlog. The lifecycle high-water check covers RootFS preparation,
@@ -238,14 +246,25 @@ POCKETROOT_SMOKE_STORAGE_FAILURE=1 \
   ./Scripts/run-runtime-device-smoke.sh
 ```
 
+Use a separate mode for bounded memory-warning callback recovery:
+
+```bash
+POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
+POCKETROOT_SMOKE_DEVICE=<physical-device-reference> \
+POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
+POCKETROOT_SMOKE_MEMORY_WARNING=1 \
+  ./Scripts/run-runtime-device-smoke.sh
+```
+
 The reference may be any CoreDevice UUID, hardware UDID, or device name
 accepted by `devicectl`. The runner validates a physical iOS device through
 the supported JSON output and resolves its hardware UDID before `xcodebuild`
 and later `devicectl` operations. The paired device must have Developer Mode
 enabled and support development provisioning. The runner verifies the
 application identifier and `get-task-allow`, installs the App, copies the
-pinned archive into its data container, and retrieves the JSON report. Standard
-and bounded storage-failure modes use an attached launch. The mutually
+pinned archive into its data container, and retrieves the JSON report. Standard,
+bounded storage-failure, and bounded memory-warning modes use an attached
+launch. The mutually
 exclusive host-control modes use the launch-JSON PID for suspend/resume, open
 Settings and reactivate the same PID for UIKit callbacks, or terminate a seed
 PID and require a different verification PID. The runner terminates the
@@ -294,6 +313,16 @@ completed all standard commands and soft shutdown at a 91.2 MiB peak. This
 proves bounded capacity/ENOSPC cleanup recovery through the production
 installer and extractor in a physical App container, not near-full-device
 storage pressure, a physical power cut, or iPad.
+
+On the same date, the same Jack iPhone passed the 18-check bounded
+memory-warning path. The guest first wrote a fresh start acknowledgement, then
+the public App-delegate callback was deterministically invoked while that
+command was active; fresh callback evidence, the
+active command, a later command, `.ready`, soft shutdown, and the 256 MiB peak
+gate all passed at a 90.8 MiB peak; the same default 17-check regression also
+passed at 89.9 MiB. This proves runtime continuity under the repository
+callback injection, not real memory pressure, system low-memory delivery, or
+jetsam.
 
 ## CI
 

@@ -31,6 +31,7 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
 - 加入签名 iPhone/iPad smoke runner，通过 `devicectl` 安装、注入固定 RootFS、取回报告并校验 development entitlement；iPhone 17 Pro / iOS 26.1 基线已通过。
 - 加入签名真机强制重启持久化门禁：guest 标记同步后以 SIGKILL 终止 seed PID，新 verify PID 必须复用 RootFS、恢复并清理数据，再完成标准 shutdown 与内存检查。
 - 加入签名真机受限存储故障门禁：容量预检固定注入 0 可用字节，gzip 固定在 1 字节输出后注入 ENOSPC；两次失败都必须无安装残留，随后同目录正常恢复并完成标准 smoke。
+- 加入签名真机有界内存警告门禁：在运行中 guest 命令期间确定性调用公开 App delegate 回调，要求新鲜回调证据、运行中与后续命令、`.ready`、shutdown 和峰值内存门禁通过；不声明真实 memory pressure 或 jetsam。
 - 提交精确 SwiftPM resolution 到 `Package.resolved`。
 - 加入 IshEmbed 可行性 [ADR-001](Docs/Decisions/ADR-001-IshEmbed-Feasibility.md)。
 - 加入不可变 [上游依赖与制品清单](Docs/UpstreamDependencies.md)。

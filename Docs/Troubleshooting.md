@@ -298,6 +298,15 @@ xcrun simctl uninstall "$SMOKE_DEVICE_UDID" com.jacklv.PocketRootIshRuntimeSmoke
   保留失败容器排查，不能继续正常 boot 来掩盖残留。
 - `Unexpected gzip ENOSPC error`：固定 1 字节故障没有从实际 gzip 写入路径返回空间错误；
   检查 SPI 映射和 C extractor，不要扩大写入量。
+- `The App delegate did not expose a memory-warning callback`：smoke target 没有实现公开
+  `applicationDidReceiveMemoryWarning` 回调，或当前 delegate 不是预期 App；不要改用
+  private selector。
+- `The injected memory-warning callback did not persist fresh evidence`：回调未到达或读取了
+  旧 marker；确认独立模式和启动前 progress 重置，不要把它描述为系统内存压力。
+- `The guest command did not acknowledge active execution before the callback`：guest 没有在
+  5 秒内写入 fresh 启动标记；回调不会在此时注入，也不能用固定延时替代该确认。
+- `The active guest command did not survive the memory-warning callback`：保留 report 与
+  console 排查 runtime 连续性；该失败不能用后续命令成功掩盖。
 - `... smoke launch did not return a process identifier`：当前 Xcode/CoreDevice
   没有返回受支持的 launch JSON PID；不要从人类可读输出猜 PID。
 - entitlement 校验失败：不要跳过；确认 profile 的 application identifier、team identifier 和 `get-task-allow`。

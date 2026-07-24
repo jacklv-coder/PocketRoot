@@ -45,6 +45,9 @@ private enum PocketRootRuntimeSmokeRunner {
     static let progressFileName = "pocketroot-smoke-progress.txt"
     static let lifecycleResumeFileName = "pocketroot-smoke-lifecycle-resume.txt"
     static let uiLifecycleFileName = "pocketroot-smoke-ui-lifecycle.txt"
+    static let memoryWarningFileName = "pocketroot-smoke-memory-warning.txt"
+    static let memoryWarningActiveFileName = "pocketroot-smoke-memory-warning-active.txt"
+    static let memoryWarningActiveGuestPath = "/root/\(memoryWarningActiveFileName)"
     static let relaunchPersistenceFileName = "/root/pocketroot-smoke-relaunch.txt"
     static let relaunchPersistenceMarker = "pocketroot-forced-relaunch-v1"
     static let sustainedOutputByteCount = 8 * 1_024 * 1_024
@@ -56,6 +59,7 @@ private enum PocketRootRuntimeSmokeRunner {
         lifecycleMode: Bool = false,
         uiLifecycleMode: Bool = false,
         storageFailureMode: Bool = false,
+        memoryWarningMode: Bool = false,
         relaunchPersistencePhase: PocketRootSmokeRelaunchPersistencePhase = .disabled
     ) async -> PocketRootSmokeReport {
         let startedAt = Date()
@@ -414,6 +418,16 @@ private enum PocketRootRuntimeSmokeRunner {
                 )
             )
 
+            if memoryWarningMode {
+                checks.append(
+                    try await runMemoryWarningRecoveryCheck(
+                        system: prepared.system,
+                        documentsURL: documentsURL,
+                        rootFSURL: prepared.installation.rootFSURL
+                    )
+                )
+            }
+
             if lifecycleMode {
                 try await awaitHostSuspendResume(in: documentsURL)
                 let afterSuspendResume = try await prepared.system.execute(
@@ -571,6 +585,103 @@ private enum PocketRootRuntimeSmokeRunner {
         events.append(Data("\(event)\n".utf8))
         try? events.write(to: eventURL, options: .atomic)
         writeProgress("host-\(event)")
+    }
+
+    static func recordMemoryWarningCallback() {
+        guard ProcessInfo.processInfo.environment["POCKETROOT_SMOKE_MEMORY_WARNING"] == "1",
+              let documentsURL = FileManager.default.urls(
+                  for: .documentDirectory,
+                  in: .userDomainMask
+              ).first else {
+            return
+        }
+        let eventURL = documentsURL.appendingPathComponent(memoryWarningFileName)
+        try? Data("received\n".utf8).write(to: eventURL, options: .atomic)
+        writeProgress("memory-warning-received")
+    }
+
+    private static func runMemoryWarningRecoveryCheck(
+        system: PocketRootSystem,
+        documentsURL: URL,
+        rootFSURL: URL
+    ) async throws -> PocketRootSmokeCheck {
+        let eventURL = documentsURL.appendingPathComponent(memoryWarningFileName)
+        let activeURL = rootFSURL
+            .appendingPathComponent("data/root", isDirectory: true)
+            .appendingPathComponent(memoryWarningActiveFileName)
+        try? FileManager.default.removeItem(at: eventURL)
+        try? FileManager.default.removeItem(at: activeURL)
+        writeProgress("injecting-memory-warning")
+
+        async let activeCommand = system.execute(
+            PocketRootCommandRequest(
+                command: "trap 'rm -f \(memoryWarningActiveGuestPath)' EXIT; "
+                    + "printf 'started\\n' > \(memoryWarningActiveGuestPath) && sync "
+                    + "&& printf 'before-warning' && sleep 2 && printf 'after-warning'",
+                workingDirectory: "/",
+                timeout: .seconds(10)
+            )
+        )
+        try await awaitMemoryWarningCommandStart(at: activeURL)
+        let callbackDelivered = await deliverMemoryWarningCallback()
+        try require(callbackDelivered, "The App delegate did not expose a memory-warning callback.")
+        try require(
+            (try? Data(contentsOf: eventURL)) == Data("received\n".utf8),
+            "The injected memory-warning callback did not persist fresh evidence."
+        )
+
+        let activeResult = try await activeCommand
+        try require(
+            activeResult.exitCode == 0
+                && activeResult.stdout == "before-warningafter-warning",
+            "The active guest command did not survive the memory-warning callback."
+        )
+        let afterWarning = try await system.execute(
+            PocketRootCommandRequest(
+                command: "printf 'after-memory-warning-ok'",
+                workingDirectory: "/"
+            )
+        )
+        try require(
+            afterWarning.stdout == "after-memory-warning-ok",
+            "Runtime did not execute after the memory-warning callback."
+        )
+        try require(
+            await system.state == .ready,
+            "Runtime was not ready after the memory-warning callback."
+        )
+        return PocketRootSmokeCheck(
+            name: "memory-warning-recovery",
+            detail: "start-acknowledged active command, delegate callback, and later command passed"
+        )
+    }
+
+    private static func awaitMemoryWarningCommandStart(at activeURL: URL) async throws {
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: .seconds(5))
+        let expectedMarker = Data("started\n".utf8)
+        while clock.now < deadline {
+            if let marker = try? Data(contentsOf: activeURL),
+               marker == expectedMarker {
+                return
+            }
+            try await Task.sleep(for: .milliseconds(25))
+        }
+        throw PocketRootSmokeFailure(
+            message: "The guest command did not acknowledge active execution before the callback."
+        )
+    }
+
+    @MainActor
+    private static func deliverMemoryWarningCallback() -> Bool {
+        guard let delegate = UIApplication.shared.delegate,
+              delegate.responds(
+                  to: #selector(UIApplicationDelegate.applicationDidReceiveMemoryWarning(_:))
+              ) else {
+            return false
+        }
+        delegate.applicationDidReceiveMemoryWarning?(UIApplication.shared)
+        return true
     }
 
     private static func awaitHostSuspendResume(in documentsURL: URL) async throws {
@@ -778,6 +889,8 @@ final class PocketRootIshRuntimeSmokeApp: UIResponder, UIApplicationDelegate {
                 ProcessInfo.processInfo.environment["POCKETROOT_SMOKE_UI_LIFECYCLE"] == "1"
             let storageFailureMode =
                 ProcessInfo.processInfo.environment["POCKETROOT_SMOKE_STORAGE_FAILURE"] == "1"
+            let memoryWarningMode =
+                ProcessInfo.processInfo.environment["POCKETROOT_SMOKE_MEMORY_WARNING"] == "1"
             let relaunchPersistencePhase: PocketRootSmokeRelaunchPersistencePhase
             switch ProcessInfo.processInfo.environment[
                 "POCKETROOT_SMOKE_RELAUNCH_PERSISTENCE"
@@ -794,6 +907,7 @@ final class PocketRootIshRuntimeSmokeApp: UIResponder, UIApplicationDelegate {
                 lifecycleMode: lifecycleMode,
                 uiLifecycleMode: uiLifecycleMode,
                 storageFailureMode: storageFailureMode,
+                memoryWarningMode: memoryWarningMode,
                 relaunchPersistencePhase: relaunchPersistencePhase
             )
             do {
@@ -819,5 +933,9 @@ final class PocketRootIshRuntimeSmokeApp: UIResponder, UIApplicationDelegate {
 
     func applicationDidBecomeActive(_ application: UIApplication) {
         PocketRootRuntimeSmokeRunner.recordUIKitLifecycleEvent("active")
+    }
+
+    func applicationDidReceiveMemoryWarning(_ application: UIApplication) {
+        PocketRootRuntimeSmokeRunner.recordMemoryWarningCallback()
     }
 }

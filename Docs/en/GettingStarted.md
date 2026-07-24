@@ -158,6 +158,13 @@ available capacity at zero, then injects ENOSPC after one gzip-output byte.
 Both failures must leave no staging/transaction residue before a normal
 install, boot, and standard smoke recover in the same directory.
 
+Use the mutually exclusive `POCKETROOT_SMOKE_MEMORY_WARNING=1` mode for
+bounded recovery when the public `UIApplicationDelegate` memory-warning
+callback arrives. The repository smoke deterministically invokes that callback
+while one guest command is active, then requires fresh callback evidence, the
+active command, a later command, and `.ready` to survive. It does not create
+real memory pressure and is not jetsam evidence.
+
 ## 8. Command reference
 
 | Goal | Command |
@@ -174,6 +181,7 @@ install, boot, and standard smoke recover in the same directory.
 | Signed UIKit lifecycle smoke | Add `POCKETROOT_SMOKE_UI_LIFECYCLE=1` to the signed physical smoke command |
 | Signed forced-relaunch persistence smoke | Add `POCKETROOT_SMOKE_RELAUNCH_PERSISTENCE=1` to the signed physical smoke command |
 | Signed bounded storage-failure smoke | Add `POCKETROOT_SMOKE_STORAGE_FAILURE=1` to the signed physical smoke command |
+| Signed bounded memory-warning smoke | Add `POCKETROOT_SMOKE_MEMORY_WARNING=1` to the signed physical smoke command |
 | Documentation checks | `./Scripts/check-docs.sh` |
 
 ## 9. Do not commit

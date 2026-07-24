@@ -22,8 +22,9 @@ Status:
 5. Current: RootFS capacity preflight, the full write/promotion ENOSPC matrix,
    explicit file/directory persistence, deterministic power-loss cut points,
    the 8 MiB sustained binary-output baseline, physical forced-relaunch
-   persistence, and bounded physical storage-failure recovery are complete;
-   continue real storage-pressure/power-cut, jetsam, and peak-memory hardening.
+   persistence, bounded physical storage-failure recovery, and bounded physical
+   memory-warning recovery are complete; continue real storage-pressure/
+   power-cut, jetsam, and peak-memory hardening.
 6. Native Agent Loop/App composition is paused by product decision and does not block independent runtime validation.
 7. Complete signed iPad smoke when hardware is available; that gate does not block the first six items.
 
@@ -95,7 +96,7 @@ This establishes the current Simulator, minimum-Xcode 16, and single-iPhone one-
 | Signed iPhone | Passed | v0.4.0-abi.6 completed the 17-check one-shot/soft-shutdown/peak-memory smoke; keep rerunning after runtime changes |
 | Signed iPad | Blocked | Physical boot and command smoke |
 | Minimum Xcode 16 native | Passed | Xcode 16.0 / iOS 18.0 SDK completed RootFS install, Simulator/device final links, and the 17-check native smoke |
-| App lifecycle and memory | In progress | Simulator and Jack iPhone have 256 MiB `ru_maxrss` gates; physical process suspend/resume, UIKit foreground/background, and RootFS/guest-data recovery after forced termination passed; add physical jetsam |
+| App lifecycle and memory | In progress | Simulator and Jack iPhone have 256 MiB `ru_maxrss` gates; physical process suspend/resume, UIKit foreground/background, post-termination data recovery, and bounded App-delegate memory-warning recovery passed; add real memory-pressure/jetsam evidence |
 | RootFS ENOSPC/power faults | In progress | Peak-space preflight, full ENOSPC, seven persistence barriers, deterministic power-loss cuts, and bounded capacity/ENOSPC cleanup recovery on Jack iPhone are covered; add real storage-pressure/power-cut evidence |
 | License-reviewed RootFS | Blocked | Complete license, NOTICE, source, and SBOM |
 | App Store 2.5.2 | Blocked | Written guest download/execute policy decision |
