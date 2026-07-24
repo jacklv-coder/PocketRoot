@@ -93,6 +93,8 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
 - 签名真机 runner 现在接受 `devicectl` 可识别的 CoreDevice UUID、硬件 UDID 或设备名，
   通过官方 JSON 输出验证 physical iOS 属性，并把解析出的硬件 UDID 传给 `xcodebuild`
   和后续设备操作。
+- v0.4.0-abi.6 在签名 iPhone 17 Pro / iOS 26.1 上通过当前 17 项 native smoke；
+  soft shutdown 返回 Swift，完整生命周期峰值为 84.6 MiB。
 
 ### Security
 

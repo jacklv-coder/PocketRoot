@@ -72,8 +72,8 @@
 - 对 arm64 Simulator 和 unsigned device 完成完整依赖图最终链接；
 - 在 iOS 18.2 arm64 Simulator boot 固定 fakefs；
 - repository native smoke 通过 17 项 prepare、boot、guest、持续输出、stream limit、command、recovery、shutdown 与 Simulator 生命周期峰值内存检查。
-- 旧 v0.3.3 基线曾在签名 iPhone 17 Pro（iOS 26.1）通过当时的 13 项 native smoke；
-  新 v0.4.0-abi.6 仍需重跑签名设备验证。
+- v0.4.0-abi.6 在签名 iPhone 17 Pro（iOS 26.1）通过当前 17 项 native smoke；
+  soft shutdown 返回 Swift，完整生命周期峰值 84.6 MiB。
 
 这些证据建立了当前 Simulator、最低 Xcode 16 与单一 iPhone 的一次性命令路径，不覆盖 iPad、完整真机生命周期、PTY 或公开发行。
 
@@ -93,7 +93,7 @@
 | 默认 post-boot identity gate | 已通过 | `aarch64`、Alpine identity、可选 version 与 command context 通过后才 ready；保持失败占用槽位回归 |
 | Demo 真实 runtime 注入 | 未开始 | 一个 prepared system 注入 System/Commands/Diagnostics，不打包未审查 RootFS |
 | 进程安全 soft shutdown | 已通过 | v0.4.0-abi.6 soft-halt/join 返回 Swift；同进程仍只允许一次 lifecycle |
-| 签名 iPhone | 进行中 | 旧 v0.3.3 基线已通过；v0.4.0-abi.6 变更后需要重跑 |
+| 签名 iPhone | 已通过 | v0.4.0-abi.6 完成 17 项 one-shot/soft-shutdown/peak-memory smoke；runtime 变更后继续重跑 |
 | 签名 iPad | 阻塞 | physical boot 与 command smoke |
 | 最低 Xcode 16 原生兼容 | 已通过 | Xcode 16.0 / iOS 18.0 SDK 完成 RootFS install、Simulator/device final-link 和 17 项 native smoke |
 | App lifecycle 与内存 | 进行中 | Simulator 完整 smoke 已有 256 MiB `ru_maxrss` 门禁；补 foreground/background、真机 jetsam、failure injection、persistence |

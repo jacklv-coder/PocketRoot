@@ -289,9 +289,13 @@ JSON 输出验证 physical iOS 属性并解析硬件 UDID，再用于 `xcodebuil
 launch 并取回 JSON report。默认结束后卸载 smoke App 并删除其 RootFS 数据；只有
 显式设置 `POCKETROOT_KEEP_DEVICE_APP=1` 才保留。
 
-2026-07-23 的签名 iPhone 记录使用旧 v0.3.3 runtime 基线；它证明设备 runner、archive
-与签名链路，但 runtime pin 变化后必须用 v0.4.0-abi.6 重跑，不能作为新 soft shutdown
-的真机证据。
+2026-07-24 使用 Xcode 26.1.1、签名 iPhone 17 Pro / iOS 26.1、development
+provisioning 和 v0.4.0-abi.6 runtime pin 完成重跑。设备生成的 `success: true`
+报告通过全部 17 项；8 MiB binary stdout 逐字节一致，timeout/output-limit/cancellation
+后均恢复，soft shutdown 记录为 `returned, terminated, restart required`，完整生命周期
+峰值为 84.6 MiB（门禁 256 MiB）。仓库不提交设备标识、profile 或本地报告。这关闭
+当前 signed iPhone one-shot/soft-shutdown/peak-memory smoke 基线，不代表 iPad、
+foreground/background、真机 jetsam、storage pressure 或强制断电门禁完成。
 
 ## 8. GitHub Actions
 
