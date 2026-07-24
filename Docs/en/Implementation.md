@@ -121,7 +121,7 @@ duration to finite `spawn`, closes stdin, and polls events with bounded reads.
 SPAWN deadline expiry without a session returns a timed-out result. Direct not-running,
 protocol, or broken-pipe errors from `spawn` make the transport untrustworthy
 and fail the runtime closed; other pre-session failures preserve their source.
-ABI.5 covers native instance/spawn gates and control-queue admission from
+ABI.6 covers native instance/spawn gates and control-queue admission from
 SPAWN API entry, with bounded asynchronous admission for stdin close and
 terminate. The event loop reuses the same absolute deadline. stdout/stderr
 have independent caps. Later close-stdin, non-timeout read, request-timeout,
@@ -148,7 +148,7 @@ precedence and fail the runtime closed; successful cancellation leaves it ready.
 
 The actor rejects shutdown while a command is active, changes state before
 suspension, verifies ownership, and calls native shutdown on the serial
-executor. Pinned v0.4.0-abi.5 stops the supervisor, soft-halts the kernel,
+executor. Pinned v0.4.0-abi.6 stops the supervisor, soft-halts the kernel,
 performs a bounded join, and returns. State becomes `.terminated`; the same
 host process cannot boot another iSH lifecycle.
 

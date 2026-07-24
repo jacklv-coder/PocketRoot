@@ -16,7 +16,7 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 - XcodeGen project source, generation, test, and build scripts.
 - Placeholder runtime, terminal API foundations, and unit tests.
 - Unified iOS 18 deployment baseline.
-- Experimental `PocketRootIshRuntime` pinned to IshEmbed wrapper revision `fe4ed63331a7e72f1d12f69296cd3c07231a4f0e` and the `v0.4.0-abi.5` XCFramework.
+- Experimental `PocketRootIshRuntime` pinned to IshEmbed release revision `38d25d6f8726145e7e988172f12000020d89a638` and the `v0.4.0-abi.6` XCFramework.
 - Experimental `PocketRootIshRuntimeIntegration` composing caller-local RootFS installation and native runtime.
 - Process ownership, serial native execution, and lifecycle reentrancy protection.
 - One-shot cwd, environment, stderr merge, exit, signal, timeout, and stream mapping.
@@ -42,13 +42,15 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 - Contribution Git fetch/push uses SSH.
 - Documentation now states that the default shared system is a placeholder and applications must retain the system returned by composition.
 - Native shutdown now soft-halts, joins, and returns `.terminated`; the host process still permits one lifecycle.
-- IshEmbed moves to ABI.5. Finite streaming SPAWN covers the native
-  instance/spawn gates and control-queue admission from API entry, while stdin
-  close and terminate use bounded asynchronous admission. The PocketRoot driver
-  creates one deadline before SPAWN, passes the remaining duration into native,
-  and reuses that deadline for close/read/terminate. ABI.4's signal-mask fix,
-  ABI.3's bounded uname copies, and ABI.2's `/proc` lifecycle-lock fix remain;
-  the public C ABI and Swift API are unchanged.
+- IshEmbed moves to ABI.6. Finite streaming SPAWN covers the native
+  instance/spawn gates and control-queue admission from API entry. Stdin close
+  reuses the original SPAWN deadline, while terminate uses bounded lifecycle
+  admission. The PocketRoot driver creates one deadline before SPAWN, passes
+  the remaining duration into native, and reuses the product deadline for
+  close/read; timeout termination and trusted `EXITED` confirmation use a
+  separate fixed cleanup window. ABI.4's signal-mask fix, ABI.3's bounded
+  uname copies, and ABI.2's `/proc` lifecycle-lock fix remain; the public C ABI
+  and Swift API are unchanged.
 - One-shot commands support Swift Task cancellation. Queued commands may cancel
   before native entry; active commands terminate their session and return
   `CancellationError` only after trusted `EXITED`. Unconfirmed cleanup fails

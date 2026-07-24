@@ -4,7 +4,7 @@
 
 - 状态：**已接受，仅限实验性集成**
 - 日期：2026-07-21
-- 修订：2026-07-24，固定自托管 `v0.4.0-abi.5` control-path deadline 维护制品
+- 修订：2026-07-24，固定自托管 `v0.4.0-abi.6` control-path deadline 维护制品
 - 基线：iOS 18.0、arm64
 - 决策范围：runtime 可行性、供应链固定方式和发行门禁
 
@@ -48,7 +48,7 @@ PocketRoot 将 IshEmbed 集成在独立的 `PocketRootIshRuntime` product 后，
 
 ```text
 Repository: https://github.com/jacklv-coder/ish-arm64-pkg.git
-Revision:   fe4ed63331a7e72f1d12f69296cd3c07231a4f0e
+Revision:   38d25d6f8726145e7e988172f12000020d89a638
 Product:    IshEmbed
 ```
 
@@ -105,8 +105,8 @@ manifest 声明 iOS 18.0，release XCFramework 只有：
 
 | Artifact | SHA-256 |
 | --- | --- |
-| `libIshKernel.xcframework.zip` | `9a6a2a68dd186ce81c841087fb132e08f22cd3c09e4242b4f3c903e5a74550e0` |
-| `IshEmbed-corresponding-source.tar.gz` | `17c94f5199c11942d9c8ad0b370007ef01555c894dd0b5a37974dd5e4427e1e3` |
+| `libIshKernel.xcframework.zip` | `049422af47334a323dbe26fa7eb431160ef0742495783bd50d1c3949dd0c6720` |
+| `IshEmbed-corresponding-source.tar.gz` | `a94dbfa58289270ec83aefc5ed1632198290956fd5d1ca381e90dd2ec7f518fa` |
 | `fs.tar.gz` | `be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4` |
 
 XCFramework digest 与 upstream manifest 一致。RootFS digest 不在 upstream Swift manifest 中，因此 PocketRoot 单独提交 manifest 并 fail closed。
@@ -210,7 +210,7 @@ RootFS promotion 也不被视为一次整体原子替换。journal 不记录 pha
 - iSH 的进程级全局状态仍不允许同一进程再次 boot；
 - active call/session 会得到 busy 或由 PocketRoot 在更高层拒绝。
 
-ABI.5 为 finite streaming SPAWN 增加从 native API 入口覆盖 instance/spawn gate 与
+ABI.6 为 finite streaming SPAWN 增加从 native API 入口覆盖 instance/spawn gate 与
 control-queue admission 的 deadline，并让 stdin close/terminate 使用有界异步接纳。
 它保留 ABI.4 对 embedded bootstrap 和 guest task 内部 SIGUSR1 mask 的修复、ABI.3
 的固定 65-byte uname 有界复制和 ABI.2 的 `/proc` 生命周期锁修复；这些维护变更不改变

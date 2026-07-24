@@ -5,7 +5,7 @@
 本指南描述当前公开 API 的真实行为。它区分安全默认产品、显式 agent 产品和实验性 iSH 产品，并给出从本地 RootFS 到一次性命令结果的完整闭环。
 
 > [!CAUTION]
-> 固定的 `v0.4.0-abi.5` 会 soft-halt 并 join embedded kernel，然后从
+> 固定的 `v0.4.0-abi.6` 会 soft-halt 并 join embedded kernel，然后从
 > `prepared.system.shutdown()` 返回 Swift。成功后同一宿主进程不能再次 boot；不要把它
 > 放在页面退出、scene 切换、deinit 或无意触发的普通清理路径中。
 
@@ -314,7 +314,7 @@ print(result.stderr)
 | `.booting` | 原生启动进行中 |
 | `.ready` | 可接受一次性命令 |
 | `.shuttingDown` | 关闭已开始，不接受新操作 |
-| `.terminated` | v0.4.0-abi.5 soft shutdown 成功返回；同进程不能再次 boot |
+| `.terminated` | v0.4.0-abi.6 soft shutdown 成功返回；同进程不能再次 boot |
 | `.failed(String)` | 启动或关闭失败，通常需要重启宿主 App |
 
 ### 错误

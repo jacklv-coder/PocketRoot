@@ -8,7 +8,7 @@ install a verified Alpine fakefs and, through the Experimental iSH/IshEmbed
 adapter, execute bounded one-shot shell commands inside the iOS sandbox.
 
 > [!WARNING]
-> Native iSH integration is **Experimental**. Pinned `v0.4.0-abi.5` has a soft shutdown that returns to Swift, but each host process still permits only one valid boot/shutdown lifecycle. iPad, sustained-load, and distribution gates remain open. This version is not approved for production, TestFlight, or public binary distribution.
+> Native iSH integration is **Experimental**. Pinned `v0.4.0-abi.6` has a soft shutdown that returns to Swift, but each host process still permits only one valid boot/shutdown lifecycle. iPad, sustained-load, and distribution gates remain open. This version is not approved for production, TestFlight, or public binary distribution.
 
 ## Capability status
 

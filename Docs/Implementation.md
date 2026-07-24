@@ -259,7 +259,7 @@ env = nil or request.environment
 会直接返回 `timedOut` 结果。spawn 直接返回
 not-running、protocol 或 broken-pipe 代表 transport 已不可再信任，会映射为退出无法确认
 并失败关闭整个 runtime；其他 pre-session 错误保留原来源。driver 循环读取 session event，
-不使用一次性收集全部输出的便利 API。ABI.5 的 finite streaming path 从 native SPAWN
+不使用一次性收集全部输出的便利 API。ABI.6 的 finite streaming path 从 native SPAWN
 入口覆盖 instance/spawn gate 与 control queue admission；stdin close/terminate 使用
 有界异步接纳。后续 event read 复用同一绝对 deadline。deadline 到期后的 terminate
 与权威 `EXITED` 确认使用独立的固定有界清理窗口。
@@ -299,7 +299,7 @@ terminate/EXITED 流程后才返回。清理错误优先于 `CancellationError`�
 4. 确认 process ownership；
 5. 在 serial native executor 调用 `IshInstance.shared.shutdown()`。
 
-固定的 `v0.4.0-abi.5` 会等待 supervisor 退出、soft-halt kernel 并 bounded join 原生线程，
+固定的 `v0.4.0-abi.6` 会等待 supervisor 退出、soft-halt kernel 并 bounded join 原生线程，
 然后返回 Swift。runtime 发布 `.terminated`，调用方可在返回后完成宿主清理；但 iSH
 进程级全局状态仍只支持一次 lifecycle，因此不能在同一进程再次 boot。
 

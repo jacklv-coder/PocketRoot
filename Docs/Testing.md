@@ -251,7 +251,7 @@ xcrun simctl shutdown "$SMOKE_DEVICE_UDID"
 第 9 项证明持续二进制输出可以被 Swift 持续消费，不会因 4 MiB native backlog
 本身而截断或损坏。第 17 项在 Simulator 上约束包含 RootFS 准备、8 MiB 输出、
 超限恢复、取消与 shutdown 的完整进程峰值；它不是物理设备 jetsam 证明。第 10 项
-通过 ABI.5 finite SPAWN 路径运行，并证明统一 deadline 到期、确认 session `EXITED`
+通过 ABI.6 finite SPAWN 路径运行，并证明统一 deadline 到期、确认 session `EXITED`
 后仍可恢复。上游 deterministic lifecycle 测试另行覆盖 instance/spawn/control gate
 过期与阻塞 writer 下的有界 close/terminate。
 
@@ -261,9 +261,9 @@ console client 结束。shutdown 前的 crash 不会产生成功 report，不能
 
 该脚本既可作为仓库维护的本地门禁，也由最低工具链 GitHub Actions job 调用。
 
-2026-07-24，`v0.4.0-abi.5` 与 wrapper revision `fe4ed63` 在 iOS 18.2 arm64
+2026-07-24，`v0.4.0-abi.6` 与 wrapper revision `38d25d6` 在 iOS 18.2 arm64
 Simulator 通过全部 17 项；8 MiB binary stdout 逐字节精确，完整生命周期峰值为
-154.6 MiB（门限 256 MiB），shutdown
+156.5 MiB（门限 256 MiB），shutdown
 记录为 `returned, terminated, restart required`。
 
 仓库的最低工具链 job 会在 arm64 macOS runner 上明确选择 Xcode 16.0 与 iOS 18.0
@@ -284,7 +284,7 @@ POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
 runner 要求设备已配对、启用 Developer Mode 且能用 development profile 签名。它生成并签名 `PocketRootIshRuntimeSmoke`，验证 application identifier 与 `get-task-allow`，通过 `devicectl` 安装 App、把固定 archive 复制到 App data container、attached launch 并取回 JSON report。默认结束后卸载 smoke App 并删除其 RootFS 数据；只有显式设置 `POCKETROOT_KEEP_DEVICE_APP=1` 才保留。
 
 2026-07-23 的签名 iPhone 记录使用旧 v0.3.3 runtime 基线；它证明设备 runner、archive
-与签名链路，但 runtime pin 变化后必须用 v0.4.0-abi.5 重跑，不能作为新 soft shutdown
+与签名链路，但 runtime pin 变化后必须用 v0.4.0-abi.6 重跑，不能作为新 soft shutdown
 的真机证据。
 
 ## 8. GitHub Actions

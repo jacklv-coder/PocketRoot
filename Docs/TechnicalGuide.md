@@ -56,17 +56,17 @@ flowchart LR
 | 层 | 仓库或资产 | 负责内容 | 不负责内容 |
 | --- | --- | --- | --- |
 | 产品与集成层 | [`jacklv-coder/PocketRoot`](https://github.com/jacklv-coder/PocketRoot) | Swift 公共 API、RootFS 安装、iSH adapter、Demo、集成测试和产品文档 | 构建 iSH 原生二进制 |
-| 包装源码层 | [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) `fe4ed63` | Swift wrapper、C ABI 源码和 binary target 声明 | 当前声明仍固定已发布 ABI.5 制品 |
-| 当前原生制品 | `v0.4.0-abi.5` URL/checksum | 被 PocketRoot 最终链接的 XCFramework | 用户 fork 自托管 prerelease，不含 RootFS |
+| 包装源码层 | [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) `38d25d6` | Swift wrapper、C ABI 源码和 binary target 声明 | 当前声明仍固定已发布 ABI.6 制品 |
+| 当前原生制品 | `v0.4.0-abi.6` URL/checksum | 被 PocketRoot 最终链接的 XCFramework | 用户 fork 自托管 prerelease，不含 RootFS |
 | 当前原生运行时层 | 上述 package revision 记录的精确 iSH gitlink | iSH 内核、进程、signal、halt 和线程生命周期等底层行为 | 不能用另一个 branch 或本地 checkout 替代 |
-| 当前 release commit | [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) `bcbf8dd` | manifest-only 固定 ABI.5 URL/checksum | 与 tag 和 Release target 一致；wrapper pin 在其后增加 source-only deadline 修复 |
+| 当前 release commit | [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) `38d25d6` | 固定 ABI.6 URL/checksum，并包含已合并的 wrapper/native deadline 修复 | 与 tag、Release target 和 PocketRoot package pin 完全一致 |
 | Guest 文件系统 | 经许可审查的 `fs.tar.gz` | Alpine 用户空间、fakefs 数据与 guest 工具 | 不存放在 PocketRoot Git 仓库中 |
 
 ### 为什么需要修改 `ish-arm64-pkg`
 
 `ish-arm64-pkg` 虽然来源于另一个项目，但 PocketRoot 会编译固定 package revision 的
 Swift wrapper，并链接该 revision 的 `Package.swift` 通过 URL/checksum 指定的
-XCFramework。当前 pin 指向用户 fork 的 `v0.4.0-abi.5`，并以独立对应源码资产记录
+XCFramework。当前 pin 指向用户 fork 的 `v0.4.0-abi.6`，并以独立对应源码资产记录
 nested iSH、musl 与构建输入。RootFS 仍是单独固定的 parent v0.3.3 资产。
 
 因此原生改动必须按依赖方向推进：
@@ -97,10 +97,11 @@ PocketRootIshSystemFactory
 ```
 
 PocketRoot 负责链路的前半段和产品边界；后半段必须阅读当前 package revision 的对应源码
-和 gitlink。当前 wrapper revision `fe4ed63` 在 ABI.5 release commit 后增加 Swift
-参数封送与 native admission 共用的绝对 deadline 修复，其 binaryTarget 仍指向已独立
-验证的 ABI.5 资产；原生二进制行为以该 Release 的对应源码、哈希和运行验证为证据。
-ABI.5 会在 embedded bootstrap 和 guest task 线程解除内部
+和 gitlink。当前 wrapper revision `38d25d6` 就是 ABI.6 release commit：它同时包含
+Swift 参数封送与 native admission 共用的绝对 deadline 修复、native stdin-close 对
+原始 SPAWN deadline 的复用，以及指向已独立验证 ABI.6 资产的 binaryTarget；原生
+二进制行为以该 Release 的对应源码、哈希和运行验证为证据。
+ABI.6 会在 embedded bootstrap 和 guest task 线程解除内部
 SIGUSR1 屏蔽，使 guest signal 可打断阻塞中的宿主 syscall；它同时包含 ABI.3 的
 固定大小 uname 有界复制和 ABI.2 的 `/proc` 生命周期锁修复。
 
@@ -220,7 +221,7 @@ sequenceDiagram
 - 当前 system 仍拥有全局 iSH 实例。
 
 driver 在入口先创建绝对 deadline，把剩余时间传给 finite `spawn`，然后关闭 stdin 并
-分段读取事件。ABI.5 让 SPAWN 从 native API 入口覆盖 instance/spawn gate 与 control
+分段读取事件。ABI.6 让 SPAWN 从 native API 入口覆盖 instance/spawn gate 与 control
 queue admission，并让 stdin close/terminate 使用有界异步接纳。SPAWN 在 deadline
 耗尽且未创建 session 时返回标准 timed-out 结果；not-running、protocol 或 broken-pipe
 则表示 transport 已无法信任，PocketRoot 会失败关闭 runtime。session 建立后的关闭
@@ -242,7 +243,7 @@ Swift Task 取消会通过线程安全 token 传到串行 native 队列。若命
 
 关闭语义取决于 PocketRoot 当前固定的原生制品。学习或调试时，先查 `Package.swift` 和[上游依赖清单](UpstreamDependencies.md)，不要把尚未发布或尚未接入的 fork 代码当成当前产品行为。
 
-当前固定的 `v0.4.0-abi.5` 会停止 supervisor、soft-halt embedded kernel、bounded join
+当前固定的 `v0.4.0-abi.6` 会停止 supervisor、soft-halt embedded kernel、bounded join
 原生线程并返回 Swift。成功后公共状态为 `.terminated`；iSH 的进程级全局状态仍只允许
 一次有效 boot/shutdown，因此同一宿主进程不能再次 boot。
 

@@ -1,12 +1,12 @@
 {
-  "originHash" : "33b254fb6e907b06f3849f70a2d04ae1961b207238fbfaf6c287e1ff99a4a970",
+  "originHash" : "4b1bbde562422157c581e5df0b309eb25d14d520fb39b77175416b1d7b8e1697",
   "pins" : [
     {
       "identity" : "ish-arm64-pkg",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/jacklv-coder/ish-arm64-pkg.git",
       "state" : {
-        "revision" : "fe4ed63331a7e72f1d12f69296cd3c07231a4f0e"
+        "revision" : "38d25d6f8726145e7e988172f12000020d89a638"
       }
     }
   ],

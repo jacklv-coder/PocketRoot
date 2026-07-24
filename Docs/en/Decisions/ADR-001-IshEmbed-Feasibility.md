@@ -4,7 +4,7 @@
 
 - Status: Accepted for Experimental integration only
 - Date: 2026-07-21
-- Amended: 2026-07-24 to pin the self-hosted `v0.4.0-abi.5` control-path deadline maintenance artifact
+- Amended: 2026-07-24 to pin the self-hosted `v0.4.0-abi.6` control-path deadline maintenance artifact
 - Baseline: iOS 18.0, arm64
 - Scope: runtime feasibility, supply-chain pinning, and release gates
 
@@ -24,7 +24,7 @@ Pin:
 
 ```text
 Repository: https://github.com/jacklv-coder/ish-arm64-pkg.git
-Revision:   fe4ed63331a7e72f1d12f69296cd3c07231a4f0e
+Revision:   38d25d6f8726145e7e988172f12000020d89a638
 Product:    IshEmbed
 iSH gitlink: c36dfd25462737b45559eb48d4b09f799471572e
 ```
@@ -47,8 +47,8 @@ Independent digests:
 
 | Artifact | SHA-256 |
 | --- | --- |
-| `libIshKernel.xcframework.zip` | `9a6a2a68dd186ce81c841087fb132e08f22cd3c09e4242b4f3c903e5a74550e0` |
-| `IshEmbed-corresponding-source.tar.gz` | `17c94f5199c11942d9c8ad0b370007ef01555c894dd0b5a37974dd5e4427e1e3` |
+| `libIshKernel.xcframework.zip` | `049422af47334a323dbe26fa7eb431160ef0742495783bd50d1c3949dd0c6720` |
+| `IshEmbed-corresponding-source.tar.gz` | `a94dbfa58289270ec83aefc5ed1632198290956fd5d1ca381e90dd2ec7f518fa` |
 | `fs.tar.gz` | `be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4` |
 
 The Alpine 3.19.1 aarch64 source minirootfs digest is `7ef5eef3a5b1d198dfb1610cde1ef5b0755ff5d838fb1e5e1b9f42b59214820f`.
@@ -82,7 +82,7 @@ the final version directory, so `rootfs/<version>` directly contains
 `meta.db`, `data/`, and `.pocketroot-rootfs.json`. A valid version can be reused
 even when `current.json` is missing or mismatched; reuse repairs it.
 
-Pinned v0.4.0-abi.5 stops the supervisor, soft-halts the embedded kernel,
+Pinned v0.4.0-abi.6 stops the supervisor, soft-halts the embedded kernel,
 performs a bounded native join, and returns to Swift. Finite streaming SPAWN
 deadlines cover native instance/spawn gates and control-queue admission from
 API entry, while stdin close and terminate use bounded asynchronous admission.

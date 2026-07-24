@@ -47,8 +47,8 @@ PocketRoot 的实验性 iSH runtime、XCFramework 和候选 RootFS 当前仅用�
 - source-to-binary correspondence 必须进一步固化并可提供。
 
 当前审计记录固定 IshEmbed wrapper revision
-`fe4ed63331a7e72f1d12f69296cd3c07231a4f0e`、`v0.4.0-abi.5` release commit
-`bcbf8ddb3ee855cd119050a9e16b55dbfe8ceec6` 与 iSH gitlink
+`38d25d6f8726145e7e988172f12000020d89a638`、`v0.4.0-abi.6` release commit
+`38d25d6f8726145e7e988172f12000020d89a638` 与 iSH gitlink
 `c36dfd25462737b45559eb48d4b09f799471572e`，并在上游依赖清单中记录 XCFramework
 和 corresponding-source 资产的大小与摘要。Release 已提供对应源码资产，但产品级
 RootFS 合规材料和完整可分发组合仍未闭环，因此不会解除发行阻塞。

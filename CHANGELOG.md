@@ -16,7 +16,7 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
 - 加入 XcodeGen `project.yml`、工程生成、测试和构建脚本。
 - 加入 placeholder runtime、terminal API 基础与单元测试。
 - 统一 package、Demo、tests 和 CI 的 iOS 18.0 deployment baseline。
-- 固定 Experimental `PocketRootIshRuntime` 到 IshEmbed wrapper revision `fe4ed63331a7e72f1d12f69296cd3c07231a4f0e` 与 `v0.4.0-abi.5` XCFramework。
+- 固定 Experimental `PocketRootIshRuntime` 到 IshEmbed release revision `38d25d6f8726145e7e988172f12000020d89a638` 与 `v0.4.0-abi.6` XCFramework。
 - 加入 Experimental `PocketRootIshRuntimeIntegration`，组合调用方本地 RootFS 与原生 runtime。
 - 加入 process-wide ownership、serial native execution、lifecycle reentrancy protection。
 - 加入一次性命令的 cwd、environment、stderr merge、exit、signal、timeout 和 stream mapping。
@@ -54,10 +54,11 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
 - Git 贡献流程明确使用 SSH fetch/push。
 - 明确默认 `PocketRootSystem.shared` 是 placeholder，真实 system 必须保存 `prepareSystem` 返回实例。
 - native `shutdown()` 现在 soft-halt/join 后返回 `.terminated`；同一宿主进程仍只允许一次 lifecycle。
-- IshEmbed 更新到 ABI.5：有限 streaming SPAWN 从 native API 入口覆盖 instance/spawn
-  gate 与 control-queue admission，stdin close/terminate 使用有界异步接纳。PocketRoot
-  driver 在 SPAWN 前建立统一 deadline 并把剩余时间传入 native，后续 close/read/terminate
-  复用同一 deadline；同时保留 ABI.4 的 signal mask、ABI.3 的 `uname` 有界复制和
+- IshEmbed 更新到 ABI.6：有限 streaming SPAWN 从 native API 入口覆盖 instance/spawn
+  gate 与 control-queue admission；stdin close 复用原始 SPAWN deadline，terminate
+  使用有界 lifecycle 接纳。PocketRoot driver 在 SPAWN 前建立统一 deadline 并把剩余
+  时间传入 native，close/read 复用产品期限，超时后的 terminate/`EXITED` 确认使用独立
+  的固定有界清理窗口；同时保留 ABI.4 的 signal mask、ABI.3 的 `uname` 有界复制和
   ABI.2 的 `/proc` 生命周期锁修复，公共 C ABI 与 Swift API 不变。
 - 一次性命令支持 Swift Task 取消：排队命令可在 native entry 前取消；活动命令会终止
   session，并在确认可信 `EXITED` 后返回 `CancellationError`。清理无法确认时 runtime

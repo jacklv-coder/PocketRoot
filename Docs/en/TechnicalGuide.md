@@ -59,17 +59,17 @@ The textual relationship is:
 | Layer | Repository or asset | Owns | Does not own |
 | --- | --- | --- | --- |
 | Product and integration | [`jacklv-coder/PocketRoot`](https://github.com/jacklv-coder/PocketRoot) | Public Swift API, RootFS installation, iSH adapter, Demo, integration tests, and product docs | Building the native iSH binary |
-| Packaging source | [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) `fe4ed63` | Swift wrapper, C ABI source, and binary-target declaration | The current declaration still pins the published ABI.5 artifact |
-| Current native artifact | The `v0.4.0-abi.5` URL/checksum | XCFramework final-linked by PocketRoot | Self-hosted fork prerelease; no RootFS |
+| Packaging source | [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) `38d25d6` | Swift wrapper, C ABI source, and binary-target declaration | The current declaration still pins the published ABI.6 artifact |
+| Current native artifact | The `v0.4.0-abi.6` URL/checksum | XCFramework final-linked by PocketRoot | Self-hosted fork prerelease; no RootFS |
 | Current native runtime | The exact iSH gitlink recorded by that package revision | The iSH kernel and low-level process, signal, halt, and thread lifecycle | It cannot be replaced by another branch or local checkout |
-| Current release commit | [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) `bcbf8dd` | Manifest-only pin to the ABI.5 URL/checksum | Matches the tag and Release target; the wrapper pin adds a later source-only deadline fix |
+| Current release commit | [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) `38d25d6` | Pins the ABI.6 URL/checksum and contains the merged wrapper/native deadline fixes | Identical to the tag, Release target, and PocketRoot package pin |
 | Guest filesystem | License-reviewed `fs.tar.gz` | Alpine userspace, fakefs data, and guest tools | Storage in the PocketRoot Git repository |
 
 ### Why `ish-arm64-pkg` must sometimes change
 
 Although `ish-arm64-pkg` originated elsewhere, PocketRoot compiles the Swift
 wrapper at an exact revision and links the XCFramework selected by its
-URL/checksum. The current pin uses the fork's `v0.4.0-abi.5`; a separate
+URL/checksum. The current pin uses the fork's `v0.4.0-abi.6`; a separate
 corresponding-source asset records nested iSH, musl, and build inputs. RootFS
 remains the separately pinned parent v0.3.3 asset.
 
@@ -102,11 +102,12 @@ PocketRootIshSystemFactory
 
 PocketRoot owns the first half and the product boundary. For the second half,
 read the corresponding source and gitlink from the package revision currently
-pinned by PocketRoot. Wrapper revision `fe4ed63` adds an absolute deadline
-across Swift option marshalling and native admission after the ABI.5 release
-commit, while its binary target still selects the independently verified ABI.5
-asset. Native behavior remains evidenced by that Release's corresponding
-source, hashes, and runtime validation. ABI.5 unblocks internal SIGUSR1 on the
+pinned by PocketRoot. Wrapper revision `38d25d6` is the ABI.6 release commit:
+it contains the absolute deadline across Swift option marshalling and native
+admission, native stdin-close reuse of the original SPAWN deadline, and the
+binary target selecting the independently verified ABI.6 asset. Native behavior
+remains evidenced by that Release's corresponding source, hashes, and runtime
+validation. ABI.6 unblocks internal SIGUSR1 on the
 embedded bootstrap and guest task threads so guest signals can interrupt
 blocking host syscalls. It also contains ABI.3's bounded fixed-size uname
 copies and the ABI.2 `/proc` lifecycle-lock fix.
@@ -231,7 +232,7 @@ A one-shot command currently becomes:
 - this system still owns the global iSH instance.
 
 The driver creates one absolute deadline at entry, passes its remaining time
-to finite `spawn`, closes stdin, and then reads events incrementally. ABI.5
+to finite `spawn`, closes stdin, and then reads events incrementally. ABI.6
 covers the native instance/spawn gates and control-queue admission from SPAWN
 API entry, and uses bounded asynchronous admission for stdin close and
 terminate. SPAWN deadline expiry without a session becomes a normal timed-out
@@ -261,7 +262,7 @@ undo filesystem, network, or other guest side effects that already happened.
 
 Shutdown semantics depend on the native artifact currently pinned by PocketRoot. While learning or debugging, inspect `Package.swift` and [Upstream Dependencies](UpstreamDependencies.md) first. Do not treat fork code that is not yet released and integrated as current product behavior.
 
-Pinned `v0.4.0-abi.5` stops the supervisor, soft-halts the embedded kernel,
+Pinned `v0.4.0-abi.6` stops the supervisor, soft-halts the embedded kernel,
 performs a bounded join, and returns to Swift. Public state becomes
 `.terminated`; process-global iSH state still permits only one valid
 boot/shutdown lifecycle, so the same host process cannot boot again.

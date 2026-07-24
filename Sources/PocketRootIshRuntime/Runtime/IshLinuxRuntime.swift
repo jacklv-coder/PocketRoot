@@ -142,7 +142,7 @@ package actor IshLinuxRuntime: LinuxRuntime {
                 "timeout must be greater than zero and no longer than 24 hours."
             )
         }
-        // Clamp valid tiny durations to one ms. ABI.5 preserves that finite
+        // Clamp valid tiny durations to one ms. ABI.6 preserves that finite
         // timeout through streaming SPAWN and later control admission.
         let nativeTimeout = max(requestedTimeout, 0.001)
         guard configuration.maximumStandardOutputBytes > 0,
@@ -257,7 +257,7 @@ package actor IshLinuxRuntime: LinuxRuntime {
 
         do {
             try await processGate.requireOwnership(for: ownerID)
-            // v0.4.0-abi.5 returns after supervisor exit, kernel soft-halt, and
+            // v0.4.0-abi.6 returns after supervisor exit, kernel soft-halt, and
             // a bounded pthread join. The process-global runtime remains
             // single-lifecycle, so successful shutdown is terminal.
             try await executor.perform { [driver] in
