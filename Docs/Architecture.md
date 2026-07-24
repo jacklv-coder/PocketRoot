@@ -330,6 +330,12 @@ cleanup、rollback 和 recovery 处理。
 进程中断后可恢复。journal 不记录 phase，而是保存预期安装记录、是否曾有旧版本以及旧
 `current.json` 数据；恢复时根据 final 是否匹配预期记录、backup 是否存在以及旧安装事实推断应完成提交还是回滚。
 
+promotion 顺序具有显式持久化屏障：候选文件 `F_FULLFSYNC`/`fsync` 和目录同步先完成，
+再持久化 journal；每次跨目录 rename 后同步两个父目录；`current.json` 的临时文件先同步，
+原子 rename 后再同步 `rootfs/`，最后才删除 transaction。七点同步失败矩阵和
+journal-only/backup/candidate 断电切点验证旧版本回滚或候选提交；真机强制断电实证仍是
+独立门禁。
+
 复用只要求版本目录布局有效且版本内安装记录匹配 manifest。`current.json` 缺失或不匹配
 不会阻止复用；installer 会在返回前将其重写为一致记录。
 

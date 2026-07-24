@@ -46,7 +46,7 @@ Design principles:
 
 - The RootFS payload is not committed; the library performs no network download.
 - Source, XCFramework, and RootFS inputs are pinned by immutable revision or digest.
-- Extraction occurs in private same-volume staging. An on-disk journal protects the multi-step, same-volume rename promotion so it can recover or roll back. Each rename and record write is atomic on its own, but the sequence is not one atomic operation. Files and directories are not explicitly `fsync`ed, so sudden-power-loss durability is not promised.
+- Extraction occurs in private same-volume staging. After validation, the installer persists the candidate tree, then performs recoverable promotion through a durable journal, synchronized rename parents, and atomic durable `current.json`. The sequence is still not one atomic operation, but explicit file/directory ordering plus power-loss cut-point recovery can infer commit or rollback; physical-device forced-power-cut evidence remains a separate gate.
 - IshEmbed is process-global: one native owner and one in-flight command.
 - Synchronous native work runs on a serial blocking executor away from the main and Swift cooperative executors.
 - Cancelling a one-shot command terminates its native session and returns only

@@ -225,8 +225,14 @@ on failure and recover after interruption. The journal stores no phase. It
 stores the expected record, whether a previous install existed, and the prior
 `current.json` bytes; recovery infers commit or rollback from an
 expected-final match, backup presence, and the recorded prior-install facts.
-The implementation does not explicitly `fsync` files or directories, so this
-recovery design does not promise durability across sudden power loss.
+Promotion has explicit persistence barriers: candidate files receive
+`F_FULLFSYNC`/`fsync` and leaf-first directory synchronization before the
+journal is durably committed; both parents are synchronized after every
+cross-directory rename; the `current.json` temporary file and its final
+directory entry are synchronized before transaction removal. A seven-point
+sync-failure matrix plus journal-only, backup, and candidate cut-point states
+verify rollback or commit. Physical-device forced-power-cut evidence remains
+a separate gate.
 
 Reuse requires a valid version-directory layout and a matching in-directory
 installation record. A missing or mismatched `current.json` does not block

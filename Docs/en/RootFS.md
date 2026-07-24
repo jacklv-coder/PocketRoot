@@ -56,6 +56,10 @@ for a complete Files/document-picker import into an app-owned local URL.
 
 Use `PocketRootIshSystemFactory.prepareSystem` for composition, or use `PocketRootRootFSInstaller.prepareArchive` directly when no runtime is needed yet.
 
+`baseDirectoryURL` must be a caller-created, existing real local directory.
+The installer creates and persists `rootfs/` beneath it; it does not
+recursively create or promise power-loss durability for unknown ancestors.
+
 `PocketRootBundledRootFSProvider` currently finds no archive: `isRootFSBundled` is false, URL is nil, and preparation throws a typed missing-resource error.
 
 ## Threat model
@@ -67,6 +71,7 @@ Use `PocketRootIshSystemFactory.prepareSystem` for composition, or use `PocketRo
 | Resource exhaustion | Compressed, expanded, payload, and entry-count limits |
 | Clearly insufficient new-install peak space | Preflight same-volume snapshot, temporary tar, payload, and 16 MiB reserve before staging |
 | Mid-operation ENOSPC leaving partial files or damaging the prior install | Snapshot/gzip/tar/record/journal/current fault matrix, staging cleanup, and promotion rollback |
+| Sudden power loss reordering journal, renames, and current | Explicit candidate-tree, record-file, and parent-directory persistence barriers; infer recovery from journal/final/backup |
 | Tar traversal | UTF-8 relative-path validation and destination containment |
 | Links and special nodes | Reject unsupported entry types |
 | Duplicate file or directory overwrite | Reject entries that map to the same path or filesystem target |
@@ -76,7 +81,7 @@ Use `PocketRootIshSystemFactory.prepareSystem` for composition, or use `PocketRo
 | Concurrent preparation | Process-wide serial installation executor |
 
 Out of scope include an incorrectly trusted manifest, guest vulnerabilities,
-the app's download policy, physical storage pressure, power-loss durability,
+the app's download policy, physical storage pressure, physical power-cut evidence,
 jetsam, compliance, and user-data migration.
 
 ## Install flow
@@ -90,9 +95,10 @@ flowchart TD
     E --> F["Constrained ustar"]
     F --> G["Reverify snapshot"]
     G --> H["Validate fs/meta.db + fs/data"]
-    H --> I["Write installation record"]
-    I --> J["Journal + same-volume rename"]
-    J --> K["Update current.json"]
+    H --> I["Write record and persist candidate tree"]
+    I --> J["Persist journal"]
+    J --> K["Same-volume rename + parent sync"]
+    K --> L["Atomically update and persist current.json"]
 ```
 
 Capacity is checked only when the target cannot be safely reused. The new
@@ -168,11 +174,22 @@ writes are atomic on their own, but the multi-step promotion is not one atomic
 replacement; safety comes from the on-disk journal, rollback, and inferred
 recovery.
 
-The implementation uses atomic single-record writes and same-volume renames,
-but does not explicitly `fsync` files or directories. Recovery therefore
-covers filesystem state readable after ordinary process interruption; it does
-not promise that every write survives sudden power loss. Power-loss claims
-still require explicit persistence work and a corresponding fault matrix.
+Before promotion, the installer walks the candidate tree leaf-first, applies
+`F_FULLFSYNC` to regular files with an `fsync` fallback, and then synchronizes
+directories. Journal and `current.json` commits write a private temporary file,
+flush it, atomically rename it, and synchronize the parent directory. Every
+cross-directory rename is followed by synchronization of both source and
+destination parents. The journal is therefore durable before destructive
+renames, candidate contents are durable before becoming final, and
+`current.json` is durable before transaction cleanup. Rollback and recovery
+also synchronize their rename, record-restoration, and removal operations.
+
+A deterministic fault matrix covers seven barriers: candidate tree, journal
+file/directory, previous-install rename, candidate rename, and current-record
+file/directory. Constructed journal-only, backup, and candidate/final cut-point
+states verify inferred rollback or commit. This establishes implementation and
+host-filesystem persistence ordering; physical-device forced-power-cut evidence
+remains a separate gate.
 
 ## Update rule
 

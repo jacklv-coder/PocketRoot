@@ -18,9 +18,8 @@
 3. 完成带审批、命令策略、超时和输出边界的 Linux command tool。
 4. 已发布并固定 IshEmbed `v0.4.0-abi.4`，完成一次性命令 Swift Task 取消、native
    退出确认和取消后恢复。
-5. 当前：RootFS 容量预检以及 snapshot/gzip/tar/record/journal/current/promotion
-   ENOSPC 矩阵已完成；继续显式持久化、power-loss、真实 storage pressure、持续输出
-   和峰值内存硬化。
+5. 当前：RootFS 容量预检、全写入/promotion ENOSPC、显式文件/目录持久化以及确定性
+   power-loss 切点矩阵已完成；继续真机 storage pressure/强制断电、持续输出和峰值内存硬化。
 6. 原生 Agent Loop/App 组合按产品决定暂停；不阻塞 runtime 独立验证。
 7. 有物理 iPad 后补签名设备 smoke；该硬件门禁不阻塞前六项。
 
@@ -97,14 +96,14 @@
 | 签名 iPad | 阻塞 | physical boot 与 command smoke |
 | 最低 Xcode 16 原生兼容 | 已通过 | Xcode 16.0 / iOS 18.0 SDK 完成 RootFS install、Simulator/device final-link 和 14 项 native smoke |
 | App lifecycle 与内存 | 未开始 | foreground/background、jetsam、failure injection、persistence |
-| RootFS ENOSPC/掉电 | 进行中 | 峰值空间预检和全写入/promotion ENOSPC 矩阵已覆盖；补显式持久化、掉电与真机 storage pressure |
+| RootFS ENOSPC/掉电 | 进行中 | 峰值空间预检、全 ENOSPC、七点持久化屏障和确定性掉电切点已覆盖；补真机 storage pressure/强制断电 |
 | License-reviewed RootFS | 阻塞 | license、NOTICE、对应源码和 SBOM 完整 |
 | App Store 2.5.2 | 阻塞 | guest download/execute policy 有书面结论 |
 
 ### 后续 runtime 执行顺序
 
 1. **故障与资源硬化**
-   继续显式持久化、power-loss、真实 storage pressure、long output 与 memory peak。
+   继续真机 storage pressure/强制断电、long output 与 memory peak。
 
 2. **暂停的 App 组合**
    原生 Agent Loop/App 组合恢复后，再把 prepared system 接入 UI；不把 RootFS 放进默认 target。

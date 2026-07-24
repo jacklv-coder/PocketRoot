@@ -40,6 +40,14 @@ final class PocketRootIshRuntimeIntegrationTests: XCTestCase {
 
         let archiveURL = directoryURL.appendingPathComponent("rootfs.tar.gz")
         try XCTUnwrap(Data(base64Encoded: Self.archiveBase64)).write(to: archiveURL)
+        let applicationSupportURL = directoryURL.appendingPathComponent(
+            "Application Support/PocketRoot",
+            isDirectory: true
+        )
+        try FileManager.default.createDirectory(
+            at: applicationSupportURL,
+            withIntermediateDirectories: true
+        )
         let manifest = PocketRootRootFSArtifactManifest(
             version: "fixture-v1",
             architecture: .arm64,
@@ -52,10 +60,7 @@ final class PocketRootIshRuntimeIntegrationTests: XCTestCase {
 
         let prepared = try await PocketRootIshSystemFactory.prepareSystem(
             archiveURL: archiveURL,
-            applicationSupportURL: directoryURL.appendingPathComponent(
-                "Application Support/PocketRoot",
-                isDirectory: true
-            ),
+            applicationSupportURL: applicationSupportURL,
             manifest: manifest,
             systemConfiguration: PocketRootConfiguration(
                 rootFSVersion: "must-be-replaced",

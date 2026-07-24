@@ -87,12 +87,16 @@ flowchart TD
 
 `PocketRootRootFSInstaller` 是 actor，阻塞文件操作进入共享 `RootFSInstallationExecutor`。每次准备先：
 
-1. 验证 base URL 是本地 file URL；
+1. 验证 base URL 是调用方已创建的本地真实目录；installer 不递归创建未知祖先；
 2. 规范化 manifest version，拒绝不安全目录名；
 3. 创建真实、非符号链接的 `rootfs/` 目录；
 4. 检查文件型 replacement journal；
 5. 完成或回滚上一次中断的 rename；
 6. 清理确认不再需要的 stale staging。
+
+`rootfs/` 通过原子 `mkdir` 创建；`EEXIST` 只表示需要重新验证现有路径，
+不能跳过真实目录与符号链接检查。共享 executor 只保证进程内串行，
+多个进程同时操作同一个 base directory 不属于支持范围。
 
 恢复发生在新安装之前，避免旧事务和新候选交叉。
 
@@ -119,6 +123,15 @@ important-usage 容量；不足时在创建 staging 前返回包含 required 与
 仅测试可见的写入故障点可在 snapshot、gzip 输出、tar payload、安装记录、promotion
 journal 和 current record 注入 ENOSPC。gzip 故障发生在 C/zlib 已接受指定数量输出之后，
 以验证部分 tar 会删除；其余故障复用生产 cleanup/rollback 路径，不改变公开 API。
+
+进入 promotion 前，候选普通文件以 `F_FULLFSYNC`（不支持时回退 `fsync`）持久化，目录
+从叶到根同步。journal 和 current record 使用同目录私有临时文件，完整写入和同步后原子
+rename，再同步父目录。每个跨目录 rename 后同步源、目标父目录；rollback/recovery 的
+rename、记录恢复和 transaction 删除采用相同规则。仅测试可见的七个同步屏障覆盖候选树、
+journal 文件/目录、两个 promotion rename 和 current 文件/目录。候选条目缺少 owner
+read/search 权限时，installer 只在私有 staging 中临时添加所需权限，通过已打开 descriptor
+恢复原 mode 后再同步，最终权限不变。删除失败 staging 或旧 backup 前，只对即将删除的
+目录树临时添加 owner traversal/write 权限，不跟随 link。
 
 ### 4.3 gzip 与 tar
 

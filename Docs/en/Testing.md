@@ -28,12 +28,19 @@ Coverage includes the following relevant boundaries:
 - Resources tests cover the pinned manifest and gated bundled provider; archive existence, symlink rejection, byte count, and SHA-256; required fakefs layout and metadata-symlink rejection; successful gzip/ustar extraction, traversal cleanup, explicit-directory-after-implicit-parent rejection, duplicate-directory and case-aliased-directory rejection on insensitive volumes, archive symlink entry/source rejection, and the expanded-byte limit.
 - Synthetic Resources fixtures cover first install and reuse, private
   archive-snapshot isolation and byte bounds, pre-staging insufficient-capacity
-  rejection, exact-budget acceptance, wider custom-extractor budgeting,
+  rejection, rejection of a missing installation base, preservation of mode
+  `000` candidate entries across persistence, cleanup of a permission-restricted
+  backup/transaction during same-version replacement, exact-budget acceptance,
+  wider custom-extractor budgeting,
   and low-space upgrade preservation. ENOSPC injection across snapshot,
   partial gzip output, tar payload, installation record, promotion journal,
   `current.json`, and both destructive promotion checkpoints verifies partial
   gzip cleanup, staging/transaction removal, prior-install preservation, and
-  current-record rollback. Fixtures also cover reserved versions,
+  current-record rollback. I/O failures at the candidate tree, journal
+  file/directory, both promotion renames, and current-record file/directory
+  verify all seven persistence barriers. Journal-only, backup, and
+  candidate/final power-loss cut-point states verify inferred rollback or
+  commit. Fixtures also cover reserved versions,
   corrupt replacement, failed upgrade/promotion rollback, interrupted
   transaction recovery, and a single installation under concurrent
   preparation.
