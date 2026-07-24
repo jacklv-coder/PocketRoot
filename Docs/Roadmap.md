@@ -74,6 +74,8 @@
 - repository native smoke 通过 17 项 prepare、boot、guest、持续输出、stream limit、command、recovery、shutdown 与 Simulator 生命周期峰值内存检查。
 - v0.4.0-abi.6 在签名 iPhone 17 Pro（iOS 26.1）通过当前 17 项 native smoke；
   soft shutdown 返回 Swift，完整生命周期峰值 84.6 MiB。
+- “Jack iPhone”（iPhone 14 Pro / iOS 26.6）通过标准 17 项和进程暂停/恢复 18 项；
+  暂停 3 秒后 guest 命令恢复，峰值分别为 89.8 MiB 与 89.7 MiB。
 
 这些证据建立了当前 Simulator、最低 Xcode 16 与单一 iPhone 的一次性命令路径，不覆盖 iPad、完整真机生命周期、PTY 或公开发行。
 
@@ -96,7 +98,7 @@
 | 签名 iPhone | 已通过 | v0.4.0-abi.6 完成 17 项 one-shot/soft-shutdown/peak-memory smoke；runtime 变更后继续重跑 |
 | 签名 iPad | 阻塞 | physical boot 与 command smoke |
 | 最低 Xcode 16 原生兼容 | 已通过 | Xcode 16.0 / iOS 18.0 SDK 完成 RootFS install、Simulator/device final-link 和 17 项 native smoke |
-| App lifecycle 与内存 | 进行中 | Simulator 完整 smoke 已有 256 MiB `ru_maxrss` 门禁；补 foreground/background、真机 jetsam、failure injection、persistence |
+| App lifecycle 与内存 | 进行中 | Simulator 与 Jack iPhone 均有 256 MiB `ru_maxrss` 门禁，真机 process suspend/resume 已通过；补 UIKit foreground/background、真机 jetsam、failure injection、persistence |
 | RootFS ENOSPC/掉电 | 进行中 | 峰值空间预检、全 ENOSPC、七点持久化屏障和确定性掉电切点已覆盖；补真机 storage pressure/强制断电 |
 | License-reviewed RootFS | 阻塞 | license、NOTICE、对应源码和 SBOM 完整 |
 | App Store 2.5.2 | 阻塞 | guest download/execute policy 有书面结论 |

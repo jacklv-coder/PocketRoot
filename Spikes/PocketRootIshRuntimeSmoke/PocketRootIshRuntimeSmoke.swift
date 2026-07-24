@@ -36,11 +36,15 @@ private enum PocketRootRuntimeSmokeRunner {
     static let archiveFileName = "pocketroot-fs-v0.3.3.tar.gz"
     static let reportFileName = "pocketroot-smoke-result.json"
     static let progressFileName = "pocketroot-smoke-progress.txt"
+    static let lifecycleResumeFileName = "pocketroot-smoke-lifecycle-resume.txt"
     static let sustainedOutputByteCount = 8 * 1_024 * 1_024
     static let maximumStandardErrorBytes = 64
     static let maximumPeakResidentBytes: UInt64 = 256 * 1_024 * 1_024
 
-    static func run(environment: PocketRootSmokeEnvironment) async -> PocketRootSmokeReport {
+    static func run(
+        environment: PocketRootSmokeEnvironment,
+        lifecycleMode: Bool = false
+    ) async -> PocketRootSmokeReport {
         let startedAt = Date()
         var checks: [PocketRootSmokeCheck] = []
         var system: PocketRootSystem?
@@ -322,6 +326,30 @@ private enum PocketRootRuntimeSmokeRunner {
                 )
             )
 
+            if lifecycleMode {
+                try await awaitHostSuspendResume(in: documentsURL)
+                let afterSuspendResume = try await prepared.system.execute(
+                    PocketRootCommandRequest(
+                        command: "printf 'after-suspend-resume-ok'",
+                        workingDirectory: "/"
+                    )
+                )
+                try require(
+                    afterSuspendResume.stdout == "after-suspend-resume-ok",
+                    "Runtime did not execute after process suspend/resume."
+                )
+                try require(
+                    await prepared.system.state == .ready,
+                    "Runtime was not ready after process suspend/resume."
+                )
+                checks.append(
+                    PocketRootSmokeCheck(
+                        name: "process-suspend-resume",
+                        detail: "host resumed, runtime ready, guest command passed"
+                    )
+                )
+            }
+
             // v0.4.0-abi.6 must return after soft-halting and joining the
             // embedded kernel. Do not persist success until both the terminal
             // state and the no-reboot contract have been observed.
@@ -418,6 +446,28 @@ private enum PocketRootRuntimeSmokeRunner {
         try? Data(stage.utf8).write(to: progressURL, options: .atomic)
     }
 
+    private static func awaitHostSuspendResume(in documentsURL: URL) async throws {
+        let fileManager = FileManager.default
+        let resumeURL = documentsURL.appendingPathComponent(lifecycleResumeFileName)
+        try? fileManager.removeItem(at: resumeURL)
+        writeProgress("awaiting-host-suspend")
+
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: .seconds(60))
+        let expectedMarker = Data("resume\n".utf8)
+        while clock.now < deadline {
+            if let marker = try? Data(contentsOf: resumeURL),
+               marker == expectedMarker {
+                writeProgress("host-resumed")
+                return
+            }
+            try await Task.sleep(for: .milliseconds(200))
+        }
+        throw PocketRootSmokeFailure(
+            message: "Host did not complete process suspend/resume within 60 seconds."
+        )
+    }
+
     private static func requireDirectory(_ url: URL?, name: String) throws -> URL {
         guard let url else {
             throw PocketRootSmokeFailure(message: "\(name) directory is unavailable.")
@@ -489,7 +539,12 @@ final class PocketRootIshRuntimeSmokeApp: UIResponder, UIApplicationDelegate {
                 systemName: UIDevice.current.systemName,
                 systemVersion: UIDevice.current.systemVersion
             )
-            let report = await PocketRootRuntimeSmokeRunner.run(environment: environment)
+            let lifecycleMode =
+                ProcessInfo.processInfo.environment["POCKETROOT_SMOKE_LIFECYCLE"] == "1"
+            let report = await PocketRootRuntimeSmokeRunner.run(
+                environment: environment,
+                lifecycleMode: lifecycleMode
+            )
             do {
                 try PocketRootRuntimeSmokeRunner.write(report)
                 label.text = report.success

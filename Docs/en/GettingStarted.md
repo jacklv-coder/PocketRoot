@@ -136,6 +136,11 @@ It uninstalls the smoke App and injected RootFS after retrieving the report
 unless `POCKETROOT_KEEP_DEVICE_APP=1` is set. Never commit a device identifier,
 provisioning profile, or local report.
 
+Add `POCKETROOT_SMOKE_LIFECYCLE=1` to verify physical process suspend/resume.
+The runner suspends the PID for three seconds while the runtime is `.ready`,
+resumes it, and requires a new guest command to succeed. This is not a UIKit
+foreground/background callback test.
+
 ## 8. Command reference
 
 | Goal | Command |
@@ -148,6 +153,7 @@ provisioning profile, or local report.
 | Real RootFS first-materialization test | `POCKETROOT_ROOTFS_ARCHIVE=... swift test --filter testPinnedReleaseArchiveWhenProvidedByEnvironment` |
 | Native smoke | `POCKETROOT_ROOTFS_ARCHIVE=... ./Scripts/run-runtime-smoke.sh` |
 | Signed physical native smoke | `POCKETROOT_ROOTFS_ARCHIVE=... POCKETROOT_SMOKE_DEVICE=... POCKETROOT_DEVELOPMENT_TEAM=... ./Scripts/run-runtime-device-smoke.sh` |
+| Signed process suspend/resume smoke | Add `POCKETROOT_SMOKE_LIFECYCLE=1` to the signed physical smoke command |
 | Documentation checks | `./Scripts/check-docs.sh` |
 
 ## 9. Do not commit
