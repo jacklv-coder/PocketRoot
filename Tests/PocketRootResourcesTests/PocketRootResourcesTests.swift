@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 import XCTest
 @testable import PocketRootResources
@@ -20,6 +21,13 @@ final class PocketRootResourcesTests: XCTestCase {
         )
         XCTAssertEqual(manifest.archiveByteCount, 6_581_376)
         XCTAssertEqual(manifest.expandedArchiveByteCount, 18_838_016)
+        XCTAssertEqual(
+            try? PocketRootRootFSInstaller.requiredAdditionalCapacity(
+                archiveByteCount: 6_581_376,
+                expandedArchiveByteCount: 18_838_016
+            ),
+            61_034_624
+        )
     }
 
     func testBundledProviderFailsExplicitlyWhileAssetIsGated() async {
@@ -460,7 +468,14 @@ final class PocketRootResourcesTests: XCTestCase {
         try PocketRootRootFSValidator.validateMaterializedFakeFS(at: first.rootFSURL)
 
         let unavailableArchiveURL = baseURL.appendingPathComponent("missing.tar.gz")
-        let second = try await installer.prepareArchive(at: unavailableArchiveURL)
+        let reuseInstaller = PocketRootRootFSInstaller(
+            baseDirectoryURL: baseURL,
+            manifest: makeFixtureManifest(version: "fixture-v1"),
+            testHooks: RootFSInstallerTestHooks(
+                availableCapacityProvider: { _ in 0 }
+            )
+        )
+        let second = try await reuseInstaller.prepareArchive(at: unavailableArchiveURL)
         XCTAssertTrue(second.reusedExistingInstallation)
         XCTAssertEqual(second.rootFSURL, first.rootFSURL)
         XCTAssertTrue(
@@ -532,6 +547,200 @@ final class PocketRootResourcesTests: XCTestCase {
             atPath: rootFSDirectoryURL.path
         )
         XCTAssertFalse(names.contains(where: { $0.hasPrefix(".installing-") }))
+    }
+
+    func testRootFSInstallerRejectsInsufficientStorageBeforeStaging() async throws {
+        let archiveURL = try makeValidFakeFSArchiveFile()
+        let baseURL = try makeTemporaryDirectory()
+        let manifest = makeFixtureManifest(version: "fixture-v1")
+        let requiredCapacity = try PocketRootRootFSInstaller
+            .requiredAdditionalCapacity(
+                archiveByteCount: try XCTUnwrap(manifest.archiveByteCount),
+                expandedArchiveByteCount: try XCTUnwrap(
+                    manifest.expandedArchiveByteCount
+                )
+            )
+        let installer = PocketRootRootFSInstaller(
+            baseDirectoryURL: baseURL,
+            manifest: manifest,
+            testHooks: RootFSInstallerTestHooks(
+                availableCapacityProvider: { _ in requiredCapacity - 1 }
+            )
+        )
+
+        do {
+            _ = try await installer.prepareArchive(at: archiveURL)
+            XCTFail("Insufficient storage must fail before private staging.")
+        } catch let error as PocketRootRootFSInstallationError {
+            XCTAssertEqual(
+                error,
+                .insufficientStorage(
+                    requiredBytes: requiredCapacity,
+                    availableBytes: requiredCapacity - 1
+                )
+            )
+        }
+
+        let rootFSDirectoryURL = baseURL.appendingPathComponent(
+            "rootfs",
+            isDirectory: true
+        )
+        let names = try FileManager.default.contentsOfDirectory(
+            atPath: rootFSDirectoryURL.path
+        )
+        XCTAssertFalse(names.contains(where: { $0.hasPrefix(".installing-") }))
+        XCTAssertFalse(
+            names.contains(
+                PocketRootRootFSInstaller.replacementTransactionDirectoryName
+            )
+        )
+    }
+
+    func testRootFSInstallerAcceptsExactStorageBudget() async throws {
+        let archiveURL = try makeValidFakeFSArchiveFile()
+        let baseURL = try makeTemporaryDirectory()
+        let manifest = makeFixtureManifest(version: "fixture-v1")
+        let requiredCapacity = try PocketRootRootFSInstaller
+            .requiredAdditionalCapacity(
+                archiveByteCount: try XCTUnwrap(manifest.archiveByteCount),
+                expandedArchiveByteCount: try XCTUnwrap(
+                    manifest.expandedArchiveByteCount
+                )
+            )
+        let installer = PocketRootRootFSInstaller(
+            baseDirectoryURL: baseURL,
+            manifest: manifest,
+            testHooks: RootFSInstallerTestHooks(
+                availableCapacityProvider: { _ in requiredCapacity }
+            )
+        )
+
+        let installation = try await installer.prepareArchive(at: archiveURL)
+
+        XCTAssertFalse(installation.reusedExistingInstallation)
+        try PocketRootRootFSValidator.validateMaterializedFakeFS(
+            at: installation.rootFSURL
+        )
+    }
+
+    func testRootFSInstallerBudgetsTheWiderCustomExtractorLimit() async throws {
+        let archiveURL = try makeValidFakeFSArchiveFile()
+        let baseURL = try makeTemporaryDirectory()
+        let manifest = makeFixtureManifest(version: "fixture-v1")
+        let manifestOnlyCapacity = try PocketRootRootFSInstaller
+            .requiredAdditionalCapacity(
+                archiveByteCount: try XCTUnwrap(manifest.archiveByteCount),
+                expandedArchiveByteCount: try XCTUnwrap(
+                    manifest.expandedArchiveByteCount
+                )
+            )
+        let customExpandedLimit: UInt64 = 20_480
+        let requiredCapacity = try PocketRootRootFSInstaller
+            .requiredAdditionalCapacity(
+                archiveByteCount: try XCTUnwrap(manifest.archiveByteCount),
+                expandedArchiveByteCount: customExpandedLimit
+            )
+        let installer = PocketRootRootFSInstaller(
+            baseDirectoryURL: baseURL,
+            manifest: manifest,
+            extractor: PocketRootGzipTarExtractor(
+                maximumExpandedArchiveByteCount: customExpandedLimit
+            ),
+            testHooks: RootFSInstallerTestHooks(
+                availableCapacityProvider: { _ in manifestOnlyCapacity }
+            )
+        )
+
+        do {
+            _ = try await installer.prepareArchive(at: archiveURL)
+            XCTFail("A wider custom extractor must increase the storage budget.")
+        } catch let error as PocketRootRootFSInstallationError {
+            XCTAssertEqual(
+                error,
+                .insufficientStorage(
+                    requiredBytes: requiredCapacity,
+                    availableBytes: manifestOnlyCapacity
+                )
+            )
+        }
+    }
+
+    func testRootFSInstallerRejectsOverflowingStorageBudget() {
+        XCTAssertThrowsError(
+            try PocketRootRootFSInstaller.requiredAdditionalCapacity(
+                archiveByteCount: 1,
+                expandedArchiveByteCount: UInt64.max
+            )
+        ) { error in
+            guard let installationError =
+                error as? PocketRootRootFSInstallationError,
+                case .installationFailed(let message) = installationError
+            else {
+                return XCTFail("Unexpected storage-budget error: \(error)")
+            }
+            XCTAssertTrue(message.contains("integer range"))
+        }
+    }
+
+    func testRootFSInstallerLowStorageUpgradePreservesCurrentVersion() async throws {
+        let archiveURL = try makeValidFakeFSArchiveFile()
+        let baseURL = try makeTemporaryDirectory()
+        let firstManifest = makeFixtureManifest(version: "fixture-v1")
+        let firstInstaller = PocketRootRootFSInstaller(
+            baseDirectoryURL: baseURL,
+            manifest: firstManifest
+        )
+        let first = try await firstInstaller.prepareArchive(at: archiveURL)
+        let currentRecordURL = baseURL.appendingPathComponent(
+            "rootfs/current.json",
+            isDirectory: false
+        )
+        let originalCurrentRecord = try Data(contentsOf: currentRecordURL)
+
+        let upgradeManifest = makeFixtureManifest(version: "fixture-v2")
+        let requiredCapacity = try PocketRootRootFSInstaller
+            .requiredAdditionalCapacity(
+                archiveByteCount: try XCTUnwrap(upgradeManifest.archiveByteCount),
+                expandedArchiveByteCount: try XCTUnwrap(
+                    upgradeManifest.expandedArchiveByteCount
+                )
+            )
+        let upgradeInstaller = PocketRootRootFSInstaller(
+            baseDirectoryURL: baseURL,
+            manifest: upgradeManifest,
+            testHooks: RootFSInstallerTestHooks(
+                availableCapacityProvider: { _ in requiredCapacity - 1 }
+            )
+        )
+
+        do {
+            _ = try await upgradeInstaller.prepareArchive(at: archiveURL)
+            XCTFail("A low-storage upgrade must be rejected.")
+        } catch let error as PocketRootRootFSInstallationError {
+            XCTAssertEqual(
+                error,
+                .insufficientStorage(
+                    requiredBytes: requiredCapacity,
+                    availableBytes: requiredCapacity - 1
+                )
+            )
+        }
+
+        XCTAssertEqual(
+            try Data(contentsOf: currentRecordURL),
+            originalCurrentRecord
+        )
+        try PocketRootRootFSValidator.validateMaterializedFakeFS(
+            at: first.rootFSURL
+        )
+        XCTAssertFalse(
+            FileManager.default.fileExists(
+                atPath: baseURL.appendingPathComponent(
+                    "rootfs/fixture-v2",
+                    isDirectory: true
+                ).path
+            )
+        )
     }
 
     func testRootFSInstallerRecoversPreviousVersionBeforeStagingCleanup() async throws {
@@ -729,6 +938,83 @@ final class PocketRootResourcesTests: XCTestCase {
                 ).path
             )
         )
+    }
+
+    func testRootFSInstallerRollsBackENOSPCAtPromotionCheckpoints() async throws {
+        for checkpoint in [
+            RootFSInstallerPromotionCheckpoint.previousInstallationMoved,
+            .candidatePromoted,
+        ] {
+            let archiveURL = try makeValidFakeFSArchiveFile()
+            let baseURL = try makeTemporaryDirectory()
+            let manifest = makeFixtureManifest(version: "fixture-v1")
+            let initialInstaller = PocketRootRootFSInstaller(
+                baseDirectoryURL: baseURL,
+                manifest: manifest
+            )
+            let initial = try await initialInstaller.prepareArchive(at: archiveURL)
+            let currentRecordURL = baseURL.appendingPathComponent(
+                "rootfs/current.json",
+                isDirectory: false
+            )
+            let originalCurrentRecord = try Data(contentsOf: currentRecordURL)
+            let markerURL = initial.rootFSURL.appendingPathComponent(
+                "user-data-marker",
+                isDirectory: false
+            )
+            try Data("preserve-me".utf8).write(to: markerURL)
+            try FileManager.default.removeItem(
+                at: initial.rootFSURL.appendingPathComponent("meta.db")
+            )
+
+            let failingInstaller = PocketRootRootFSInstaller(
+                baseDirectoryURL: baseURL,
+                manifest: manifest,
+                testHooks: RootFSInstallerTestHooks(
+                    promotionCheckpointHandler: { reachedCheckpoint in
+                        if reachedCheckpoint == checkpoint {
+                            throw NSError(
+                                domain: NSPOSIXErrorDomain,
+                                code: Int(ENOSPC)
+                            )
+                        }
+                    }
+                )
+            )
+
+            do {
+                _ = try await failingInstaller.prepareArchive(at: archiveURL)
+                XCTFail("Injected ENOSPC at \(checkpoint) must escape.")
+            } catch let error as PocketRootRootFSInstallationError {
+                guard case .installationFailed(let message) = error else {
+                    return XCTFail("Unexpected installation error: \(error)")
+                }
+                XCTAssertTrue(message.localizedCaseInsensitiveContains("space"))
+            }
+
+            XCTAssertEqual(
+                try Data(contentsOf: markerURL),
+                Data("preserve-me".utf8)
+            )
+            XCTAssertFalse(
+                FileManager.default.fileExists(
+                    atPath: initial.rootFSURL
+                        .appendingPathComponent("meta.db")
+                        .path
+                )
+            )
+            XCTAssertEqual(
+                try Data(contentsOf: currentRecordURL),
+                originalCurrentRecord
+            )
+            XCTAssertFalse(
+                FileManager.default.fileExists(
+                    atPath: baseURL.appendingPathComponent(
+                        "rootfs/\(PocketRootRootFSInstaller.replacementTransactionDirectoryName)"
+                    ).path
+                )
+            )
+        }
     }
 
     func testRootFSInstallerFailedUpgradePreservesCurrentInstallation() async throws {

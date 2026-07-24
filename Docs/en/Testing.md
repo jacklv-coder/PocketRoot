@@ -26,7 +26,14 @@ Coverage includes the following relevant boundaries:
 
 - Core tests cover request/configuration defaults, result-stream decoding, placeholder lifecycle behavior, injected-runtime delegation, public-state refresh after fail-closed execute and failed shutdown, rejection of transient-state publication by a reentrant command, rejection of stale refresh overwrite after a newer failure, plus RootFS-provider/metadata coordination.
 - Resources tests cover the pinned manifest and gated bundled provider; archive existence, symlink rejection, byte count, and SHA-256; required fakefs layout and metadata-symlink rejection; successful gzip/ustar extraction, traversal cleanup, explicit-directory-after-implicit-parent rejection, duplicate-directory and case-aliased-directory rejection on insensitive volumes, archive symlink entry/source rejection, and the expanded-byte limit.
-- Synthetic Resources fixtures cover first install and reuse, private archive-snapshot isolation and byte bounds, reserved versions, corrupt replacement, failed upgrade/promotion rollback, interrupted transaction recovery, and a single installation under concurrent preparation.
+- Synthetic Resources fixtures cover first install and reuse, private
+  archive-snapshot isolation and byte bounds, pre-staging insufficient-capacity
+  rejection, exact-budget acceptance, wider custom-extractor budgeting,
+  low-space upgrade preservation, ENOSPC rollback after both destructive
+  promotion checkpoints, reserved versions,
+  corrupt replacement, failed upgrade/promotion rollback, interrupted
+  transaction recovery, and a single installation under concurrent
+  preparation.
 - Injected runtime tests cover configuration and host availability, fakefs
   preflight, boot/command mapping, identity gates, timeout and C-string
   validation, ownership and concurrent admission, active-command shutdown,

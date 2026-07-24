@@ -18,7 +18,8 @@
 3. 完成带审批、命令策略、超时和输出边界的 Linux command tool。
 4. 已发布并固定 IshEmbed `v0.4.0-abi.4`，完成一次性命令 Swift Task 取消、native
    退出确认和取消后恢复。
-5. 当前：继续 ENOSPC、power-loss、storage pressure、持续输出和峰值内存硬化。
+5. 当前：RootFS 安装容量预检和 promotion ENOSPC 回滚矩阵已完成；继续写入阶段
+   ENOSPC、power-loss、真实 storage pressure、持续输出和峰值内存硬化。
 6. 原生 Agent Loop/App 组合按产品决定暂停；不阻塞 runtime 独立验证。
 7. 有物理 iPad 后补签名设备 smoke；该硬件门禁不阻塞前六项。
 
@@ -86,7 +87,7 @@
 | 原生 transport 背压 | 进行中 | 已接入有界 protocol/session/stdin/log/control queue；仍需持续输出与内存峰值测试 |
 | 原生 control path 端到端时间界限 | 进行中 | native control 已有界；PocketRoot 请求 deadline 仍需覆盖 spawn/closeStdin 前阶段 |
 | iOS 18 Simulator 原生行为 | 已通过 | v0.4.0-abi.4 已重跑 14 项 soft-shutdown smoke；后续变更继续回归 |
-| RootFS 安全安装与恢复 | 已通过 | 保持真实资产、snapshot、rollback、recovery coverage；补 ENOSPC |
+| RootFS 安全安装与恢复 | 已通过 | 保持真实资产、snapshot、容量预检、rollback 和 recovery coverage |
 | RootFS/runtime composition | 已通过 | 保持 caller-controlled、no-download、no-auto-boot |
 | 默认 post-boot identity gate | 已通过 | `aarch64`、Alpine identity、可选 version 与 command context 通过后才 ready；保持失败占用槽位回归 |
 | Demo 真实 runtime 注入 | 未开始 | 一个 prepared system 注入 System/Commands/Diagnostics，不打包未审查 RootFS |
@@ -95,14 +96,15 @@
 | 签名 iPad | 阻塞 | physical boot 与 command smoke |
 | 最低 Xcode 16 原生兼容 | 已通过 | Xcode 16.0 / iOS 18.0 SDK 完成 RootFS install、Simulator/device final-link 和 14 项 native smoke |
 | App lifecycle 与内存 | 未开始 | foreground/background、jetsam、failure injection、persistence |
-| RootFS ENOSPC/掉电 | 未开始 | storage pressure 和 transaction fault matrix |
+| RootFS ENOSPC/掉电 | 进行中 | 已有峰值空间预检和 promotion ENOSPC rollback；补写入阶段注入、显式持久化与真机 storage pressure |
 | License-reviewed RootFS | 阻塞 | license、NOTICE、对应源码和 SBOM 完整 |
 | App Store 2.5.2 | 阻塞 | guest download/execute policy 有书面结论 |
 
 ### 后续 runtime 执行顺序
 
 1. **故障与资源硬化**
-   增加 ENOSPC、power-loss、storage pressure、long output 与 memory peak。
+   继续 snapshot/gzip/tar/journal/current 写入 ENOSPC、power-loss、真实 storage
+   pressure、long output 与 memory peak。
 
 2. **暂停的 App 组合**
    原生 Agent Loop/App 组合恢复后，再把 prepared system 接入 UI；不把 RootFS 放进默认 target。

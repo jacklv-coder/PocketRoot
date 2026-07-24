@@ -62,6 +62,12 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 - RootFS attribute-read failures during boot preflight map to typed `rootFSUnavailable` and leave the runtime idle before the native process slot is claimed.
 - The process gate now compares owner UUIDs explicitly, with a direct regression test rejecting another runtime's claim and ownership check.
 - The ustar extractor now records parent directories implicitly created by file/directory entries and rejects later duplicate entries or filesystem-equivalent directory targets; RootFS journal documentation no longer promises power-loss durability without explicit `fsync`.
+- New RootFS installs and upgrades now preflight same-volume additional space
+  for the compressed snapshot, temporary tar, materialized payload, and a
+  16 MiB reserve before creating staging. Insufficient capacity returns a
+  typed error without touching a valid prior version for the new install, and
+  ENOSPC injection at both destructive promotion checkpoints verifies rollback
+  of the prior version and `current.json`.
 - `PocketRootSystem` now refreshes stable public state after lifecycle/command success or failure, immediately publishes `.failed` after fail-close, hides transient lifecycle state from reentrant calls, and generations state refreshes so an older snapshot cannot overwrite a newer failure.
 - Native spike/smoke targets explicitly exclude x86_64 Simulator, and documentation clarifies that `isAvailable` is a post-link probe rather than a substitute for the arm64-only binary's build constraint.
 - The native smoke runner now selects an iOS 18 Simulator by its stable runtime identifier instead of the final `simctl` output field, with fixture regression tests for multiple output formats.

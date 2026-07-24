@@ -42,24 +42,28 @@ The returned instance never replaces `PocketRootSystem.shared`.
 
 1. Validate a local base URL and safe manifest version.
 2. Recover any persistent replacement journal before new work.
-3. Open the caller input with `O_NOFOLLOW` and verify a regular file with `fstat`.
-4. Copy into private same-volume staging with exclusive creation, user-only permissions, cancellation checks, and a compressed-byte cap.
-5. Verify size and SHA-256 on that private snapshot.
-6. Stream gzip through zlib with an expanded-byte cap.
-7. Parse constrained POSIX ustar: checksums, UTF-8 relative paths, entry count and payload bounds; record every implicitly created parent as an archive target, then reject later same-path or filesystem-equivalent duplicate file/directory targets, links, and special nodes.
-8. Reverify the archive snapshot and validate a real `fs/meta.db` file and `fs/data/` directory.
-9. Write `.pocketroot-rootfs.json` into `extracted/fs`, then promote that
+3. If the target cannot be reused, require same-volume important-usage
+   capacity for the compressed snapshot, two expanded copies, and a 16 MiB
+   reserve before creating staging. A custom extractor wider than the manifest
+   uses the larger expanded bound.
+4. Open the caller input with `O_NOFOLLOW` and verify a regular file with `fstat`.
+5. Copy into private same-volume staging with exclusive creation, user-only permissions, cancellation checks, and a compressed-byte cap.
+6. Verify size and SHA-256 on that private snapshot.
+7. Stream gzip through zlib with an expanded-byte cap.
+8. Parse constrained POSIX ustar: checksums, UTF-8 relative paths, entry count and payload bounds; record every implicitly created parent as an archive target, then reject later same-path or filesystem-equivalent duplicate file/directory targets, links, and special nodes.
+9. Reverify the archive snapshot and validate a real `fs/meta.db` file and `fs/data/` directory.
+10. Write `.pocketroot-rootfs.json` into `extracted/fs`, then promote that
    directory itself to `rootfs/<version>`. The final directory directly
    contains the record, `meta.db`, and `data/`; it has no extra `fs/` layer.
-10. Before any destructive rename, atomically write an on-disk journal containing the
+11. Before any destructive rename, atomically write an on-disk journal containing the
     target version, expected record, whether a previous install existed, and
     the prior `current.json` bytes. Move an old final to `previous/`, move the
     candidate to final, then atomically write `current.json`.
-11. Treat each rename and JSON write as individually atomic, not the whole
+12. Treat each rename and JSON write as individually atomic, not the whole
     multi-step promotion. Synchronous failure rolls back. Interrupted recovery
     stores no phase; it infers commit or rollback from an expected-final match,
     backup presence, and the journal's prior-install data.
-12. Reuse when the final layout and in-directory record match the manifest.
+13. Reuse when the final layout and in-directory record match the manifest.
     Missing or mismatched `current.json` does not block reuse; rewrite it before
     returning.
 

@@ -96,7 +96,13 @@ flowchart TD
 
 恢复发生在新安装之前，避免旧事务和新候选交叉。
 
-### 4.2 私有 archive snapshot
+### 4.2 容量预检与私有 archive snapshot
+
+只有目标版本不能安全复用时，installer 才按 manifest 与实际 extractor 上限计算新增空间：
+压缩 snapshot 加上两份展开上限和 16 MiB；自定义 extractor 更宽时采用较大值。两份展开
+空间分别用于 gzip 临时 tar 和 tar 尚未删除时写出的 payload。它读取目标卷
+important-usage 容量；不足时在创建 staging 前返回包含 required 与 available byte count
+的 typed 错误。
 
 调用方路径可能在异步安装过程中被替换，因此 installer 不直接在原路径验证后再解包：
 

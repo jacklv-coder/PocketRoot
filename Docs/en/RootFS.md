@@ -65,6 +65,7 @@ Use `PocketRootIshSystemFactory.prepareSystem` for composition, or use `PocketRo
 | Symlink or special input | `O_NOFOLLOW` plus regular-file `fstat` |
 | Caller path replacement | Extract only a private snapshot and verify it twice |
 | Resource exhaustion | Compressed, expanded, payload, and entry-count limits |
+| Clearly insufficient new-install peak space | Preflight same-volume snapshot, temporary tar, payload, and 16 MiB reserve before staging |
 | Partial gzip output | Streaming failure cleanup |
 | Tar traversal | UTF-8 relative-path validation and destination containment |
 | Links and special nodes | Reject unsupported entry types |
@@ -91,6 +92,14 @@ flowchart TD
     I --> J["Journal + same-volume rename"]
     J --> K["Update current.json"]
 ```
+
+Capacity is checked only when the target cannot be safely reused. The new
+install budget is the compressed archive limit, twice the larger of the
+manifest and custom-extractor expanded limits, and 16 MiB: the extractor
+temporarily holds both the gzip-output tar and its materialized payload.
+Insufficient capacity returns
+`insufficientStorage(requiredBytes:availableBytes:)` before new staging or a
+new replacement transaction is created.
 
 The ustar subset accepts regular files, directories, and ignorable PAX content. Parent directories implicitly created for an entry are recorded as archive targets, so a later explicit or filesystem-equivalent directory is rejected. Links, devices, FIFO, absolute/traversal paths, other duplicate file/directory targets, bad checksums, non-UTF-8 names, and exceeded bounds are also rejected.
 
@@ -125,6 +134,13 @@ Corrupt layout or an in-directory record mismatch causes candidate
 replacement. A failed promotion rolls back to the previous installation and
 restores the bytes (or absence) of `current.json` from before promotion.
 
+The preflight reads important-usage capacity from the volume containing
+`rootfs/`. It prevents writes when a known manifest clearly cannot fit, but it
+does not reserve capacity. Mid-operation exhaustion still depends on staging
+cleanup, promotion rollback, and next-start recovery. Tests cover rejection,
+exact-budget acceptance, low-space upgrade preservation, and injected ENOSPC
+rollback after both destructive promotion checkpoints.
+
 The replacement journal stores **no phase**. It contains the target version,
 expected installation record, whether an old installation existed, and the
 prior `current.json` bytes. Before stale-staging cleanup, recovery infers the
@@ -149,8 +165,9 @@ recovery.
 The implementation uses atomic single-record writes and same-volume renames,
 but does not explicitly `fsync` files or directories. Recovery therefore
 covers filesystem state readable after ordinary process interruption; it does
-not promise that every write survives sudden power loss. Power-loss and ENOSPC
-fault matrices remain release gates.
+not promise that every write survives sudden power loss. Remaining ENOSPC work
+covers snapshot, gzip/tar, journal, and current-record write injection;
+power-loss claims also require explicit persistence work.
 
 ## Update rule
 
