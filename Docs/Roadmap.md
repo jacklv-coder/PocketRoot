@@ -16,8 +16,8 @@
 1. 已合并 provider-agnostic `PocketRootAgent` 有界 loop。
 2. 完成 OpenAI Responses API transport 与宿主 credential contract。
 3. 完成带审批、命令策略、超时和输出边界的 Linux command tool。
-4. 已发布并固定 IshEmbed `v0.4.0-abi.4`，完成一次性命令 Swift Task 取消、native
-   退出确认和取消后恢复。
+4. 已发布并固定 IshEmbed `v0.4.0-abi.5`，完成 control-path 统一 deadline、
+   一次性命令 Swift Task 取消、native 退出确认和取消后恢复。
 5. 当前：RootFS 容量预检、全写入/promotion ENOSPC、显式文件/目录持久化、确定性
    power-loss 切点矩阵和 8 MiB 持续二进制输出基线已完成；继续真机 storage
    pressure/强制断电与峰值内存硬化。
@@ -73,7 +73,7 @@
 - 在 iOS 18.2 arm64 Simulator boot 固定 fakefs；
 - repository native smoke 通过 17 项 prepare、boot、guest、持续输出、stream limit、command、recovery、shutdown 与 Simulator 生命周期峰值内存检查。
 - 旧 v0.3.3 基线曾在签名 iPhone 17 Pro（iOS 26.1）通过当时的 13 项 native smoke；
-  新 v0.4.0-abi.4 仍需重跑签名设备验证。
+  新 v0.4.0-abi.5 仍需重跑签名设备验证。
 
 这些证据建立了当前 Simulator、最低 Xcode 16 与单一 iPhone 的一次性命令路径，不覆盖 iPad、完整真机生命周期、PTY 或公开发行。
 
@@ -86,14 +86,14 @@
 | 一次性命令 adapter | 已通过 | 保持 lifecycle、timeout、output-limit coverage |
 | 一次性命令取消 | 已通过 | 队列前取消不进入 native；活动取消确认 `EXITED`；清理失败保持 fail-close |
 | 原生 transport 背压 | 已通过 | 有界 protocol/session/stdin/log/control queue、跨越 4 MiB backlog 的 8 MiB 二进制输出及 256 MiB Simulator 生命周期 `ru_maxrss` 门禁均已接入；真机 jetsam 由 lifecycle 门禁维护 |
-| 原生 control path 端到端时间界限 | 进行中 | native control 已有界；PocketRoot 请求 deadline 仍需覆盖 spawn/closeStdin 前阶段 |
-| iOS 18 Simulator 原生行为 | 已通过 | v0.4.0-abi.4 已重跑 17 项 soft-shutdown/peak-memory smoke；后续变更继续回归 |
+| 原生 control path 端到端时间界限 | 已通过 | ABI.5 finite SPAWN 与有界异步 close/terminate 已接入；PocketRoot 从 driver 入口复用统一 deadline，并为退出确认保留固定有界清理窗口 |
+| iOS 18 Simulator 原生行为 | 已通过 | v0.4.0-abi.5 已重跑 17 项 soft-shutdown/peak-memory smoke；后续变更继续回归 |
 | RootFS 安全安装与恢复 | 已通过 | 保持真实资产、snapshot、容量预检、rollback 和 recovery coverage |
 | RootFS/runtime composition | 已通过 | 保持 caller-controlled、no-download、no-auto-boot |
 | 默认 post-boot identity gate | 已通过 | `aarch64`、Alpine identity、可选 version 与 command context 通过后才 ready；保持失败占用槽位回归 |
 | Demo 真实 runtime 注入 | 未开始 | 一个 prepared system 注入 System/Commands/Diagnostics，不打包未审查 RootFS |
-| 进程安全 soft shutdown | 已通过 | v0.4.0-abi.4 soft-halt/join 返回 Swift；同进程仍只允许一次 lifecycle |
-| 签名 iPhone | 进行中 | 旧 v0.3.3 基线已通过；v0.4.0-abi.4 变更后需要重跑 |
+| 进程安全 soft shutdown | 已通过 | v0.4.0-abi.5 soft-halt/join 返回 Swift；同进程仍只允许一次 lifecycle |
+| 签名 iPhone | 进行中 | 旧 v0.3.3 基线已通过；v0.4.0-abi.5 变更后需要重跑 |
 | 签名 iPad | 阻塞 | physical boot 与 command smoke |
 | 最低 Xcode 16 原生兼容 | 已通过 | Xcode 16.0 / iOS 18.0 SDK 完成 RootFS install、Simulator/device final-link 和 17 项 native smoke |
 | App lifecycle 与内存 | 进行中 | Simulator 完整 smoke 已有 256 MiB `ru_maxrss` 门禁；补 foreground/background、真机 jetsam、failure injection、persistence |

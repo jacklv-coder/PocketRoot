@@ -192,9 +192,9 @@ timeout 必须：
 
 0、负数或超过 86,400 秒会抛 `invalidCommandRequest`。正数但不足 1 毫秒会 clamp 到 1 毫秒。
 
-该 timeout 在同步 `spawn` 和 `closeStdin` 返回后才开始约束 event-read loop。native
-control queue 已有界，但请求 timeout 仍不是整个 `execute()` 的端到端 watchdog。
-若问题发生在 session 建立前，应检查 spawn/control 状态，而不是只增大 timeout。
+该 timeout 从 driver 入口建立绝对 deadline，finite `spawn` 使用剩余时间，后续
+stdin close 与 event-read loop 复用同一 deadline。session 尚未建立时的 deadline
+耗尽会返回 `timedOut == true`；其他 spawn/control 错误仍保留其错误语义。
 
 使用明确边界：
 
@@ -207,7 +207,7 @@ PocketRootCommandRequest(
 
 ## 命令超时后仍有部分输出
 
-这是设计行为。driver 在 read-loop deadline 到期时终止 session，并在观察到可信 guest `EXITED` 后给出 `timedOut == true` 以及此前已经接收的结果；无法确认时会失败关闭并要求重启宿主。应用必须先检查 `timedOut`，不能只看 stdout；也不能据此推断整个 native 调用一定受相同 deadline 约束。
+这是设计行为。driver 在统一 deadline 到期时终止已建立的 session，并在观察到可信 guest `EXITED` 后给出 `timedOut == true` 以及此前已经接收的结果；无法确认时会失败关闭并要求重启宿主。deadline 到期后的 terminate/退出确认使用独立的固定有界清理窗口，因此 `timeout` 不是调用必须在同一时刻返回的承诺。应用必须先检查 `timedOut`，不能只看 stdout。
 
 ## `commandOutputLimitExceeded`
 
@@ -235,7 +235,7 @@ adapter 会终止当前 session 并抛 typed error。解决方向：
 
 ## shutdown 返回后无法再次 boot
 
-这是固定 `v0.4.0-abi.4` 的 single-lifecycle 契约。shutdown 会 soft-halt/join 并返回
+这是固定 `v0.4.0-abi.5` 的 single-lifecycle 契约。shutdown 会 soft-halt/join 并返回
 `.terminated`，但 iSH 进程级全局状态不允许同一宿主进程再次 boot；后续调用会得到
 `restartRequired`。需要新 runtime 时重启宿主进程。参见
 [ADR-001](Decisions/ADR-001-IshEmbed-Feasibility.md)。

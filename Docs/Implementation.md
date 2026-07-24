@@ -226,7 +226,7 @@ IshInstance.shared.boot(
 )
 ```
 
-默认健康命令使用固定脚本、绝对 `/bin/uname`/`/bin/cat`、固定 `PATH`/`LC_ALL`、独立超时和 4 KiB stdout/stderr 上限；预期值和绝对工作目录通过 argv/Swift 比较，不拼接进 shell。`os-release` 只作为数据解析，重复键、畸形引用、无效 UTF-8 或 NUL framing 都失败关闭；规范化后的 `pwd -P` 比较允许尾斜杠、`.`、`..` 和符号链接别名。该门禁证明已校验 RootFS 内基础 guest 信息与命令上下文的一致性，不是独立的来源或安全证明，也不证明应用自定义工具或网络服务健康。native control queue 已有界，但 PocketRoot 的健康 timeout 仍在 spawn/closeStdin 完成后开始，因此不是完整端到端 deadline。
+默认健康命令使用固定脚本、绝对 `/bin/uname`/`/bin/cat`、固定 `PATH`/`LC_ALL`、独立超时和 4 KiB stdout/stderr 上限；预期值和绝对工作目录通过 argv/Swift 比较，不拼接进 shell。`os-release` 只作为数据解析，重复键、畸形引用、无效 UTF-8 或 NUL framing 都失败关闭；规范化后的 `pwd -P` 比较允许尾斜杠、`.`、`..` 和符号链接别名。该门禁证明已校验 RootFS 内基础 guest 信息与命令上下文的一致性，不是独立的来源或安全证明，也不证明应用自定义工具或网络服务健康。健康 timeout 从 driver 入口覆盖 finite SPAWN、stdin close 与 event read；退出确认另有固定有界清理窗口。
 
 ## 6. execute 实现
 
@@ -254,11 +254,15 @@ env = nil or request.environment
 
 因此 shell quoting 和 injection 风险属于调用方。
 
-`IshEmbedDriver` 使用 `IshInstance.shared.spawn`，然后立即关闭 stdin。spawn 直接返回
+`IshEmbedDriver` 在入口创建绝对 deadline，把剩余时间传给
+`IshInstance.shared.spawn`，然后立即关闭 stdin。finite SPAWN 超时且未创建 session
+会直接返回 `timedOut` 结果。spawn 直接返回
 not-running、protocol 或 broken-pipe 代表 transport 已不可再信任，会映射为退出无法确认
 并失败关闭整个 runtime；其他 pre-session 错误保留原来源。driver 循环读取 session event，
-不使用一次性收集全部输出的便利 API。deadline 在同步 `spawn` 和 `closeStdin` 返回后创建；
-native control queue 虽然有界，请求 timeout 仍不是整个 `execute()` 的端到端硬上限。
+不使用一次性收集全部输出的便利 API。ABI.5 的 finite streaming path 从 native SPAWN
+入口覆盖 instance/spawn gate 与 control queue admission；stdin close/terminate 使用
+有界异步接纳。后续 event read 复用同一绝对 deadline。deadline 到期后的 terminate
+与权威 `EXITED` 确认使用独立的固定有界清理窗口。
 
 ### 6.3 bounded read
 
@@ -295,7 +299,7 @@ terminate/EXITED 流程后才返回。清理错误优先于 `CancellationError`�
 4. 确认 process ownership；
 5. 在 serial native executor 调用 `IshInstance.shared.shutdown()`。
 
-固定的 `v0.4.0-abi.4` 会等待 supervisor 退出、soft-halt kernel 并 bounded join 原生线程，
+固定的 `v0.4.0-abi.5` 会等待 supervisor 退出、soft-halt kernel 并 bounded join 原生线程，
 然后返回 Swift。runtime 发布 `.terminated`，调用方可在返回后完成宿主清理；但 iSH
 进程级全局状态仍只支持一次 lifecycle，因此不能在同一进程再次 boot。
 

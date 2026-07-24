@@ -27,10 +27,11 @@ PocketRoot is not a full iSH app fork or a general virtualization platform. It s
 - Application code uses PocketRoot APIs instead of holding iSH native objects.
 - Experimental native binaries are never linked by the default product.
 - The caller owns network retrieval and authorization; PocketRoot never downloads a RootFS implicitly.
-- The executor for blocking native work, process ownership, the post-establishment
-  read-loop deadline, Swift result buffers, native session backlogs, and the
-  control queue have explicit boundaries. The request timeout does not yet
-  cover the entire command lifecycle before spawn/closeStdin completes.
+- The executor for blocking native work, process ownership, one deadline from
+  driver entry through finite SPAWN, stdin close, and event reads, Swift result
+  buffers, native session backlogs, and the control queue have explicit
+  boundaries. Exit confirmation after expiry has a separate fixed bounded
+  cleanup window.
 - Build evidence, hashes, constraints, and release gates are traceable from the repository.
 
 ## Scope

@@ -46,8 +46,8 @@ PocketRoot 的实验性 iSH runtime、XCFramework 和候选 RootFS 当前仅用�
 - release XCFramework 是静态二进制输入；
 - source-to-binary correspondence 必须进一步固化并可提供。
 
-当前审计记录固定 IshEmbed `v0.4.0-abi.4` release commit
-`1c761d4c6de4ceb5ec9f15a4a958be9207ace756`、iSH gitlink
+当前审计记录固定 IshEmbed `v0.4.0-abi.5` release commit
+`bcbf8ddb3ee855cd119050a9e16b55dbfe8ceec6`、iSH gitlink
 `c36dfd25462737b45559eb48d4b09f799471572e`，并在上游依赖清单中记录 XCFramework
 和 corresponding-source 资产的大小与摘要。Release 已提供对应源码资产，但产品级
 RootFS 合规材料和完整可分发组合仍未闭环，因此不会解除发行阻塞。

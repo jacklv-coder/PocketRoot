@@ -8,7 +8,7 @@ install a verified Alpine fakefs and, through the Experimental iSH/IshEmbed
 adapter, execute bounded one-shot shell commands inside the iOS sandbox.
 
 > [!WARNING]
-> Native iSH integration is **Experimental**. Pinned `v0.4.0-abi.4` has a soft shutdown that returns to Swift, but each host process still permits only one valid boot/shutdown lifecycle. iPad, sustained-load, and distribution gates remain open. This version is not approved for production, TestFlight, or public binary distribution.
+> Native iSH integration is **Experimental**. Pinned `v0.4.0-abi.5` has a soft shutdown that returns to Swift, but each host process still permits only one valid boot/shutdown lifecycle. iPad, sustained-load, and distribution gates remain open. This version is not approved for production, TestFlight, or public binary distribution.
 
 ## Capability status
 
@@ -53,7 +53,16 @@ Design principles:
   after guest `EXITED`; success keeps the runtime reusable, while unconfirmed
   cleanup fails closed. It does not roll back earlier side effects.
 - `boot()` reports `ready` only after a fixed post-boot command verifies guest architecture, Alpine identity, and command context. The built-in v0.3.3 RootFS manifest also requires Alpine `3.19.1` exactly.
-- The event-read loop uses a post-establishment deadline and Swift stdout/stderr budgets. The native transport adds a 4 MiB/4096-frame output backlog per session, a 4 MiB/256-frame total control budget, and lifecycle reserve. An 8 MiB binary-stdout smoke crosses the native backlog and verifies every byte; the complete Simulator smoke lifecycle also requires process `ru_maxrss` to remain at or below 256 MiB. That gate is not physical-device jetsam evidence. Supervisor and transport failures are typed, so a normal guest exit 17 is no longer confused with broken pipe. PocketRoot still fails closed when guest exit cannot be proven. The request timeout starts after spawn/closeStdin and is therefore not yet an end-to-end command deadline.
+- One absolute request deadline starts at driver entry and covers finite native
+  SPAWN, stdin-close admission, and the event-read loop; authoritative `EXITED`
+  confirmation after termination has a separate fixed bounded cleanup window.
+  Swift stdout/stderr budgets remain independent. The native transport adds a
+  4 MiB/4096-frame output backlog per session, a 4 MiB/256-frame total control
+  budget, and lifecycle reserve. An 8 MiB binary-stdout smoke crosses the native
+  backlog and verifies every byte; the complete Simulator smoke lifecycle also
+  requires process `ru_maxrss` at or below 256 MiB. That gate is not
+  physical-device jetsam evidence. Supervisor and transport failures are typed;
+  normal guest exit 17 remains valid, and unconfirmed cleanup still fails closed.
 
 See [Architecture](Docs/en/Architecture.md), [Implementation](Docs/en/Implementation.md), and [RootFS Security](Docs/en/RootFS.md).
 

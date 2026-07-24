@@ -12,9 +12,9 @@ SHA-256 的唯一事实源。branch、moving tag、未验证 release alias 和�
 | 字段 | 审核值 |
 | --- | --- |
 | 仓库 | `https://github.com/jacklv-coder/ish-arm64-pkg.git` |
-| 完整 revision | `1c761d4c6de4ceb5ec9f15a4a958be9207ace756` |
-| Release | `v0.4.0-abi.4`（prerelease） |
-| Tag peeled commit | `1c761d4c6de4ceb5ec9f15a4a958be9207ace756` |
+| 完整 revision | `bcbf8ddb3ee855cd119050a9e16b55dbfe8ceec6` |
+| Release | `v0.4.0-abi.5`（prerelease） |
+| Tag peeled commit | `bcbf8ddb3ee855cd119050a9e16b55dbfe8ceec6` |
 | Swift product | `IshEmbed` |
 | Manifest platform | iOS 18.0 |
 | Native slices | iOS arm64 device、arm64 Simulator |
@@ -25,14 +25,14 @@ SHA-256 的唯一事实源。branch、moving tag、未验证 release alias 和�
 ```swift
 .package(
     url: "https://github.com/jacklv-coder/ish-arm64-pkg.git",
-    revision: "1c761d4c6de4ceb5ec9f15a4a958be9207ace756"
+    revision: "bcbf8ddb3ee855cd119050a9e16b55dbfe8ceec6"
 )
 ```
 
-消费 revision 就是 `v0.4.0-abi.4` 的 manifest-only release commit；该提交只把
-`Package.swift` 的 binary target URL/checksum 切到已经公开且独立验证的 ABI.4
+消费 revision 就是 `v0.4.0-abi.5` 的 manifest-only release commit；该提交只把
+`Package.swift` 的 binary target URL/checksum 切到已经公开且独立验证的 ABI.5
 资产。Release tag peeled commit、Release target 与 `origin/main` 都是
-`1c761d4c6de4ceb5ec9f15a4a958be9207ace756`。包仓库继续使用绝对 SSH-over-443
+`bcbf8ddb3ee855cd119050a9e16b55dbfe8ceec6`。包仓库继续使用绝对 SSH-over-443
 submodule URL；无 SSH 私钥的 GitHub CI 只在 checkout 时应用公开 HTTPS 只读重写。
 
 ## 2. iSH source gitlink
@@ -47,15 +47,15 @@ submodule URL；无 SSH 私钥的 GitHub CI 只在 checkout 时应用公开 HTTP
 对应源码归档记录 parent package revision、该 gitlink、Zig `0.16.0` 与静态 supervisor
 使用的 musl 源码。重建不能用 recursive branch checkout 代替这些精确身份。
 
-## 3. v0.4.0-abi.4 发布资产
+## 3. v0.4.0-abi.5 发布资产
 
 Release：
-`https://github.com/jacklv-coder/ish-arm64-pkg/releases/tag/v0.4.0-abi.4`
+`https://github.com/jacklv-coder/ish-arm64-pkg/releases/tag/v0.4.0-abi.5`
 
 | Artifact | 大小 | SHA-256 | 用途 |
 | --- | ---: | --- | --- |
-| `libIshKernel.xcframework.zip` | 2,448,345 bytes | `ea27510ee68d38c3838efda4958bb80cfc9e85510d478aaca6e80fcb51763ba6` | SwiftPM binary target |
-| `IshEmbed-corresponding-source.tar.gz` | 2,358,617 bytes | `0fdf3845bc5b151527f9bfcea818bee088e3db6b68f3a4c698d1638ca1a760a5` | 对应源码 |
+| `libIshKernel.xcframework.zip` | 2,450,634 bytes | `9a6a2a68dd186ce81c841087fb132e08f22cd3c09e4242b4f3c903e5a74550e0` | SwiftPM binary target |
+| `IshEmbed-corresponding-source.tar.gz` | 2,362,436 bytes | `17c94f5199c11942d9c8ad0b370007ef01555c894dd0b5a37974dd5e4427e1e3` | 对应源码 |
 
 XCFramework 只有 `ios-arm64` 和 `ios-arm64-simulator` 两个 arm64 slice，minimum OS
 为 iOS 18.0；没有 x86_64 Simulator 或 macOS slice。SwiftPM 用 manifest checksum
@@ -71,7 +71,7 @@ XCFramework 只有 `ios-arm64` 和 `ios-arm64-simulator` 两个 arm64 slice，mi
 - iOS 18.2 Simulator 使用固定 v0.3.3 RootFS 通过 17 项 native smoke，其中 8 MiB
   二进制 stdout 跨越 backlog 后逐字节精确、阻塞命令取消后可恢复执行，shutdown
   返回 Swift、状态为 `.terminated`，后续命令得到 `restartRequired`，完整生命周期
-  `ru_maxrss` 为 155.7 MiB、低于 256 MiB 门限。
+  `ru_maxrss` 为 156.8 MiB、低于 256 MiB 门限。
 - Xcode 16.0 / iOS 18.0 SDK 在 arm64 hosted runner 上完成真实 RootFS install、
   Simulator/device final-link，并通过同一套 17 项 native smoke。
 
@@ -109,6 +109,8 @@ package。Codex CLI 不属于手机端架构，IshEmbed 不提供其安装、pro
 - 类型化 supervisor/transport error；正常 guest `exit 17` 不再与 broken pipe 混淆；
 - 每 session 4 MiB/4096 帧 native 输出积压上限；
 - 4 MiB/256 帧 control 总预算与 lifecycle reserve；
+- 有限 streaming timeout 从 native SPAWN API 入口覆盖 instance/spawn gate 与
+  control-queue admission；stdin close/terminate 使用保持顺序的有界异步接纳；
 - 有界 stdin/log 队列、完整 session close 与无法确认清理时的 instance fail-close；
 - root `/proc` 在 supervisor 启动前挂载；
 - 默认 bundled supervisor 的内容摘要验证。

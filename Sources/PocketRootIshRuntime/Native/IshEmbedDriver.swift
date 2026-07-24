@@ -27,6 +27,15 @@ struct IshEmbedDriver: IshRuntimeDriver {
         cancellation: IshCommandCancellation
     ) throws -> IshDriverCommandResult {
         try cancellation.check()
+        // The product deadline starts at this driver entry, before native
+        // SPAWN staging/admission and stdin-close admission. ABI.5 uses a
+        // finite streaming timeout to keep those control operations bounded.
+        let deadline = ProcessInfo.processInfo.systemUptime + request.timeout
+        let spawnTimeout = deadline - ProcessInfo.processInfo.systemUptime
+        guard spawnTimeout > 0 else {
+            return timedOutResult()
+        }
+
         let session: IshSession
         do {
             session = try IshInstance.shared.spawn(
@@ -35,9 +44,14 @@ struct IshEmbedDriver: IshRuntimeDriver {
                     cwd: request.workingDirectory,
                     env: request.environment,
                     mergeStderrIntoStdout: request.mergeStandardError,
-                    timeout: nil
+                    timeout: spawnTimeout
                 )
             )
+        } catch IshError.raw(let code, _) where code == -12 {
+            // ABI.5 guarantees a streaming SPAWN timeout returns without a
+            // session and without publishing a late command.
+            try cancellation.check()
+            return timedOutResult()
         } catch IshError.raw(let code, let message) {
             if let terminalFailure = IshRuntimeTransportPolicy.terminalSpawnFailure(
                 code: code,
@@ -52,23 +66,23 @@ struct IshEmbedDriver: IshRuntimeDriver {
         }
         do {
             try cancellation.check()
+            guard ProcessInfo.processInfo.systemUptime < deadline else {
+                try terminateAndConfirmExit(session)
+                return timedOutResult()
+            }
             try session.closeStdin()
 
             var standardOutput = Data()
             var standardError = Data()
-            let deadline = ProcessInfo.processInfo.systemUptime + request.timeout
 
             while true {
                 try cancellation.check()
                 let remaining = deadline - ProcessInfo.processInfo.systemUptime
                 guard remaining > 0 else {
                     try terminateAndConfirmExit(session)
-                    return IshDriverCommandResult(
-                        exitCode: -1,
-                        signal: 0,
+                    return timedOutResult(
                         standardOutput: standardOutput,
-                        standardError: standardError,
-                        timedOut: true
+                        standardError: standardError
                     )
                 }
 
@@ -163,6 +177,19 @@ struct IshEmbedDriver: IshRuntimeDriver {
         }
     }
 
+    private func timedOutResult(
+        standardOutput: Data = Data(),
+        standardError: Data = Data()
+    ) -> IshDriverCommandResult {
+        IshDriverCommandResult(
+            exitCode: -1,
+            signal: 0,
+            standardOutput: standardOutput,
+            standardError: standardError,
+            timedOut: true
+        )
+    }
+
     private func append(
         _ data: Data,
         to buffer: inout Data,
@@ -222,7 +249,7 @@ struct IshEmbedDriver: IshRuntimeDriver {
     }
 
     func shutdown() throws {
-        // v0.4.0-abi.4 asks the supervisor to stop, soft-halts the embedded
+        // v0.4.0-abi.5 asks the supervisor to stop, soft-halts the embedded
         // kernel, joins its pthread, and returns to Swift. The underlying iSH
         // process-global state still permits only one boot/shutdown lifecycle.
         try IshInstance.shared.shutdown()

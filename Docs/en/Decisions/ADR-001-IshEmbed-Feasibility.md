@@ -4,7 +4,7 @@
 
 - Status: Accepted for Experimental integration only
 - Date: 2026-07-21
-- Amended: 2026-07-24 to pin the self-hosted `v0.4.0-abi.4` blocking-syscall interrupt maintenance artifact
+- Amended: 2026-07-24 to pin the self-hosted `v0.4.0-abi.5` control-path deadline maintenance artifact
 - Baseline: iOS 18.0, arm64
 - Scope: runtime feasibility, supply-chain pinning, and release gates
 
@@ -24,7 +24,7 @@ Pin:
 
 ```text
 Repository: https://github.com/jacklv-coder/ish-arm64-pkg.git
-Revision:   1c761d4c6de4ceb5ec9f15a4a958be9207ace756
+Revision:   bcbf8ddb3ee855cd119050a9e16b55dbfe8ceec6
 Product:    IshEmbed
 iSH gitlink: c36dfd25462737b45559eb48d4b09f799471572e
 ```
@@ -47,8 +47,8 @@ Independent digests:
 
 | Artifact | SHA-256 |
 | --- | --- |
-| `libIshKernel.xcframework.zip` | `ea27510ee68d38c3838efda4958bb80cfc9e85510d478aaca6e80fcb51763ba6` |
-| `IshEmbed-corresponding-source.tar.gz` | `0fdf3845bc5b151527f9bfcea818bee088e3db6b68f3a4c698d1638ca1a760a5` |
+| `libIshKernel.xcframework.zip` | `9a6a2a68dd186ce81c841087fb132e08f22cd3c09e4242b4f3c903e5a74550e0` |
+| `IshEmbed-corresponding-source.tar.gz` | `17c94f5199c11942d9c8ad0b370007ef01555c894dd0b5a37974dd5e4427e1e3` |
 | `fs.tar.gz` | `be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4` |
 
 The Alpine 3.19.1 aarch64 source minirootfs digest is `7ef5eef3a5b1d198dfb1610cde1ef5b0755ff5d838fb1e5e1b9f42b59214820f`.
@@ -82,14 +82,16 @@ the final version directory, so `rootfs/<version>` directly contains
 `meta.db`, `data/`, and `.pocketroot-rootfs.json`. A valid version can be reused
 even when `current.json` is missing or mismatched; reuse repairs it.
 
-Pinned v0.4.0-abi.4 stops the supervisor, soft-halts the embedded kernel,
-performs a bounded native join, and returns to Swift. It unblocks internal
-SIGUSR1 on embedded bootstrap and guest task threads so guest signals can
-interrupt blocking host syscalls. It also includes ABI.3's bounded fixed-size
-uname copies and the ABI.2 `/proc` lifecycle-lock fix. These maintenance
-changes do not alter the public C ABI or Swift API. PocketRoot bridges Swift
-Task cancellation to a one-shot native session and returns cancellation only
-after trusted `EXITED`; unconfirmed cleanup fails closed. PocketRoot publishes
+Pinned v0.4.0-abi.5 stops the supervisor, soft-halts the embedded kernel,
+performs a bounded native join, and returns to Swift. Finite streaming SPAWN
+deadlines cover native instance/spawn gates and control-queue admission from
+API entry, while stdin close and terminate use bounded asynchronous admission.
+It retains ABI.4's internal SIGUSR1-mask fix, ABI.3's bounded fixed-size uname
+copies, and the ABI.2 `/proc` lifecycle-lock fix. These maintenance changes do
+not alter the public C ABI or Swift API. PocketRoot reuses one deadline from
+driver entry and bridges Swift Task cancellation to a one-shot native session;
+both paths return only after trusted `EXITED`, and unconfirmed cleanup fails
+closed. PocketRoot publishes
 `.terminated`, but process-global iSH state still prevents another boot in the
 same host process. The new source, binary, checksum,
 corresponding-source, Simulator, and minimum-Xcode gates passed; signed-device

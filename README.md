@@ -6,7 +6,7 @@ PocketRoot 是面向 iOS 的可嵌入 ARM64 Linux 运行时、终端与上层轻
 
 > [!WARNING]
 > 真实 iSH 集成目前仍是 **实验性（Experimental）** 能力。固定的
-> `v0.4.0-abi.4` 已支持返回 Swift 的 soft shutdown，但每个宿主进程仍只允许一次有效
+> `v0.4.0-abi.5` 已支持返回 Swift 的 soft shutdown，但每个宿主进程仍只允许一次有效
 > boot/shutdown；iPad、持续负载和发行合规门禁尚未闭环。当前版本不得用于
 > 生产、TestFlight 或公开二进制分发。
 
@@ -50,7 +50,14 @@ flowchart LR
 - 取消一次性命令会终止 native session，确认 guest `EXITED` 后才返回；成功后 runtime
   可继续使用，无法确认清理则失败关闭。取消不回滚此前副作用。
 - `boot()` 只有在固定 post-boot 命令验证 guest 架构、Alpine 身份和命令上下文后才报告 `ready`；内置 v0.3.3 RootFS 清单还严格要求 Alpine `3.19.1`。
-- session 建立后的 event-read loop 使用 deadline，Swift 结果有独立 stdout/stderr 配额；新 native transport 另有每 session 4 MiB/4096 帧输出积压、4 MiB/256 帧 control 总预算及 lifecycle reserve。8 MiB 二进制 stdout smoke 会跨越 native backlog 并逐字节验证结果；完整 Simulator smoke 生命周期还要求进程 `ru_maxrss` 不超过 256 MiB。该门禁不是物理设备 jetsam 证据。supervisor/transport failure 以类型化错误返回，正常 guest `exit 17` 不再与 broken pipe 混淆。PocketRoot 对无法确认 guest 已退出的路径仍失败关闭；请求 timeout 目前从 session 建立后开始，因此仍不是覆盖此前 spawn/closeStdin 的端到端命令 deadline。
+- 请求 timeout 从 driver 入口建立统一 deadline，覆盖 finite native SPAWN、
+  stdin-close admission 和 event-read loop；终止后的权威 `EXITED` 确认另有固定有界清理窗口。
+  Swift 结果有独立 stdout/stderr 配额，native transport 另有每 session 4 MiB/4096 帧
+  输出积压、4 MiB/256 帧 control 总预算及 lifecycle reserve。8 MiB 二进制 stdout
+  smoke 会跨越 native backlog 并逐字节验证结果；完整 Simulator smoke 生命周期还要求
+  进程 `ru_maxrss` 不超过 256 MiB。该门禁不是物理设备 jetsam 证据。supervisor/transport
+  failure 以类型化错误返回，正常 guest `exit 17` 不再与 broken pipe 混淆；无法确认退出
+  时 PocketRoot 仍失败关闭。
 
 完整实现见[架构说明](Docs/Architecture.md)、[实现原理](Docs/Implementation.md)和 [RootFS 安全方案](Docs/RootFS.md)。
 

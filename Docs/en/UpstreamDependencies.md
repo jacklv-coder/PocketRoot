@@ -13,9 +13,9 @@ Audit date: 2026-07-24
 | Field | Audited value |
 | --- | --- |
 | Repository | `https://github.com/jacklv-coder/ish-arm64-pkg.git` |
-| Exact revision | `1c761d4c6de4ceb5ec9f15a4a958be9207ace756` |
-| Release | `v0.4.0-abi.4` prerelease |
-| Tag peeled commit | `1c761d4c6de4ceb5ec9f15a4a958be9207ace756` |
+| Exact revision | `bcbf8ddb3ee855cd119050a9e16b55dbfe8ceec6` |
+| Release | `v0.4.0-abi.5` prerelease |
+| Tag peeled commit | `bcbf8ddb3ee855cd119050a9e16b55dbfe8ceec6` |
 | Swift product | `IshEmbed` |
 | Manifest platform | iOS 18.0 |
 | Native slices | iOS arm64 device and arm64 Simulator |
@@ -26,15 +26,15 @@ Both `Package.swift` and `Package.resolved` pin the full revision:
 ```swift
 .package(
     url: "https://github.com/jacklv-coder/ish-arm64-pkg.git",
-    revision: "1c761d4c6de4ceb5ec9f15a4a958be9207ace756"
+    revision: "bcbf8ddb3ee855cd119050a9e16b55dbfe8ceec6"
 )
 ```
 
 The consumed revision is the manifest-only release commit for
-`v0.4.0-abi.4`; it changes only the binary-target URL/checksum in
-`Package.swift` to the published and independently verified ABI.4 asset. The
+`v0.4.0-abi.5`; it changes only the binary-target URL/checksum in
+`Package.swift` to the published and independently verified ABI.5 asset. The
 peeled tag, Release target, and `origin/main` all identify
-`1c761d4c6de4ceb5ec9f15a4a958be9207ace756`. The package repository keeps an
+`bcbf8ddb3ee855cd119050a9e16b55dbfe8ceec6`. The package repository keeps an
 absolute SSH-over-443 submodule URL; GitHub CI without an SSH private key
 applies a public read-only HTTPS rewrite only while checking out source.
 
@@ -51,15 +51,15 @@ The corresponding-source archive records the parent package revision, this
 gitlink, Zig 0.16.0, and the musl source used by the static supervisor.
 Recursive branch checkout is not a substitute for these exact identities.
 
-## 3. v0.4.0-abi.4 assets
+## 3. v0.4.0-abi.5 assets
 
 Release:
-`https://github.com/jacklv-coder/ish-arm64-pkg/releases/tag/v0.4.0-abi.4`
+`https://github.com/jacklv-coder/ish-arm64-pkg/releases/tag/v0.4.0-abi.5`
 
 | Artifact | Size | SHA-256 | Use |
 | --- | ---: | --- | --- |
-| `libIshKernel.xcframework.zip` | 2,448,345 bytes | `ea27510ee68d38c3838efda4958bb80cfc9e85510d478aaca6e80fcb51763ba6` | SwiftPM binary target |
-| `IshEmbed-corresponding-source.tar.gz` | 2,358,617 bytes | `0fdf3845bc5b151527f9bfcea818bee088e3db6b68f3a4c698d1638ca1a760a5` | Corresponding source |
+| `libIshKernel.xcframework.zip` | 2,450,634 bytes | `9a6a2a68dd186ce81c841087fb132e08f22cd3c09e4242b4f3c903e5a74550e0` | SwiftPM binary target |
+| `IshEmbed-corresponding-source.tar.gz` | 2,362,436 bytes | `17c94f5199c11942d9c8ad0b370007ef01555c894dd0b5a37974dd5e4427e1e3` | Corresponding source |
 
 The XCFramework contains only `ios-arm64` and `ios-arm64-simulator`, both
 arm64 with an iOS 18.0 minimum. It has no x86_64 Simulator or macOS slice.
@@ -76,7 +76,7 @@ SwiftPM validates the zip checksum. The release transaction also verified:
 - an iOS 18.2 Simulator passed the 17-check native smoke with the pinned v0.3.3
   RootFS, returned byte-exact 8 MiB binary stdout beyond the backlog, recovered
   after cancelling a blocked command, returned `.terminated` from shutdown,
-  returned `restartRequired` afterward, and reported a 155.7 MiB lifecycle
+  returned `restartRequired` afterward, and reported a 156.8 MiB lifecycle
   `ru_maxrss` against the 256 MiB limit.
 - Xcode 16.0 / iOS 18.0 SDK on an arm64 hosted runner completed real RootFS
   installation, Simulator/device final links, and the same 17-check native smoke.
@@ -122,6 +122,9 @@ The pinned artifact provides:
   confused with broken pipe;
 - a 4 MiB/4096-frame native output backlog per session;
 - a 4 MiB/256-frame total control budget with lifecycle reserve;
+- finite streaming timeouts that cover the native SPAWN instance/spawn gates
+  and control-queue admission from API entry, with ordered bounded asynchronous
+  admission for stdin close and terminate;
 - bounded stdin/log queues, complete session close, and instance fail-close
   when cleanup cannot be proven;
 - root `/proc` mounted before supervisor startup; and

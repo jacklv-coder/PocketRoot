@@ -313,7 +313,7 @@ private enum PocketRootRuntimeSmokeRunner {
                 )
             )
 
-            // v0.4.0-abi.4 must return after soft-halting and joining the
+            // v0.4.0-abi.5 must return after soft-halting and joining the
             // embedded kernel. Do not persist success until both the terminal
             // state and the no-reboot contract have been observed.
             writeProgress("shutting-down")

@@ -160,8 +160,10 @@ negative `EXITED` is an integrity failure. Supervisor rejection remains
 recoverable; native backlog overflow closes the PocketRoot process gate because
 the void close ABI cannot prove whether cleanup escalated to instance
 fail-close. Native limits include a 4 MiB/4096 frame backlog per session and a
-4 MiB/256 frame total control budget. The PocketRoot deadline begins after
-synchronous `spawn` and `closeStdin`, so it is not yet end-to-end. One-shot
+4 MiB/256 frame total control budget. One PocketRoot deadline starts at driver
+entry and covers finite SPAWN, stdin close, and event reads. Termination plus
+authoritative `EXITED` confirmation after expiry has a separate fixed bounded
+cleanup window. One-shot
 Swift Task cancellation now terminates the guest and confirms exit before
 returning; interactive-session read/close cancellation remains part of the
 future PTY lifecycle. An 8 MiB byte-exact binary-stdout smoke crosses the

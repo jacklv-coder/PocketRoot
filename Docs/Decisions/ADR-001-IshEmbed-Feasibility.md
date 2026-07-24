@@ -4,7 +4,7 @@
 
 - 状态：**已接受，仅限实验性集成**
 - 日期：2026-07-21
-- 修订：2026-07-24，固定自托管 `v0.4.0-abi.4` 阻塞 syscall 中断维护制品
+- 修订：2026-07-24，固定自托管 `v0.4.0-abi.5` control-path deadline 维护制品
 - 基线：iOS 18.0、arm64
 - 决策范围：runtime 可行性、供应链固定方式和发行门禁
 
@@ -48,7 +48,7 @@ PocketRoot 将 IshEmbed 集成在独立的 `PocketRootIshRuntime` product 后，
 
 ```text
 Repository: https://github.com/jacklv-coder/ish-arm64-pkg.git
-Revision:   1c761d4c6de4ceb5ec9f15a4a958be9207ace756
+Revision:   bcbf8ddb3ee855cd119050a9e16b55dbfe8ceec6
 Product:    IshEmbed
 ```
 
@@ -105,8 +105,8 @@ manifest 声明 iOS 18.0，release XCFramework 只有：
 
 | Artifact | SHA-256 |
 | --- | --- |
-| `libIshKernel.xcframework.zip` | `ea27510ee68d38c3838efda4958bb80cfc9e85510d478aaca6e80fcb51763ba6` |
-| `IshEmbed-corresponding-source.tar.gz` | `0fdf3845bc5b151527f9bfcea818bee088e3db6b68f3a4c698d1638ca1a760a5` |
+| `libIshKernel.xcframework.zip` | `9a6a2a68dd186ce81c841087fb132e08f22cd3c09e4242b4f3c903e5a74550e0` |
+| `IshEmbed-corresponding-source.tar.gz` | `17c94f5199c11942d9c8ad0b370007ef01555c894dd0b5a37974dd5e4427e1e3` |
 | `fs.tar.gz` | `be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4` |
 
 XCFramework digest 与 upstream manifest 一致。RootFS digest 不在 upstream Swift manifest 中，因此 PocketRoot 单独提交 manifest 并 fail closed。
@@ -210,11 +210,13 @@ RootFS promotion 也不被视为一次整体原子替换。journal 不记录 pha
 - iSH 的进程级全局状态仍不允许同一进程再次 boot；
 - active call/session 会得到 busy 或由 PocketRoot 在更高层拒绝。
 
-ABI.4 在 embedded bootstrap 和 guest task 线程解除内部 SIGUSR1 屏蔽，使 guest signal
-可打断阻塞中的宿主 syscall。它同时包含 ABI.3 的固定 65-byte uname 有界复制和 ABI.2
-的 `/proc` 生命周期锁修复；这些维护变更不改变公开 C ABI 或 Swift API。PocketRoot
-将 Swift Task 取消桥接到 one-shot native session，确认可信 `EXITED` 后才返回取消，
-无法确认清理则失败关闭。新制品、revision、checksum、对应源码和 Simulator 测试已完成；
+ABI.5 为 finite streaming SPAWN 增加从 native API 入口覆盖 instance/spawn gate 与
+control-queue admission 的 deadline，并让 stdin close/terminate 使用有界异步接纳。
+它保留 ABI.4 对 embedded bootstrap 和 guest task 内部 SIGUSR1 mask 的修复、ABI.3
+的固定 65-byte uname 有界复制和 ABI.2 的 `/proc` 生命周期锁修复；这些维护变更不改变
+公开 C ABI 或 Swift API。PocketRoot 从 driver 入口复用统一 deadline，并将 Swift Task
+取消桥接到 one-shot native session；两条路径都在确认可信 `EXITED` 后才返回，无法确认
+清理则失败关闭。新制品、revision、checksum、对应源码和 Simulator 测试已完成；
 签名 iPhone/iPad 和持续生命周期/故障注入仍按路线图继续，不因此把
 Experimental 产品加入默认 umbrella。
 
