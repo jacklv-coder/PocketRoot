@@ -68,11 +68,12 @@ XCFramework 只有 `ios-arm64` 和 `ios-arm64-simulator` 两个 arm64 slice，mi
 - Package.swift binaryTarget 在 arm64 iOS Simulator 的 17 个测试中 12 个通过，
   5 个因未提供 RootFS 按预期 skip，0 failure。
 - PocketRoot 完整实验依赖图在 arm64 Simulator 与 unsigned device 最终链接；
-- iOS 18.2 Simulator 使用固定 v0.3.3 RootFS 通过 16 项 native smoke，其中 8 MiB
+- iOS 18.2 Simulator 使用固定 v0.3.3 RootFS 通过 17 项 native smoke，其中 8 MiB
   二进制 stdout 跨越 backlog 后逐字节精确、阻塞命令取消后可恢复执行，shutdown
-  返回 Swift、状态为 `.terminated`，后续命令得到 `restartRequired`。
+  返回 Swift、状态为 `.terminated`，后续命令得到 `restartRequired`，完整生命周期
+  `ru_maxrss` 为 155.7 MiB、低于 256 MiB 门限。
 - Xcode 16.0 / iOS 18.0 SDK 在 arm64 hosted runner 上完成真实 RootFS install、
-  Simulator/device final-link，并通过同一套 16 项 native smoke。
+  Simulator/device final-link，并通过同一套 17 项 native smoke。
 
 本 Release **不包含 RootFS**。
 

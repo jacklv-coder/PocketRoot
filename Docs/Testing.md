@@ -13,7 +13,7 @@ PocketRoot 把验证分成宿主逻辑、真实 RootFS、iOS 构建、完整原�
 | 默认 Demo 构建 | `./Scripts/build.sh` | Xcode + iOS SDK | 伞形产品和 UIKit Demo 可构建 | 实验 runtime 已链接 |
 | 原生最终链接 | `./Scripts/build-runtime-spike.sh` | Apple toolchain | 完整实验依赖图可生成 iOS 可执行文件 | 真机或 guest 行为 |
 | Simulator 原生 smoke | `./Scripts/run-runtime-smoke.sh` | Apple Silicon + iOS 18 Simulator + archive | prepare、boot、命令边界和 soft shutdown 返回 | 其他工具链、真机或发行可用 |
-| 物理设备原生 smoke | `./Scripts/run-runtime-device-smoke.sh` | 签名 iOS 18+ iPhone/iPad + archive | 同一 16 项检查、development entitlement 与 shutdown 返回 | 完整 lifecycle、memory、iPad 或发行可用 |
+| 物理设备原生 smoke | `./Scripts/run-runtime-device-smoke.sh` | 签名 iOS 18+ iPhone/iPad + archive | 同一 17 项检查、development entitlement 与 shutdown 返回 | 完整 lifecycle、jetsam、iPad 或发行可用 |
 | 文档检查 | `./Scripts/check-docs.sh` | macOS/Linux shell | 中英文成对、中文覆盖和相对链接 | 技术实现正确 |
 
 ## 2. 宿主 Swift Package 测试
@@ -228,7 +228,7 @@ xcrun simctl shutdown "$SMOKE_DEVICE_UDID"
 
 只有在确认某个 UDID 对应脚本专用临时设备时，才对它执行 `simctl delete`；不要删除共享的开发 Simulator。
 
-### 16 项检查
+### 17 项检查
 
 1. 安装固定 v0.3.3 RootFS；
 2. boot 到 `ready`；
@@ -245,10 +245,12 @@ xcrun simctl shutdown "$SMOKE_DEVICE_UDID"
 13. 64-byte stderr limit；该命令成功进入 native 也证明 stdout 超限后已恢复；
 14. stderr output-limit termination 后下一条命令成功；
 15. 取消阻塞中的 `sleep`，确认 native termination 后执行下一条命令成功；
-16. shutdown 返回 Swift，状态变为 `.terminated`，随后 smoke App 主动成功结束。
+16. shutdown 返回 Swift，状态变为 `.terminated`，随后命令得到 `restartRequired`；
+17. 完整 smoke 生命周期的进程 `ru_maxrss` 不超过 256 MiB，随后 App 主动成功结束。
 
 第 9 项证明持续二进制输出可以被 Swift 持续消费，不会因 4 MiB native backlog
-本身而截断或损坏；它不是峰值内存或 jetsam 证明。第 10 项证明已经建立的 session
+本身而截断或损坏。第 17 项在 Simulator 上约束包含 RootFS 准备、8 MiB 输出、
+超限恢复、取消与 shutdown 的完整进程峰值；它不是物理设备 jetsam 证明。第 10 项证明已经建立的 session
 在 event-read loop 中观察到 deadline 后可以恢复；它不覆盖此前的同步
 spawn/control write，也不证明 terminate/close 具有相同端到端硬时限。该缺口
 在[路线图](Roadmap.md)中作为原生 control path 门禁维护。
@@ -259,13 +261,13 @@ console client 结束。shutdown 前的 crash 不会产生成功 report，不能
 
 该脚本既可作为仓库维护的本地门禁，也由最低工具链 GitHub Actions job 调用。
 
-2026-07-24，`v0.4.0-abi.4` 在 iOS 18.2 arm64 Simulator 通过全部 16 项；8 MiB
-binary stdout 逐字节精确，shutdown 记录为
-`returned, terminated, restart required`。
+2026-07-24，`v0.4.0-abi.4` 在 iOS 18.2 arm64 Simulator 通过全部 17 项；8 MiB
+binary stdout 逐字节精确，完整生命周期峰值为 155.7 MiB（门限 256 MiB），shutdown
+记录为 `returned, terminated, restart required`。
 
 仓库的最低工具链 job 会在 arm64 macOS runner 上明确选择 Xcode 16.0 与 iOS 18.0
 SDK，完成固定 RootFS 首次物化、arm64 Simulator/unsigned device final-link，并在
-iOS 18.0 Simulator 执行同一套 16 项 native smoke。
+iOS 18.0 Simulator 执行同一套 17 项 native smoke。
 
 ### 签名 iPhone/iPad runner
 
@@ -302,7 +304,7 @@ runner 要求设备已配对、启用 Developer Mode 且能用 development profi
 12. 最终链接 unsigned arm64 device runtime App。
 
 最低工具链 job 另外固定选择 Xcode 16.0 / iOS 18.0 SDK，验证真实 RootFS install、
-安装 iOS 18.0 Simulator runtime、完成 Simulator/device final-link，并执行 16 项原生
+安装 iOS 18.0 Simulator runtime、完成 Simulator/device final-link，并执行 17 项原生
 smoke。CI 的 Simulator 结果不证明签名真机或发行可用。
 
 ## 9. 改动与最小验证矩阵
@@ -348,7 +350,7 @@ smoke。CI 的 Simulator 结果不证明签名真机或发行可用。
 - “Swift Package tests 通过”；
 - “完整图在 arm64 Simulator/device destination 最终链接”；
 - “iOS 18.2 arm64 Simulator smoke 通过”；
-- “Xcode 16.0 / iOS 18.0 SDK 完成 RootFS install、两个 final-link 和 16 项 smoke”；
+- “Xcode 16.0 / iOS 18.0 SDK 完成 RootFS install、两个 final-link 和 17 项 smoke”；
 - “iPhone 17 Pro / iOS 26.1 signed one-shot smoke 通过”。
 
 不能由这些结果推导：

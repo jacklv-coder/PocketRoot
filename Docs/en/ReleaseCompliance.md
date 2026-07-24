@@ -94,11 +94,12 @@ The current code does not provide a complete product-level privacy policy.
 
 ### Apple platforms
 
-- [x] Complete RootFS install, native final links, and the 16-check smoke with
+- [x] Complete RootFS install, native final links, and the 17-check smoke with
   the minimum Xcode 16 toolchain.
 - [x] Run the signed iPhone one-shot smoke.
 - [ ] Run the signed iPad smoke and complete iPhone/iPad lifecycle coverage.
-- [ ] Validate foreground/background behavior, jetsam handling, and storage
+- [x] Keep complete Simulator smoke lifecycle `ru_maxrss` at or below 256 MiB.
+- [ ] Validate foreground/background behavior, physical jetsam handling, and storage
   pressure.
 - [ ] Scan entitlements, private APIs, JIT behavior, and exported archives.
 - [ ] Record a written Guideline 2.5.2 disposition.

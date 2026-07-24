@@ -96,6 +96,13 @@ if ! grep -Fq -- '/bin/dd if=/dev/zero bs=65536 count=128 2>/dev/null' "$SMOKE_A
     exit 1
 fi
 
+if ! grep -Fq -- 'maximumPeakResidentBytes: UInt64 = 256 * 1_024 * 1_024' "$SMOKE_APP" \
+  || ! grep -Fq -- 'getrusage(RUSAGE_SELF, &usage)' "$SMOKE_APP" \
+  || ! grep -Fq -- 'peakResidentBytes <= maximumPeakResidentBytes' "$SMOKE_APP"; then
+    echo "Native smoke does not enforce the lifecycle peak-memory gate." >&2
+    exit 1
+fi
+
 if ! grep -Fq -- 'The native smoke App exited before writing its report.' "$SIMULATOR_RUNNER"; then
     echo "Simulator runner does not distinguish early App exit from timeout." >&2
     exit 1

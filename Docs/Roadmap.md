@@ -71,7 +71,7 @@
 - 对精确 v0.3.3 release archive 完成真实资产测试；
 - 对 arm64 Simulator 和 unsigned device 完成完整依赖图最终链接；
 - 在 iOS 18.2 arm64 Simulator boot 固定 fakefs；
-- repository native smoke 通过 16 项 prepare、boot、guest、持续输出、stream limit、command、recovery 与 shutdown 检查。
+- repository native smoke 通过 17 项 prepare、boot、guest、持续输出、stream limit、command、recovery、shutdown 与 Simulator 生命周期峰值内存检查。
 - 旧 v0.3.3 基线曾在签名 iPhone 17 Pro（iOS 26.1）通过当时的 13 项 native smoke；
   新 v0.4.0-abi.4 仍需重跑签名设备验证。
 
@@ -85,9 +85,9 @@
 | 不可变 IshEmbed revision | 已通过 | 只通过完整供应链更新流程变更 |
 | 一次性命令 adapter | 已通过 | 保持 lifecycle、timeout、output-limit coverage |
 | 一次性命令取消 | 已通过 | 队列前取消不进入 native；活动取消确认 `EXITED`；清理失败保持 fail-close |
-| 原生 transport 背压 | 进行中 | 已接入有界 protocol/session/stdin/log/control queue，并通过跨越 4 MiB backlog 的 8 MiB 二进制输出基线；仍需峰值内存测试 |
+| 原生 transport 背压 | 已通过 | 有界 protocol/session/stdin/log/control queue、跨越 4 MiB backlog 的 8 MiB 二进制输出及 256 MiB Simulator 生命周期 `ru_maxrss` 门禁均已接入；真机 jetsam 由 lifecycle 门禁维护 |
 | 原生 control path 端到端时间界限 | 进行中 | native control 已有界；PocketRoot 请求 deadline 仍需覆盖 spawn/closeStdin 前阶段 |
-| iOS 18 Simulator 原生行为 | 已通过 | v0.4.0-abi.4 已重跑 16 项 soft-shutdown smoke；后续变更继续回归 |
+| iOS 18 Simulator 原生行为 | 已通过 | v0.4.0-abi.4 已重跑 17 项 soft-shutdown/peak-memory smoke；后续变更继续回归 |
 | RootFS 安全安装与恢复 | 已通过 | 保持真实资产、snapshot、容量预检、rollback 和 recovery coverage |
 | RootFS/runtime composition | 已通过 | 保持 caller-controlled、no-download、no-auto-boot |
 | 默认 post-boot identity gate | 已通过 | `aarch64`、Alpine identity、可选 version 与 command context 通过后才 ready；保持失败占用槽位回归 |
@@ -95,8 +95,8 @@
 | 进程安全 soft shutdown | 已通过 | v0.4.0-abi.4 soft-halt/join 返回 Swift；同进程仍只允许一次 lifecycle |
 | 签名 iPhone | 进行中 | 旧 v0.3.3 基线已通过；v0.4.0-abi.4 变更后需要重跑 |
 | 签名 iPad | 阻塞 | physical boot 与 command smoke |
-| 最低 Xcode 16 原生兼容 | 已通过 | Xcode 16.0 / iOS 18.0 SDK 完成 RootFS install、Simulator/device final-link 和 16 项 native smoke |
-| App lifecycle 与内存 | 未开始 | foreground/background、jetsam、failure injection、persistence |
+| 最低 Xcode 16 原生兼容 | 已通过 | Xcode 16.0 / iOS 18.0 SDK 完成 RootFS install、Simulator/device final-link 和 17 项 native smoke |
+| App lifecycle 与内存 | 进行中 | Simulator 完整 smoke 已有 256 MiB `ru_maxrss` 门禁；补 foreground/background、真机 jetsam、failure injection、persistence |
 | RootFS ENOSPC/掉电 | 进行中 | 峰值空间预检、全 ENOSPC、七点持久化屏障和确定性掉电切点已覆盖；补真机 storage pressure/强制断电 |
 | License-reviewed RootFS | 阻塞 | license、NOTICE、对应源码和 SBOM 完整 |
 | App Store 2.5.2 | 阻塞 | guest download/execute policy 有书面结论 |
@@ -104,7 +104,7 @@
 ### 后续 runtime 执行顺序
 
 1. **故障与资源硬化**
-   保持 8 MiB sustained-output 回归，继续真机 storage pressure/强制断电与 memory peak。
+   保持 8 MiB sustained-output 和 256 MiB Simulator 峰值回归，继续真机 storage pressure/强制断电与 jetsam。
 
 2. **暂停的 App 组合**
    原生 Agent Loop/App 组合恢复后，再把 prepared system 接入 UI；不把 RootFS 放进默认 target。

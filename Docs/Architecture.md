@@ -268,9 +268,10 @@ IshEmbed 暴露同步、进程级 API。adapter 使用：
 这些机制避免并发 boot、命令越过 shutdown，并限制 event-read wait、Swift 结果、
 每 session 4 MiB/4096 帧 native backlog 和 4 MiB/256 帧 control 总预算。spawn 直接
 返回 not-running、protocol 或 broken-pipe 会关闭 process gate。8 MiB 二进制 stdout
-smoke 跨越 backlog 并逐字节验证，证明持续消费路径；它不证明峰值内存或 jetsam。
+smoke 跨越 backlog 并逐字节验证，证明持续消费路径；完整 Simulator smoke 还在
+shutdown 后读取 `ru_maxrss`，要求生命周期峰值不超过 256 MiB。该门禁不证明真机 jetsam。
 deadline 在同步 `spawn` 与 `closeStdin` 后创建，所以尚不是完整端到端命令界限；
-持续负载峰值内存和 jetsam 仍是开放门禁。一次性命令的 Swift Task 取消已终止并确认
+真机持续负载与 jetsam 仍是开放门禁。一次性命令的 Swift Task 取消已终止并确认
 guest 退出；交互 session 的 read/close 取消仍属于后续 PTY 生命周期。
 
 ## 7. 生命周期
