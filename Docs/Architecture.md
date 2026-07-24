@@ -321,6 +321,10 @@ snapshot、gzip 临时 tar、展开 payload 和 16 MiB 余量；预检拒绝不�
 transaction，也不会为本次安装修改有效旧版本。预检不等于空间预留，中途耗尽仍由
 cleanup、rollback 和 recovery 处理。
 
+测试故障点覆盖 snapshot 写入、gzip 已产生部分 tar、tar payload、安装记录、journal 和
+`current.json`。任一 ENOSPC 都必须清除本次 staging/transaction，并在已经进入 promotion
+时恢复旧版本和原始 current 数据。
+
 候选验证后，installer 通过 journal 保护的多步同卷 rename 进行 promotion。每次 rename
 和 JSON 记录写入各自具有原子性，但整个替换不是一次整体原子操作；失败时会回滚，
 进程中断后可恢复。journal 不记录 phase，而是保存预期安装记录、是否曾有旧版本以及旧

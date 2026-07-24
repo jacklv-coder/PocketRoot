@@ -450,6 +450,39 @@ final class PocketRootResourcesTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: destinationURL.path))
     }
 
+    func testGzipTarExtractorRemovesPartialOutputAfterInjectedENOSPC() throws {
+        let archiveURL = try makeValidFakeFSArchiveFile()
+        let extractionDirectoryURL = try makeTemporaryDirectory()
+        let destinationURL = extractionDirectoryURL.appendingPathComponent(
+            "expanded",
+            isDirectory: true
+        )
+        let extractor = PocketRootGzipTarExtractor()
+
+        XCTAssertThrowsError(
+            try extractor.extract(
+                archiveURL: archiveURL,
+                to: destinationURL,
+                writeCheckpointHandler: nil,
+                injectedGzipENOSPCAfterByteCount: 1
+            )
+        ) { error in
+            guard case .gzipDecompressionFailed(let message) =
+                error as? PocketRootArchiveExtractionError
+            else {
+                return XCTFail("Unexpected extraction error: \(error)")
+            }
+            XCTAssertTrue(message.localizedCaseInsensitiveContains("space"))
+        }
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: destinationURL.path))
+        XCTAssertFalse(
+            try FileManager.default.contentsOfDirectory(
+                atPath: extractionDirectoryURL.path
+            ).contains(where: { $0.hasPrefix(".pocketroot-") })
+        )
+    }
+
     func testRootFSInstallerInstallsThenReusesVerifiedVersion() async throws {
         let archiveURL = try makeValidFakeFSArchiveFile()
         let baseURL = try makeTemporaryDirectory()
@@ -1013,6 +1046,109 @@ final class PocketRootResourcesTests: XCTestCase {
                         "rootfs/\(PocketRootRootFSInstaller.replacementTransactionDirectoryName)"
                     ).path
                 )
+            )
+        }
+    }
+
+    func testRootFSInstallerPreservesCurrentInstallationAcrossWriteStageENOSPC()
+        async throws
+    {
+        let checkpoints: [RootFSInstallerWriteCheckpoint] = [
+            .archiveSnapshot,
+            .gzipOutput,
+            .tarPayload,
+            .installationRecord,
+            .promotionJournal,
+            .currentRecord,
+        ]
+
+        for checkpoint in checkpoints {
+            let archiveURL = try makeValidFakeFSArchiveFile()
+            let baseURL = try makeTemporaryDirectory()
+            let manifest = makeFixtureManifest(version: "fixture-v1")
+            let initialInstaller = PocketRootRootFSInstaller(
+                baseDirectoryURL: baseURL,
+                manifest: manifest
+            )
+            let initial = try await initialInstaller.prepareArchive(at: archiveURL)
+            let rootFSDirectoryURL = baseURL.appendingPathComponent(
+                "rootfs",
+                isDirectory: true
+            )
+            let currentRecordURL = rootFSDirectoryURL.appendingPathComponent(
+                "current.json",
+                isDirectory: false
+            )
+            let originalCurrentRecord = try Data(contentsOf: currentRecordURL)
+            let markerURL = initial.rootFSURL.appendingPathComponent(
+                "user-data-marker",
+                isDirectory: false
+            )
+            try Data("preserve-me".utf8).write(to: markerURL)
+            try FileManager.default.removeItem(
+                at: initial.rootFSURL.appendingPathComponent("meta.db")
+            )
+
+            let failingInstaller = PocketRootRootFSInstaller(
+                baseDirectoryURL: baseURL,
+                manifest: manifest,
+                testHooks: RootFSInstallerTestHooks(
+                    writeCheckpointHandler: { reachedCheckpoint in
+                        if reachedCheckpoint == checkpoint {
+                            throw NSError(
+                                domain: NSPOSIXErrorDomain,
+                                code: Int(ENOSPC)
+                            )
+                        }
+                    },
+                    injectedGzipENOSPCAfterByteCount:
+                        checkpoint == .gzipOutput ? 1 : nil
+                )
+            )
+
+            do {
+                _ = try await failingInstaller.prepareArchive(at: archiveURL)
+                XCTFail("Injected ENOSPC at \(checkpoint) must escape.")
+            } catch {
+                XCTAssertTrue(
+                    error.localizedDescription
+                        .localizedCaseInsensitiveContains("space"),
+                    "Unexpected error at \(checkpoint): \(error)"
+                )
+            }
+
+            XCTAssertEqual(
+                try Data(contentsOf: markerURL),
+                Data("preserve-me".utf8),
+                "The old installation changed at \(checkpoint)."
+            )
+            XCTAssertFalse(
+                FileManager.default.fileExists(
+                    atPath: initial.rootFSURL
+                        .appendingPathComponent("meta.db")
+                        .path
+                ),
+                "The corrupt old installation was unexpectedly replaced at \(checkpoint)."
+            )
+            XCTAssertEqual(
+                try Data(contentsOf: currentRecordURL),
+                originalCurrentRecord,
+                "current.json changed at \(checkpoint)."
+            )
+            XCTAssertFalse(
+                FileManager.default.fileExists(
+                    atPath: rootFSDirectoryURL.appendingPathComponent(
+                        PocketRootRootFSInstaller
+                            .replacementTransactionDirectoryName
+                    ).path
+                ),
+                "The promotion transaction leaked at \(checkpoint)."
+            )
+            XCTAssertFalse(
+                try FileManager.default.contentsOfDirectory(
+                    atPath: rootFSDirectoryURL.path
+                ).contains(where: { $0.hasPrefix(".installing-") }),
+                "Staging leaked at \(checkpoint)."
             )
         }
     }

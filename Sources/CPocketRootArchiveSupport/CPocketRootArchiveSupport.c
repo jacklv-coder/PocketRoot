@@ -23,6 +23,7 @@ int pocketroot_gzip_decompress(
     const char *source_path,
     const char *destination_path,
     uint64_t maximum_output_size,
+    uint64_t injected_enospc_after_output_size,
     char *error_buffer,
     size_t error_buffer_size
 ) {
@@ -90,12 +91,34 @@ int pocketroot_gzip_decompress(
             break;
         }
 
-        if (fwrite(buffer, 1, (size_t) bytes_read, destination) != (size_t) bytes_read) {
+        size_t bytes_to_write = (size_t) bytes_read;
+        if (injected_enospc_after_output_size != UINT64_MAX &&
+            output_size >= injected_enospc_after_output_size) {
+            pocketroot_set_error(error_buffer, error_buffer_size, strerror(ENOSPC));
+            result = 9;
+            break;
+        }
+        if (injected_enospc_after_output_size != UINT64_MAX &&
+            (uint64_t) bytes_to_write >
+                injected_enospc_after_output_size - output_size) {
+            bytes_to_write =
+                (size_t) (injected_enospc_after_output_size - output_size);
+        }
+
+        if (bytes_to_write > 0 &&
+            fwrite(buffer, 1, bytes_to_write, destination) != bytes_to_write) {
             pocketroot_set_error(error_buffer, error_buffer_size, strerror(errno));
             result = 6;
             break;
         }
-        output_size += (uint64_t) bytes_read;
+        output_size += (uint64_t) bytes_to_write;
+
+        if (injected_enospc_after_output_size != UINT64_MAX &&
+            output_size >= injected_enospc_after_output_size) {
+            pocketroot_set_error(error_buffer, error_buffer_size, strerror(ENOSPC));
+            result = 9;
+            break;
+        }
     }
 
     if (fclose(destination) != 0 && result == 0) {

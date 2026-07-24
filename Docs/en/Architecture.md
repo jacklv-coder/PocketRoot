@@ -213,6 +213,11 @@ reserve. Rejection does not create a new transaction or modify a valid prior
 version for the new install. This is not a reservation; later exhaustion
 still relies on cleanup, rollback, and recovery.
 
+Test fault points cover snapshot writes, gzip after partial tar output, tar
+payloads, the installation record, the journal, and `current.json`. Any
+ENOSPC must remove the current staging/transaction and, once promotion has
+started, restore the prior version and current-record bytes.
+
 After validation, an on-disk journal protects a multi-step sequence of
 same-volume renames. Each rename and JSON record write is atomic on its own,
 but the replacement as a whole is not one atomic operation; it can roll back

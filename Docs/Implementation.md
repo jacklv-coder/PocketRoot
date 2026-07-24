@@ -116,6 +116,10 @@ important-usage 容量；不足时在创建 staging 前返回包含 required 与
 
 这样源路径随后被替换也不会改变已经锁定的实际输入。
 
+仅测试可见的写入故障点可在 snapshot、gzip 输出、tar payload、安装记录、promotion
+journal 和 current record 注入 ENOSPC。gzip 故障发生在 C/zlib 已接受指定数量输出之后，
+以验证部分 tar 会删除；其余故障复用生产 cleanup/rollback 路径，不改变公开 API。
+
 ### 4.3 gzip 与 tar
 
 gzip：

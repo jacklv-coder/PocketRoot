@@ -18,8 +18,9 @@ Status:
 3. Completed the approval-, command-policy-, timeout-, and output-gated Linux tool.
 4. Published and pinned IshEmbed `v0.4.0-abi.4`, completing one-shot Swift
    Task cancellation, native exit confirmation, and post-cancellation recovery.
-5. Current: RootFS capacity preflight and promotion ENOSPC rollback coverage
-   are complete; continue write-stage ENOSPC, power-loss, physical
+5. Current: RootFS capacity preflight and the
+   snapshot/gzip/tar/record/journal/current/promotion ENOSPC matrix are
+   complete; continue explicit persistence, power-loss, physical
    storage-pressure, sustained-output, and peak-memory hardening.
 6. Native Agent Loop/App composition is paused by product decision and does not block independent runtime validation.
 7. Complete signed iPad smoke when hardware is available; that gate does not block the first six items.
@@ -87,15 +88,14 @@ This establishes the current Simulator, minimum-Xcode 16, and single-iPhone one-
 | Signed iPad | Blocked | Physical boot and command smoke |
 | Minimum Xcode 16 native | Passed | Xcode 16.0 / iOS 18.0 SDK completed RootFS install, Simulator/device final links, and the 14-check native smoke |
 | App lifecycle and memory | Not started | Background/foreground, jetsam, failure, persistence |
-| RootFS ENOSPC/power faults | In progress | Peak-space preflight and promotion rollback are covered; add write-stage injection, explicit persistence, and physical storage pressure |
+| RootFS ENOSPC/power faults | In progress | Peak-space preflight and the full write/promotion ENOSPC matrix are covered; add explicit persistence, power-loss, and physical storage pressure |
 | License-reviewed RootFS | Blocked | Complete license, NOTICE, source, and SBOM |
 | App Store 2.5.2 | Blocked | Written guest download/execute policy decision |
 
 ### Next runtime sequence
 
-1. Continue ENOSPC injection across snapshot/gzip/tar/journal/current writes,
-   power-loss, physical storage pressure, long-output, and memory-peak
-   coverage.
+1. Continue explicit persistence, power-loss, physical storage pressure,
+   long-output, and memory-peak coverage.
 2. When Native Agent Loop/App composition resumes, connect a prepared system
    to UI without bundling a RootFS.
 3. When a signed iPad is available, repeat preparation, boot, guest, command,

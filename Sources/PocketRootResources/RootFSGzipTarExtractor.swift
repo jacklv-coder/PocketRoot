@@ -1,4 +1,5 @@
 import CPocketRootArchiveSupport
+import Darwin
 import Foundation
 
 public enum PocketRootArchiveExtractionError: Error, Sendable, Equatable {
@@ -59,6 +60,22 @@ public struct PocketRootGzipTarExtractor: Sendable, Equatable {
     }
 
     public func extract(archiveURL: URL, to destinationURL: URL) throws {
+        try extract(
+            archiveURL: archiveURL,
+            to: destinationURL,
+            writeCheckpointHandler: nil,
+            injectedGzipENOSPCAfterByteCount: nil
+        )
+    }
+
+    func extract(
+        archiveURL: URL,
+        to destinationURL: URL,
+        writeCheckpointHandler: (
+            @Sendable (RootFSInstallerWriteCheckpoint) throws -> Void
+        )?,
+        injectedGzipENOSPCAfterByteCount: UInt64?
+    ) throws {
         let fileManager = FileManager.default
         var sourceIsDirectory: ObjCBool = false
         guard archiveURL.isFileURL,
@@ -98,7 +115,11 @@ public struct PocketRootGzipTarExtractor: Sendable, Equatable {
             try? fileManager.removeItem(at: tarURL)
         }
 
-        try decompressGzip(archiveURL: archiveURL, tarURL: tarURL)
+        try decompressGzip(
+            archiveURL: archiveURL,
+            tarURL: tarURL,
+            injectedENOSPCAfterByteCount: injectedGzipENOSPCAfterByteCount
+        )
 
         var completed = false
         defer {
@@ -112,18 +133,26 @@ public struct PocketRootGzipTarExtractor: Sendable, Equatable {
                 at: destinationURL,
                 withIntermediateDirectories: false
             )
-            try extractTar(tarURL: tarURL, destinationURL: destinationURL)
+            try extractTar(
+                tarURL: tarURL,
+                destinationURL: destinationURL,
+                writeCheckpointHandler: writeCheckpointHandler
+            )
             completed = true
         } catch let error as PocketRootArchiveExtractionError {
             throw error
         } catch {
             throw PocketRootArchiveExtractionError.fileSystemFailure(
-                error.localizedDescription
+                failureDescription(error)
             )
         }
     }
 
-    private func decompressGzip(archiveURL: URL, tarURL: URL) throws {
+    private func decompressGzip(
+        archiveURL: URL,
+        tarURL: URL,
+        injectedENOSPCAfterByteCount: UInt64?
+    ) throws {
         var errorBuffer = [CChar](repeating: 0, count: 512)
         let status: Int32 = errorBuffer.withUnsafeMutableBufferPointer { errorPointer in
             archiveURL.withUnsafeFileSystemRepresentation { sourcePath in
@@ -135,6 +164,7 @@ public struct PocketRootGzipTarExtractor: Sendable, Equatable {
                         sourcePath,
                         destinationPath,
                         maximumExpandedArchiveByteCount,
+                        injectedENOSPCAfterByteCount ?? UInt64.max,
                         errorPointer.baseAddress,
                         errorPointer.count
                     )
@@ -158,7 +188,13 @@ public struct PocketRootGzipTarExtractor: Sendable, Equatable {
         }
     }
 
-    private func extractTar(tarURL: URL, destinationURL: URL) throws {
+    private func extractTar(
+        tarURL: URL,
+        destinationURL: URL,
+        writeCheckpointHandler: (
+            @Sendable (RootFSInstallerWriteCheckpoint) throws -> Void
+        )?
+    ) throws {
         let input: FileHandle
         do {
             input = try FileHandle(forReadingFrom: tarURL)
@@ -282,7 +318,12 @@ public struct PocketRootGzipTarExtractor: Sendable, Equatable {
                         "A duplicate entry exists at \(entryURL.path)."
                     )
                 }
-                try writePayload(size: entry.size, from: input, to: entryURL)
+                try writePayload(
+                    size: entry.size,
+                    from: input,
+                    to: entryURL,
+                    writeCheckpointHandler: writeCheckpointHandler
+                )
                 try setPOSIXMode(entry.mode, at: entryURL)
             }
 
@@ -439,7 +480,10 @@ public struct PocketRootGzipTarExtractor: Sendable, Equatable {
     private func writePayload(
         size: UInt64,
         from input: FileHandle,
-        to outputURL: URL
+        to outputURL: URL,
+        writeCheckpointHandler: (
+            @Sendable (RootFSInstallerWriteCheckpoint) throws -> Void
+        )?
     ) throws {
         let output = try FileHandle(forWritingTo: outputURL)
         defer {
@@ -451,6 +495,7 @@ public struct PocketRootGzipTarExtractor: Sendable, Equatable {
             let count = Int(min(remaining, 1_048_576))
             let chunk = try readExactly(count, from: input)
             try output.write(contentsOf: chunk)
+            try writeCheckpointHandler?(.tarPayload)
             remaining -= UInt64(chunk.count)
         }
     }
@@ -590,9 +635,27 @@ public struct PocketRootGzipTarExtractor: Sendable, Equatable {
             throw error
         } catch {
             throw PocketRootArchiveExtractionError.fileSystemFailure(
-                error.localizedDescription
+                failureDescription(error)
             )
         }
+    }
+
+    private func failureDescription(_ error: Error) -> String {
+        let cocoaError = error as NSError
+        if cocoaError.domain == NSPOSIXErrorDomain,
+           let errorNumber = Int32(exactly: cocoaError.code)
+        {
+            return String(cString: strerror(errorNumber))
+        }
+        if let underlyingError = cocoaError.userInfo[NSUnderlyingErrorKey] as? Error {
+            let underlying = underlyingError as NSError
+            if underlying.domain == NSPOSIXErrorDomain,
+               let errorNumber = Int32(exactly: underlying.code)
+            {
+                return String(cString: strerror(errorNumber))
+            }
+        }
+        return error.localizedDescription
     }
 }
 
