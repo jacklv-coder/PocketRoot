@@ -32,12 +32,20 @@ private struct PocketRootSmokeFailure: LocalizedError {
     }
 }
 
+private enum PocketRootSmokeRelaunchPersistencePhase: Sendable {
+    case disabled
+    case seed
+    case verify
+}
+
 private enum PocketRootRuntimeSmokeRunner {
     static let archiveFileName = "pocketroot-fs-v0.3.3.tar.gz"
     static let reportFileName = "pocketroot-smoke-result.json"
     static let progressFileName = "pocketroot-smoke-progress.txt"
     static let lifecycleResumeFileName = "pocketroot-smoke-lifecycle-resume.txt"
     static let uiLifecycleFileName = "pocketroot-smoke-ui-lifecycle.txt"
+    static let relaunchPersistenceFileName = "/root/pocketroot-smoke-relaunch.txt"
+    static let relaunchPersistenceMarker = "pocketroot-forced-relaunch-v1"
     static let sustainedOutputByteCount = 8 * 1_024 * 1_024
     static let maximumStandardErrorBytes = 64
     static let maximumPeakResidentBytes: UInt64 = 256 * 1_024 * 1_024
@@ -45,7 +53,8 @@ private enum PocketRootRuntimeSmokeRunner {
     static func run(
         environment: PocketRootSmokeEnvironment,
         lifecycleMode: Bool = false,
-        uiLifecycleMode: Bool = false
+        uiLifecycleMode: Bool = false,
+        relaunchPersistencePhase: PocketRootSmokeRelaunchPersistencePhase = .disabled
     ) async -> PocketRootSmokeReport {
         let startedAt = Date()
         var checks: [PocketRootSmokeCheck] = []
@@ -98,6 +107,63 @@ private enum PocketRootRuntimeSmokeRunner {
                 "Runtime did not reach ready."
             )
             checks.append(PocketRootSmokeCheck(name: "boot", detail: "ready"))
+
+            switch relaunchPersistencePhase {
+            case .disabled:
+                break
+            case .seed:
+                let seed = try await prepared.system.execute(
+                    PocketRootCommandRequest(
+                        command: "printf '%s' '\(relaunchPersistenceMarker)' "
+                            + "> \(relaunchPersistenceFileName) && sync",
+                        workingDirectory: "/"
+                    )
+                )
+                try require(seed.exitCode == 0, "Unable to seed the relaunch marker.")
+                let seededMarker = try await prepared.system.execute(
+                    PocketRootCommandRequest(
+                        command: "cat \(relaunchPersistenceFileName)",
+                        workingDirectory: "/"
+                    )
+                )
+                try require(
+                    seededMarker.exitCode == 0
+                        && seededMarker.stdout == relaunchPersistenceMarker,
+                    "The relaunch marker was not readable before host termination."
+                )
+                writeProgress("awaiting-host-termination")
+                try await awaitHostForcedTermination()
+            case .verify:
+                try require(
+                    prepared.installation.reusedExistingInstallation,
+                    "The relaunched App did not reuse the existing RootFS installation."
+                )
+                let persistedMarker = try await prepared.system.execute(
+                    PocketRootCommandRequest(
+                        command: "cat \(relaunchPersistenceFileName)",
+                        workingDirectory: "/"
+                    )
+                )
+                try require(
+                    persistedMarker.exitCode == 0
+                        && persistedMarker.stdout == relaunchPersistenceMarker,
+                    "The guest marker did not survive forced App termination."
+                )
+                let cleanup = try await prepared.system.execute(
+                    PocketRootCommandRequest(
+                        command: "rm -f \(relaunchPersistenceFileName) && sync "
+                            + "&& test ! -e \(relaunchPersistenceFileName)",
+                        workingDirectory: "/"
+                    )
+                )
+                try require(cleanup.exitCode == 0, "Unable to clean the relaunch marker.")
+                checks.append(
+                    PocketRootSmokeCheck(
+                        name: "forced-relaunch-persistence",
+                        detail: "new process reused RootFS and recovered guest data"
+                    )
+                )
+            }
 
             writeProgress("running-command-checks")
             let architecture = try await prepared.system.execute(
@@ -532,6 +598,13 @@ private enum PocketRootRuntimeSmokeRunner {
         )
     }
 
+    private static func awaitHostForcedTermination() async throws {
+        try await Task.sleep(for: .seconds(60))
+        throw PocketRootSmokeFailure(
+            message: "Host did not forcibly terminate the seed process within 60 seconds."
+        )
+    }
+
     private static func requireDirectory(_ url: URL?, name: String) throws -> URL {
         guard let url else {
             throw PocketRootSmokeFailure(message: "\(name) directory is unavailable.")
@@ -607,10 +680,22 @@ final class PocketRootIshRuntimeSmokeApp: UIResponder, UIApplicationDelegate {
                 ProcessInfo.processInfo.environment["POCKETROOT_SMOKE_LIFECYCLE"] == "1"
             let uiLifecycleMode =
                 ProcessInfo.processInfo.environment["POCKETROOT_SMOKE_UI_LIFECYCLE"] == "1"
+            let relaunchPersistencePhase: PocketRootSmokeRelaunchPersistencePhase
+            switch ProcessInfo.processInfo.environment[
+                "POCKETROOT_SMOKE_RELAUNCH_PERSISTENCE"
+            ] {
+            case "seed":
+                relaunchPersistencePhase = .seed
+            case "verify":
+                relaunchPersistencePhase = .verify
+            default:
+                relaunchPersistencePhase = .disabled
+            }
             let report = await PocketRootRuntimeSmokeRunner.run(
                 environment: environment,
                 lifecycleMode: lifecycleMode,
-                uiLifecycleMode: uiLifecycleMode
+                uiLifecycleMode: uiLifecycleMode,
+                relaunchPersistencePhase: relaunchPersistencePhase
             )
             do {
                 try PocketRootRuntimeSmokeRunner.write(report)

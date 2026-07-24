@@ -129,6 +129,14 @@ The physical runner requires Xcode to select a valid development profile for `PO
 - `UIKit lifecycle activation did not preserve the smoke process PID`: iOS
   terminated or relaunched the App, so the run cannot prove one runtime
   survived the transition and must fail.
+- `Forced-relaunch persistence smoke did not reach its host checkpoint`: the
+  seed process did not reach the post-write/post-`sync` checkpoint. Inspect
+  the last progress and do not forge it.
+- `Forced-relaunch seed process did not terminate` or the verification PID
+  equals the seed PID: CoreDevice did not prove a cross-process transition.
+- `The guest marker did not survive forced App termination`: the RootFS was
+  replaced, synced guest data was lost, or fakefs recovery failed. Preserve
+  the failure logs; do not bypass the reuse or marker checks.
 - `... smoke launch did not return a process identifier`: the current
   Xcode/CoreDevice did not return the supported launch-JSON PID; do not infer
   a PID from human-readable output.

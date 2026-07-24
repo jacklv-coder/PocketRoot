@@ -144,6 +144,14 @@ check covers real UIKit lifecycle delivery. The host opens Settings, waits for
 ordered `applicationWillEnterForeground` and `applicationDidBecomeActive`
 callbacks, followed by a new guest command, `.ready`, shutdown, and peak memory.
 
+With the mutually exclusive `POCKETROOT_SMOKE_RELAUNCH_PERSISTENCE=1`, the
+eighteenth check covers forced-relaunch persistence. The first process writes
+and syncs a fixed guest marker, then the host sends SIGKILL only after a fresh
+checkpoint. A second launch must return a different PID, report reuse of the
+existing RootFS, recover and remove the marker, and complete the standard
+command, shutdown, and peak-memory gates. The host clears report and progress
+again before verification so stale evidence cannot pass.
+
 The sustained-output check proves that Swift can continuously consume binary
 output without truncation or corruption merely because it exceeds the 4 MiB
 native backlog. The lifecycle high-water check covers RootFS preparation,
@@ -202,6 +210,16 @@ POCKETROOT_SMOKE_UI_LIFECYCLE=1 \
   ./Scripts/run-runtime-device-smoke.sh
 ```
 
+Use a separate mode for RootFS and guest-data recovery after forced termination:
+
+```bash
+POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
+POCKETROOT_SMOKE_DEVICE=<physical-device-reference> \
+POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
+POCKETROOT_SMOKE_RELAUNCH_PERSISTENCE=1 \
+  ./Scripts/run-runtime-device-smoke.sh
+```
+
 The reference may be any CoreDevice UUID, hardware UDID, or device name
 accepted by `devicectl`. The runner validates a physical iOS device through
 the supported JSON output and resolves its hardware UDID before `xcodebuild`
@@ -210,9 +228,10 @@ enabled and support development provisioning. The runner verifies the
 application identifier and `get-task-allow`, installs the App, copies the
 pinned archive into its data container, and retrieves the JSON report. Standard
 mode uses an attached launch. The mutually exclusive host-control modes use
-the launch-JSON PID for suspend/resume or open Settings and reactivate that
-same PID for UIKit callbacks. The runner terminates the process and uninstalls
-the App and RootFS data by default; `POCKETROOT_KEEP_DEVICE_APP=1` retains it.
+the launch-JSON PID for suspend/resume, open Settings and reactivate the same
+PID for UIKit callbacks, or terminate a seed PID and require a different
+verification PID. The runner terminates the process and uninstalls the App and
+RootFS data by default; `POCKETROOT_KEEP_DEVICE_APP=1` retains it.
 
 The 2026-07-24 rerun used Xcode 26.1.1, a development-provisioned iPhone 17 Pro
 on iOS 26.1, and the v0.4.0-abi.6 runtime pin. The device-produced
@@ -238,6 +257,15 @@ foreground/active callbacks arrived, the new guest command passed, and peak
 memory was 89.4 MiB. After the shared-runner refactor, the standard 17-check
 and process-suspend 18-check paths also regressed green at 82.7 MiB each.
 These results do not prove jetsam, memory-warning, sustained background, or iPad.
+
+On 2026-07-25, the same Jack iPhone passed the 18-check forced-relaunch
+persistence path. After the seed process wrote and synced the guest marker,
+the host sent SIGKILL to that PID. A different verification PID reported RootFS
+reuse, recovered and removed the marker, and completed all standard commands
+and soft shutdown at a 51.8 MiB peak. The same shared-runner regression passed
+the standard 17-check, process-suspend 18-check, and UIKit 18-check paths at
+90.2, 89.9, and 87.1 MiB. This proves synced guest-data recovery across forced
+App termination, not jetsam, storage pressure, physical power cut, or iPad.
 
 ## CI
 
@@ -270,6 +298,10 @@ Simulator evidence does not prove signed-device or distribution readiness.
 
 ## Evidence language
 
-State the exact environment. The recorded iPhone and minimum-Xcode baselines do not imply iPad support, complete physical-device lifecycle, TestFlight readiness, or App Store approval.
+State the exact environment. Jack iPhone may be described as passing the
+18-check forced-relaunch persistence smoke. The recorded iPhone and
+minimum-Xcode baselines do not imply iPad support, physical jetsam or power-cut
+coverage, complete physical-device lifecycle, TestFlight readiness, or App
+Store approval.
 
 See the [roadmap](Roadmap.md) for open gates.

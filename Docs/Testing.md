@@ -258,6 +258,12 @@ host 按 launch 返回的 PID 暂停 App 进程 3 秒，再恢复并写入一次
 再激活原 PID，并要求 `applicationWillEnterForeground`、`applicationDidBecomeActive`
 按序到达；随后新 guest 命令、`.ready`、shutdown 和 peak-memory 门禁都必须成功。
 
+真机改设互斥的 `POCKETROOT_SMOKE_RELAUNCH_PERSISTENCE=1` 时，第 18 项验证强制
+重启持久化。第一进程在 guest 写入固定标记并执行 `sync`，host 只在收到新检查点后
+按 PID 发送 SIGKILL；第二次 launch 必须返回不同 PID，安装器必须报告复用现有 RootFS，
+guest 标记必须可读且可清理，然后继续完成标准命令、shutdown 和 peak-memory 门禁。
+host 会在第二次 launch 前再次清空 report/progress，旧证据不能冒充通过。
+
 第 9 项证明持续二进制输出可以被 Swift 持续消费，不会因 4 MiB native backlog
 本身而截断或损坏。第 17 项在 Simulator 上约束包含 RootFS 准备、8 MiB 输出、
 超限恢复、取消与 shutdown 的完整进程峰值；它不是物理设备 jetsam 证明。第 10 项
@@ -311,14 +317,25 @@ POCKETROOT_SMOKE_UI_LIFECYCLE=1 \
   ./Scripts/run-runtime-device-smoke.sh
 ```
 
+验证强制终止后的 RootFS/guest 数据恢复时使用独立模式：
+
+```bash
+POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
+POCKETROOT_SMOKE_DEVICE=<physical-device-reference> \
+POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
+POCKETROOT_SMOKE_RELAUNCH_PERSISTENCE=1 \
+  ./Scripts/run-runtime-device-smoke.sh
+```
+
 runner 接受 `devicectl` 可识别的 CoreDevice UUID、硬件 UDID 或设备名，先通过官方
 JSON 输出验证 physical iOS 属性并解析硬件 UDID，再用于 `xcodebuild` 与后续
 `devicectl` 操作。设备必须已配对、启用 Developer Mode 且能用 development profile
 签名。runner 生成并签名 `PocketRootIshRuntimeSmoke`，验证 application identifier
 与 `get-task-allow`，安装 App、把固定 archive 复制到 App data container 并取回
-JSON report。标准模式使用 attached launch；两种互斥的 host-control 模式使用 launch
+JSON report。标准模式使用 attached launch；三种互斥的 host-control 模式使用 launch
 JSON 返回的 PID。进程模式驱动 suspend/resume；UIKit 模式打开 Settings 后重新激活
-同一 PID。默认结束后终止进程、卸载 smoke App 并删除其 RootFS 数据；只有显式设置
+同一 PID；强制重启持久化模式终止 seed PID 并要求 verify PID 不同。默认结束后终止
+进程、卸载 smoke App 并删除其 RootFS 数据；只有显式设置
 `POCKETROOT_KEEP_DEVICE_APP=1` 才保留 App。
 
 2026-07-24 使用 Xcode 26.1.1、签名 iPhone 17 Pro / iOS 26.1、development
@@ -338,6 +355,14 @@ foreground/background、真机 jetsam、storage pressure 或强制断电门禁�
 保持原 PID，foreground/active 回调按序到达，新 guest 命令成功，峰值 89.4 MiB。
 公共 runner 重构后，标准 17 项和进程暂停/恢复 18 项也分别以 82.7 MiB 回归通过。
 这些结果仍不声明 jetsam、memory warning、长期后台执行或 iPad 已通过。
+
+2026-07-25，同一 Jack iPhone 通过强制重启持久化 18 项路径：seed 进程在 guest
+写入并 `sync` 标记后被 host 按 PID 发送 SIGKILL，verify 进程使用不同 PID、报告
+复用现有 RootFS、读回并清理标记，随后完成全部标准命令与 soft shutdown；峰值
+51.8 MiB。
+同次公共 runner 回归中，标准 17 项、进程暂停/恢复 18 项和 UIKit 18 项分别以
+90.2、89.9、87.1 MiB 通过。这证明同步 guest 数据可跨强制 App 终止恢复，不声明
+jetsam、storage pressure、真实强制断电或 iPad 已通过。
 
 ## 8. GitHub Actions
 
@@ -394,7 +419,8 @@ smoke。CI 的 Simulator 结果不证明签名真机或发行可用。
 - storage pressure 与 ENOSPC；
 - 测试日志和制品 hash。
 
-当前 signed iPhone 一次性命令、进程暂停/恢复与 UIKit 前后台基线已通过；iPad 与其余 resource 项仍以[路线图](Roadmap.md)为准。
+当前 signed iPhone 一次性命令、进程暂停/恢复、UIKit 前后台与强制重启持久化基线
+已通过；iPad 与其余 resource 项仍以[路线图](Roadmap.md)为准。
 
 ## 11. 结果表达规则
 
@@ -407,6 +433,7 @@ smoke。CI 的 Simulator 结果不证明签名真机或发行可用。
 - “iPhone 17 Pro / iOS 26.1 signed one-shot smoke 通过”。
 - “Jack iPhone（iPhone 14 Pro / iOS 26.6）通过 18 项 process suspend/resume smoke”。
 - “Jack iPhone（iPhone 14 Pro / iOS 26.6）通过 18 项真实 UIKit lifecycle smoke”。
+- “Jack iPhone（iPhone 14 Pro / iOS 26.6）通过 18 项强制重启持久化 smoke”。
 
 不能由这些结果推导：
 
