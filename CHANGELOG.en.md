@@ -94,6 +94,9 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   device name recognized by `devicectl`, validates physical iOS properties
   through the supported JSON output, and passes the resolved hardware UDID to
   `xcodebuild` and later device operations.
+- v0.4.0-abi.6 passed the current 17-check native smoke on a signed iPhone
+  17 Pro running iOS 26.1; soft shutdown returned to Swift and lifecycle peak
+  memory was 84.6 MiB.
 
 ### Security
 

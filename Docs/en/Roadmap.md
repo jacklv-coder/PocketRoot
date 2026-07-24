@@ -64,8 +64,9 @@ Status: **Experimental, in progress**.
 - Final-linked the full graph for arm64 Simulator and unsigned device.
 - Booted on iOS 18.2 arm64 Simulator.
 - Passed the repository 17-check native smoke, including sustained output, both stream limits, and the Simulator lifecycle peak-memory gate.
-- The older v0.3.3 baseline passed the then-current signed 13-check smoke on an iPhone
-  17 Pro running iOS 26.1; v0.4.0-abi.6 still requires a signed-device rerun.
+- v0.4.0-abi.6 passed the current signed 17-check smoke on an iPhone 17 Pro
+  running iOS 26.1; soft shutdown returned to Swift and lifecycle peak memory
+  was 84.6 MiB.
 
 This establishes the current Simulator, minimum-Xcode 16, and single-iPhone one-shot paths, not iPad, complete physical-device lifecycle, PTY, or distribution readiness.
 
@@ -85,7 +86,7 @@ This establishes the current Simulator, minimum-Xcode 16, and single-iPhone one-
 | Default post-boot identity gate | Passed | Require aarch64, Alpine identity, optional version, and command context before ready; retain failed-slot regression coverage |
 | Real Demo runtime injection | Not started | Inject one prepared system without bundling an unreviewed RootFS |
 | Host-safe soft shutdown | Passed | v0.4.0-abi.6 soft-halts, joins, and returns to Swift; the process remains single-lifecycle |
-| Signed iPhone | In progress | The v0.3.3 baseline passed; rerun is required after the v0.4.0-abi.6 runtime change |
+| Signed iPhone | Passed | v0.4.0-abi.6 completed the 17-check one-shot/soft-shutdown/peak-memory smoke; keep rerunning after runtime changes |
 | Signed iPad | Blocked | Physical boot and command smoke |
 | Minimum Xcode 16 native | Passed | Xcode 16.0 / iOS 18.0 SDK completed RootFS install, Simulator/device final links, and the 17-check native smoke |
 | App lifecycle and memory | In progress | Complete Simulator smoke has a 256 MiB `ru_maxrss` gate; add background/foreground, physical jetsam, failure injection, and persistence |

@@ -179,12 +179,16 @@ pinned archive into its data container, performs an attached launch, and
 retrieves the JSON report. It uninstalls the App and RootFS data by default;
 `POCKETROOT_KEEP_DEVICE_APP=1` is the explicit opt-out.
 
-The 2026-07-23 record used Xcode 26.1.1 (17B100), an iPhone 17 Pro, iOS 26.1
-(23B85), and development provisioning. Archive size/digest, report environment,
-all 14 checks in that older runner, and exit status passed. No UDID, profile,
-or local report is committed. This closes the signed iPhone one-shot baseline,
-not the current 17-check runner, iPad, foreground/background, memory/jetsam, or
-storage pressure.
+The 2026-07-24 rerun used Xcode 26.1.1, a development-provisioned iPhone 17 Pro
+on iOS 26.1, and the v0.4.0-abi.6 runtime pin. The device-produced
+`success: true` report passed all 17 checks: 8 MiB binary stdout was byte-exact,
+timeout/output-limit/cancellation recovery succeeded, soft shutdown recorded
+`returned, terminated, restart required`, and lifecycle peak memory was
+84.6 MiB against the 256 MiB gate. No device identifier, profile, or local
+report is committed. This closes the current signed-iPhone
+one-shot/soft-shutdown/peak-memory smoke baseline, not iPad,
+foreground/background, physical jetsam, storage pressure, or forced-power-cut
+gates.
 
 ## CI
 
