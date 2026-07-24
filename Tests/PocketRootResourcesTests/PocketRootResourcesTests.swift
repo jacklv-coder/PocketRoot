@@ -518,6 +518,106 @@ final class PocketRootResourcesTests: XCTestCase {
         )
     }
 
+    func testRootFSInstallerRequiresAnExistingBaseDirectory() async throws {
+        let parentURL = try makeTemporaryDirectory()
+        let missingBaseURL = parentURL.appendingPathComponent(
+            "missing/application-support",
+            isDirectory: true
+        )
+        let installer = PocketRootRootFSInstaller(
+            baseDirectoryURL: missingBaseURL,
+            manifest: makeFixtureManifest(version: "fixture-v1")
+        )
+
+        do {
+            _ = try await installer.prepareArchive(
+                at: makeValidFakeFSArchiveFile()
+            )
+            XCTFail("A missing installation base must be rejected.")
+        } catch {
+            XCTAssertEqual(
+                error as? PocketRootRootFSInstallationError,
+                .invalidBaseDirectory(missingBaseURL.path)
+            )
+        }
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: missingBaseURL.path)
+        )
+    }
+
+    func testRootFSInstallerPersistsEntriesWithoutOwnerReadPermissions()
+        async throws
+    {
+        let installer = PocketRootRootFSInstaller(
+            baseDirectoryURL: try makeTemporaryDirectory(),
+            manifest: try makePermissionRestrictedFixtureManifest()
+        )
+
+        let installation = try await installer.prepareArchive(
+            at: makePermissionRestrictedFakeFSArchiveFile()
+        )
+
+        for relativePath in ["meta.db", "data"] {
+            let attributes = try FileManager.default.attributesOfItem(
+                atPath: installation.rootFSURL
+                    .appendingPathComponent(relativePath)
+                    .path
+            )
+            XCTAssertEqual(
+                (attributes[.posixPermissions] as? NSNumber)?.intValue,
+                0,
+                "\(relativePath) permissions changed during persistence."
+            )
+        }
+        try makePermissionRestrictedInstallationRemovable(
+            installation.rootFSURL
+        )
+    }
+
+    func testRootFSInstallerCleansPermissionRestrictedReplacement()
+        async throws
+    {
+        let baseURL = try makeTemporaryDirectory()
+        let archiveURL = try makePermissionRestrictedFakeFSArchiveFile()
+        let manifest = try makePermissionRestrictedFixtureManifest()
+        let installer = PocketRootRootFSInstaller(
+            baseDirectoryURL: baseURL,
+            manifest: manifest
+        )
+        let first = try await installer.prepareArchive(at: archiveURL)
+        try FileManager.default.removeItem(
+            at: first.rootFSURL.appendingPathComponent(
+                ".pocketroot-rootfs.json",
+                isDirectory: false
+            )
+        )
+
+        let replacement = try await installer.prepareArchive(at: archiveURL)
+
+        XCTAssertFalse(replacement.reusedExistingInstallation)
+        let rootFSDirectoryURL = baseURL.appendingPathComponent(
+            "rootfs",
+            isDirectory: true
+        )
+        XCTAssertFalse(
+            FileManager.default.fileExists(
+                atPath: rootFSDirectoryURL.appendingPathComponent(
+                    PocketRootRootFSInstaller
+                        .replacementTransactionDirectoryName,
+                    isDirectory: true
+                ).path
+            )
+        )
+        XCTAssertFalse(
+            try FileManager.default.contentsOfDirectory(
+                atPath: rootFSDirectoryURL.path
+            ).contains(where: { $0.hasPrefix(".installing-") })
+        )
+        try makePermissionRestrictedInstallationRemovable(
+            replacement.rootFSURL
+        )
+    }
+
     func testRootFSInstallerExtractsTheValidatedPrivateSnapshot() async throws {
         let archiveURL = try makeValidFakeFSArchiveFile()
         let baseURL = try makeTemporaryDirectory()
@@ -875,6 +975,131 @@ final class PocketRootResourcesTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: transactionURL.path))
     }
 
+    func testRootFSInstallerRollsBackJournalOnlyPowerLossState() async throws {
+        let archiveURL = try makeValidFakeFSArchiveFile()
+        let baseURL = try makeTemporaryDirectory()
+        let manifest = makeFixtureManifest(version: "fixture-v1")
+        let installer = PocketRootRootFSInstaller(
+            baseDirectoryURL: baseURL,
+            manifest: manifest
+        )
+        let initial = try await installer.prepareArchive(at: archiveURL)
+        let rootFSDirectoryURL = baseURL.appendingPathComponent(
+            "rootfs",
+            isDirectory: true
+        )
+        let currentRecordURL = rootFSDirectoryURL.appendingPathComponent(
+            "current.json",
+            isDirectory: false
+        )
+        let originalCurrentRecord = try Data(contentsOf: currentRecordURL)
+        let markerURL = initial.rootFSURL.appendingPathComponent(
+            "user-data-marker",
+            isDirectory: false
+        )
+        try Data("preserve-me".utf8).write(to: markerURL)
+        try FileManager.default.removeItem(
+            at: initial.rootFSURL.appendingPathComponent("meta.db")
+        )
+        let transactionURL = try makePromotionTransaction(
+            rootFSDirectoryURL: rootFSDirectoryURL,
+            manifest: manifest,
+            hadPreviousInstallation: true,
+            previousCurrentRecordData: originalCurrentRecord
+        )
+
+        do {
+            _ = try await installer.prepareArchive(
+                at: baseURL.appendingPathComponent("missing.tar.gz")
+            )
+            XCTFail("The corrupt installation still requires an archive.")
+        } catch {
+            XCTAssertFalse(error.localizedDescription.isEmpty)
+        }
+
+        XCTAssertEqual(
+            try Data(contentsOf: markerURL),
+            Data("preserve-me".utf8)
+        )
+        XCTAssertFalse(
+            FileManager.default.fileExists(
+                atPath: initial.rootFSURL
+                    .appendingPathComponent("meta.db")
+                    .path
+            )
+        )
+        XCTAssertEqual(
+            try Data(contentsOf: currentRecordURL),
+            originalCurrentRecord
+        )
+        XCTAssertFalse(FileManager.default.fileExists(atPath: transactionURL.path))
+    }
+
+    func testRootFSInstallerCommitsCandidatePowerLossStateWithBackup()
+        async throws
+    {
+        let archiveURL = try makeValidFakeFSArchiveFile()
+        let sourceBaseURL = try makeTemporaryDirectory()
+        let targetBaseURL = try makeTemporaryDirectory()
+        let manifest = makeFixtureManifest(version: "fixture-v1")
+        let source = try await PocketRootRootFSInstaller(
+            baseDirectoryURL: sourceBaseURL,
+            manifest: manifest
+        ).prepareArchive(at: archiveURL)
+        let targetInstaller = PocketRootRootFSInstaller(
+            baseDirectoryURL: targetBaseURL,
+            manifest: manifest
+        )
+        let target = try await targetInstaller.prepareArchive(at: archiveURL)
+        let markerURL = target.rootFSURL.appendingPathComponent(
+            "user-data-marker",
+            isDirectory: false
+        )
+        try Data("old-install".utf8).write(to: markerURL)
+        try FileManager.default.removeItem(
+            at: target.rootFSURL.appendingPathComponent("meta.db")
+        )
+
+        let rootFSDirectoryURL = targetBaseURL.appendingPathComponent(
+            "rootfs",
+            isDirectory: true
+        )
+        let currentRecordURL = rootFSDirectoryURL.appendingPathComponent(
+            "current.json",
+            isDirectory: false
+        )
+        let originalCurrentRecord = try Data(contentsOf: currentRecordURL)
+        let transactionURL = try makePromotionTransaction(
+            rootFSDirectoryURL: rootFSDirectoryURL,
+            manifest: manifest,
+            hadPreviousInstallation: true,
+            previousCurrentRecordData: originalCurrentRecord
+        )
+        try FileManager.default.moveItem(
+            at: target.rootFSURL,
+            to: transactionURL.appendingPathComponent(
+                PocketRootRootFSInstaller.previousInstallationDirectoryName,
+                isDirectory: true
+            )
+        )
+        try FileManager.default.copyItem(at: source.rootFSURL, to: target.rootFSURL)
+
+        let recovered = try await targetInstaller.prepareArchive(
+            at: targetBaseURL.appendingPathComponent("missing.tar.gz")
+        )
+
+        XCTAssertTrue(recovered.reusedExistingInstallation)
+        try PocketRootRootFSValidator.validateMaterializedFakeFS(
+            at: recovered.rootFSURL
+        )
+        XCTAssertFalse(FileManager.default.fileExists(atPath: markerURL.path))
+        XCTAssertEqual(
+            try Data(contentsOf: currentRecordURL),
+            originalCurrentRecord
+        )
+        XCTAssertFalse(FileManager.default.fileExists(atPath: transactionURL.path))
+    }
+
     func testRootFSInstallerRejectsReservedVersionNames() async throws {
         let archiveURL = try makeValidFakeFSArchiveFile()
 
@@ -1153,6 +1378,135 @@ final class PocketRootResourcesTests: XCTestCase {
         }
     }
 
+    func testRootFSInstallerPersistsCommitStateInOrder() async throws {
+        let recorder = RootFSPersistenceCheckpointRecorder()
+        let installer = PocketRootRootFSInstaller(
+            baseDirectoryURL: try makeTemporaryDirectory(),
+            manifest: makeFixtureManifest(version: "fixture-v1"),
+            testHooks: RootFSInstallerTestHooks(
+                persistenceCheckpointHandler: { checkpoint in
+                    recorder.append(checkpoint)
+                }
+            )
+        )
+
+        _ = try await installer.prepareArchive(
+            at: makeValidFakeFSArchiveFile()
+        )
+
+        XCTAssertEqual(
+            recorder.checkpoints,
+            [
+                .candidateTree,
+                .promotionJournalFile,
+                .promotionJournalDirectory,
+                .candidatePromotionRename,
+                .currentRecordFile,
+                .currentRecordDirectory,
+            ]
+        )
+    }
+
+    func testRootFSInstallerRollsBackPersistenceBarrierFailures() async throws {
+        let checkpoints: [RootFSInstallerPersistenceCheckpoint] = [
+            .candidateTree,
+            .promotionJournalFile,
+            .promotionJournalDirectory,
+            .previousInstallationRename,
+            .candidatePromotionRename,
+            .currentRecordFile,
+            .currentRecordDirectory,
+        ]
+
+        for checkpoint in checkpoints {
+            let archiveURL = try makeValidFakeFSArchiveFile()
+            let baseURL = try makeTemporaryDirectory()
+            let manifest = makeFixtureManifest(version: "fixture-v1")
+            let initialInstaller = PocketRootRootFSInstaller(
+                baseDirectoryURL: baseURL,
+                manifest: manifest
+            )
+            let initial = try await initialInstaller.prepareArchive(at: archiveURL)
+            let rootFSDirectoryURL = baseURL.appendingPathComponent(
+                "rootfs",
+                isDirectory: true
+            )
+            let currentRecordURL = rootFSDirectoryURL.appendingPathComponent(
+                "current.json",
+                isDirectory: false
+            )
+            let originalCurrentRecord = try Data(contentsOf: currentRecordURL)
+            let markerURL = initial.rootFSURL.appendingPathComponent(
+                "user-data-marker",
+                isDirectory: false
+            )
+            try Data("preserve-me".utf8).write(to: markerURL)
+            try FileManager.default.removeItem(
+                at: initial.rootFSURL.appendingPathComponent("meta.db")
+            )
+
+            let failingInstaller = PocketRootRootFSInstaller(
+                baseDirectoryURL: baseURL,
+                manifest: manifest,
+                testHooks: RootFSInstallerTestHooks(
+                    persistenceCheckpointHandler: { reachedCheckpoint in
+                        if reachedCheckpoint == checkpoint {
+                            throw NSError(
+                                domain: NSPOSIXErrorDomain,
+                                code: Int(EIO)
+                            )
+                        }
+                    }
+                )
+            )
+
+            do {
+                _ = try await failingInstaller.prepareArchive(at: archiveURL)
+                XCTFail("Injected persistence failure at \(checkpoint) must escape.")
+            } catch {
+                XCTAssertTrue(
+                    error.localizedDescription
+                        .localizedCaseInsensitiveContains("input/output"),
+                    "Unexpected error at \(checkpoint): \(error)"
+                )
+            }
+
+            XCTAssertEqual(
+                try Data(contentsOf: markerURL),
+                Data("preserve-me".utf8),
+                "The old installation changed at \(checkpoint)."
+            )
+            XCTAssertFalse(
+                FileManager.default.fileExists(
+                    atPath: initial.rootFSURL
+                        .appendingPathComponent("meta.db")
+                        .path
+                ),
+                "The corrupt old installation was replaced at \(checkpoint)."
+            )
+            XCTAssertEqual(
+                try Data(contentsOf: currentRecordURL),
+                originalCurrentRecord,
+                "current.json changed at \(checkpoint)."
+            )
+            XCTAssertFalse(
+                FileManager.default.fileExists(
+                    atPath: rootFSDirectoryURL.appendingPathComponent(
+                        PocketRootRootFSInstaller
+                            .replacementTransactionDirectoryName
+                    ).path
+                ),
+                "The promotion transaction leaked at \(checkpoint)."
+            )
+            XCTAssertFalse(
+                try FileManager.default.contentsOfDirectory(
+                    atPath: rootFSDirectoryURL.path
+                ).contains(where: { $0.hasPrefix(".installing-") }),
+                "Staging leaked at \(checkpoint)."
+            )
+        }
+    }
+
     func testRootFSInstallerFailedUpgradePreservesCurrentInstallation() async throws {
         let archiveURL = try makeValidFakeFSArchiveFile()
         let baseURL = try makeTemporaryDirectory()
@@ -1273,6 +1627,17 @@ final class PocketRootResourcesTests: XCTestCase {
         )
     }
 
+    private func makePermissionRestrictedFakeFSArchiveFile() throws -> URL {
+        try makeTemporaryFile(
+            contents: try XCTUnwrap(
+                Data(
+                    base64Encoded:
+                        Self.permissionRestrictedFakeFSArchiveBase64
+                )
+            )
+        )
+    }
+
     private func makeFixtureManifest(
         version: String
     ) -> PocketRootRootFSArtifactManifest {
@@ -1284,6 +1649,36 @@ final class PocketRootResourcesTests: XCTestCase {
             sha256: "4ede5b57ad2a2ee908076eaed25c3736f3ea9214cc75ba6081f1871b4716a05c",
             archiveByteCount: 171,
             expandedArchiveByteCount: 10_240
+        )
+    }
+
+    private func makePermissionRestrictedFixtureManifest() throws
+        -> PocketRootRootFSArtifactManifest
+    {
+        let archiveData = try XCTUnwrap(
+            Data(base64Encoded: Self.permissionRestrictedFakeFSArchiveBase64)
+        )
+        return PocketRootRootFSArtifactManifest(
+            version: "fixture-mode-000",
+            architecture: .arm64,
+            format: .fakeFSTarGzip,
+            downloadURL: URL(string: "https://example.com/rootfs.tar.gz")!,
+            sha256: "06b8c92c48aa0e2c54f6551fbddddc832a8df73c33585e540c35a6ec8fe5d854",
+            archiveByteCount: UInt64(archiveData.count),
+            expandedArchiveByteCount: 10_240
+        )
+    }
+
+    private func makePermissionRestrictedInstallationRemovable(
+        _ rootFSURL: URL
+    ) throws {
+        try FileManager.default.setAttributes(
+            [.posixPermissions: NSNumber(value: 0o700)],
+            ofItemAtPath: rootFSURL.appendingPathComponent("data").path
+        )
+        try FileManager.default.setAttributes(
+            [.posixPermissions: NSNumber(value: 0o600)],
+            ofItemAtPath: rootFSURL.appendingPathComponent("meta.db").path
         )
     }
 
@@ -1318,6 +1713,8 @@ final class PocketRootResourcesTests: XCTestCase {
 
     private static let validFakeFSArchiveBase64 =
         "H4sIAAAAAAAC/+3VMQ6CMBiG4R6FE0ArtD1PDRAHjImtice3MAnK4PA3MbzPUoYmDG/4GGOjpOnMW7uc2fb88uzafL2yqoBHTOGeX6mOaYzNdUih7s+y/V3X7fc32/7eaaMqTX9xc/w+pKBw1O9/zi/6E/h9//3JOfa/ZP/LME23Oj2T1P5/dn9rbtf9TWbZ/xKW7swgAAAAAAAAAAAAAPy9F8wBBB8AKAAA"
+    private static let permissionRestrictedFakeFSArchiveBase64 =
+        "H4sIAAAAAAAAE+3VTQrCMBBA4R6lJ2itdZLzRNrioiKYCB7faUHE+reQJILv2ySLwgQeSQdfF7GtlBWZV7Vcn+xNq5+XEv1k6uSDO+rIFLN+0ODrfR9c1W3jzXjR/da8Wfa3YtqiTNLkz/tP8TsXXO5zIA+9/1P+qD+Bj/f/YW/XG97/JK79d/04HqpwDhFmTFHN2/5y379Rwvufwtw99yEAAAAAAAAAAAAAAF+7AAnkDE4AKAAA"
     private static let traversalArchiveBase64 =
         "H4sIAAAAAAAC/+3NPQqDQBgE0O8onsAIu5jzbNQ++HN/11Rin4DkvWaGaaZtH9MylPcU39NVfc6frK5ZpVM/9mdKOZoufmBb1jLXy/hPrzIGAAAAAAAAAAAA97MDz0AGZgAoAAA="
     private static let symlinkArchiveBase64 =
@@ -1328,4 +1725,23 @@ final class PocketRootResourcesTests: XCTestCase {
         "H4sIAAAAAAAAA+2TywqAIBBF/RT/oBl17HtcNGBEQY//T3vtClq4iOZsLsKgdzjIUxUqjl2jygEA3jmds/a0JZj9fKKRjAWsnUPQgBa9URoKdrpYpjmMqUob+zkM93NpjPnhnmOPKz8CZ/+F38jeid74N9Ym/1S414b4l///Y/+CIPyXFdAeNEEACgAA"
     private static let caseAliasedDirectoryArchiveBase64 =
         "H4sIAG3oYGoAA0sr1megNTAAAnNTUzANBOg0FraZMVC5ginNXQYEpcUliUVAK+lh1yAEbsGDMv6NRuN/FIyCUTAKaAsAkTbGfQAIAAA="
+}
+
+private final class RootFSPersistenceCheckpointRecorder: @unchecked Sendable {
+    private let lock = NSLock()
+    private var storedCheckpoints: [RootFSInstallerPersistenceCheckpoint] = []
+
+    var checkpoints: [RootFSInstallerPersistenceCheckpoint] {
+        lock.lock()
+        defer {
+            lock.unlock()
+        }
+        return storedCheckpoints
+    }
+
+    func append(_ checkpoint: RootFSInstallerPersistenceCheckpoint) {
+        lock.lock()
+        storedCheckpoints.append(checkpoint)
+        lock.unlock()
+    }
 }

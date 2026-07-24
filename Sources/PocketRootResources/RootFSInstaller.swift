@@ -72,6 +72,9 @@ public actor PocketRootRootFSInstaller {
     private let writeCheckpointHandler: (
         @Sendable (RootFSInstallerWriteCheckpoint) throws -> Void
     )?
+    private let persistenceCheckpointHandler: (
+        @Sendable (RootFSInstallerPersistenceCheckpoint) throws -> Void
+    )?
     private let injectedGzipENOSPCAfterByteCount: UInt64?
     private let availableCapacityProvider: (
         @Sendable (URL) throws -> UInt64
@@ -96,6 +99,7 @@ public actor PocketRootRootFSInstaller {
         archiveSnapshotHandler = nil
         promotionCheckpointHandler = nil
         writeCheckpointHandler = nil
+        persistenceCheckpointHandler = nil
         injectedGzipENOSPCAfterByteCount = nil
         availableCapacityProvider = nil
         executor = .shared
@@ -120,6 +124,8 @@ public actor PocketRootRootFSInstaller {
         archiveSnapshotHandler = testHooks.archiveSnapshotHandler
         promotionCheckpointHandler = testHooks.promotionCheckpointHandler
         writeCheckpointHandler = testHooks.writeCheckpointHandler
+        persistenceCheckpointHandler =
+            testHooks.persistenceCheckpointHandler
         injectedGzipENOSPCAfterByteCount =
             testHooks.injectedGzipENOSPCAfterByteCount
         availableCapacityProvider = testHooks.availableCapacityProvider
@@ -136,6 +142,7 @@ public actor PocketRootRootFSInstaller {
         let archiveSnapshotHandler = archiveSnapshotHandler
         let promotionCheckpointHandler = promotionCheckpointHandler
         let writeCheckpointHandler = writeCheckpointHandler
+        let persistenceCheckpointHandler = persistenceCheckpointHandler
         let injectedGzipENOSPCAfterByteCount =
             injectedGzipENOSPCAfterByteCount
         let availableCapacityProvider = availableCapacityProvider
@@ -150,6 +157,8 @@ public actor PocketRootRootFSInstaller {
                 archiveSnapshotHandler: archiveSnapshotHandler,
                 promotionCheckpointHandler: promotionCheckpointHandler,
                 writeCheckpointHandler: writeCheckpointHandler,
+                persistenceCheckpointHandler:
+                    persistenceCheckpointHandler,
                 injectedGzipENOSPCAfterByteCount:
                     injectedGzipENOSPCAfterByteCount,
                 availableCapacityProvider: availableCapacityProvider,
@@ -171,6 +180,9 @@ public actor PocketRootRootFSInstaller {
         writeCheckpointHandler: (
             @Sendable (RootFSInstallerWriteCheckpoint) throws -> Void
         )?,
+        persistenceCheckpointHandler: (
+            @Sendable (RootFSInstallerPersistenceCheckpoint) throws -> Void
+        )?,
         injectedGzipENOSPCAfterByteCount: UInt64?,
         availableCapacityProvider: (
             @Sendable (URL) throws -> UInt64
@@ -184,6 +196,11 @@ public actor PocketRootRootFSInstaller {
         }
         let version = try safeVersionComponent(manifest.version)
         let fileManager = FileManager.default
+        guard isExistingRealDirectory(at: baseDirectoryURL) else {
+            throw PocketRootRootFSInstallationError.invalidBaseDirectory(
+                baseDirectoryURL.path
+            )
+        }
         let rootFSDirectoryURL = baseDirectoryURL
             .appendingPathComponent("rootfs", isDirectory: true)
         let finalURL = rootFSDirectoryURL
@@ -193,10 +210,7 @@ public actor PocketRootRootFSInstaller {
         let expectedRecord = InstallationRecord(manifest: manifest)
 
         try cancellation.check()
-        try fileManager.createDirectory(
-            at: rootFSDirectoryURL,
-            withIntermediateDirectories: true
-        )
+        try createRootFSDirectoryIfNeeded(at: rootFSDirectoryURL)
         let rootFSDirectoryValues = try rootFSDirectoryURL.resourceValues(
             forKeys: [.isDirectoryKey, .isSymbolicLinkKey]
         )
@@ -207,9 +221,13 @@ public actor PocketRootRootFSInstaller {
                 rootFSDirectoryURL.path
             )
         }
+        // Persist the rootfs/ directory entry itself. The API requires the
+        // caller-owned base directory and its ancestors to already exist.
+        try synchronizeDirectory(at: baseDirectoryURL)
         try recoverInterruptedPromotion(
             in: rootFSDirectoryURL,
-            currentRecordURL: currentRecordURL
+            currentRecordURL: currentRecordURL,
+            persistenceCheckpointHandler: persistenceCheckpointHandler
         )
         try removeStaleStagingDirectories(in: rootFSDirectoryURL)
 
@@ -217,7 +235,9 @@ public actor PocketRootRootFSInstaller {
             try writeCurrentRecord(
                 expectedRecord,
                 relativePath: version,
-                to: currentRecordURL
+                to: currentRecordURL,
+                persistenceCheckpointHandler:
+                    persistenceCheckpointHandler
             )
             return PocketRootRootFSInstallation(
                 version: manifest.version,
@@ -256,7 +276,7 @@ public actor PocketRootRootFSInstaller {
             isDirectory: false
         )
         defer {
-            try? fileManager.removeItem(at: stagingURL)
+            try? removeItemMakingTreeAccessible(at: stagingURL)
         }
 
         try fileManager.createDirectory(at: stagingURL, withIntermediateDirectories: false)
@@ -297,6 +317,11 @@ public actor PocketRootRootFSInstaller {
             to: candidateURL,
             writeCheckpointHandler: writeCheckpointHandler
         )
+        try persistCandidateTree(
+            at: candidateURL,
+            persistenceCheckpointHandler: persistenceCheckpointHandler,
+            cancellation: cancellation
+        )
         try cancellation.check()
 
         try promote(
@@ -306,7 +331,8 @@ public actor PocketRootRootFSInstaller {
             record: expectedRecord,
             relativePath: version,
             promotionCheckpointHandler: promotionCheckpointHandler,
-            writeCheckpointHandler: writeCheckpointHandler
+            writeCheckpointHandler: writeCheckpointHandler,
+            persistenceCheckpointHandler: persistenceCheckpointHandler
         )
 
         return PocketRootRootFSInstallation(
@@ -335,6 +361,30 @@ public actor PocketRootRootFSInstaller {
             return true
         default:
             return false
+        }
+    }
+
+    private static func isExistingRealDirectory(at url: URL) -> Bool {
+        var status = stat()
+        let result = url.withUnsafeFileSystemRepresentation { path in
+            guard let path else {
+                return Int32(-1)
+            }
+            return Darwin.lstat(path, &status)
+        }
+        return result == 0
+            && (status.st_mode & mode_t(S_IFMT)) == mode_t(S_IFDIR)
+    }
+
+    private static func createRootFSDirectoryIfNeeded(at url: URL) throws {
+        let result = url.withUnsafeFileSystemRepresentation { path in
+            guard let path else {
+                return Int32(-1)
+            }
+            return Darwin.mkdir(path, S_IRWXU)
+        }
+        guard result == 0 || errno == EEXIST else {
+            throw posixFailure("create the RootFS installation directory")
         }
     }
 
@@ -508,9 +558,9 @@ public actor PocketRootRootFSInstaller {
     }
 
     private static func posixFailure(
-        _ operation: String
+        _ operation: String,
+        errorNumber: Int32 = errno
     ) -> PocketRootRootFSInstallationError {
-        let errorNumber = errno
         return .installationFailed(
             "Unable to \(operation): \(String(cString: strerror(errorNumber)))"
         )
@@ -570,6 +620,9 @@ public actor PocketRootRootFSInstaller {
         to url: URL,
         writeCheckpointHandler: (
             @Sendable (RootFSInstallerWriteCheckpoint) throws -> Void
+        )? = nil,
+        persistenceCheckpointHandler: (
+            @Sendable (RootFSInstallerPersistenceCheckpoint) throws -> Void
         )? = nil
     ) throws {
         let current = CurrentInstallationRecord(
@@ -578,8 +631,17 @@ public actor PocketRootRootFSInstaller {
             relativePath: relativePath
         )
         do {
-            try encoded(current).write(to: url, options: .atomic)
-            try writeCheckpointHandler?(.currentRecord)
+            try writeAtomicallyAndPersist(
+                encoded(current),
+                to: url,
+                fileCheckpoint: .currentRecordFile,
+                directoryCheckpoint: .currentRecordDirectory,
+                persistenceCheckpointHandler:
+                    persistenceCheckpointHandler,
+                writeCheckpoint: {
+                    try writeCheckpointHandler?(.currentRecord)
+                }
+            )
         } catch {
             throw PocketRootRootFSInstallationError.installationFailed(
                 "Unable to write the current RootFS record: "
@@ -594,13 +656,375 @@ public actor PocketRootRootFSInstaller {
         return try encoder.encode(value)
     }
 
+    /// Flushes every candidate payload file and then its directories from the
+    /// leaves upward. The candidate's parent is synchronized after the later
+    /// rename, so no private staging path itself becomes part of the commit.
+    private static func persistCandidateTree(
+        at candidateURL: URL,
+        persistenceCheckpointHandler: (
+            @Sendable (RootFSInstallerPersistenceCheckpoint) throws -> Void
+        )?,
+        cancellation: RootFSInstallationCancellation
+    ) throws {
+        do {
+            try persistenceCheckpointHandler?(.candidateTree)
+            try synchronizeTree(
+                at: candidateURL,
+                cancellation: cancellation
+            )
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            throw PocketRootRootFSInstallationError.installationFailed(
+                "Unable to persist the candidate RootFS: "
+                    + failureDescription(error)
+            )
+        }
+    }
+
+    private static func synchronizeTree(
+        at directoryURL: URL,
+        cancellation: RootFSInstallationCancellation
+    ) throws {
+        try cancellation.check()
+        let directory = try openDirectoryForTreePersistence(at: directoryURL)
+        var permissionsRestored = false
+        defer {
+            if directory.permissionsChanged && !permissionsRestored {
+                Darwin.fchmod(directory.descriptor, directory.originalMode)
+            }
+            Darwin.close(directory.descriptor)
+        }
+
+        let fileManager = FileManager.default
+        let contents = try fileManager.contentsOfDirectory(
+            at: directoryURL,
+            includingPropertiesForKeys: nil,
+            options: []
+        ).sorted { $0.path < $1.path }
+
+        for itemURL in contents {
+            try cancellation.check()
+            let status = try fileStatusWithoutFollowingLinks(at: itemURL)
+            let type = status.st_mode & mode_t(S_IFMT)
+            if type == mode_t(S_IFDIR) {
+                try synchronizeTree(
+                    at: itemURL,
+                    cancellation: cancellation
+                )
+            } else if type == mode_t(S_IFREG) {
+                try synchronizeRegularFile(at: itemURL)
+            } else {
+                throw PocketRootRootFSInstallationError.installationFailed(
+                    "The candidate RootFS contains an unsupported filesystem item."
+                )
+            }
+        }
+        if directory.permissionsChanged {
+            guard Darwin.fchmod(
+                directory.descriptor,
+                directory.originalMode
+            ) == 0 else {
+                throw posixFailure(
+                    "restore RootFS directory permissions before persistence"
+                )
+            }
+            permissionsRestored = true
+        }
+        try synchronize(directory.descriptor)
+    }
+
+    private static func synchronizeRegularFile(at url: URL) throws {
+        let status = try fileStatusWithoutFollowingLinks(at: url)
+        guard (status.st_mode & mode_t(S_IFMT)) == mode_t(S_IFREG) else {
+            throw PocketRootRootFSInstallationError.installationFailed(
+                "The candidate RootFS file changed type during persistence."
+            )
+        }
+        let originalMode = status.st_mode & mode_t(0o7777)
+        let accessibleMode = originalMode | mode_t(S_IRUSR)
+        let permissionsChanged = accessibleMode != originalMode
+        if permissionsChanged {
+            try setPermissions(accessibleMode, at: url)
+        }
+
+        let descriptor = url.withUnsafeFileSystemRepresentation { path in
+            guard let path else {
+                return Int32(-1)
+            }
+            return Darwin.open(path, O_RDONLY | O_NOFOLLOW | O_CLOEXEC)
+        }
+        guard descriptor >= 0 else {
+            let error = posixFailure(
+                "open a RootFS file for persistence"
+            )
+            if permissionsChanged {
+                try? setPermissions(originalMode, at: url)
+            }
+            throw error
+        }
+        var permissionsRestored = false
+        defer {
+            if permissionsChanged && !permissionsRestored {
+                Darwin.fchmod(descriptor, originalMode)
+            }
+            Darwin.close(descriptor)
+        }
+
+        var openedStatus = stat()
+        guard fstat(descriptor, &openedStatus) == 0,
+              (openedStatus.st_mode & mode_t(S_IFMT)) == mode_t(S_IFREG)
+        else {
+            throw posixFailure("verify a RootFS file for persistence")
+        }
+        if permissionsChanged {
+            guard Darwin.fchmod(descriptor, originalMode) == 0 else {
+                throw posixFailure(
+                    "restore RootFS file permissions before persistence"
+                )
+            }
+            permissionsRestored = true
+        }
+        try fullySynchronize(descriptor)
+    }
+
+    private static func openDirectoryForTreePersistence(
+        at url: URL
+    ) throws -> (
+        descriptor: Int32,
+        originalMode: mode_t,
+        permissionsChanged: Bool
+    ) {
+        let status = try fileStatusWithoutFollowingLinks(at: url)
+        guard (status.st_mode & mode_t(S_IFMT)) == mode_t(S_IFDIR) else {
+            throw PocketRootRootFSInstallationError.installationFailed(
+                "The candidate RootFS directory changed type during persistence."
+            )
+        }
+        let originalMode = status.st_mode & mode_t(0o7777)
+        let accessibleMode =
+            originalMode | mode_t(S_IRUSR) | mode_t(S_IXUSR)
+        let permissionsChanged = accessibleMode != originalMode
+        if permissionsChanged {
+            try setPermissions(accessibleMode, at: url)
+        }
+
+        let descriptor = url.withUnsafeFileSystemRepresentation { path in
+            guard let path else {
+                return Int32(-1)
+            }
+            return Darwin.open(
+                path,
+                O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC
+            )
+        }
+        guard descriptor >= 0 else {
+            let error = posixFailure(
+                "open a RootFS directory for persistence"
+            )
+            if permissionsChanged {
+                try? setPermissions(originalMode, at: url)
+            }
+            throw error
+        }
+
+        var openedStatus = stat()
+        guard fstat(descriptor, &openedStatus) == 0,
+              (openedStatus.st_mode & mode_t(S_IFMT)) == mode_t(S_IFDIR)
+        else {
+            let error = posixFailure(
+                "verify a RootFS directory for persistence"
+            )
+            Darwin.close(descriptor)
+            if permissionsChanged {
+                try? setPermissions(originalMode, at: url)
+            }
+            throw error
+        }
+        return (descriptor, originalMode, permissionsChanged)
+    }
+
+    private static func fileStatusWithoutFollowingLinks(
+        at url: URL
+    ) throws -> stat {
+        var status = stat()
+        let result = url.withUnsafeFileSystemRepresentation { path in
+            guard let path else {
+                return Int32(-1)
+            }
+            return Darwin.lstat(path, &status)
+        }
+        guard result == 0 else {
+            throw posixFailure("inspect a RootFS item for persistence")
+        }
+        return status
+    }
+
+    private static func setPermissions(_ mode: mode_t, at url: URL) throws {
+        let result = url.withUnsafeFileSystemRepresentation { path in
+            guard let path else {
+                return Int32(-1)
+            }
+            return Darwin.chmod(path, mode)
+        }
+        guard result == 0 else {
+            throw posixFailure(
+                "temporarily adjust RootFS permissions for persistence"
+            )
+        }
+    }
+
+    private static func synchronizeDirectory(at url: URL) throws {
+        let descriptor = url.withUnsafeFileSystemRepresentation { path in
+            guard let path else {
+                return Int32(-1)
+            }
+            return Darwin.open(
+                path,
+                O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC
+            )
+        }
+        guard descriptor >= 0 else {
+            throw posixFailure("open a RootFS directory for persistence")
+        }
+        defer {
+            Darwin.close(descriptor)
+        }
+
+        var status = stat()
+        guard fstat(descriptor, &status) == 0,
+              (status.st_mode & mode_t(S_IFMT)) == mode_t(S_IFDIR)
+        else {
+            throw posixFailure("verify a RootFS directory for persistence")
+        }
+        try synchronize(descriptor)
+    }
+
+    private static func fullySynchronize(_ descriptor: Int32) throws {
+        while Darwin.fcntl(descriptor, F_FULLFSYNC) != 0 {
+            let errorNumber = errno
+            if errorNumber == EINTR {
+                continue
+            }
+            if errorNumber == EINVAL || errorNumber == ENOTSUP {
+                try synchronize(descriptor)
+                return
+            }
+            throw posixFailure(
+                "fully synchronize a RootFS file",
+                errorNumber: errorNumber
+            )
+        }
+    }
+
+    private static func synchronize(_ descriptor: Int32) throws {
+        while Darwin.fsync(descriptor) != 0 {
+            let errorNumber = errno
+            if errorNumber == EINTR {
+                continue
+            }
+            throw posixFailure(
+                "synchronize RootFS filesystem state",
+                errorNumber: errorNumber
+            )
+        }
+    }
+
+    private static func writeAtomicallyAndPersist(
+        _ data: Data,
+        to url: URL,
+        fileCheckpoint: RootFSInstallerPersistenceCheckpoint,
+        directoryCheckpoint: RootFSInstallerPersistenceCheckpoint,
+        persistenceCheckpointHandler: (
+            @Sendable (RootFSInstallerPersistenceCheckpoint) throws -> Void
+        )?,
+        writeCheckpoint: () throws -> Void
+    ) throws {
+        let temporaryURL = url.deletingLastPathComponent().appendingPathComponent(
+            ".\(url.lastPathComponent).pocketroot-\(UUID().uuidString).tmp",
+            isDirectory: false
+        )
+        var descriptor = temporaryURL.withUnsafeFileSystemRepresentation { path in
+            guard let path else {
+                return Int32(-1)
+            }
+            return Darwin.open(
+                path,
+                O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC,
+                S_IRUSR | S_IWUSR
+            )
+        }
+        guard descriptor >= 0 else {
+            throw posixFailure("create a temporary RootFS record")
+        }
+
+        var renamed = false
+        defer {
+            if descriptor >= 0 {
+                Darwin.close(descriptor)
+            }
+            if !renamed {
+                try? FileManager.default.removeItem(at: temporaryURL)
+            }
+        }
+
+        try data.withUnsafeBytes { bytes in
+            var offset = 0
+            while offset < bytes.count {
+                let written = Darwin.write(
+                    descriptor,
+                    bytes.baseAddress?.advanced(by: offset),
+                    bytes.count - offset
+                )
+                if written < 0 {
+                    if errno == EINTR {
+                        continue
+                    }
+                    throw posixFailure("write a temporary RootFS record")
+                }
+                guard written > 0 else {
+                    throw PocketRootRootFSInstallationError.installationFailed(
+                        "Unable to write a temporary RootFS record: write returned zero bytes."
+                    )
+                }
+                offset += written
+            }
+        }
+        try writeCheckpoint()
+        try persistenceCheckpointHandler?(fileCheckpoint)
+        try fullySynchronize(descriptor)
+        Darwin.close(descriptor)
+        descriptor = -1
+
+        let renameResult = temporaryURL.withUnsafeFileSystemRepresentation {
+            sourcePath in
+            url.withUnsafeFileSystemRepresentation { destinationPath in
+                guard let sourcePath, let destinationPath else {
+                    return Int32(-1)
+                }
+                return Darwin.rename(sourcePath, destinationPath)
+            }
+        }
+        guard renameResult == 0 else {
+            throw posixFailure("atomically replace a RootFS record")
+        }
+        renamed = true
+        try persistenceCheckpointHandler?(directoryCheckpoint)
+        try synchronizeDirectory(at: url.deletingLastPathComponent())
+    }
+
     private static func removeStaleStagingDirectories(in rootFSDirectoryURL: URL) throws {
         let contents = try FileManager.default.contentsOfDirectory(
             at: rootFSDirectoryURL,
             includingPropertiesForKeys: nil
         )
+        var removedDirectory = false
         for url in contents where url.lastPathComponent.hasPrefix(".installing-") {
-            try FileManager.default.removeItem(at: url)
+            try removeItemMakingTreeAccessible(at: url)
+            removedDirectory = true
+        }
+        if removedDirectory {
+            try synchronizeDirectory(at: rootFSDirectoryURL)
         }
     }
 
@@ -608,9 +1032,11 @@ public actor PocketRootRootFSInstaller {
     /// staging cleanup can discard the candidate that caused it.
     private static func recoverInterruptedPromotion(
         in rootFSDirectoryURL: URL,
-        currentRecordURL: URL
+        currentRecordURL: URL,
+        persistenceCheckpointHandler: (
+            @Sendable (RootFSInstallerPersistenceCheckpoint) throws -> Void
+        )?
     ) throws {
-        let fileManager = FileManager.default
         let transactionURL = rootFSDirectoryURL.appendingPathComponent(
             replacementTransactionDirectoryName,
             isDirectory: true
@@ -638,7 +1064,7 @@ public actor PocketRootRootFSInstaller {
         // journal-less directory is therefore either pre-transaction debris
         // or post-commit cleanup debris.
         guard itemExists(at: journalURL) else {
-            try fileManager.removeItem(at: transactionURL)
+            try removeItemAndSynchronizeParent(at: transactionURL)
             return
         }
 
@@ -685,9 +1111,11 @@ public actor PocketRootRootFSInstaller {
             try writeCurrentRecord(
                 journal.expectedRecord,
                 relativePath: version,
-                to: currentRecordURL
+                to: currentRecordURL,
+                persistenceCheckpointHandler:
+                    persistenceCheckpointHandler
             )
-            try fileManager.removeItem(at: transactionURL)
+            try removeItemAndSynchronizeParent(at: transactionURL)
             return
         }
 
@@ -705,7 +1133,6 @@ public actor PocketRootRootFSInstaller {
         currentRecordURL: URL,
         transactionURL: URL
     ) throws {
-        let fileManager = FileManager.default
         let backupURL = transactionURL.appendingPathComponent(
             previousInstallationDirectoryName,
             isDirectory: true
@@ -713,9 +1140,12 @@ public actor PocketRootRootFSInstaller {
 
         if itemExists(at: backupURL) {
             if itemExists(at: finalURL) {
-                try fileManager.removeItem(at: finalURL)
+                try removeItemAndSynchronizeParent(at: finalURL)
             }
-            try fileManager.moveItem(at: backupURL, to: finalURL)
+            try moveItemAndSynchronizeParents(
+                at: backupURL,
+                to: finalURL
+            )
         } else if journal.hadPreviousInstallation {
             // No backup means the first rename never completed. The previous
             // installation must still occupy its original final path.
@@ -725,14 +1155,14 @@ public actor PocketRootRootFSInstaller {
                 )
             }
         } else if itemExists(at: finalURL) {
-            try fileManager.removeItem(at: finalURL)
+            try removeItemAndSynchronizeParent(at: finalURL)
         }
 
         try restoreCurrentRecord(
             journal.previousCurrentRecordData,
             at: currentRecordURL
         )
-        try fileManager.removeItem(at: transactionURL)
+        try removeItemAndSynchronizeParent(at: transactionURL)
     }
 
     private static func readCurrentRecordData(at url: URL) throws -> Data? {
@@ -755,9 +1185,101 @@ public actor PocketRootRootFSInstaller {
 
     private static func restoreCurrentRecord(_ data: Data?, at url: URL) throws {
         if let data {
-            try data.write(to: url, options: .atomic)
+            try writeAtomicallyAndPersist(
+                data,
+                to: url,
+                fileCheckpoint: .currentRecordFile,
+                directoryCheckpoint: .currentRecordDirectory,
+                persistenceCheckpointHandler: nil,
+                writeCheckpoint: {}
+            )
         } else if itemExists(at: url) {
-            try FileManager.default.removeItem(at: url)
+            try removeItemAndSynchronizeParent(at: url)
+        }
+    }
+
+    private static func moveItemAndSynchronizeParents(
+        at sourceURL: URL,
+        to destinationURL: URL,
+        checkpoint: RootFSInstallerPersistenceCheckpoint? = nil,
+        persistenceCheckpointHandler: (
+            @Sendable (RootFSInstallerPersistenceCheckpoint) throws -> Void
+        )? = nil
+    ) throws {
+        try FileManager.default.moveItem(at: sourceURL, to: destinationURL)
+        if let checkpoint {
+            try persistenceCheckpointHandler?(checkpoint)
+        }
+        let sourceParentURL = sourceURL.deletingLastPathComponent()
+        let destinationParentURL = destinationURL.deletingLastPathComponent()
+        try synchronizeDirectory(at: destinationParentURL)
+        if destinationParentURL.standardizedFileURL !=
+            sourceParentURL.standardizedFileURL
+        {
+            try synchronizeDirectory(at: sourceParentURL)
+        }
+    }
+
+    private static func removeItemAndSynchronizeParent(at url: URL) throws {
+        let parentURL = url.deletingLastPathComponent()
+        try removeItemMakingTreeAccessible(at: url)
+        try synchronizeDirectory(at: parentURL)
+    }
+
+    /// Candidate payload modes belong to the guest image and may deny host
+    /// traversal. Cleanup first grants owner traversal only to directories
+    /// that are about to be deleted; links are never followed.
+    private static func removeItemMakingTreeAccessible(at url: URL) throws {
+        let status = try fileStatusWithoutFollowingLinks(at: url)
+        if (status.st_mode & mode_t(S_IFMT)) == mode_t(S_IFDIR) {
+            let originalMode = status.st_mode & mode_t(0o7777)
+            let removableMode =
+                originalMode
+                | mode_t(S_IRUSR)
+                | mode_t(S_IWUSR)
+                | mode_t(S_IXUSR)
+            if removableMode != originalMode {
+                try setPermissions(removableMode, at: url)
+            }
+            let contents = try FileManager.default.contentsOfDirectory(
+                at: url,
+                includingPropertiesForKeys: nil
+            )
+            for itemURL in contents {
+                let itemStatus = try fileStatusWithoutFollowingLinks(at: itemURL)
+                if (itemStatus.st_mode & mode_t(S_IFMT)) == mode_t(S_IFDIR) {
+                    try makeDirectoryTreeAccessibleForRemoval(at: itemURL)
+                }
+            }
+        }
+        try FileManager.default.removeItem(at: url)
+    }
+
+    private static func makeDirectoryTreeAccessibleForRemoval(
+        at directoryURL: URL
+    ) throws {
+        let status = try fileStatusWithoutFollowingLinks(at: directoryURL)
+        guard (status.st_mode & mode_t(S_IFMT)) == mode_t(S_IFDIR) else {
+            return
+        }
+        let originalMode = status.st_mode & mode_t(0o7777)
+        let removableMode =
+            originalMode
+            | mode_t(S_IRUSR)
+            | mode_t(S_IWUSR)
+            | mode_t(S_IXUSR)
+        if removableMode != originalMode {
+            try setPermissions(removableMode, at: directoryURL)
+        }
+        let contents = try FileManager.default.contentsOfDirectory(
+            at: directoryURL,
+            includingPropertiesForKeys: nil
+        )
+        for itemURL in contents {
+            let itemStatus = try fileStatusWithoutFollowingLinks(at: itemURL)
+            if (itemStatus.st_mode & mode_t(S_IFMT)) == mode_t(S_IFDIR) {
+                try makeDirectoryTreeAccessibleForRemoval(at: itemURL)
+            }
         }
     }
 
@@ -782,6 +1304,9 @@ public actor PocketRootRootFSInstaller {
         )?,
         writeCheckpointHandler: (
             @Sendable (RootFSInstallerWriteCheckpoint) throws -> Void
+        )?,
+        persistenceCheckpointHandler: (
+            @Sendable (RootFSInstallerPersistenceCheckpoint) throws -> Void
         )?
     ) throws {
         let fileManager = FileManager.default
@@ -814,10 +1339,20 @@ public actor PocketRootRootFSInstaller {
             isDirectory: false
         )
         do {
-            try encoded(journal).write(to: journalURL, options: .atomic)
-            try writeCheckpointHandler?(.promotionJournal)
+            try writeAtomicallyAndPersist(
+                encoded(journal),
+                to: journalURL,
+                fileCheckpoint: .promotionJournalFile,
+                directoryCheckpoint: .promotionJournalDirectory,
+                persistenceCheckpointHandler:
+                    persistenceCheckpointHandler,
+                writeCheckpoint: {
+                    try writeCheckpointHandler?(.promotionJournal)
+                }
+            )
+            try synchronizeDirectory(at: rootFSDirectoryURL)
         } catch {
-            try? fileManager.removeItem(at: transactionURL)
+            try? removeItemAndSynchronizeParent(at: transactionURL)
             throw PocketRootRootFSInstallationError.installationFailed(
                 "Unable to record the RootFS promotion transaction: "
                     + failureDescription(error)
@@ -831,16 +1366,30 @@ public actor PocketRootRootFSInstaller {
 
         do {
             if hadPreviousInstallation {
-                try fileManager.moveItem(at: finalURL, to: backupURL)
+                try moveItemAndSynchronizeParents(
+                    at: finalURL,
+                    to: backupURL,
+                    checkpoint: .previousInstallationRename,
+                    persistenceCheckpointHandler:
+                        persistenceCheckpointHandler
+                )
                 try promotionCheckpointHandler?(.previousInstallationMoved)
             }
-            try fileManager.moveItem(at: candidateURL, to: finalURL)
+            try moveItemAndSynchronizeParents(
+                at: candidateURL,
+                to: finalURL,
+                checkpoint: .candidatePromotionRename,
+                persistenceCheckpointHandler:
+                    persistenceCheckpointHandler
+            )
             try promotionCheckpointHandler?(.candidatePromoted)
             try writeCurrentRecord(
                 record,
                 relativePath: relativePath,
                 to: currentRecordURL,
-                writeCheckpointHandler: writeCheckpointHandler
+                writeCheckpointHandler: writeCheckpointHandler,
+                persistenceCheckpointHandler:
+                    persistenceCheckpointHandler
             )
         } catch {
             let promotionError = error
@@ -865,7 +1414,7 @@ public actor PocketRootRootFSInstaller {
         // The installation and current record are committed. If cleanup is
         // interrupted, startup recovery recognizes the valid final record and
         // removes the transaction directory.
-        try? fileManager.removeItem(at: transactionURL)
+        try? removeItemAndSynchronizeParent(at: transactionURL)
     }
 
     private static func failureDescription(_ error: Error) -> String {
@@ -906,6 +1455,16 @@ enum RootFSInstallerWriteCheckpoint: Sendable, Equatable {
     case currentRecord
 }
 
+enum RootFSInstallerPersistenceCheckpoint: Sendable, Equatable {
+    case candidateTree
+    case promotionJournalFile
+    case promotionJournalDirectory
+    case previousInstallationRename
+    case candidatePromotionRename
+    case currentRecordFile
+    case currentRecordDirectory
+}
+
 struct RootFSInstallerTestHooks: Sendable {
     let archiveSnapshotHandler: (@Sendable (URL) -> Void)?
     let promotionCheckpointHandler: (
@@ -913,6 +1472,9 @@ struct RootFSInstallerTestHooks: Sendable {
     )?
     let writeCheckpointHandler: (
         @Sendable (RootFSInstallerWriteCheckpoint) throws -> Void
+    )?
+    let persistenceCheckpointHandler: (
+        @Sendable (RootFSInstallerPersistenceCheckpoint) throws -> Void
     )?
     let injectedGzipENOSPCAfterByteCount: UInt64?
     let availableCapacityProvider: (
@@ -927,6 +1489,9 @@ struct RootFSInstallerTestHooks: Sendable {
         writeCheckpointHandler: (
             @Sendable (RootFSInstallerWriteCheckpoint) throws -> Void
         )? = nil,
+        persistenceCheckpointHandler: (
+            @Sendable (RootFSInstallerPersistenceCheckpoint) throws -> Void
+        )? = nil,
         injectedGzipENOSPCAfterByteCount: UInt64? = nil,
         availableCapacityProvider: (
             @Sendable (URL) throws -> UInt64
@@ -935,6 +1500,8 @@ struct RootFSInstallerTestHooks: Sendable {
         self.archiveSnapshotHandler = archiveSnapshotHandler
         self.promotionCheckpointHandler = promotionCheckpointHandler
         self.writeCheckpointHandler = writeCheckpointHandler
+        self.persistenceCheckpointHandler =
+            persistenceCheckpointHandler
         self.injectedGzipENOSPCAfterByteCount =
             injectedGzipENOSPCAfterByteCount
         self.availableCapacityProvider = availableCapacityProvider

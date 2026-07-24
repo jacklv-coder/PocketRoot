@@ -59,6 +59,10 @@ private enum PocketRootRuntimeSmokeRunner {
                 appropriateFor: nil,
                 create: true
             ).appendingPathComponent("PocketRootSmoke", isDirectory: true)
+            try fileManager.createDirectory(
+                at: applicationSupportURL,
+                withIntermediateDirectories: true
+            )
             let archiveURL = documentsURL.appendingPathComponent(archiveFileName)
 
             writeProgress("preparing-rootfs")

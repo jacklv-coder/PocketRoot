@@ -40,7 +40,8 @@ The returned instance never replaces `PocketRootSystem.shared`.
 
 ## RootFS algorithm
 
-1. Validate a local base URL and safe manifest version.
+1. Require a caller-created, existing real base directory and a safe manifest
+   version. The installer does not recursively create unknown ancestors.
 2. Recover any persistent replacement journal before new work.
 3. If the target cannot be reused, require same-volume important-usage
    capacity for the compressed snapshot, two expanded copies, and a 16 MiB
@@ -52,18 +53,26 @@ The returned instance never replaces `PocketRootSystem.shared`.
 7. Stream gzip through zlib with an expanded-byte cap.
 8. Parse constrained POSIX ustar: checksums, UTF-8 relative paths, entry count and payload bounds; record every implicitly created parent as an archive target, then reject later same-path or filesystem-equivalent duplicate file/directory targets, links, and special nodes.
 9. Reverify the archive snapshot and validate a real `fs/meta.db` file and `fs/data/` directory.
-10. Write `.pocketroot-rootfs.json` into `extracted/fs`, then promote that
+10. Write `.pocketroot-rootfs.json` into `extracted/fs`, flush every candidate
+   regular file with `F_FULLFSYNC` (`fsync` fallback), synchronize directories
+   leaf-first, then promote that
    directory itself to `rootfs/<version>`. The final directory directly
    contains the record, `meta.db`, and `data/`; it has no extra `fs/` layer.
-11. Before any destructive rename, atomically write an on-disk journal containing the
+11. Before any destructive rename, durably write an on-disk journal containing the
     target version, expected record, whether a previous install existed, and
     the prior `current.json` bytes. Move an old final to `previous/`, move the
-    candidate to final, then atomically write `current.json`.
+    candidate to final, synchronizing source and destination parents after each
+    move, then atomically and durably write `current.json`.
 12. Treat each rename and JSON write as individually atomic, not the whole
     multi-step promotion. Synchronous failure rolls back. Interrupted recovery
     stores no phase; it infers commit or rollback from an expected-final match,
     backup presence, and the journal's prior-install data.
 13. Reuse when the final layout and in-directory record match the manifest.
+
+The installer creates `rootfs/` with an atomic `mkdir`; `EEXIST` only triggers
+revalidation of the existing real, non-symlink directory. The shared executor
+serializes work within one process. Multiple processes sharing the same base
+directory are outside the supported contract.
     Missing or mismatched `current.json` does not block reuse; rewrite it before
     returning.
 
@@ -72,6 +81,16 @@ payload, installation-record, promotion-journal, and current-record paths. The
 gzip fault fires after C/zlib accepts a configured output count so partial-tar
 deletion is exercised; the other points use production cleanup and rollback
 without changing the public API.
+
+Seven test-only persistence barriers inject synchronization failures at the
+candidate tree, journal file/directory, both promotion renames, and current
+file/directory. Rollback and recovery apply the same parent-directory
+synchronization rules to renames, record restoration, and transaction removal.
+For candidate entries without owner read/search permission, the installer adds
+only the access required inside private staging, restores the original mode
+through the open descriptor, and then flushes it; final permissions are
+unchanged. Before deleting failed staging or an old backup, cleanup grants
+owner traversal/write only to the tree being removed and never follows links.
 
 The installer does not run SQLite integrity checks on every install; archive authenticity comes from the fixed digest. See [RootFS security](RootFS.md).
 

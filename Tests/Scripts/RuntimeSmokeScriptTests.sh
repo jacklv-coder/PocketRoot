@@ -7,6 +7,7 @@ PARSER="$ROOT_DIR/Scripts/select-ios18-simulator-runtime.awk"
 SIMULATOR_RUNNER="$ROOT_DIR/Scripts/run-runtime-smoke.sh"
 DEVICE_RUNNER="$ROOT_DIR/Scripts/run-runtime-device-smoke.sh"
 PROJECT_SPEC="$ROOT_DIR/project.yml"
+SMOKE_APP="$ROOT_DIR/Spikes/PocketRootIshRuntimeSmoke/PocketRootIshRuntimeSmoke.swift"
 
 assert_runtime() {
     local expected="$1"
@@ -79,6 +80,12 @@ fi
 
 if [[ "$(grep -Fc -- 'ENABLE_DEBUG_DYLIB: NO' "$PROJECT_SPEC")" -lt 2 ]]; then
     echo "Native runtime harnesses must use a single executable layout." >&2
+    exit 1
+fi
+
+if ! grep -Fq -- 'try fileManager.createDirectory(' "$SMOKE_APP" \
+  || ! grep -Fq -- 'at: applicationSupportURL,' "$SMOKE_APP"; then
+    echo "Native smoke does not create the RootFS installation base." >&2
     exit 1
 fi
 

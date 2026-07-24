@@ -76,6 +76,13 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
   snapshot、gzip 部分输出、tar payload、安装记录、promotion journal、`current.json`
   和两个破坏性 promotion checkpoint 的 ENOSPC 注入验证了临时文件清理、旧版本保留
   与 `current.json` 回滚；POSIX 写入错误使用稳定系统描述。
+- RootFS promotion 现在在 rename 前以 `F_FULLFSYNC`（不支持时回退 `fsync`）持久化
+  候选文件树和安装记录，原子写入并持久化 journal/`current.json`，且在每次跨目录
+  rename 后同步源与目标父目录。七个同步屏障的 I/O failure 矩阵以及 journal-only、
+  backup、candidate 三类断电切点验证 commit/rollback；真机强制断电和 storage pressure
+  仍单独验证。安装根必须由调用方预先创建；mode `000` 候选条目在私有 staging 中临时
+  获得刷盘所需权限，并通过 descriptor 恢复原 mode 后再同步；staging/backup 删除会先
+  让仅待删除目录可遍历，避免受限 mode 泄漏 transaction。
 - `PocketRootSystem` 现在在 lifecycle/command 成功或抛错后刷新稳定公开 state；失败关闭立即公开 `.failed`，重入调用不会泄漏 lifecycle 过渡态，并用刷新代次阻止较旧快照覆盖较新的失败状态。
 - 原生 spike/smoke target 显式排除 x86_64 Simulator；文档明确 `isAvailable` 是链接后的探针，不能替代 arm64-only binary 的构建架构约束。
 - 原生 smoke runner 按稳定 runtime identifier 自动选择 iOS 18 Simulator，不再依赖 `simctl` 输出的最后一列，并加入多格式 fixture 回归测试。

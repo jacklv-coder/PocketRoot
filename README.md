@@ -44,7 +44,7 @@ flowchart LR
 
 - RootFS 二进制不提交到仓库，库本身不执行网络下载。
 - 上游源码、XCFramework 和 RootFS 都固定到不可变 revision 或 SHA-256。
-- RootFS 在私有、同卷 staging 中解包；校验通过后，通过文件型 journal 保护的多步同卷 rename 完成可恢复、可回滚的 promotion。每次 rename 和记录写入各自具有原子性，但整个替换流程不是一次整体原子操作；当前未显式 `fsync` 文件和目录，因此不承诺突然掉电时的持久性。
+- RootFS 在私有、同卷 staging 中解包；校验通过后先持久化候选树，再通过已持久化 journal、逐次目录同步和原子 `current.json` 完成可恢复、可回滚的 promotion。整个替换仍不是一次整体原子操作，但明确的文件/目录同步顺序和断电切点恢复矩阵保证可推断 commit 或 rollback；真机强制断电实证仍是独立门禁。
 - IshEmbed 是进程级单例；PocketRoot 只允许一个原生运行时所有者和一个在途命令。
 - 同步原生调用在串行阻塞队列中执行，不阻塞主线程和 Swift cooperative executor。
 - 取消一次性命令会终止 native session，确认 guest `EXITED` 后才返回；成功后 runtime

@@ -113,6 +113,9 @@ let installation = try await installer.prepareArchive(
 )
 ```
 
+`baseDirectoryURL` 必须是调用方已经创建的真实本地目录。installer 会创建并持久化其下的
+`rootfs/`，但不会递归创建并承诺未知祖先目录的掉电持久性。
+
 ### Bundled provider
 
 `PocketRootBundledRootFSProvider` 只查找 `Bundle.module` 中明确加入的资源。当前仓库没有 archive，因此：
@@ -134,6 +137,7 @@ let installation = try await installer.prepareArchive(
 | archive 过大导致磁盘/内存耗尽 | 压缩、展开、payload 和 entry count 上限 |
 | 新安装峰值空间明显不足 | staging 前按 snapshot、临时 tar、payload 和 16 MiB 余量预检同卷容量 |
 | 中途 ENOSPC 留下半文件或破坏旧安装 | snapshot/gzip/tar/record/journal/current 故障矩阵、staging cleanup 和 promotion rollback |
+| 突然掉电导致 journal、rename 与 current 顺序漂移 | 候选树、记录文件和相关父目录的显式持久化屏障；按 journal/final/backup 推断恢复 |
 | tar 绝对路径或 `..` 逃逸 | UTF-8 相对路径规范化与 destination containment |
 | symlink/hardlink 绕过目标目录 | 拒绝 link 和特殊 entry type |
 | 重复文件或目录覆盖 | 隐式父目录也登记为 archive target；拒绝后续映射到同一路径或同一文件系统目标的重复 entry |
@@ -147,7 +151,7 @@ let installation = try await installer.prepareArchive(
 - 恶意但哈希已经被错误清单认可的内容；
 - guest 内运行时漏洞；
 - App 自己下载阶段的 TLS、认证或缓存策略；
-- 真实存储压力、掉电持久性、jetsam 与持续内存峰值；
+- 真机存储压力、强制断电实证、jetsam 与持续内存峰值；
 - 许可证合规；
 - 用户生成 VM 数据的迁移与备份。
 
@@ -162,9 +166,10 @@ flowchart TD
     E --> F["受限 ustar 解包"]
     F --> G["再次校验 snapshot"]
     G --> H["验证 fs/meta.db + fs/data"]
-    H --> I["写安装记录"]
-    I --> J["文件型事务 + 同卷 rename"]
-    J --> K["更新 current.json"]
+    H --> I["写安装记录并持久化候选树"]
+    I --> J["持久化 journal"]
+    J --> K["同卷 rename + 同步父目录"]
+    K --> L["原子更新并持久化 current.json"]
 ```
 
 ### 输入 snapshot
@@ -270,9 +275,16 @@ transaction 目录存在但 journal 文件尚未写入时，不会有破坏性 r
 和 JSON 原子写入分别具备原子性，但多步 promotion 整体不是单次原子替换；安全性来自先写
 journal、失败回滚与下次准备时的状态推断恢复。
 
-当前实现使用 `.atomic` 写单个 JSON 记录和同卷 rename，但没有显式对文件或目录调用
-`fsync`。因此这里的“中断恢复”覆盖普通进程终止后仍可读取的文件系统状态，不承诺突然掉电
-时所有写入都已经持久化；显式持久化与掉电 fault matrix 仍是发布前门禁。
+promotion 前，installer 从叶到根对候选树的普通文件执行 `F_FULLFSYNC`（文件系统不支持时
+回退 `fsync`），再同步目录。journal 和 `current.json` 通过私有临时文件完整写入、同步、
+原子 rename 和父目录同步提交；每次跨目录 rename 后同步源、目标父目录。顺序保证 journal
+在破坏性 rename 前持久化，候选内容在成为 final 前持久化，`current.json` 在清理 transaction
+前持久化。rollback 和 recovery 的 rename、记录恢复与删除同样同步相关父目录。
+
+确定性 fault matrix 覆盖候选树、journal 文件/目录、旧版本 rename、新候选 rename 和
+`current.json` 文件/目录七个持久化屏障；另外构造 journal-only、旧版本已进入 backup、
+候选已成为 final 等掉电切点状态，验证能够推断 rollback 或 commit。这建立了实现和宿主
+文件系统层面的持久化顺序保证；真机强制断电后的硬件/文件系统实证仍单独维护。
 
 ## 9. 测试边界
 
@@ -282,6 +294,7 @@ journal、失败回滚与下次准备时的状态推断恢复。
 - 大小和 SHA-256；
 - 安全解包和恶意 tar entry；
 - 安装、复用、损坏替换；
+- 不存在的 base directory 拒绝，以及 mode `000` 候选条目持久化后权限保持；
 - caller-path replacement；
 - bounded copy；
 - 并发准备；
@@ -290,14 +303,15 @@ journal、失败回滚与下次准备时的状态推断恢复。
 - snapshot、gzip 部分输出、tar payload、安装记录、journal 和 current record 的
   ENOSPC cleanup/rollback；
 - 旧安装已移动和候选已提升两个破坏性 checkpoint 的 ENOSPC rollback；
-- interrupted rollback/commit；
+- 七个文件/目录持久化屏障的同步失败 rollback；
+- journal-only、backup 和 candidate/final 断电切点的 interrupted rollback/commit；
 - 精确 v0.3.3 release asset 集成。
 
 仍需：
 
-- 显式持久化后的掉电和文件系统错误矩阵；
 - 大归档持续内存峰值；
 - 真机 storage pressure；
+- 真机强制断电实证；
 - 用户 VM 数据迁移；
 - 合规材料完整性自动检查。
 

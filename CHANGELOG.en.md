@@ -70,6 +70,17 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   installation-record, promotion-journal, `current.json`, and both destructive
   promotion checkpoints verifies temporary cleanup, prior-version preservation,
   and current-record rollback; POSIX write failures use stable system messages.
+- RootFS promotion now persists the candidate tree and installation record with
+  `F_FULLFSYNC` (`fsync` fallback), atomically persists journal/`current.json`,
+  and synchronizes source and destination parents after each cross-directory
+  rename. A seven-barrier I/O-failure matrix plus journal-only, backup, and
+  candidate power-loss cut points verifies commit/rollback; physical-device
+  power-cut and storage-pressure evidence remains separate. The caller must
+  pre-create the installation base; mode `000` candidate entries temporarily
+  gain staging-only flush access and restore their original mode through the
+  open descriptor before synchronization. Staging/backup cleanup makes only
+  the soon-to-be-deleted directories traversable so restricted modes cannot
+  leak a transaction.
 - `PocketRootSystem` now refreshes stable public state after lifecycle/command success or failure, immediately publishes `.failed` after fail-close, hides transient lifecycle state from reentrant calls, and generations state refreshes so an older snapshot cannot overwrite a newer failure.
 - Native spike/smoke targets explicitly exclude x86_64 Simulator, and documentation clarifies that `isAvailable` is a post-link probe rather than a substitute for the arm64-only binary's build constraint.
 - The native smoke runner now selects an iOS 18 Simulator by its stable runtime identifier instead of the final `simctl` output field, with fixture regression tests for multiple output formats.
