@@ -27,6 +27,15 @@ struct IshEmbedDriver: IshRuntimeDriver {
         cancellation: IshCommandCancellation
     ) throws -> IshDriverCommandResult {
         try cancellation.check()
+        // The product deadline starts at this driver entry, before native
+        // SPAWN staging/admission and stdin-close admission. ABI.6 uses a
+        // finite streaming timeout to keep those control operations bounded.
+        let deadline = ProcessInfo.processInfo.systemUptime + request.timeout
+        let spawnTimeout = deadline - ProcessInfo.processInfo.systemUptime
+        guard spawnTimeout > 0 else {
+            return timedOutResult()
+        }
+
         let session: IshSession
         do {
             session = try IshInstance.shared.spawn(
@@ -35,9 +44,14 @@ struct IshEmbedDriver: IshRuntimeDriver {
                     cwd: request.workingDirectory,
                     env: request.environment,
                     mergeStderrIntoStdout: request.mergeStandardError,
-                    timeout: nil
+                    timeout: spawnTimeout
                 )
             )
+        } catch IshError.raw(let code, _) where code == -12 {
+            // ABI.6 guarantees a streaming SPAWN timeout returns without a
+            // session and without publishing a late command.
+            try cancellation.check()
+            return timedOutResult()
         } catch IshError.raw(let code, let message) {
             if let terminalFailure = IshRuntimeTransportPolicy.terminalSpawnFailure(
                 code: code,
@@ -50,25 +64,70 @@ struct IshEmbedDriver: IshRuntimeDriver {
         defer {
             session.close()
         }
+        var standardOutput = Data()
+        var standardError = Data()
+        var terminationConfirmed = false
         do {
             try cancellation.check()
-            try session.closeStdin()
-
-            var standardOutput = Data()
-            var standardError = Data()
-            let deadline = ProcessInfo.processInfo.systemUptime + request.timeout
+            guard ProcessInfo.processInfo.systemUptime < deadline else {
+                let terminationOutput = try terminateAndConfirmExit(
+                    session,
+                    preserving: standardOutput,
+                    standardError: standardError,
+                    maximumStandardOutputBytes: request.maximumStandardOutputBytes,
+                    maximumStandardErrorBytes: request.maximumStandardErrorBytes
+                )
+                terminationConfirmed = true
+                if let outputLimitError = terminationOutput.outputLimitError {
+                    throw outputLimitError
+                }
+                return timedOutResult(
+                    standardOutput: terminationOutput.standardOutput,
+                    standardError: terminationOutput.standardError
+                )
+            }
+            do {
+                try session.closeStdin()
+            } catch IshError.raw(let code, _) where code == -12 {
+                // The finite native session reuses the original SPAWN
+                // deadline for stdin-close admission. It never publishes a
+                // late EOF frame after that product deadline.
+                try cancellation.check()
+                let terminationOutput = try terminateAndConfirmExit(
+                    session,
+                    preserving: standardOutput,
+                    standardError: standardError,
+                    maximumStandardOutputBytes: request.maximumStandardOutputBytes,
+                    maximumStandardErrorBytes: request.maximumStandardErrorBytes
+                )
+                terminationConfirmed = true
+                if let outputLimitError = terminationOutput.outputLimitError {
+                    throw outputLimitError
+                }
+                return timedOutResult(
+                    standardOutput: terminationOutput.standardOutput,
+                    standardError: terminationOutput.standardError
+                )
+            }
 
             while true {
                 try cancellation.check()
                 let remaining = deadline - ProcessInfo.processInfo.systemUptime
                 guard remaining > 0 else {
-                    try terminateAndConfirmExit(session)
-                    return IshDriverCommandResult(
-                        exitCode: -1,
-                        signal: 0,
-                        standardOutput: standardOutput,
+                    let terminationOutput = try terminateAndConfirmExit(
+                        session,
+                        preserving: standardOutput,
                         standardError: standardError,
-                        timedOut: true
+                        maximumStandardOutputBytes: request.maximumStandardOutputBytes,
+                        maximumStandardErrorBytes: request.maximumStandardErrorBytes
+                    )
+                    terminationConfirmed = true
+                    if let outputLimitError = terminationOutput.outputLimitError {
+                        throw outputLimitError
+                    }
+                    return timedOutResult(
+                        standardOutput: terminationOutput.standardOutput,
+                        standardError: terminationOutput.standardError
                     )
                 }
 
@@ -145,7 +204,9 @@ struct IshEmbedDriver: IshRuntimeDriver {
             case .sessionTerminationUnconfirmed:
                 throw error
             case .outputLimitExceeded:
-                try terminateAndConfirmExit(session)
+                if !terminationConfirmed {
+                    try terminateAndConfirmExit(session)
+                }
                 try cancellation.check()
                 throw error
             }
@@ -163,6 +224,19 @@ struct IshEmbedDriver: IshRuntimeDriver {
         }
     }
 
+    private func timedOutResult(
+        standardOutput: Data = Data(),
+        standardError: Data = Data()
+    ) -> IshDriverCommandResult {
+        IshDriverCommandResult(
+            exitCode: -1,
+            signal: 0,
+            standardOutput: standardOutput,
+            standardError: standardError,
+            timedOut: true
+        )
+    }
+
     private func append(
         _ data: Data,
         to buffer: inout Data,
@@ -178,7 +252,20 @@ struct IshEmbedDriver: IshRuntimeDriver {
         buffer.append(data)
     }
 
-    private func terminateAndConfirmExit(_ session: IshSession) throws {
+    private struct TerminationDrainResult {
+        let standardOutput: Data
+        let standardError: Data
+        let outputLimitError: IshRuntimeDriverError?
+    }
+
+    @discardableResult
+    private func terminateAndConfirmExit(
+        _ session: IshSession,
+        preserving initialStandardOutput: Data? = nil,
+        standardError initialStandardError: Data? = nil,
+        maximumStandardOutputBytes: Int = 0,
+        maximumStandardErrorBytes: Int = 0
+    ) throws -> TerminationDrainResult {
         do {
             try session.terminate()
         } catch {
@@ -189,6 +276,11 @@ struct IshEmbedDriver: IshRuntimeDriver {
 
         let deadline = ProcessInfo.processInfo.systemUptime
             + terminationConfirmationTimeout
+        let preservesOutput = initialStandardOutput != nil
+            && initialStandardError != nil
+        var standardOutput = initialStandardOutput ?? Data()
+        var standardError = initialStandardError ?? Data()
+        var outputLimitError: IshRuntimeDriverError?
         while true {
             let remaining = deadline - ProcessInfo.processInfo.systemUptime
             guard remaining > 0 else {
@@ -200,16 +292,42 @@ struct IshEmbedDriver: IshRuntimeDriver {
 
             do {
                 switch try session.read(timeout: min(remaining, 0.25)) {
-                case .data:
-                    // Drain already queued output while waiting for the
-                    // authoritative process-exit event.
-                    continue
+                case .data(let data, kind: .stdout, seq: _):
+                    if preservesOutput, outputLimitError == nil {
+                        do {
+                            try append(
+                                data,
+                                to: &standardOutput,
+                                limit: maximumStandardOutputBytes,
+                                stream: "stdout"
+                            )
+                        } catch let error as IshRuntimeDriverError {
+                            outputLimitError = error
+                        }
+                    }
+                case .data(let data, kind: .stderr, seq: _):
+                    if preservesOutput, outputLimitError == nil {
+                        do {
+                            try append(
+                                data,
+                                to: &standardError,
+                                limit: maximumStandardErrorBytes,
+                                stream: "stderr"
+                            )
+                        } catch let error as IshRuntimeDriverError {
+                            outputLimitError = error
+                        }
+                    }
                 case .exited(let exitCode, let signal):
                     try IshRuntimeTransportPolicy.validateAuthoritativeExit(
                         exitCode: exitCode,
                         signal: signal
                     )
-                    return
+                    return TerminationDrainResult(
+                        standardOutput: standardOutput,
+                        standardError: standardError,
+                        outputLimitError: outputLimitError
+                    )
                 }
             } catch IshError.raw(let code, _) where code == -12 {
                 continue
@@ -222,7 +340,7 @@ struct IshEmbedDriver: IshRuntimeDriver {
     }
 
     func shutdown() throws {
-        // v0.4.0-abi.4 asks the supervisor to stop, soft-halts the embedded
+        // v0.4.0-abi.6 asks the supervisor to stop, soft-halts the embedded
         // kernel, joins its pthread, and returns to Swift. The underlying iSH
         // process-global state still permits only one boot/shutdown lifecycle.
         try IshInstance.shared.shutdown()

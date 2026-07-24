@@ -44,9 +44,9 @@ PocketRoot 希望让 iOS 应用能够以明确、安全、可审核的方式嵌�
 - 业务代码只依赖稳定的 PocketRoot API，不直接持有 iSH C/Swift 对象。
 - 默认产品不加载实验性二进制，应用必须显式选择真实运行时。
 - RootFS 的网络获取和授权策略由应用控制，PocketRoot 不隐式下载。
-- 阻塞原生调用所在 executor、并发所有权、session 建立后的 read-loop deadline、Swift
-  结果缓冲、native session 积压和 control queue 都有明确边界；请求 timeout 尚未覆盖
-  spawn/closeStdin 之前的整个命令生命周期。
+- 阻塞原生调用所在 executor、并发所有权、从 driver 入口覆盖 finite SPAWN、
+  stdin close 与 event read 的统一 deadline、Swift 结果缓冲、native session 积压和
+  control queue 都有明确边界；deadline 后的退出确认另有固定有界清理窗口。
 - 构建、测试、制品哈希、限制与开放门禁可从仓库文档追溯。
 
 ## 产品边界

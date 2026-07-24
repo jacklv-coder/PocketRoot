@@ -18,8 +18,9 @@ A native-enabled app may contain PocketRoot source, ish-arm64-pkg source, a stat
 
 The package repository carries GPL identifiers and a GPL-3.0 statement but did not provide a complete top-level license/notice set at audit. The pinned iSH source has GPL and `LICENSE.IOS` terms. Binary/source correspondence needs a durable reproducible record.
 
-The current audit pins IshEmbed `v0.4.0-abi.4` release commit
-`1c761d4c6de4ceb5ec9f15a4a958be9207ace756` and iSH gitlink
+The current audit pins IshEmbed wrapper revision
+`38d25d6f8726145e7e988172f12000020d89a638`, the `v0.4.0-abi.6` release
+commit `38d25d6f8726145e7e988172f12000020d89a638`, and iSH gitlink
 `c36dfd25462737b45559eb48d4b09f799471572e`; the upstream inventory records
 the XCFramework and corresponding-source asset sizes and digests. The Release
 provides a corresponding-source asset, but product-level RootFS compliance

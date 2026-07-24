@@ -186,13 +186,22 @@ private enum PocketRootRuntimeSmokeRunner {
 
             let timedOut = try await prepared.system.execute(
                 PocketRootCommandRequest(
-                    command: "sleep 2",
+                    command: "printf 'before-timeout'; sleep 2",
                     workingDirectory: "/",
                     timeout: .milliseconds(100)
                 )
             )
             try require(timedOut.timedOut, "Timeout was not reported.")
-            checks.append(PocketRootSmokeCheck(name: "timeout", detail: "100 ms"))
+            try require(
+                timedOut.stdout == "before-timeout",
+                "Partial stdout was not preserved across timeout cleanup."
+            )
+            checks.append(
+                PocketRootSmokeCheck(
+                    name: "timeout",
+                    detail: "100 ms, partial stdout preserved"
+                )
+            )
 
             let afterTimeout = try await prepared.system.execute(
                 PocketRootCommandRequest(
@@ -313,7 +322,7 @@ private enum PocketRootRuntimeSmokeRunner {
                 )
             )
 
-            // v0.4.0-abi.4 must return after soft-halting and joining the
+            // v0.4.0-abi.6 must return after soft-halting and joining the
             // embedded kernel. Do not persist success until both the terminal
             // state and the no-reboot contract have been observed.
             writeProgress("shutting-down")

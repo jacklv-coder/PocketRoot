@@ -7,7 +7,7 @@ default, explicit agent, and Experimental native products, and covers the
 complete local-RootFS to one-shot-result flow.
 
 > [!CAUTION]
-> Pinned `v0.4.0-abi.4` soft-halts and joins the embedded kernel, then
+> Pinned `v0.4.0-abi.6` soft-halts and joins the embedded kernel, then
 > `prepared.system.shutdown()` returns to Swift. The same host process cannot
 > boot again after success. Do not trigger it accidentally from view, scene,
 > deinit, or routine cleanup paths.
@@ -183,7 +183,7 @@ guard await system.state == .ready else {
 
 After native boot returns, `boot()` automatically runs a fixed post-boot identity command. When `healthCheck` is omitted or nil, only the exact built-in `.ishEmbedV0_3_3` manifest selects the same-name gate and strictly requires `aarch64`, `alpine`, and `3.19.1`; a custom manifest receives the version-agnostic `.alpineARM64` default and should explicitly pass the version reviewed for that RootFS. Identity values must be non-empty and NUL-free, timeout must be in `(0, 60]` seconds, and guest `workDirectory` must be an absolute NUL-free path. An optional `supervisorGuestPath` must also be NUL-free and is validated before the process slot is claimed or native boot begins.
 
-The identity command has independent 4 KiB stdout/stderr caps. Swift parses `os-release` as data, the working directory is passed as argv, and actual plus target `pwd -P` values are compared so path aliases do not false-fail; expected identity values are never interpolated into shell text. A failure after native boot conservatively sets failed, consumes the process-global slot, and requires a host restart. This is a consistency check over base guest information and command context inside an already validated RootFS, not an independent provenance/security proof or an application-tool, network, or data check. Native control queues are bounded, but the health timeout begins after spawn/closeStdin and is not an end-to-end deadline.
+The identity command has independent 4 KiB stdout/stderr caps. Swift parses `os-release` as data, the working directory is passed as argv, and actual plus target `pwd -P` values are compared so path aliases do not false-fail; expected identity values are never interpolated into shell text. A failure after native boot conservatively sets failed, consumes the process-global slot, and requires a host restart. This is a consistency check over base guest information and command context inside an already validated RootFS, not an independent provenance/security proof or an application-tool, network, or data check. The health timeout covers finite SPAWN, stdin close, and event reads from driver entry; termination confirmation has a separate fixed bounded cleanup window.
 
 ## 5. Execute one-shot commands
 
@@ -210,10 +210,13 @@ Contract:
 - The command runs as `/bin/sh -lc <command>`. It is a shell string, not an argv-safe API.
 - One runtime accepts one one-shot command at a time.
 - Timeout must be positive and no longer than 24 hours; positive sub-millisecond values become 1 ms.
-- Timeout starts in the event-read loop only after the session is established and stdin is closed; expiry attempts termination and, when the call returns, reports `timedOut == true` with partial output.
+- One timeout deadline starts at driver entry. Finite SPAWN receives the
+  remaining duration, and stdin close plus the event-read loop reuse the same
+  deadline. Expiry attempts termination and reports `timedOut == true` with
+  partial output after authoritative exit.
 - Native control queues, session backlogs, and lifecycle reserve are bounded.
-  The request timeout still begins after `spawn`/`closeStdin`, so it is not an
-  end-to-end watchdog for `execute()`.
+  Termination and authoritative `EXITED` confirmation after expiry use a
+  separate fixed bounded cleanup window.
 - Command, cwd, and environment keys/values must contain no NUL; environment keys must also be nonempty and contain no `=`. Validation happens before the native driver to prevent silent C-string truncation.
 - Direct not-running, protocol, or broken-pipe spawn failures fail the runtime
   closed. Later close-stdin, non-timeout read, request-timeout, and product-cap

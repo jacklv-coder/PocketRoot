@@ -16,8 +16,9 @@ Status:
 1. Merged the provider-agnostic bounded `PocketRootAgent` loop.
 2. Completed the OpenAI Responses API transport and host-owned credential contract.
 3. Completed the approval-, command-policy-, timeout-, and output-gated Linux tool.
-4. Published and pinned IshEmbed `v0.4.0-abi.4`, completing one-shot Swift
-   Task cancellation, native exit confirmation, and post-cancellation recovery.
+4. Published and pinned IshEmbed `v0.4.0-abi.6`, completing the unified
+   control-path deadline, one-shot Swift Task cancellation, native exit
+   confirmation, and post-cancellation recovery.
 5. Current: RootFS capacity preflight, the full write/promotion ENOSPC matrix,
    explicit file/directory persistence, deterministic power-loss cut points,
    and the 8 MiB sustained binary-output baseline are complete; continue
@@ -64,7 +65,7 @@ Status: **Experimental, in progress**.
 - Booted on iOS 18.2 arm64 Simulator.
 - Passed the repository 17-check native smoke, including sustained output, both stream limits, and the Simulator lifecycle peak-memory gate.
 - The older v0.3.3 baseline passed the then-current signed 13-check smoke on an iPhone
-  17 Pro running iOS 26.1; v0.4.0-abi.4 still requires a signed-device rerun.
+  17 Pro running iOS 26.1; v0.4.0-abi.6 still requires a signed-device rerun.
 
 This establishes the current Simulator, minimum-Xcode 16, and single-iPhone one-shot paths, not iPad, complete physical-device lifecycle, PTY, or distribution readiness.
 
@@ -77,14 +78,14 @@ This establishes the current Simulator, minimum-Xcode 16, and single-iPhone one-
 | One-shot adapter | Passed | Preserve lifecycle, timeout, and output-limit coverage |
 | One-shot command cancellation | Passed | Queued cancellation skips native entry; active cancellation confirms `EXITED`; cleanup failure remains fail-closed |
 | Native transport backpressure | Passed | Bounded protocol/session/stdin/log/control queues, an 8 MiB binary-output baseline beyond the 4 MiB backlog, and a 256 MiB Simulator lifecycle `ru_maxrss` gate are integrated; physical jetsam remains under the lifecycle gate |
-| End-to-end native control-path time bound | In progress | Native control is bounded; PocketRoot's request deadline still needs to cover pre-spawn/closeStdin stages |
-| iOS 18 Simulator native behavior | Passed | v0.4.0-abi.4 passed the 17-check soft-shutdown/peak-memory smoke; keep rerunning after changes |
+| End-to-end native control-path time bound | Passed | ABI.6 finite SPAWN and bounded asynchronous close/terminate are integrated; PocketRoot reuses one deadline from driver entry and retains a fixed bounded exit-confirmation window |
+| iOS 18 Simulator native behavior | Passed | v0.4.0-abi.6 passed the 17-check soft-shutdown/peak-memory smoke; keep rerunning after changes |
 | Secure RootFS install/recovery | Passed | Preserve real-asset, snapshot, capacity-preflight, rollback, and recovery coverage |
 | RootFS/runtime composition | Passed | Keep caller-controlled, no-download, no-auto-boot |
 | Default post-boot identity gate | Passed | Require aarch64, Alpine identity, optional version, and command context before ready; retain failed-slot regression coverage |
 | Real Demo runtime injection | Not started | Inject one prepared system without bundling an unreviewed RootFS |
-| Host-safe soft shutdown | Passed | v0.4.0-abi.4 soft-halts, joins, and returns to Swift; the process remains single-lifecycle |
-| Signed iPhone | In progress | The v0.3.3 baseline passed; rerun is required after the v0.4.0-abi.4 runtime change |
+| Host-safe soft shutdown | Passed | v0.4.0-abi.6 soft-halts, joins, and returns to Swift; the process remains single-lifecycle |
+| Signed iPhone | In progress | The v0.3.3 baseline passed; rerun is required after the v0.4.0-abi.6 runtime change |
 | Signed iPad | Blocked | Physical boot and command smoke |
 | Minimum Xcode 16 native | Passed | Xcode 16.0 / iOS 18.0 SDK completed RootFS install, Simulator/device final links, and the 17-check native smoke |
 | App lifecycle and memory | In progress | Complete Simulator smoke has a 256 MiB `ru_maxrss` gate; add background/foreground, physical jetsam, failure injection, and persistence |

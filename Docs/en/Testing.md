@@ -135,10 +135,11 @@ The sustained-output check proves that Swift can continuously consume binary
 output without truncation or corruption merely because it exceeds the 4 MiB
 native backlog. The lifecycle high-water check covers RootFS preparation,
 8 MiB output, overflow recovery, cancellation, and shutdown on Simulator; it
-is not physical-device jetsam evidence. The 100 ms check
-proves recovery after an established session observes its event-read deadline.
-It does not cover the earlier synchronous spawn/control write or prove that
-terminate/close have the same end-to-end hard limit. The [Roadmap](Roadmap.md)
+is not physical-device jetsam evidence. The 100 ms check runs through ABI.6
+finite SPAWN and proves recovery after the unified deadline expires and the
+session reports authoritative `EXITED`. Upstream deterministic lifecycle tests
+separately cover instance/spawn/control-gate expiry and bounded
+close/terminate under a stalled writer. The [Roadmap](Roadmap.md)
 tracks that native control-path gate.
 
 Success is written only after shutdown returns `.terminated` and another
@@ -147,8 +148,9 @@ smoke App and waits for the console client. A pre-success crash cannot produce
 a passing report. The script serves as a repository-owned local gate and is
 also invoked by the dedicated minimum-toolchain GitHub Actions job.
 
-On 2026-07-24, `v0.4.0-abi.4` passed all 17 checks on an iOS 18.2 arm64
-Simulator with byte-exact 8 MiB binary stdout and a 155.7 MiB lifecycle peak
+On 2026-07-24, `v0.4.0-abi.6` with wrapper revision `38d25d6` passed all 17
+checks on an iOS 18.2 arm64 Simulator with byte-exact 8 MiB binary stdout and
+a 156.5 MiB lifecycle peak
 against the 256 MiB limit; shutdown recorded `returned, terminated, restart required`.
 
 The repository's minimum-toolchain job explicitly selects Xcode 16.0 and the

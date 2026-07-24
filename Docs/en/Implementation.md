@@ -104,7 +104,7 @@ state. `PocketRootSystem.state` does not continuously synchronize while
 The same boundary applies to internal shutting-down state. Public state is not
 a real-time progress feed.
 
-The direct runtime default requires `aarch64` and Alpine. With no explicit health configuration, the integration factory additionally requires version `3.19.1` only for the exact built-in v0.3.3 RootFS manifest; a custom manifest receives the version-agnostic Alpine ARM64 gate and should pass an explicit health configuration to pin its reviewed version. This checks consistency of base guest information and the configured command context inside an already validated RootFS; it is not an independent provenance or security proof and does not cover application-specific tools or services. Native control queues are bounded, but the health timeout begins after spawn/closeStdin and is not an end-to-end deadline.
+The direct runtime default requires `aarch64` and Alpine. With no explicit health configuration, the integration factory additionally requires version `3.19.1` only for the exact built-in v0.3.3 RootFS manifest; a custom manifest receives the version-agnostic Alpine ARM64 gate and should pass an explicit health configuration to pin its reviewed version. This checks consistency of base guest information and the configured command context inside an already validated RootFS; it is not an independent provenance or security proof and does not cover application-specific tools or services. The health timeout covers finite SPAWN, stdin close, and event reads from driver entry; exit confirmation has a separate fixed bounded cleanup window.
 
 ## One-shot execution
 
@@ -116,10 +116,14 @@ The adapter spawns:
 ["/bin/sh", "-lc", request.command]
 ```
 
-It closes stdin and polls events with bounded reads. Direct not-running,
+At driver entry it creates one absolute deadline, passes the remaining
+duration to finite `spawn`, closes stdin, and polls events with bounded reads.
+SPAWN deadline expiry without a session returns a timed-out result. Direct not-running,
 protocol, or broken-pipe errors from `spawn` make the transport untrustworthy
 and fail the runtime closed; other pre-session failures preserve their source.
-The deadline begins after synchronous `spawn` and `closeStdin`. stdout/stderr
+ABI.6 covers native instance/spawn gates and control-queue admission from
+SPAWN API entry, with bounded asynchronous admission for stdin close and
+terminate. The event loop reuses the same absolute deadline. stdout/stderr
 have independent caps. Later close-stdin, non-timeout read, request-timeout,
 and product-cap failures terminate the session and require authoritative
 `EXITED` confirmation. Wire v4 returns supervisor rejection, broken pipe, and
@@ -127,7 +131,9 @@ native backlog overflow as typed terminal errors. Guest exit 17 is valid; a
 negative `EXITED` payload is a protocol-integrity failure. Supervisor rejection
 remains recoverable. Native backlog overflow requests bounded cleanup, but the
 void close ABI cannot prove whether cleanup escalated to instance fail-close,
-so PocketRoot permanently closes the process gate.
+so PocketRoot permanently closes the process gate. Termination and
+authoritative `EXITED` confirmation after expiry use a separate fixed bounded
+cleanup window.
 
 The command is a shell string; quoting and injection policy belong to the caller.
 
@@ -142,7 +148,7 @@ precedence and fail the runtime closed; successful cancellation leaves it ready.
 
 The actor rejects shutdown while a command is active, changes state before
 suspension, verifies ownership, and calls native shutdown on the serial
-executor. Pinned v0.4.0-abi.4 stops the supervisor, soft-halts the kernel,
+executor. Pinned v0.4.0-abi.6 stops the supervisor, soft-halts the kernel,
 performs a bounded join, and returns. State becomes `.terminated`; the same
 host process cannot boot another iSH lifecycle.
 

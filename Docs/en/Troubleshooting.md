@@ -68,10 +68,12 @@ A failed candidate intentionally preserves the old installation. Do not manually
 ## Invalid timeout or partial timeout output
 
 Timeout must be positive and no longer than 24 hours. Positive sub-millisecond
-values become 1 ms. It constrains the event-read loop only after synchronous
-`spawn` and `closeStdin`. Native control queues are bounded, but this is still
-not an end-to-end `execute()` watchdog. A timed-out result requires an
-authoritative guest `EXITED` and may contain partial output.
+values become 1 ms. One absolute deadline starts at driver entry; finite
+`spawn` receives the remaining duration, and stdin close plus event reads reuse
+it. A pre-session deadline expiry returns a timed-out result. An established
+session still requires authoritative guest `EXITED` and may return partial
+output. Termination confirmation after expiry uses a separate fixed bounded
+cleanup window, so timeout is not a promise to return at that exact instant.
 
 ## Output limit
 
@@ -83,7 +85,7 @@ The current runtime accepts one one-shot command. Queue requests in the applicat
 
 ## Boot is rejected after shutdown
 
-This is the pinned v0.4.0-abi.4 single-lifecycle contract. Shutdown soft-halts,
+This is the pinned v0.4.0-abi.6 single-lifecycle contract. Shutdown soft-halts,
 joins, and returns `.terminated`, but process-global iSH state prevents another
 boot in the same host process. Later calls return `restartRequired`; restart
 the host process for a new runtime. See
