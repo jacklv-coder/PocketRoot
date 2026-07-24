@@ -184,6 +184,11 @@ POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
 `POCKETROOT_SMOKE_UI_LIFECYCLE=1`。runner 会打开 Settings 使 App 进入后台，
 再激活原进程，并要求 background、foreground、active 回调和新 guest 命令成功。
 
+需要验证强制终止后的 RootFS/guest 数据恢复时，改用互斥的
+`POCKETROOT_SMOKE_RELAUNCH_PERSISTENCE=1`。runner 会在 guest 写入并同步标记后
+强制终止第一个 App PID，再启动新 PID；新进程必须复用 RootFS、读回并清理标记，
+随后完成标准命令、shutdown 与峰值内存门禁。
+
 ## 8. 常用命令
 
 | 目标 | 命令 |
@@ -198,6 +203,7 @@ POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
 | 签名真机原生 smoke | `POCKETROOT_ROOTFS_ARCHIVE=... POCKETROOT_SMOKE_DEVICE=... POCKETROOT_DEVELOPMENT_TEAM=... ./Scripts/run-runtime-device-smoke.sh` |
 | 签名真机暂停/恢复 smoke | `POCKETROOT_SMOKE_LIFECYCLE=1` 加到签名真机 smoke 命令 |
 | 签名真机 UIKit lifecycle smoke | `POCKETROOT_SMOKE_UI_LIFECYCLE=1` 加到签名真机 smoke 命令 |
+| 签名真机强制重启持久化 smoke | `POCKETROOT_SMOKE_RELAUNCH_PERSISTENCE=1` 加到签名真机 smoke 命令 |
 | 双语文档和链接检查 | `./Scripts/check-docs.sh` |
 
 ## 9. 不应提交的本地内容

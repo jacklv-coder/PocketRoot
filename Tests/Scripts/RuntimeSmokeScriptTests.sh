@@ -120,7 +120,7 @@ if ! grep -Fq -- 'name: "process-suspend-resume"' "$SMOKE_APP" \
 fi
 
 if ! grep -Fq -- 'POCKETROOT_SMOKE_UI_LIFECYCLE must be 0 or 1.' "$DEVICE_RUNNER" \
-  || ! grep -Fq -- 'Select only one physical lifecycle smoke mode per run.' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- 'Select only one physical host-control smoke mode per run.' "$DEVICE_RUNNER" \
   || ! grep -Fq -- 'awaiting-host-background' "$DEVICE_RUNNER" \
   || ! grep -Fq -- '--destination "Documents/$UI_LIFECYCLE_NAME"' "$DEVICE_RUNNER" \
   || ! grep -Fq -- '"$SETTINGS_BUNDLE_ID"' "$DEVICE_RUNNER" \
@@ -137,6 +137,27 @@ if ! grep -Fq -- 'applicationDidEnterBackground' "$SMOKE_APP" \
   || ! grep -Fq -- 'name: "ui-background-foreground"' "$SMOKE_APP" \
   || ! grep -Fq -- 'after-ui-lifecycle-ok' "$SMOKE_APP"; then
     echo "Native smoke does not verify UIKit lifecycle callback recovery." >&2
+    exit 1
+fi
+
+if ! grep -Fq -- 'POCKETROOT_SMOKE_RELAUNCH_PERSISTENCE must be 0 or 1.' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- 'HOST_CONTROL_MODE_COUNT=' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- '"POCKETROOT_SMOKE_RELAUNCH_PERSISTENCE":"seed"' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- 'xcrun devicectl device process terminate' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- "--kill \\" "$DEVICE_RUNNER" \
+  || ! grep -Fq -- 'wait_for_remote_smoke_process_exit' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- 'wait_for_remote_smoke_process_appearance' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- '"POCKETROOT_SMOKE_RELAUNCH_PERSISTENCE":"verify"' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- '"$REMOTE_PROCESS_PID" == "$SEED_PROCESS_PID"' "$DEVICE_RUNNER"; then
+    echo "Physical-device runner does not enforce forced-relaunch process identity." >&2
+    exit 1
+fi
+
+if ! grep -Fq -- 'prepared.installation.reusedExistingInstallation' "$SMOKE_APP" \
+  || ! grep -Fq -- 'name: "forced-relaunch-persistence"' "$SMOKE_APP" \
+  || ! grep -Fq -- '> \(relaunchPersistenceFileName) && sync' "$SMOKE_APP" \
+  || ! grep -Fq -- 'The guest marker did not survive forced App termination.' "$SMOKE_APP"; then
+    echo "Native smoke does not verify guest persistence after forced relaunch." >&2
     exit 1
 fi
 

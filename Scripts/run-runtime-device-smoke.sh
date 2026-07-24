@@ -17,6 +17,7 @@ EXPECTED_BYTE_COUNT="6581376"
 SMOKE_TIMEOUT_SECONDS="${POCKETROOT_SMOKE_TIMEOUT_SECONDS:-300}"
 LIFECYCLE_MODE="${POCKETROOT_SMOKE_LIFECYCLE:-0}"
 UI_LIFECYCLE_MODE="${POCKETROOT_SMOKE_UI_LIFECYCLE:-0}"
+RELAUNCH_PERSISTENCE_MODE="${POCKETROOT_SMOKE_RELAUNCH_PERSISTENCE:-0}"
 RUN_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/PocketRootDeviceSmoke.XXXXXX")"
 DERIVED_DATA_ROOT="$RUN_ROOT/DerivedData"
 CLONED_SOURCE_PACKAGES_DIR="${POCKETROOT_CLONED_SOURCE_PACKAGES_DIR:-${TMPDIR:-/tmp}/PocketRootSharedSourcePackages}"
@@ -128,6 +129,7 @@ Usage:
   POCKETROOT_DEVELOPMENT_TEAM=<team-id> \\
   [POCKETROOT_SMOKE_LIFECYCLE=1] \\
   [POCKETROOT_SMOKE_UI_LIFECYCLE=1] \\
+  [POCKETROOT_SMOKE_RELAUNCH_PERSISTENCE=1] \\
   $0
 EOF
 }
@@ -162,8 +164,13 @@ if [[ "$UI_LIFECYCLE_MODE" != "0" && "$UI_LIFECYCLE_MODE" != "1" ]]; then
     echo "POCKETROOT_SMOKE_UI_LIFECYCLE must be 0 or 1." >&2
     exit 2
 fi
-if [[ "$LIFECYCLE_MODE" == "1" && "$UI_LIFECYCLE_MODE" == "1" ]]; then
-    echo "Select only one physical lifecycle smoke mode per run." >&2
+if [[ "$RELAUNCH_PERSISTENCE_MODE" != "0" && "$RELAUNCH_PERSISTENCE_MODE" != "1" ]]; then
+    echo "POCKETROOT_SMOKE_RELAUNCH_PERSISTENCE must be 0 or 1." >&2
+    exit 2
+fi
+HOST_CONTROL_MODE_COUNT=$((LIFECYCLE_MODE + UI_LIFECYCLE_MODE + RELAUNCH_PERSISTENCE_MODE))
+if [[ "$HOST_CONTROL_MODE_COUNT" -gt 1 ]]; then
+    echo "Select only one physical host-control smoke mode per run." >&2
     exit 2
 fi
 if [[ "$(stat -f '%z' "$ARCHIVE_PATH")" != "$EXPECTED_BYTE_COUNT" ]]; then
@@ -268,7 +275,7 @@ xcrun devicectl device copy to \
   --domain-identifier "$BUNDLE_ID" \
   --timeout "$SMOKE_TIMEOUT_SECONDS"
 
-if [[ "$LIFECYCLE_MODE" == "1" || "$UI_LIFECYCLE_MODE" == "1" ]]; then
+if [[ "$HOST_CONTROL_MODE_COUNT" -eq 1 ]]; then
     # A failed uninstall can preserve the prior data container. Clear progress
     # before launch so this run cannot accept stale host-control evidence.
     xcrun devicectl device copy to \
@@ -286,7 +293,7 @@ if [[ "$LIFECYCLE_MODE" == "1" || "$UI_LIFECYCLE_MODE" == "1" ]]; then
           --domain-type appDataContainer \
           --domain-identifier "$BUNDLE_ID" \
           --timeout "$SMOKE_TIMEOUT_SECONDS"
-    else
+    elif [[ "$UI_LIFECYCLE_MODE" == "1" ]]; then
         xcrun devicectl device copy to \
           --device "$DEVICE_ID" \
           --source "$EMPTY_REPORT_PATH" \
@@ -341,6 +348,47 @@ wait_for_remote_smoke_process_match() {
     return 2
 }
 
+wait_for_remote_smoke_process_exit() {
+    local query_timeout
+    local match_status
+
+    while [[ "$SECONDS" -lt "$REPORT_DEADLINE" ]]; do
+        if ! query_timeout="$(bounded_smoke_timeout 5)"; then
+            return 1
+        fi
+        if remote_process_matches_smoke_app "$query_timeout"; then
+            sleep 1
+            continue
+        else
+            match_status=$?
+        fi
+        if [[ "$match_status" == "1" ]]; then
+            return 0
+        fi
+        sleep 1
+    done
+    return 1
+}
+
+wait_for_remote_smoke_process_appearance() {
+    local appearance_deadline=$((SECONDS + 15))
+    local query_timeout
+
+    while [[ "$SECONDS" -lt "$REPORT_DEADLINE" ]] \
+      && [[ "$SECONDS" -lt "$appearance_deadline" ]]; do
+        if ! query_timeout="$(bounded_smoke_timeout 5)"; then
+            return 1
+        fi
+        if remote_process_matches_smoke_app "$query_timeout"; then
+            return 0
+        fi
+        # A successful launch can become visible to process enumeration a
+        # moment later. Retry both absent and indeterminate observations.
+        sleep 1
+    done
+    return 1
+}
+
 retrieve_device_report() {
     local timeout_seconds="$1"
 
@@ -360,15 +408,19 @@ retrieve_device_report() {
     return 1
 }
 
-if [[ "$LIFECYCLE_MODE" == "1" || "$UI_LIFECYCLE_MODE" == "1" ]]; then
+if [[ "$HOST_CONTROL_MODE_COUNT" -eq 1 ]]; then
     if [[ "$LIFECYCLE_MODE" == "1" ]]; then
         HOST_CONTROL_ENVIRONMENT='{"POCKETROOT_SMOKE_LIFECYCLE":"1"}'
         HOST_CONTROL_CHECKPOINT="awaiting-host-suspend"
         HOST_CONTROL_LABEL="Process-suspend"
-    else
+    elif [[ "$UI_LIFECYCLE_MODE" == "1" ]]; then
         HOST_CONTROL_ENVIRONMENT='{"POCKETROOT_SMOKE_UI_LIFECYCLE":"1"}'
         HOST_CONTROL_CHECKPOINT="awaiting-host-background"
         HOST_CONTROL_LABEL="UIKit-lifecycle"
+    else
+        HOST_CONTROL_ENVIRONMENT='{"POCKETROOT_SMOKE_RELAUNCH_PERSISTENCE":"seed"}'
+        HOST_CONTROL_CHECKPOINT="awaiting-host-termination"
+        HOST_CONTROL_LABEL="Forced-relaunch persistence"
     fi
     xcrun devicectl device process launch \
       --device "$DEVICE_ID" \
@@ -468,7 +520,7 @@ if [[ "$LIFECYCLE_MODE" == "1" || "$UI_LIFECYCLE_MODE" == "1" ]]; then
           --domain-type appDataContainer \
           --domain-identifier "$BUNDLE_ID" \
           --timeout "$HOST_OPERATION_TIMEOUT"
-    else
+    elif [[ "$UI_LIFECYCLE_MODE" == "1" ]]; then
         if wait_for_remote_smoke_process_match; then
             :
         else
@@ -565,6 +617,72 @@ if [[ "$LIFECYCLE_MODE" == "1" || "$UI_LIFECYCLE_MODE" == "1" ]]; then
             fi
             exit 1
         fi
+    else
+        if ! HOST_OPERATION_TIMEOUT="$(bounded_smoke_timeout 15)"; then
+            echo "Forced-relaunch deadline expired before seed-process termination." >&2
+            exit 1
+        fi
+        SEED_PROCESS_PID="$REMOTE_PROCESS_PID"
+        xcrun devicectl device process terminate \
+          --device "$DEVICE_ID" \
+          --pid "$SEED_PROCESS_PID" \
+          --kill \
+          --timeout "$HOST_OPERATION_TIMEOUT"
+        if ! wait_for_remote_smoke_process_exit; then
+            echo "Forced-relaunch seed process did not terminate within the deadline." >&2
+            exit 1
+        fi
+        REMOTE_PROCESS_PID=""
+
+        # Fail closed if the seed process raced with termination and managed to
+        # persist a report. The verification process must produce fresh evidence.
+        if ! HOST_OPERATION_TIMEOUT="$(bounded_smoke_timeout 15)"; then
+            echo "Forced-relaunch deadline expired before evidence reset." >&2
+            exit 1
+        fi
+        xcrun devicectl device copy to \
+          --device "$DEVICE_ID" \
+          --source "$EMPTY_REPORT_PATH" \
+          --destination "Documents/$REPORT_NAME" \
+          --domain-type appDataContainer \
+          --domain-identifier "$BUNDLE_ID" \
+          --timeout "$HOST_OPERATION_TIMEOUT"
+        xcrun devicectl device copy to \
+          --device "$DEVICE_ID" \
+          --source "$EMPTY_REPORT_PATH" \
+          --destination "Documents/$PROGRESS_NAME" \
+          --domain-type appDataContainer \
+          --domain-identifier "$BUNDLE_ID" \
+          --timeout "$HOST_OPERATION_TIMEOUT"
+
+        if ! HOST_OPERATION_TIMEOUT="$(bounded_smoke_timeout 15)"; then
+            echo "Forced-relaunch deadline expired before verification launch." >&2
+            exit 1
+        fi
+        rm -f "$REACTIVATION_RESULT_PATH"
+        xcrun devicectl device process launch \
+          --device "$DEVICE_ID" \
+          --environment-variables \
+            '{"POCKETROOT_SMOKE_RELAUNCH_PERSISTENCE":"verify"}' \
+          --timeout "$HOST_OPERATION_TIMEOUT" \
+          --json-output "$REACTIVATION_RESULT_PATH" \
+          "$BUNDLE_ID"
+        REMOTE_PROCESS_PID="$(
+          plutil -extract result.process.processIdentifier raw \
+            -o - "$REACTIVATION_RESULT_PATH" 2>/dev/null || true
+        )"
+        if [[ ! "$REMOTE_PROCESS_PID" =~ ^[1-9][0-9]*$ ]]; then
+            echo "Forced-relaunch verification did not return a process identifier." >&2
+            exit 1
+        fi
+        if [[ "$REMOTE_PROCESS_PID" == "$SEED_PROCESS_PID" ]]; then
+            echo "Forced-relaunch verification did not start a new process." >&2
+            exit 1
+        fi
+        if ! wait_for_remote_smoke_process_appearance; then
+            echo "Forced-relaunch verification process was not observable." >&2
+            exit 1
+        fi
     fi
 else
     xcrun devicectl device process launch \
@@ -620,7 +738,7 @@ if [[ "$REPORT_READY" != "true" ]]; then
     if [[ -f "$CONSOLE_LOG" ]]; then
         cat "$CONSOLE_LOG" >&2
     fi
-    if [[ "$LIFECYCLE_MODE" == "1" || "$UI_LIFECYCLE_MODE" == "1" ]]; then
+    if [[ "$HOST_CONTROL_MODE_COUNT" -eq 1 ]]; then
         rm -f "$PROGRESS_PATH"
         if xcrun devicectl device copy from \
           --device "$DEVICE_ID" \

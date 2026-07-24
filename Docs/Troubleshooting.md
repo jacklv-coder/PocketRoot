@@ -286,6 +286,12 @@ xcrun simctl uninstall "$SMOKE_DEVICE_UDID" com.jacklv.PocketRootIshRuntimeSmoke
   Settings 能前台启动，并检查最后 progress。
 - `UIKit lifecycle activation did not preserve the smoke process PID`：原 App 被系统
   终止或重新启动，本次结果不能证明同一 runtime 跨前后台保持，必须按失败处理。
+- `Forced-relaunch persistence smoke did not reach its host checkpoint`：seed 进程没有在
+  guest 标记写入并 `sync` 后到达检查点；查看最后 progress，不要手工伪造。
+- `Forced-relaunch seed process did not terminate` 或 verify PID 与 seed PID 相同：
+  CoreDevice 没有确认旧进程结束/新进程建立，不能把本次结果当成跨进程恢复。
+- `The guest marker did not survive forced App termination`：RootFS 被重新安装、同步数据
+  没有保留或 fakefs 恢复失败；保留失败日志排查，不要跳过复用与标记检查。
 - `... smoke launch did not return a process identifier`：当前 Xcode/CoreDevice
   没有返回受支持的 launch JSON PID；不要从人类可读输出猜 PID。
 - entitlement 校验失败：不要跳过；确认 profile 的 application identifier、team identifier 和 `get-task-allow`。

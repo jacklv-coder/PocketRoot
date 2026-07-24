@@ -146,6 +146,12 @@ UIKit callbacks. The runner opens Settings to background the App, activates
 the original process, and requires background, foreground, active, and a new
 guest command to succeed.
 
+Use the mutually exclusive `POCKETROOT_SMOKE_RELAUNCH_PERSISTENCE=1` mode to
+verify RootFS and guest-data recovery after forced termination. The runner
+syncs a guest marker, terminates the first App PID, starts a new PID, and
+requires it to reuse the RootFS, recover and remove the marker, and complete
+the standard command, shutdown, and peak-memory gates.
+
 ## 8. Command reference
 
 | Goal | Command |
@@ -160,6 +166,7 @@ guest command to succeed.
 | Signed physical native smoke | `POCKETROOT_ROOTFS_ARCHIVE=... POCKETROOT_SMOKE_DEVICE=... POCKETROOT_DEVELOPMENT_TEAM=... ./Scripts/run-runtime-device-smoke.sh` |
 | Signed process suspend/resume smoke | Add `POCKETROOT_SMOKE_LIFECYCLE=1` to the signed physical smoke command |
 | Signed UIKit lifecycle smoke | Add `POCKETROOT_SMOKE_UI_LIFECYCLE=1` to the signed physical smoke command |
+| Signed forced-relaunch persistence smoke | Add `POCKETROOT_SMOKE_RELAUNCH_PERSISTENCE=1` to the signed physical smoke command |
 | Documentation checks | `./Scripts/check-docs.sh` |
 
 ## 9. Do not commit

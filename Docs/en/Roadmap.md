@@ -21,8 +21,9 @@ Status:
    confirmation, and post-cancellation recovery.
 5. Current: RootFS capacity preflight, the full write/promotion ENOSPC matrix,
    explicit file/directory persistence, deterministic power-loss cut points,
-   and the 8 MiB sustained binary-output baseline are complete; continue
-   physical storage-pressure/power-cut and peak-memory hardening.
+   the 8 MiB sustained binary-output baseline, and physical forced-relaunch
+   persistence are complete; continue physical storage-pressure/power-cut,
+   jetsam, and peak-memory hardening.
 6. Native Agent Loop/App composition is paused by product decision and does not block independent runtime validation.
 7. Complete signed iPad smoke when hardware is available; that gate does not block the first six items.
 
@@ -94,7 +95,7 @@ This establishes the current Simulator, minimum-Xcode 16, and single-iPhone one-
 | Signed iPhone | Passed | v0.4.0-abi.6 completed the 17-check one-shot/soft-shutdown/peak-memory smoke; keep rerunning after runtime changes |
 | Signed iPad | Blocked | Physical boot and command smoke |
 | Minimum Xcode 16 native | Passed | Xcode 16.0 / iOS 18.0 SDK completed RootFS install, Simulator/device final links, and the 17-check native smoke |
-| App lifecycle and memory | In progress | Simulator and Jack iPhone have 256 MiB `ru_maxrss` gates, and physical process suspend/resume plus UIKit foreground/background passed; add physical jetsam, failure injection, and persistence |
+| App lifecycle and memory | In progress | Simulator and Jack iPhone have 256 MiB `ru_maxrss` gates; physical process suspend/resume, UIKit foreground/background, and RootFS/guest-data recovery after forced termination passed; add physical jetsam |
 | RootFS ENOSPC/power faults | In progress | Peak-space preflight, full ENOSPC, seven persistence barriers, and deterministic power-loss cuts are covered; add physical storage-pressure/power-cut evidence |
 | License-reviewed RootFS | Blocked | Complete license, NOTICE, source, and SBOM |
 | App Store 2.5.2 | Blocked | Written guest download/execute policy decision |
