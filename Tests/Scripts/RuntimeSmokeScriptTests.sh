@@ -176,6 +176,21 @@ if ! grep -Fq -- 'POCKETROOT_SMOKE_STORAGE_FAILURE must be 0 or 1.' "$DEVICE_RUN
     exit 1
 fi
 
+if ! grep -Fq -- 'POCKETROOT_SMOKE_MEMORY_WARNING must be 0 or 1.' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- 'Memory-warning smoke cannot be combined with another optional mode.' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- '"POCKETROOT_SMOKE_MEMORY_WARNING":"1"' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- 'applicationDidReceiveMemoryWarning' "$SMOKE_APP" \
+  || ! grep -Fq -- 'recordMemoryWarningCallback' "$SMOKE_APP" \
+  || ! grep -Fq -- 'deliverMemoryWarningCallback' "$SMOKE_APP" \
+  || ! grep -Fq -- 'before-warning' "$SMOKE_APP" \
+  || ! grep -Fq -- 'awaitMemoryWarningCommandStart' "$SMOKE_APP" \
+  || ! grep -Fq -- 'memoryWarningActiveGuestPath' "$SMOKE_APP" \
+  || ! grep -Fq -- 'after-memory-warning-ok' "$SMOKE_APP" \
+  || ! grep -Fq -- 'name: "memory-warning-recovery"' "$SMOKE_APP"; then
+    echo "Physical-device smoke does not gate bounded memory-warning recovery." >&2
+    exit 1
+fi
+
 if ! grep -Fq -- 'simctl terminate "$DEVICE_UDID" "$BUNDLE_ID" >/dev/null 2>&1 || true' "$SIMULATOR_RUNNER"; then
     echo "Simulator runner cleanup is not best-effort after durable success." >&2
     exit 1

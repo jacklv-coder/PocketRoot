@@ -31,6 +31,7 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 - A signed iPhone/iPad runner that installs through `devicectl`, injects the pinned RootFS, retrieves the report, and verifies development entitlements; the iPhone 17 Pro / iOS 26.1 baseline passed.
 - A signed-device forced-relaunch persistence gate that terminates a seed PID with SIGKILL after syncing guest data, then requires a new verification PID to reuse the RootFS, recover and clean the data, and complete the standard shutdown and memory checks.
 - A signed-device bounded storage-failure gate that fixes capacity at zero and injects ENOSPC after one gzip-output byte, requires both failures to leave no installation residue, then recovers in the same directory and completes the standard smoke.
+- A signed-device bounded memory-warning gate that deterministically invokes the public App-delegate callback during an active guest command and requires fresh callback evidence, the active and later commands, `.ready`, shutdown, and peak-memory gates to pass without claiming real memory pressure or jetsam.
 - Exact SwiftPM resolution in `Package.resolved`.
 - IshEmbed [ADR-001](Docs/en/Decisions/ADR-001-IshEmbed-Feasibility.md) and immutable [upstream inventory](Docs/en/UpstreamDependencies.md).
 - Chinese-primary, English-mirror documentation for product planning, getting started, integration, architecture, implementation, RootFS, testing, troubleshooting, roadmap, and compliance.

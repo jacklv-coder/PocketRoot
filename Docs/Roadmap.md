@@ -20,7 +20,8 @@
    一次性命令 Swift Task 取消、native 退出确认和取消后恢复。
 5. 当前：RootFS 容量预检、全写入/promotion ENOSPC、显式文件/目录持久化、确定性
    power-loss 切点矩阵、8 MiB 持续二进制输出基线、真机强制重启持久化和受限
-   存储故障恢复已完成；继续真实 storage pressure/强制断电、jetsam 与峰值内存硬化。
+   存储故障恢复和真机有界内存警告恢复已完成；继续真实 storage pressure/强制断电、
+   jetsam 与峰值内存硬化。
 6. 原生 Agent Loop/App 组合按产品决定暂停；不阻塞 runtime 独立验证。
 7. 有物理 iPad 后补签名设备 smoke；该硬件门禁不阻塞前六项。
 
@@ -100,7 +101,7 @@
 | 签名 iPhone | 已通过 | v0.4.0-abi.6 完成 17 项 one-shot/soft-shutdown/peak-memory smoke；runtime 变更后继续重跑 |
 | 签名 iPad | 阻塞 | physical boot 与 command smoke |
 | 最低 Xcode 16 原生兼容 | 已通过 | Xcode 16.0 / iOS 18.0 SDK 完成 RootFS install、Simulator/device final-link 和 17 项 native smoke |
-| App lifecycle 与内存 | 进行中 | Simulator 与 Jack iPhone 均有 256 MiB `ru_maxrss` 门禁；真机 process suspend/resume、UIKit foreground/background 和强制终止后 RootFS/guest 数据恢复已通过；补真机 jetsam |
+| App lifecycle 与内存 | 进行中 | Simulator 与 Jack iPhone 均有 256 MiB `ru_maxrss` 门禁；真机 process suspend/resume、UIKit foreground/background、强制终止后数据恢复和有界 App delegate memory-warning 回调恢复已通过；补真实 memory pressure/jetsam |
 | RootFS ENOSPC/掉电 | 进行中 | 峰值空间预检、全 ENOSPC、七点持久化屏障、确定性掉电切点和 Jack iPhone 受限容量/ENOSPC 清理恢复已覆盖；补真实 storage pressure/强制断电 |
 | License-reviewed RootFS | 阻塞 | license、NOTICE、对应源码和 SBOM 完整 |
 | App Store 2.5.2 | 阻塞 | guest download/execute policy 有书面结论 |

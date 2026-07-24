@@ -146,6 +146,19 @@ The physical runner requires Xcode to select a valid development profile for `PO
 - `Unexpected gzip ENOSPC error`: the fixed one-byte injection did not return
   a space error from the real gzip write path. Inspect the SPI mapping and C
   extractor instead of increasing the write amount.
+- `The App delegate did not expose a memory-warning callback`: the smoke target
+  lacks the public `applicationDidReceiveMemoryWarning` callback or the active
+  delegate is unexpected. Do not replace it with a private selector.
+- `The injected memory-warning callback did not persist fresh evidence`: the
+  callback did not arrive or stale evidence was read. Verify the independent
+  mode and progress reset; do not describe this injection as system pressure.
+- `The guest command did not acknowledge active execution before the callback`:
+  the guest did not write its fresh start marker within five seconds. The
+  callback is not injected in this state; do not replace the acknowledgement
+  with a fixed delay.
+- `The active guest command did not survive the memory-warning callback`:
+  preserve the report and console for runtime-continuity diagnosis; a later
+  successful command must not hide this failure.
 - `... smoke launch did not return a process identifier`: the current
   Xcode/CoreDevice did not return the supported launch-JSON PID; do not infer
   a PID from human-readable output.

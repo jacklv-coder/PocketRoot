@@ -19,6 +19,7 @@ LIFECYCLE_MODE="${POCKETROOT_SMOKE_LIFECYCLE:-0}"
 UI_LIFECYCLE_MODE="${POCKETROOT_SMOKE_UI_LIFECYCLE:-0}"
 RELAUNCH_PERSISTENCE_MODE="${POCKETROOT_SMOKE_RELAUNCH_PERSISTENCE:-0}"
 STORAGE_FAILURE_MODE="${POCKETROOT_SMOKE_STORAGE_FAILURE:-0}"
+MEMORY_WARNING_MODE="${POCKETROOT_SMOKE_MEMORY_WARNING:-0}"
 RUN_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/PocketRootDeviceSmoke.XXXXXX")"
 DERIVED_DATA_ROOT="$RUN_ROOT/DerivedData"
 CLONED_SOURCE_PACKAGES_DIR="${POCKETROOT_CLONED_SOURCE_PACKAGES_DIR:-${TMPDIR:-/tmp}/PocketRootSharedSourcePackages}"
@@ -132,6 +133,7 @@ Usage:
   [POCKETROOT_SMOKE_UI_LIFECYCLE=1] \\
   [POCKETROOT_SMOKE_RELAUNCH_PERSISTENCE=1] \\
   [POCKETROOT_SMOKE_STORAGE_FAILURE=1] \\
+  [POCKETROOT_SMOKE_MEMORY_WARNING=1] \\
   $0
 EOF
 }
@@ -174,6 +176,10 @@ if [[ "$STORAGE_FAILURE_MODE" != "0" && "$STORAGE_FAILURE_MODE" != "1" ]]; then
     echo "POCKETROOT_SMOKE_STORAGE_FAILURE must be 0 or 1." >&2
     exit 2
 fi
+if [[ "$MEMORY_WARNING_MODE" != "0" && "$MEMORY_WARNING_MODE" != "1" ]]; then
+    echo "POCKETROOT_SMOKE_MEMORY_WARNING must be 0 or 1." >&2
+    exit 2
+fi
 HOST_CONTROL_MODE_COUNT=$((LIFECYCLE_MODE + UI_LIFECYCLE_MODE + RELAUNCH_PERSISTENCE_MODE))
 if [[ "$HOST_CONTROL_MODE_COUNT" -gt 1 ]]; then
     echo "Select only one physical host-control smoke mode per run." >&2
@@ -181,6 +187,11 @@ if [[ "$HOST_CONTROL_MODE_COUNT" -gt 1 ]]; then
 fi
 if [[ "$HOST_CONTROL_MODE_COUNT" -eq 1 && "$STORAGE_FAILURE_MODE" == "1" ]]; then
     echo "Storage failure smoke cannot be combined with a host-control mode." >&2
+    exit 2
+fi
+if [[ "$MEMORY_WARNING_MODE" == "1" \
+  && $((HOST_CONTROL_MODE_COUNT + STORAGE_FAILURE_MODE)) -gt 0 ]]; then
+    echo "Memory-warning smoke cannot be combined with another optional mode." >&2
     exit 2
 fi
 if [[ "$(stat -f '%z' "$ARCHIVE_PATH")" != "$EXPECTED_BYTE_COUNT" ]]; then
@@ -285,7 +296,9 @@ xcrun devicectl device copy to \
   --domain-identifier "$BUNDLE_ID" \
   --timeout "$SMOKE_TIMEOUT_SECONDS"
 
-if [[ "$HOST_CONTROL_MODE_COUNT" -eq 1 || "$STORAGE_FAILURE_MODE" == "1" ]]; then
+if [[ "$HOST_CONTROL_MODE_COUNT" -eq 1 \
+  || "$STORAGE_FAILURE_MODE" == "1" \
+  || "$MEMORY_WARNING_MODE" == "1" ]]; then
     # A failed uninstall can preserve the prior data container. Clear progress
     # before launch so this run cannot accept stale host-control evidence.
     xcrun devicectl device copy to \
@@ -700,6 +713,17 @@ elif [[ "$STORAGE_FAILURE_MODE" == "1" ]]; then
       --terminate-existing \
       --environment-variables \
         '{"POCKETROOT_SMOKE_STORAGE_FAILURE":"1"}' \
+      --console \
+      --timeout "$SMOKE_TIMEOUT_SECONDS" \
+      "$BUNDLE_ID" \
+      >"$CONSOLE_LOG" 2>&1 &
+    LAUNCH_CLIENT_PID=$!
+elif [[ "$MEMORY_WARNING_MODE" == "1" ]]; then
+    xcrun devicectl device process launch \
+      --device "$DEVICE_ID" \
+      --terminate-existing \
+      --environment-variables \
+        '{"POCKETROOT_SMOKE_MEMORY_WARNING":"1"}' \
       --console \
       --timeout "$SMOKE_TIMEOUT_SECONDS" \
       "$BUNDLE_ID" \
