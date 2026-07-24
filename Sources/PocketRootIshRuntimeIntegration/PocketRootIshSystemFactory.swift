@@ -19,6 +19,14 @@ public struct PocketRootPreparedIshSystem: Sendable {
     }
 }
 
+/// Bounded RootFS failures exposed only to repository-owned runtime smoke
+/// harnesses. Production callers must use the ordinary factory API.
+@_spi(PocketRootRuntimeSmoke)
+public enum PocketRootRootFSFailureInjection: Sendable, Equatable {
+    case insufficientStorage
+    case gzipENOSPC
+}
+
 /// Composes the opt-in RootFS installer and Experimental IshEmbed adapter.
 public enum PocketRootIshSystemFactory {
     /// Verifies and materializes a caller-supplied archive, then creates a
@@ -44,6 +52,73 @@ public enum PocketRootIshSystemFactory {
             baseDirectoryURL: applicationSupportURL,
             manifest: manifest
         )
+        return try await prepareSystem(
+            installer: installer,
+            archiveURL: archiveURL,
+            manifest: manifest,
+            systemConfiguration: systemConfiguration,
+            workDirectory: workDirectory,
+            supervisorGuestPath: supervisorGuestPath,
+            kernelLogFileDescriptor: kernelLogFileDescriptor,
+            maximumStandardOutputBytes: maximumStandardOutputBytes,
+            maximumStandardErrorBytes: maximumStandardErrorBytes,
+            healthCheck: healthCheck
+        )
+    }
+
+    /// Runs the real installer with one bounded failure injected. This SPI is
+    /// intentionally limited to repository-owned physical-device smoke.
+    @_spi(PocketRootRuntimeSmoke)
+    @available(macOS 13.0, *)
+    public static func prepareSystemForFailureInjection(
+        archiveURL: URL,
+        applicationSupportURL: URL,
+        manifest: PocketRootRootFSArtifactManifest = .ishEmbedV0_3_3,
+        failureInjection: PocketRootRootFSFailureInjection
+    ) async throws -> PocketRootPreparedIshSystem {
+        let testHooks: RootFSInstallerTestHooks
+        switch failureInjection {
+        case .insufficientStorage:
+            testHooks = RootFSInstallerTestHooks(
+                availableCapacityProvider: { _ in 0 }
+            )
+        case .gzipENOSPC:
+            testHooks = RootFSInstallerTestHooks(
+                injectedGzipENOSPCAfterByteCount: 1
+            )
+        }
+        let installer = PocketRootRootFSInstaller(
+            baseDirectoryURL: applicationSupportURL,
+            manifest: manifest,
+            testHooks: testHooks
+        )
+        return try await prepareSystem(
+            installer: installer,
+            archiveURL: archiveURL,
+            manifest: manifest,
+            systemConfiguration: nil,
+            workDirectory: "/",
+            supervisorGuestPath: nil,
+            kernelLogFileDescriptor: -1,
+            maximumStandardOutputBytes: 8 * 1_024 * 1_024,
+            maximumStandardErrorBytes: 4 * 1_024 * 1_024,
+            healthCheck: nil
+        )
+    }
+
+    @available(macOS 13.0, *)
+    private static func prepareSystem(
+        installer: PocketRootRootFSInstaller,
+        archiveURL: URL,
+        manifest: PocketRootRootFSArtifactManifest,
+        systemConfiguration: PocketRootConfiguration?,
+        workDirectory: String,
+        supervisorGuestPath: String?,
+        kernelLogFileDescriptor: Int32,
+        maximumStandardOutputBytes: Int,
+        maximumStandardErrorBytes: Int,
+        healthCheck: PocketRootIshRuntimeHealthCheckConfiguration?
+    ) async throws -> PocketRootPreparedIshSystem {
         let installation = try await installer.prepareArchive(at: archiveURL)
         let requestedConfiguration = systemConfiguration ?? PocketRootConfiguration()
         let configuration = PocketRootConfiguration(

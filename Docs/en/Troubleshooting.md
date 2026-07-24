@@ -137,6 +137,15 @@ The physical runner requires Xcode to select a valid development profile for `PO
 - `The guest marker did not survive forced App termination`: the RootFS was
   replaced, synced guest data was lost, or fakefs recovery failed. Preserve
   the failure logs; do not bypass the reuse or marker checks.
+- `The zero-capacity preflight unexpectedly installed a RootFS`: the bounded
+  SPI did not reach production capacity preflight. Do not replace this with
+  filling the real device.
+- `Storage failure left RootFS entries`: capacity or ENOSPC failure left
+  staging, transaction, or installation entries. Preserve the failed container;
+  a later successful boot must not hide that residue.
+- `Unexpected gzip ENOSPC error`: the fixed one-byte injection did not return
+  a space error from the real gzip write path. Inspect the SPI mapping and C
+  extractor instead of increasing the write amount.
 - `... smoke launch did not return a process identifier`: the current
   Xcode/CoreDevice did not return the supported launch-JSON PID; do not infer
   a PID from human-readable output.

@@ -189,6 +189,11 @@ POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
 强制终止第一个 App PID，再启动新 PID；新进程必须复用 RootFS、读回并清理标记，
 随后完成标准命令、shutdown 与峰值内存门禁。
 
+需要在不填满整台手机的前提下验证存储失败恢复时，改用互斥的
+`POCKETROOT_SMOKE_STORAGE_FAILURE=1`。App 先固定注入 0 可用字节的容量预检，
+再在 gzip 输出 1 字节后注入 ENOSPC；两次失败都必须清空 staging/事务残留，
+随后在同一目录正常安装、boot 并完成标准 smoke。
+
 ## 8. 常用命令
 
 | 目标 | 命令 |
@@ -204,6 +209,7 @@ POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
 | 签名真机暂停/恢复 smoke | `POCKETROOT_SMOKE_LIFECYCLE=1` 加到签名真机 smoke 命令 |
 | 签名真机 UIKit lifecycle smoke | `POCKETROOT_SMOKE_UI_LIFECYCLE=1` 加到签名真机 smoke 命令 |
 | 签名真机强制重启持久化 smoke | `POCKETROOT_SMOKE_RELAUNCH_PERSISTENCE=1` 加到签名真机 smoke 命令 |
+| 签名真机受限存储故障 smoke | `POCKETROOT_SMOKE_STORAGE_FAILURE=1` 加到签名真机 smoke 命令 |
 | 双语文档和链接检查 | `./Scripts/check-docs.sh` |
 
 ## 9. 不应提交的本地内容

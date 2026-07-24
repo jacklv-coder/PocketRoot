@@ -161,6 +161,21 @@ if ! grep -Fq -- 'prepared.installation.reusedExistingInstallation' "$SMOKE_APP"
     exit 1
 fi
 
+if ! grep -Fq -- 'POCKETROOT_SMOKE_STORAGE_FAILURE must be 0 or 1.' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- 'Storage failure smoke cannot be combined with a host-control mode.' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- '"POCKETROOT_SMOKE_STORAGE_FAILURE":"1"' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- 'prepareSystemForFailureInjection' "$SMOKE_APP" \
+  || ! grep -Fq -- 'failureInjection: .insufficientStorage' "$SMOKE_APP" \
+  || ! grep -Fq -- 'failureInjection: .gzipENOSPC' "$SMOKE_APP" \
+  || ! grep -Fq -- 'catch PocketRootArchiveExtractionError.gzipDecompressionFailed' "$SMOKE_APP" \
+  || ! grep -Fq -- 'name: "storage-capacity-preflight"' "$SMOKE_APP" \
+  || ! grep -Fq -- 'name: "storage-enospc-cleanup"' "$SMOKE_APP" \
+  || ! grep -Fq -- 'requireCleanStorageFailureWorkspace' "$SMOKE_APP" \
+  || grep -Fq -- 'ATTACHED_LAUNCH_ENVIRONMENT_ARGUMENTS' "$DEVICE_RUNNER"; then
+    echo "Physical-device smoke does not safely gate storage failure recovery." >&2
+    exit 1
+fi
+
 if ! grep -Fq -- 'simctl terminate "$DEVICE_UDID" "$BUNDLE_ID" >/dev/null 2>&1 || true' "$SIMULATOR_RUNNER"; then
     echo "Simulator runner cleanup is not best-effort after durable success." >&2
     exit 1

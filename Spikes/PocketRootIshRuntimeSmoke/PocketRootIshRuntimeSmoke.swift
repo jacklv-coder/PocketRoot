@@ -1,7 +1,8 @@
 import Darwin
 import Foundation
 import PocketRootCore
-import PocketRootIshRuntimeIntegration
+@_spi(PocketRootRuntimeSmoke) import PocketRootIshRuntimeIntegration
+import PocketRootResources
 import UIKit
 
 private struct PocketRootSmokeCheck: Codable, Sendable {
@@ -54,6 +55,7 @@ private enum PocketRootRuntimeSmokeRunner {
         environment: PocketRootSmokeEnvironment,
         lifecycleMode: Bool = false,
         uiLifecycleMode: Bool = false,
+        storageFailureMode: Bool = false,
         relaunchPersistencePhase: PocketRootSmokeRelaunchPersistencePhase = .disabled
     ) async -> PocketRootSmokeReport {
         let startedAt = Date()
@@ -72,17 +74,35 @@ private enum PocketRootRuntimeSmokeRunner {
                 fileManager.urls(for: .documentDirectory, in: .userDomainMask).first,
                 name: "Documents"
             )
-            let applicationSupportURL = try fileManager.url(
+            let applicationSupportBaseURL = try fileManager.url(
                 for: .applicationSupportDirectory,
                 in: .userDomainMask,
                 appropriateFor: nil,
                 create: true
-            ).appendingPathComponent("PocketRootSmoke", isDirectory: true)
+            )
+            let applicationSupportURL = applicationSupportBaseURL.appendingPathComponent(
+                storageFailureMode ? "PocketRootStorageFailureSmoke" : "PocketRootSmoke",
+                isDirectory: true
+            )
+            if storageFailureMode,
+               fileManager.fileExists(atPath: applicationSupportURL.path)
+            {
+                try fileManager.removeItem(at: applicationSupportURL)
+            }
             try fileManager.createDirectory(
                 at: applicationSupportURL,
                 withIntermediateDirectories: true
             )
             let archiveURL = documentsURL.appendingPathComponent(archiveFileName)
+
+            if storageFailureMode {
+                checks.append(
+                    contentsOf: try await runStorageFailureChecks(
+                        archiveURL: archiveURL,
+                        applicationSupportURL: applicationSupportURL
+                    )
+                )
+            }
 
             writeProgress("preparing-rootfs")
             let prepared = try await PocketRootIshSystemFactory.prepareSystem(
@@ -605,6 +625,82 @@ private enum PocketRootRuntimeSmokeRunner {
         )
     }
 
+    private static func runStorageFailureChecks(
+        archiveURL: URL,
+        applicationSupportURL: URL
+    ) async throws -> [PocketRootSmokeCheck] {
+        var checks: [PocketRootSmokeCheck] = []
+
+        writeProgress("testing-storage-capacity-preflight")
+        do {
+            _ = try await PocketRootIshSystemFactory.prepareSystemForFailureInjection(
+                archiveURL: archiveURL,
+                applicationSupportURL: applicationSupportURL,
+                failureInjection: .insufficientStorage
+            )
+            throw PocketRootSmokeFailure(
+                message: "The zero-capacity preflight unexpectedly installed a RootFS."
+            )
+        } catch PocketRootRootFSInstallationError.insufficientStorage(
+            let requiredBytes,
+            let availableBytes
+        ) {
+            try require(requiredBytes > 0, "Storage preflight reported no required bytes.")
+            try require(availableBytes == 0, "Storage preflight ignored injected capacity.")
+        }
+        try requireCleanStorageFailureWorkspace(at: applicationSupportURL)
+        checks.append(
+            PocketRootSmokeCheck(
+                name: "storage-capacity-preflight",
+                detail: "zero available bytes rejected before staging"
+            )
+        )
+
+        writeProgress("testing-storage-enospc-cleanup")
+        do {
+            _ = try await PocketRootIshSystemFactory.prepareSystemForFailureInjection(
+                archiveURL: archiveURL,
+                applicationSupportURL: applicationSupportURL,
+                failureInjection: .gzipENOSPC
+            )
+            throw PocketRootSmokeFailure(
+                message: "The gzip ENOSPC injection unexpectedly installed a RootFS."
+            )
+        } catch PocketRootArchiveExtractionError.gzipDecompressionFailed(let message) {
+            try require(
+                message.localizedCaseInsensitiveContains("space"),
+                "Unexpected gzip ENOSPC error: \(message)"
+            )
+        }
+        try requireCleanStorageFailureWorkspace(at: applicationSupportURL)
+        checks.append(
+            PocketRootSmokeCheck(
+                name: "storage-enospc-cleanup",
+                detail: "one-byte gzip output failed and staging was removed"
+            )
+        )
+
+        writeProgress("recovering-after-storage-failures")
+        return checks
+    }
+
+    private static func requireCleanStorageFailureWorkspace(
+        at applicationSupportURL: URL
+    ) throws {
+        let rootFSURL = applicationSupportURL.appendingPathComponent(
+            "rootfs",
+            isDirectory: true
+        )
+        let entries = try FileManager.default.contentsOfDirectory(
+            at: rootFSURL,
+            includingPropertiesForKeys: nil
+        )
+        try require(
+            entries.isEmpty,
+            "Storage failure left RootFS entries: \(entries.map(\.lastPathComponent))."
+        )
+    }
+
     private static func requireDirectory(_ url: URL?, name: String) throws -> URL {
         guard let url else {
             throw PocketRootSmokeFailure(message: "\(name) directory is unavailable.")
@@ -680,6 +776,8 @@ final class PocketRootIshRuntimeSmokeApp: UIResponder, UIApplicationDelegate {
                 ProcessInfo.processInfo.environment["POCKETROOT_SMOKE_LIFECYCLE"] == "1"
             let uiLifecycleMode =
                 ProcessInfo.processInfo.environment["POCKETROOT_SMOKE_UI_LIFECYCLE"] == "1"
+            let storageFailureMode =
+                ProcessInfo.processInfo.environment["POCKETROOT_SMOKE_STORAGE_FAILURE"] == "1"
             let relaunchPersistencePhase: PocketRootSmokeRelaunchPersistencePhase
             switch ProcessInfo.processInfo.environment[
                 "POCKETROOT_SMOKE_RELAUNCH_PERSISTENCE"
@@ -695,6 +793,7 @@ final class PocketRootIshRuntimeSmokeApp: UIResponder, UIApplicationDelegate {
                 environment: environment,
                 lifecycleMode: lifecycleMode,
                 uiLifecycleMode: uiLifecycleMode,
+                storageFailureMode: storageFailureMode,
                 relaunchPersistencePhase: relaunchPersistencePhase
             )
             do {

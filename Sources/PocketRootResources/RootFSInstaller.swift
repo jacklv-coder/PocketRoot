@@ -105,7 +105,7 @@ public actor PocketRootRootFSInstaller {
         executor = .shared
     }
 
-    init(
+    package init(
         baseDirectoryURL: URL,
         manifest: PocketRootRootFSArtifactManifest,
         extractor: PocketRootGzipTarExtractor? = nil,
@@ -1441,12 +1441,12 @@ public actor PocketRootRootFSInstaller {
     }
 }
 
-enum RootFSInstallerPromotionCheckpoint: Sendable, Equatable {
+package enum RootFSInstallerPromotionCheckpoint: Sendable, Equatable {
     case previousInstallationMoved
     case candidatePromoted
 }
 
-enum RootFSInstallerWriteCheckpoint: Sendable, Equatable {
+package enum RootFSInstallerWriteCheckpoint: Sendable, Equatable {
     case archiveSnapshot
     case gzipOutput
     case tarPayload
@@ -1455,7 +1455,7 @@ enum RootFSInstallerWriteCheckpoint: Sendable, Equatable {
     case currentRecord
 }
 
-enum RootFSInstallerPersistenceCheckpoint: Sendable, Equatable {
+package enum RootFSInstallerPersistenceCheckpoint: Sendable, Equatable {
     case candidateTree
     case promotionJournalFile
     case promotionJournalDirectory
@@ -1465,7 +1465,7 @@ enum RootFSInstallerPersistenceCheckpoint: Sendable, Equatable {
     case currentRecordDirectory
 }
 
-struct RootFSInstallerTestHooks: Sendable {
+package struct RootFSInstallerTestHooks: Sendable {
     let archiveSnapshotHandler: (@Sendable (URL) -> Void)?
     let promotionCheckpointHandler: (
         @Sendable (RootFSInstallerPromotionCheckpoint) throws -> Void
@@ -1481,7 +1481,7 @@ struct RootFSInstallerTestHooks: Sendable {
         @Sendable (URL) throws -> UInt64
     )?
 
-    init(
+    package init(
         archiveSnapshotHandler: (@Sendable (URL) -> Void)? = nil,
         promotionCheckpointHandler: (
             @Sendable (RootFSInstallerPromotionCheckpoint) throws -> Void

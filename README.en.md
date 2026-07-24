@@ -20,7 +20,7 @@ adapter, execute bounded one-shot shell commands inside the iOS sandbox.
 | iSH boot and one-shot commands | Experimental | `iOS + arm64`; one-shot cancellation confirms guest exit |
 | Lightweight agent loop | Core, OpenAI transport, and approval-gated command tool available | Agent and Runtime Tools are explicit opt-ins; no Codex CLI install or automatic shell approval |
 | Interactive PTY and SwiftTerm | Not implemented | Session input, resize, signal, and safe close remain planned |
-| Physical devices and distribution | Partially passed / blocked | iPhone one-shot, suspend/resume, UIKit lifecycle, and forced-relaunch persistence passed; iPad, jetsam/power-cut, license, SBOM, and App Store gates remain |
+| Physical devices and distribution | Partially passed / blocked | iPhone one-shot, suspend/resume, UIKit lifecycle, forced-relaunch persistence, and bounded storage-failure recovery passed; real storage pressure, iPad, jetsam/power-cut, license, SBOM, and App Store gates remain |
 
 The default `PocketRoot` product includes neither the agent loop nor native
 iSH and never bundles or downloads a RootFS. Agent applications explicitly
