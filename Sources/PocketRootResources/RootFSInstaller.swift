@@ -21,6 +21,7 @@ public enum PocketRootRootFSInstallationError: Error, Sendable, Equatable {
     case invalidBaseDirectory(String)
     case invalidVersion(String)
     case archiveCopyLimitExceeded(UInt64)
+    case insufficientStorage(requiredBytes: UInt64, availableBytes: UInt64)
     case missingArchiveRoot(String)
     case installationFailed(String)
 }
@@ -34,6 +35,9 @@ extension PocketRootRootFSInstallationError: LocalizedError {
             return "The RootFS version is not safe for use as a directory name: \(version)"
         case .archiveCopyLimitExceeded(let limit):
             return "The RootFS archive exceeds the \(limit)-byte staging limit."
+        case .insufficientStorage(let requiredBytes, let availableBytes):
+            return "RootFS installation requires at least \(requiredBytes) bytes of "
+                + "additional storage, but only \(availableBytes) bytes are available."
         case .missingArchiveRoot(let path):
             return "The RootFS archive did not contain the required top-level fs directory at \(path)."
         case .installationFailed(let message):
@@ -54,6 +58,7 @@ public actor PocketRootRootFSInstaller {
     static let replacementTransactionDirectoryName = ".replacement-transaction"
     static let promotionJournalFileName = "journal.json"
     static let previousInstallationDirectoryName = "previous"
+    static let storageSafetyReserveByteCount: UInt64 = 16 * 1_024 * 1_024
 
     public let baseDirectoryURL: URL
     public let manifest: PocketRootRootFSArtifactManifest
@@ -63,6 +68,9 @@ public actor PocketRootRootFSInstaller {
     private let archiveSnapshotHandler: (@Sendable (URL) -> Void)?
     private let promotionCheckpointHandler: (
         @Sendable (RootFSInstallerPromotionCheckpoint) throws -> Void
+    )?
+    private let availableCapacityProvider: (
+        @Sendable (URL) throws -> UInt64
     )?
     private let executor: RootFSInstallationExecutor
 
@@ -83,6 +91,7 @@ public actor PocketRootRootFSInstaller {
             ?? 256 * 1_024 * 1_024
         archiveSnapshotHandler = nil
         promotionCheckpointHandler = nil
+        availableCapacityProvider = nil
         executor = .shared
     }
 
@@ -104,6 +113,7 @@ public actor PocketRootRootFSInstaller {
             ?? 256 * 1_024 * 1_024
         archiveSnapshotHandler = testHooks.archiveSnapshotHandler
         promotionCheckpointHandler = testHooks.promotionCheckpointHandler
+        availableCapacityProvider = testHooks.availableCapacityProvider
         executor = .shared
     }
 
@@ -116,6 +126,7 @@ public actor PocketRootRootFSInstaller {
         let maximumArchiveByteCount = maximumArchiveByteCount
         let archiveSnapshotHandler = archiveSnapshotHandler
         let promotionCheckpointHandler = promotionCheckpointHandler
+        let availableCapacityProvider = availableCapacityProvider
 
         return try await executor.perform { cancellation in
             try Self.prepareArchiveSynchronously(
@@ -126,6 +137,7 @@ public actor PocketRootRootFSInstaller {
                 maximumArchiveByteCount: maximumArchiveByteCount,
                 archiveSnapshotHandler: archiveSnapshotHandler,
                 promotionCheckpointHandler: promotionCheckpointHandler,
+                availableCapacityProvider: availableCapacityProvider,
                 cancellation: cancellation
             )
         }
@@ -140,6 +152,9 @@ public actor PocketRootRootFSInstaller {
         archiveSnapshotHandler: (@Sendable (URL) -> Void)?,
         promotionCheckpointHandler: (
             @Sendable (RootFSInstallerPromotionCheckpoint) throws -> Void
+        )?,
+        availableCapacityProvider: (
+            @Sendable (URL) throws -> UInt64
         )?,
         cancellation: RootFSInstallationCancellation
     ) throws -> PocketRootRootFSInstallation {
@@ -189,6 +204,23 @@ public actor PocketRootRootFSInstaller {
                 version: manifest.version,
                 rootFSURL: finalURL,
                 reusedExistingInstallation: true
+            )
+        }
+
+        let requiredCapacity = try requiredAdditionalCapacity(
+            archiveByteCount: manifest.archiveByteCount ?? maximumArchiveByteCount,
+            expandedArchiveByteCount: max(
+                manifest.expandedArchiveByteCount ?? 0,
+                extractor.maximumExpandedArchiveByteCount
+            )
+        )
+        let availableCapacity = try (
+            availableCapacityProvider ?? volumeAvailableCapacity
+        )(rootFSDirectoryURL)
+        guard availableCapacity >= requiredCapacity else {
+            throw PocketRootRootFSInstallationError.insufficientStorage(
+                requiredBytes: requiredCapacity,
+                availableBytes: availableCapacity
             )
         }
 
@@ -273,6 +305,51 @@ public actor PocketRootRootFSInstaller {
         default:
             return false
         }
+    }
+
+    /// The extractor temporarily holds both the decompressed tar and its
+    /// materialized payload while the private compressed snapshot is present.
+    /// Keep a fixed reserve for filesystem metadata and atomic JSON side files.
+    static func requiredAdditionalCapacity(
+        archiveByteCount: UInt64,
+        expandedArchiveByteCount: UInt64
+    ) throws -> UInt64 {
+        let (expandedCopies, multiplicationOverflow) =
+            expandedArchiveByteCount.multipliedReportingOverflow(by: 2)
+        guard !multiplicationOverflow else {
+            throw PocketRootRootFSInstallationError.installationFailed(
+                "The RootFS storage requirement exceeds the supported integer range."
+            )
+        }
+        let (payloadCapacity, payloadOverflow) =
+            archiveByteCount.addingReportingOverflow(expandedCopies)
+        guard !payloadOverflow else {
+            throw PocketRootRootFSInstallationError.installationFailed(
+                "The RootFS storage requirement exceeds the supported integer range."
+            )
+        }
+        let (requiredCapacity, reserveOverflow) =
+            payloadCapacity.addingReportingOverflow(storageSafetyReserveByteCount)
+        guard !reserveOverflow else {
+            throw PocketRootRootFSInstallationError.installationFailed(
+                "The RootFS storage requirement exceeds the supported integer range."
+            )
+        }
+        return requiredCapacity
+    }
+
+    private static func volumeAvailableCapacity(at url: URL) throws -> UInt64 {
+        let values = try url.resourceValues(
+            forKeys: [.volumeAvailableCapacityForImportantUsageKey]
+        )
+        guard let capacity = values.volumeAvailableCapacityForImportantUsage,
+              capacity >= 0
+        else {
+            throw PocketRootRootFSInstallationError.installationFailed(
+                "Unable to determine available storage for the RootFS volume."
+            )
+        }
+        return UInt64(capacity)
     }
 
     /// Copies the caller-controlled archive into private staging through one
@@ -706,11 +783,12 @@ public actor PocketRootRootFSInstaller {
                 )
             } catch {
                 throw PocketRootRootFSInstallationError.installationFailed(
-                    "\(promotionError.localizedDescription); rollback also failed: \(error.localizedDescription)"
+                    "\(failureDescription(promotionError)); rollback also failed: "
+                        + failureDescription(error)
                 )
             }
             throw PocketRootRootFSInstallationError.installationFailed(
-                promotionError.localizedDescription
+                failureDescription(promotionError)
             )
         }
 
@@ -718,6 +796,24 @@ public actor PocketRootRootFSInstaller {
         // interrupted, startup recovery recognizes the valid final record and
         // removes the transaction directory.
         try? fileManager.removeItem(at: transactionURL)
+    }
+
+    private static func failureDescription(_ error: Error) -> String {
+        let cocoaError = error as NSError
+        if cocoaError.domain == NSPOSIXErrorDomain,
+           let errorNumber = Int32(exactly: cocoaError.code)
+        {
+            return String(cString: strerror(errorNumber))
+        }
+        if let underlyingError = cocoaError.userInfo[NSUnderlyingErrorKey] as? Error {
+            let underlying = underlyingError as NSError
+            if underlying.domain == NSPOSIXErrorDomain,
+               let errorNumber = Int32(exactly: underlying.code)
+            {
+                return String(cString: strerror(errorNumber))
+            }
+        }
+        return error.localizedDescription
     }
 }
 
@@ -731,15 +827,22 @@ struct RootFSInstallerTestHooks: Sendable {
     let promotionCheckpointHandler: (
         @Sendable (RootFSInstallerPromotionCheckpoint) throws -> Void
     )?
+    let availableCapacityProvider: (
+        @Sendable (URL) throws -> UInt64
+    )?
 
     init(
         archiveSnapshotHandler: (@Sendable (URL) -> Void)? = nil,
         promotionCheckpointHandler: (
             @Sendable (RootFSInstallerPromotionCheckpoint) throws -> Void
+        )? = nil,
+        availableCapacityProvider: (
+            @Sendable (URL) throws -> UInt64
         )? = nil
     ) {
         self.archiveSnapshotHandler = archiveSnapshotHandler
         self.promotionCheckpointHandler = promotionCheckpointHandler
+        self.availableCapacityProvider = availableCapacityProvider
     }
 }
 

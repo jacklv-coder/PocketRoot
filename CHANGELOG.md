@@ -71,6 +71,9 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
 - RootFS boot 预检期间的文件属性读取错误统一映射为 typed `rootFSUnavailable`，并在申请原生进程槽位前保持 `idle`。
 - process gate 使用显式 UUID 比较确认当前 owner，并以独立回归测试拒绝其他 runtime 的 claim 与 ownership 检查。
 - ustar extractor 现在也登记文件/目录条目隐式创建的父目录，并拒绝后续重复目录项和文件系统等价目录目标；RootFS journal 文档明确不承诺未显式 `fsync` 的掉电持久性。
+- RootFS 新安装和升级在创建 staging 前按压缩 snapshot、临时 tar、展开 payload
+  与 16 MiB 余量计算同卷新增空间；不足时返回 typed 错误，且不为本次安装触碰有效旧版本。
+  promotion 两个破坏性阶段的 ENOSPC 注入验证了旧版本和 `current.json` 回滚。
 - `PocketRootSystem` 现在在 lifecycle/command 成功或抛错后刷新稳定公开 state；失败关闭立即公开 `.failed`，重入调用不会泄漏 lifecycle 过渡态，并用刷新代次阻止较旧快照覆盖较新的失败状态。
 - 原生 spike/smoke target 显式排除 x86_64 Simulator；文档明确 `isAvailable` 是链接后的探针，不能替代 arm64-only binary 的构建架构约束。
 - 原生 smoke runner 按稳定 runtime identifier 自动选择 iOS 18 Simulator，不再依赖 `simctl` 输出的最后一列，并加入多格式 fixture 回归测试。

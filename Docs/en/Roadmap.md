@@ -18,8 +18,9 @@ Status:
 3. Completed the approval-, command-policy-, timeout-, and output-gated Linux tool.
 4. Published and pinned IshEmbed `v0.4.0-abi.4`, completing one-shot Swift
    Task cancellation, native exit confirmation, and post-cancellation recovery.
-5. Current: continue ENOSPC, power-loss, storage-pressure, sustained-output,
-   and peak-memory hardening.
+5. Current: RootFS capacity preflight and promotion ENOSPC rollback coverage
+   are complete; continue write-stage ENOSPC, power-loss, physical
+   storage-pressure, sustained-output, and peak-memory hardening.
 6. Native Agent Loop/App composition is paused by product decision and does not block independent runtime validation.
 7. Complete signed iPad smoke when hardware is available; that gate does not block the first six items.
 
@@ -77,7 +78,7 @@ This establishes the current Simulator, minimum-Xcode 16, and single-iPhone one-
 | Native transport backpressure | In progress | Bounded protocol/session/stdin/log/control queues are integrated; sustained-output and peak-memory tests remain |
 | End-to-end native control-path time bound | In progress | Native control is bounded; PocketRoot's request deadline still needs to cover pre-spawn/closeStdin stages |
 | iOS 18 Simulator native behavior | Passed | v0.4.0-abi.4 passed the 14-check soft-shutdown smoke; keep rerunning after changes |
-| Secure RootFS install/recovery | Passed | Preserve real-asset/snapshot/rollback/recovery; add ENOSPC |
+| Secure RootFS install/recovery | Passed | Preserve real-asset, snapshot, capacity-preflight, rollback, and recovery coverage |
 | RootFS/runtime composition | Passed | Keep caller-controlled, no-download, no-auto-boot |
 | Default post-boot identity gate | Passed | Require aarch64, Alpine identity, optional version, and command context before ready; retain failed-slot regression coverage |
 | Real Demo runtime injection | Not started | Inject one prepared system without bundling an unreviewed RootFS |
@@ -86,13 +87,14 @@ This establishes the current Simulator, minimum-Xcode 16, and single-iPhone one-
 | Signed iPad | Blocked | Physical boot and command smoke |
 | Minimum Xcode 16 native | Passed | Xcode 16.0 / iOS 18.0 SDK completed RootFS install, Simulator/device final links, and the 14-check native smoke |
 | App lifecycle and memory | Not started | Background/foreground, jetsam, failure, persistence |
-| RootFS ENOSPC/power faults | Not started | Storage-pressure transaction fault matrix |
+| RootFS ENOSPC/power faults | In progress | Peak-space preflight and promotion rollback are covered; add write-stage injection, explicit persistence, and physical storage pressure |
 | License-reviewed RootFS | Blocked | Complete license, NOTICE, source, and SBOM |
 | App Store 2.5.2 | Blocked | Written guest download/execute policy decision |
 
 ### Next runtime sequence
 
-1. Add ENOSPC, power-loss, storage-pressure, long-output, and memory-peak
+1. Continue ENOSPC injection across snapshot/gzip/tar/journal/current writes,
+   power-loss, physical storage pressure, long-output, and memory-peak
    coverage.
 2. When Native Agent Loop/App composition resumes, connect a prepared system
    to UI without bundling a RootFS.

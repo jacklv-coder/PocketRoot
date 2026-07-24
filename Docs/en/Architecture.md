@@ -206,6 +206,13 @@ The archive contains a top-level `fs/` directory, but the installer promotes
 that directory itself. The final `rootfs/<version>` therefore directly contains
 `meta.db`, `data/`, and `.pocketroot-rootfs.json`, with no extra `fs/` layer.
 
+Only when the target cannot be reused, the installer preflights same-volume
+additional capacity before staging. The budget includes the compressed
+snapshot, temporary gzip-output tar, materialized payload, and a 16 MiB
+reserve. Rejection does not create a new transaction or modify a valid prior
+version for the new install. This is not a reservation; later exhaustion
+still relies on cleanup, rollback, and recovery.
+
 After validation, an on-disk journal protects a multi-step sequence of
 same-volume renames. Each rename and JSON record write is atomic on its own,
 but the replacement as a whole is not one atomic operation; it can roll back

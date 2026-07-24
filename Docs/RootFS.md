@@ -132,6 +132,7 @@ let installation = try await installer.prepareArchive(
 | 调用方传入 symlink、FIFO 或设备文件 | `O_NOFOLLOW` + `fstat` regular-file 检查 |
 | 校验后原路径被替换 | 只解包私有 snapshot，并在前后校验同一文件 |
 | archive 过大导致磁盘/内存耗尽 | 压缩、展开、payload 和 entry count 上限 |
+| 新安装峰值空间明显不足 | staging 前按 snapshot、临时 tar、payload 和 16 MiB 余量预检同卷容量 |
 | gzip 解压失败留下半文件 | streaming error cleanup |
 | tar 绝对路径或 `..` 逃逸 | UTF-8 相对路径规范化与 destination containment |
 | symlink/hardlink 绕过目标目录 | 拒绝 link 和特殊 entry type |
@@ -168,6 +169,12 @@ flowchart TD
 
 ### 输入 snapshot
 
+- 仅在目标版本不能安全复用时预检容量；有效现有版本不要求重新安装空间。
+- 新安装预算为压缩 archive 上限、两倍展开上限和 16 MiB；自定义 extractor 比
+  manifest 更宽时采用两者较大的展开上限。两份展开预算分别覆盖 gzip 生成的临时 tar，
+  以及 tar 仍存在时写出的 payload。
+- 容量不足返回 `insufficientStorage(requiredBytes:availableBytes:)`，且发生在
+  本次新 staging 或 replacement transaction 创建前。
 - 源文件只打开一次。
 - 目标使用 exclusive create。
 - snapshot 权限仅允许当前用户。
@@ -239,6 +246,10 @@ applicationSupportURL/
 如果版本内容损坏或版本内记录漂移，installer 从新 snapshot 生成候选并替换。promotion
 失败时回滚到最后一个旧版本，并恢复 promotion 开始前的 `current.json` 数据状态。
 
+容量预检读取 `rootfs/` 所在卷的 important-usage 可用容量。它防止已知 manifest 在明显
+空间不足时开始写入，但不预留空间；其他进程仍可能在预检后消耗容量。因此中途文件系统
+错误仍依赖 staging cleanup、promotion rollback 和下次启动 recovery。
+
 ## 8. 中断恢复
 
 replacement journal **不记录 phase**。它保存目标版本、预期安装记录、promotion 开始时是否
@@ -273,13 +284,15 @@ journal、失败回滚与下次准备时的状态推断恢复。
 - bounded copy；
 - 并发准备；
 - promotion failure rollback；
+- 安装前容量不足、刚好满足容量预算，以及低空间升级保持旧版本；
+- 旧安装已移动和候选已提升两个破坏性 checkpoint 的 ENOSPC rollback；
 - interrupted rollback/commit；
 - 精确 v0.3.3 release asset 集成。
 
 仍需：
 
-- 更全面 ENOSPC；
-- 掉电和文件系统错误矩阵；
+- snapshot、gzip/tar、journal 和 current record 写入的更完整 ENOSPC 矩阵；
+- 显式持久化后的掉电和文件系统错误矩阵；
 - 大归档持续内存峰值；
 - 真机 storage pressure；
 - 用户 VM 数据迁移；

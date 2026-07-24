@@ -44,6 +44,9 @@ swift test
 - fakefs 所需 `meta.db` / `data` 布局以及 metadata symlink 拒绝；
 - gzip/ustar 正常解包、path traversal 清理、显式/隐式父目录重复以及大小写不敏感卷上的目录别名拒绝、archive symlink entry/源路径拒绝和 expanded-byte 上限；
 - 用合成 fixture 验证首次安装与复用、私有 archive snapshot 隔离与字节上限；
+- 用合成 fixture 验证容量不足在 staging 前拒绝、刚好满足容量预算、自定义 extractor
+  较大上限、低空间升级保留旧版本，以及旧安装移动/候选提升两个 checkpoint 的
+  ENOSPC rollback；
 - 用合成 fixture 验证保留名版本、损坏版本替换、失败升级/提升回滚、中断事务恢复和并发时只安装一次；
 - 可选的精确 release asset 首次物化。
 
