@@ -89,8 +89,8 @@ fortified-libc trap, and includes the ABI.2 `/proc` lifecycle-lock fix. These
 maintenance changes do not alter the public C ABI or Swift API. PocketRoot
 publishes `.terminated`, but process-global iSH state still prevents another
 boot in the same host process. The new source, binary, checksum,
-corresponding-source, and Simulator gates passed; signed-device,
-minimum-Xcode, and sustained-lifecycle work remains.
+corresponding-source, Simulator, and minimum-Xcode gates passed; signed-device
+and sustained-lifecycle work remains.
 
 PTY support is deferred because native session pointer ownership and high-level terminal read/close races are not yet proven. A live registry, bounded reads, input/resize/signal/EOF, cancellation, idempotent close, and close-before-shutdown are prerequisites.
 

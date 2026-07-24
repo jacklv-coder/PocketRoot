@@ -213,7 +213,7 @@ RootFS promotion 也不被视为一次整体原子替换。journal 不记录 pha
 ABI.3 还对固定 65-byte uname 字段执行有界复制，避免长宿主 hostname 触发
 fortified libc trap，并包含 ABI.2 的 `/proc` 生命周期锁修复；这些维护变更不改变公开
 C ABI 或 Swift API。新制品、revision、checksum、对应源码和 Simulator 测试已完成；
-签名 iPhone/iPad、最低 Xcode 和持续生命周期/故障注入仍按路线图继续，不因此把
+签名 iPhone/iPad 和持续生命周期/故障注入仍按路线图继续，不因此把
 Experimental 产品加入默认 umbrella。
 
 ### Session/PTY

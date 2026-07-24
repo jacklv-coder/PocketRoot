@@ -94,8 +94,8 @@ The current code does not provide a complete product-level privacy policy.
 
 ### Apple platforms
 
-- [ ] Complete native final-link and behavior validation with the minimum Xcode
-  16 toolchain.
+- [x] Complete RootFS install, native final links, and the 13-check smoke with
+  the minimum Xcode 16 toolchain.
 - [x] Run the signed iPhone one-shot smoke.
 - [ ] Run the signed iPad smoke and complete iPhone/iPad lifecycle coverage.
 - [ ] Validate foreground/background behavior, jetsam handling, and storage

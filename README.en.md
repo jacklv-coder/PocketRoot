@@ -8,7 +8,7 @@ install a verified Alpine fakefs and, through the Experimental iSH/IshEmbed
 adapter, execute bounded one-shot shell commands inside the iOS sandbox.
 
 > [!WARNING]
-> Native iSH integration is **Experimental**. Pinned `v0.4.0-abi.3` has a soft shutdown that returns to Swift, but each host process still permits only one valid boot/shutdown lifecycle. iPad, minimum-Xcode, sustained-load, and distribution gates remain open. This version is not approved for production, TestFlight, or public binary distribution.
+> Native iSH integration is **Experimental**. Pinned `v0.4.0-abi.3` has a soft shutdown that returns to Swift, but each host process still permits only one valid boot/shutdown lifecycle. iPad, sustained-load, and distribution gates remain open. This version is not approved for production, TestFlight, or public binary distribution.
 
 ## Capability status
 
@@ -20,7 +20,7 @@ adapter, execute bounded one-shot shell commands inside the iOS sandbox.
 | iSH boot and one-shot commands | Experimental | `iOS + arm64` and explicit products only |
 | Lightweight agent loop | Core, OpenAI transport, and approval-gated command tool available | Agent and Runtime Tools are explicit opt-ins; no Codex CLI install or automatic shell approval |
 | Interactive PTY and SwiftTerm | Not implemented | Session input, resize, signal, and safe close remain planned |
-| Physical devices and distribution | Partially passed / blocked | The iPhone one-shot baseline passed; iPad, lifecycle, Xcode 16, license, SBOM, and App Store gates remain |
+| Physical devices and distribution | Partially passed / blocked | The iPhone one-shot and Xcode 16 baselines passed; iPad, lifecycle, license, SBOM, and App Store gates remain |
 
 The default `PocketRoot` product includes neither the agent loop nor native
 iSH and never bundles or downloads a RootFS. Agent applications explicitly
@@ -62,7 +62,7 @@ See [Architecture](Docs/en/Architecture.md), [Implementation](Docs/en/Implementa
 - iOS 18.0+
 - Homebrew and XcodeGen
 
-macOS 13 is a host-test declaration, not a supported guest platform. IshEmbed has arm64 iOS device and arm64 Simulator slices only. An App target that selects the Experimental products must exclude x86_64 Simulator before SwiftPM product resolution; `isAvailable` is a post-link runtime probe, not a remedy for a missing binary slice. Native behavior has been validated with Xcode 26.1.1 and iOS 18.2 arm64 Simulator; minimum-Xcode native validation remains open.
+macOS 13 is a host-test declaration, not a supported guest platform. IshEmbed has arm64 iOS device and arm64 Simulator slices only. An App target that selects the Experimental products must exclude x86_64 Simulator before SwiftPM product resolution; `isAvailable` is a post-link runtime probe, not a remedy for a missing binary slice. Native behavior has been validated with Xcode 16.0 / iOS 18.0 SDK and Xcode 26.1.1 / iOS 18.2 arm64 Simulator; both environments completed final links and the 13-check native smoke.
 
 ## Build from source
 
@@ -195,4 +195,4 @@ See the [Documentation Hub](Docs/en/README.md).
 
 ## License and release
 
-PocketRoot's first-public-release license policy is still being finalized. The Experimental runtime links GPL-identified upstream code and the candidate RootFS contains multiple copyleft and permissive licenses. Production, TestFlight, and public distribution remain blocked until physical-device and minimum-Xcode native validation, license, NOTICE, corresponding source, SBOM, and App Store 2.5.2 gates have explicit dispositions.
+PocketRoot's first-public-release license policy is still being finalized. The Experimental runtime links GPL-identified upstream code and the candidate RootFS contains multiple copyleft and permissive licenses. Production, TestFlight, and public distribution remain blocked until complete physical-device lifecycle, license, NOTICE, corresponding source, SBOM, and App Store 2.5.2 gates have explicit dispositions.

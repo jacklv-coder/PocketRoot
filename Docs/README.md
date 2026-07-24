@@ -65,7 +65,7 @@
 - RootFS：安全安装机制已完成；二进制未提交、未打包、未由库下载。
 - iOS 18.2 arm64 Simulator：原生 smoke 已通过。
 - 默认 boot identity gate：已验证 `aarch64`、Alpine 身份、可选版本与 guest 工作目录后才 ready。
-- signed iPhone 一次性命令基线已通过；iPad、完整真机生命周期、最低 Xcode 16、PTY、软关闭和公开发行仍未完成或被阻塞。
+- signed iPhone 一次性命令、Xcode 16 最低工具链和 soft shutdown 基线已通过；iPad、完整真机生命周期、PTY 和公开发行仍未完成或被阻塞。
 
 最新动态状态只在[路线图](Roadmap.md)维护。
 

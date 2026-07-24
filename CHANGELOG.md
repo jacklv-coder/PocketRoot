@@ -57,7 +57,7 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
 - IshEmbed 更新到 ABI.3：包含 ABI.2 的 `/proc` 生命周期锁修复，并对固定 65-byte
   `uname` 字段使用有界复制，避免长宿主 hostname 触发 fortified libc `SIGTRAP`；
   公共 C ABI 与 Swift API 不变。
-- CI 增加最低 Xcode 16.0 的完整 final-link、RootFS install 与 native smoke 门禁；
+- CI 增加并通过最低 Xcode 16.0 的完整 final-link、RootFS install 与 native smoke 门禁；
   Node.js/npm 仍只是调用方可选的 guest package，Codex CLI 不属于手机端安装路径。
 - 记录自托管 XCFramework 与对应源码资产、精确大小/hash、nested iSH gitlink 和 RootFS 独立 pin。
 - 一次性命令和 boot 的可选 supervisor 路径在进入 native driver 前拒绝含 NUL 的 C 字符串输入；命令环境还拒绝歧义 key。

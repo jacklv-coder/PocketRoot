@@ -62,7 +62,7 @@ Status: **Experimental, in progress**.
 - The older v0.3.3 baseline passed the same signed 13-check smoke on an iPhone
   17 Pro running iOS 26.1; v0.4.0-abi.3 still requires a signed-device rerun.
 
-This establishes the current Simulator and single-iPhone one-shot paths, not iPad, complete physical-device lifecycle, minimum-Xcode, PTY, or distribution readiness.
+This establishes the current Simulator, minimum-Xcode 16, and single-iPhone one-shot paths, not iPad, complete physical-device lifecycle, PTY, or distribution readiness.
 
 ### Gates
 
@@ -81,7 +81,7 @@ This establishes the current Simulator and single-iPhone one-shot paths, not iPa
 | Host-safe soft shutdown | Passed | v0.4.0-abi.3 soft-halts, joins, and returns to Swift; the process remains single-lifecycle |
 | Signed iPhone | In progress | The v0.3.3 baseline passed; rerun is required after the v0.4.0-abi.3 runtime change |
 | Signed iPad | Blocked | Physical boot and command smoke |
-| Minimum Xcode 16 native | In progress | PR CI must complete the full final-link, RootFS install, and native smoke with Xcode 16.0 |
+| Minimum Xcode 16 native | Passed | Xcode 16.0 / iOS 18.0 SDK completed RootFS install, Simulator/device final links, and the 13-check native smoke |
 | App lifecycle and memory | Not started | Background/foreground, jetsam, failure, persistence |
 | RootFS ENOSPC/power faults | Not started | Storage-pressure transaction fault matrix |
 | License-reviewed RootFS | Blocked | Complete license, NOTICE, source, and SBOM |
@@ -89,8 +89,8 @@ This establishes the current Simulator and single-iPhone one-shot paths, not iPa
 
 ### Remaining runtime sequence
 
-1. Local final-link, RootFS install, Simulator smoke, and dependency evidence
-   are complete; finish Codex CR, Xcode 16/full CI, and PR merge.
+1. Local and Xcode 16 CI final-link, RootFS install, Simulator smoke, and
+   dependency evidence are complete; finish final Codex CR, full CI, and PR merge.
 2. Add complete cancellation, ENOSPC, power-loss, storage-pressure,
    long-output, and memory-peak coverage.
 3. When Native Agent Loop/App composition resumes, connect a prepared system

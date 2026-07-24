@@ -72,7 +72,7 @@
 - 旧 v0.3.3 基线曾在签名 iPhone 17 Pro（iOS 26.1）通过同一套 13 项 native smoke；
   新 v0.4.0-abi.3 仍需重跑签名设备验证。
 
-这些证据建立了当前 Simulator 与单一 iPhone 的一次性命令路径，不覆盖 iPad、完整真机生命周期、最低 Xcode 16、PTY 或公开发行。
+这些证据建立了当前 Simulator、最低 Xcode 16 与单一 iPhone 的一次性命令路径，不覆盖 iPad、完整真机生命周期、PTY 或公开发行。
 
 ### 当前门禁
 
@@ -91,7 +91,7 @@
 | 进程安全 soft shutdown | 已通过 | v0.4.0-abi.3 soft-halt/join 返回 Swift；同进程仍只允许一次 lifecycle |
 | 签名 iPhone | 进行中 | 旧 v0.3.3 基线已通过；v0.4.0-abi.3 变更后需要重跑 |
 | 签名 iPad | 阻塞 | physical boot 与 command smoke |
-| 最低 Xcode 16 原生兼容 | 进行中 | PR CI 使用 Xcode 16.0 完成完整 final-link、RootFS install 和 native smoke |
+| 最低 Xcode 16 原生兼容 | 已通过 | Xcode 16.0 / iOS 18.0 SDK 完成 RootFS install、Simulator/device final-link 和 13 项 native smoke |
 | App lifecycle 与内存 | 未开始 | foreground/background、jetsam、failure injection、persistence |
 | RootFS ENOSPC/掉电 | 未开始 | storage pressure 和 transaction fault matrix |
 | License-reviewed RootFS | 阻塞 | license、NOTICE、对应源码和 SBOM 完整 |
@@ -99,9 +99,9 @@
 
 ### 剩余 runtime 执行顺序
 
-1. **关闭新 pin 与最低工具链门禁**
-   本地 final-link、RootFS install、Simulator smoke 和依赖证据已完成；等待 Codex CR、
-   Xcode 16/完整 CI 与 PR 合并。
+1. **关闭新 pin**
+   本地和 Xcode 16 CI 的 final-link、RootFS install、Simulator smoke 与依赖证据已完成；
+   等待最终 Codex CR、完整 CI 与 PR 合并。
 
 2. **故障与资源硬化**
    增加 Task cancellation、ENOSPC、power-loss、storage pressure、long output 与 memory peak。

@@ -70,6 +70,8 @@ XCFramework 只有 `ios-arm64` 和 `ios-arm64-simulator` 两个 arm64 slice，mi
 - PocketRoot 完整实验依赖图在 arm64 Simulator 与 unsigned device 最终链接；
 - iOS 18.2 Simulator 使用固定 v0.3.3 RootFS 通过 13 项 native smoke，其中 shutdown
   返回 Swift、状态为 `.terminated`，后续命令得到 `restartRequired`。
+- Xcode 16.0 / iOS 18.0 SDK 在 arm64 hosted runner 上完成真实 RootFS install、
+  Simulator/device final-link，并通过同一套 13 项 native smoke。
 
 本 Release **不包含 RootFS**。
 
@@ -110,7 +112,6 @@ package。Codex CLI 不属于手机端架构，IshEmbed 不提供其安装、pro
 PocketRoot 仍保持 Experimental。尚未闭环的门禁：
 
 - physical iPad execution；
-- minimum Xcode 16 的 native final-link 与行为；
 - Swift Task 到 native command 的完整取消契约；
 - 完整 PTY、resize、signal、interactive session 生命周期；
 - sustained workload、峰值内存与 jetsam；

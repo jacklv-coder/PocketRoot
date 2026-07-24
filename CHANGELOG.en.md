@@ -46,8 +46,8 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   bounded copies into fixed 65-byte `uname` fields so long host names cannot
   trigger a fortified-libc `SIGTRAP`; the public C ABI and Swift API are
   unchanged.
-- CI adds a minimum-Xcode 16.0 full final-link, RootFS-install, and native-smoke
-  gate. Node.js/npm remain optional caller-managed guest packages; Codex CLI is
+- CI adds and passes a minimum-Xcode 16.0 full final-link, RootFS-install, and
+  native-smoke gate. Node.js/npm remain optional caller-managed guest packages; Codex CLI is
   not part of the mobile installation path.
 - The self-hosted XCFramework and corresponding-source assets, exact size/hash, nested iSH gitlink, and separate RootFS pin are recorded.
 - One-shot commands and the optional boot supervisor path reject NUL-containing C-string inputs before entering the native driver; command environments also reject ambiguous keys.

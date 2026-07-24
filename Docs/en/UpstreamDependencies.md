@@ -75,6 +75,8 @@ SwiftPM validates the zip checksum. The release transaction also verified:
   and unsigned device; and
 - an iOS 18.2 Simulator passed the 13-check native smoke with the pinned v0.3.3
   RootFS, returning `.terminated` from shutdown and `restartRequired` afterward.
+- Xcode 16.0 / iOS 18.0 SDK on an arm64 hosted runner completed real RootFS
+  installation, Simulator/device final links, and the same 13-check native smoke.
 
 This release contains **no RootFS**.
 
@@ -122,7 +124,6 @@ The pinned artifact provides:
 PocketRoot remains Experimental. Open gates include:
 
 - physical iPad execution;
-- native final-link and behavior with minimum Xcode 16;
 - complete Swift Task-to-native command cancellation;
 - complete PTY, resize, signal, and interactive-session lifecycle;
 - sustained workload, peak memory, and jetsam behavior;
