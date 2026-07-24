@@ -279,9 +279,14 @@ xcrun simctl uninstall "$SMOKE_DEVICE_UDID" com.jacklv.PocketRootIshRuntimeSmoke
 - `No Account for Team`：指定的 team 没有可用 Xcode account/profile；改用实际可开发签名的 team，或先在 Xcode 完成账号与签名设置。
 - `No profiles`：bundle ID 没有匹配的 development profile，或设备不在 profile 中。
 - `Unable to launch ... Locked`：保持设备解锁后重跑；安装成功不代表锁屏状态允许 foreground launch。
-- `Lifecycle smoke did not reach its host-suspend checkpoint`：确认 App 没有提前退出，
+- `Process-suspend smoke did not reach its host checkpoint`：确认 App 没有提前退出，
   并查看 runner 输出的最后 progress；不要手工伪造 resume marker。
-- `Lifecycle smoke launch did not return a process identifier`：当前 Xcode/CoreDevice
+- `UIKit-lifecycle smoke did not reach its host checkpoint` 或
+  `UIKit lifecycle App did not report its background callback`：保持设备解锁，确认
+  Settings 能前台启动，并检查最后 progress。
+- `UIKit lifecycle activation did not preserve the smoke process PID`：原 App 被系统
+  终止或重新启动，本次结果不能证明同一 runtime 跨前后台保持，必须按失败处理。
+- `... smoke launch did not return a process identifier`：当前 Xcode/CoreDevice
   没有返回受支持的 launch JSON PID；不要从人类可读输出猜 PID。
 - entitlement 校验失败：不要跳过；确认 profile 的 application identifier、team identifier 和 `get-task-allow`。
 

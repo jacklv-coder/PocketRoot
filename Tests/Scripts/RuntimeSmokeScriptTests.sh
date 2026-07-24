@@ -104,6 +104,9 @@ if ! grep -Fq -- '--destination "Documents/$PROGRESS_NAME"' "$DEVICE_RUNNER" \
   || ! grep -Fq -- 'process_identifier == expected_pid' "$DEVICE_RUNNER" \
   || ! grep -Fq -- 'retrieve_device_report "$COPY_TIMEOUT_SECONDS"' "$DEVICE_RUNNER" \
   || ! grep -Fq -- 'bounded_smoke_timeout 15' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- 'wait_for_remote_smoke_process_match' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- 'Retry an' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- 'indeterminate query within the shared smoke deadline.' "$DEVICE_RUNNER" \
   || grep -Fq -- 'jq ' "$DEVICE_RUNNER"; then
     echo "Physical-device runner does not reject stale or unsafe lifecycle evidence." >&2
     exit 1
@@ -113,6 +116,27 @@ if ! grep -Fq -- 'name: "process-suspend-resume"' "$SMOKE_APP" \
   || ! grep -Fq -- 'awaitHostSuspendResume(in: documentsURL)' "$SMOKE_APP" \
   || ! grep -Fq -- 'after-suspend-resume-ok' "$SMOKE_APP"; then
     echo "Native smoke does not verify guest recovery after process resume." >&2
+    exit 1
+fi
+
+if ! grep -Fq -- 'POCKETROOT_SMOKE_UI_LIFECYCLE must be 0 or 1.' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- 'Select only one physical lifecycle smoke mode per run.' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- 'awaiting-host-background' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- '--destination "Documents/$UI_LIFECYCLE_NAME"' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- '"$SETTINGS_BUNDLE_ID"' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- 'REACTIVATED_PROCESS_PID' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- '"$REACTIVATED_PROCESS_PID" != "$REMOTE_PROCESS_PID"' "$DEVICE_RUNNER"; then
+    echo "Physical-device runner does not preserve PID across UIKit lifecycle control." >&2
+    exit 1
+fi
+
+if ! grep -Fq -- 'applicationDidEnterBackground' "$SMOKE_APP" \
+  || ! grep -Fq -- 'applicationWillEnterForeground' "$SMOKE_APP" \
+  || ! grep -Fq -- 'applicationDidBecomeActive' "$SMOKE_APP" \
+  || ! grep -Fq -- 'try fileManager.removeItem(at: eventURL)' "$SMOKE_APP" \
+  || ! grep -Fq -- 'name: "ui-background-foreground"' "$SMOKE_APP" \
+  || ! grep -Fq -- 'after-ui-lifecycle-ok' "$SMOKE_APP"; then
+    echo "Native smoke does not verify UIKit lifecycle callback recovery." >&2
     exit 1
 fi
 

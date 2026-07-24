@@ -9,12 +9,14 @@ DEVICE_ID=""
 DEVELOPMENT_TEAM="${POCKETROOT_DEVELOPMENT_TEAM:-}"
 BUNDLE_ID="com.jacklv.PocketRootIshRuntimeSmoke"
 APP_PROCESS_NAME="PocketRootIshRuntimeSmoke"
+SETTINGS_BUNDLE_ID="com.apple.Preferences"
 ARCHIVE_NAME="pocketroot-fs-v0.3.3.tar.gz"
 REPORT_NAME="pocketroot-smoke-result.json"
 EXPECTED_SHA256="be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"
 EXPECTED_BYTE_COUNT="6581376"
 SMOKE_TIMEOUT_SECONDS="${POCKETROOT_SMOKE_TIMEOUT_SECONDS:-300}"
 LIFECYCLE_MODE="${POCKETROOT_SMOKE_LIFECYCLE:-0}"
+UI_LIFECYCLE_MODE="${POCKETROOT_SMOKE_UI_LIFECYCLE:-0}"
 RUN_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/PocketRootDeviceSmoke.XXXXXX")"
 DERIVED_DATA_ROOT="$RUN_ROOT/DerivedData"
 CLONED_SOURCE_PACKAGES_DIR="${POCKETROOT_CLONED_SOURCE_PACKAGES_DIR:-${TMPDIR:-/tmp}/PocketRootSharedSourcePackages}"
@@ -25,10 +27,13 @@ ENTITLEMENTS_PATH="$RUN_ROOT/PocketRootIshRuntimeSmoke.entitlements.plist"
 DEVICE_DETAILS_PATH="$RUN_ROOT/device-details.json"
 LAUNCH_RESULT_PATH="$RUN_ROOT/launch-result.json"
 PROCESS_LIST_PATH="$RUN_ROOT/processes.json"
+REACTIVATION_RESULT_PATH="$RUN_ROOT/reactivation-result.json"
+SETTINGS_LAUNCH_RESULT_PATH="$RUN_ROOT/settings-launch-result.json"
 PROGRESS_NAME="pocketroot-smoke-progress.txt"
 PROGRESS_PATH="$RUN_ROOT/$PROGRESS_NAME"
 RESUME_MARKER_NAME="pocketroot-smoke-lifecycle-resume.txt"
 RESUME_MARKER_PATH="$RUN_ROOT/$RESUME_MARKER_NAME"
+UI_LIFECYCLE_NAME="pocketroot-smoke-ui-lifecycle.txt"
 APP_INSTALLED="false"
 LAUNCH_CLIENT_PID=""
 REMOTE_PROCESS_PID=""
@@ -122,6 +127,7 @@ Usage:
   POCKETROOT_SMOKE_DEVICE=<physical-device-reference> \\
   POCKETROOT_DEVELOPMENT_TEAM=<team-id> \\
   [POCKETROOT_SMOKE_LIFECYCLE=1] \\
+  [POCKETROOT_SMOKE_UI_LIFECYCLE=1] \\
   $0
 EOF
 }
@@ -150,6 +156,14 @@ if [[ ! "$SMOKE_TIMEOUT_SECONDS" =~ ^[1-9][0-9]*$ ]] \
 fi
 if [[ "$LIFECYCLE_MODE" != "0" && "$LIFECYCLE_MODE" != "1" ]]; then
     echo "POCKETROOT_SMOKE_LIFECYCLE must be 0 or 1." >&2
+    exit 2
+fi
+if [[ "$UI_LIFECYCLE_MODE" != "0" && "$UI_LIFECYCLE_MODE" != "1" ]]; then
+    echo "POCKETROOT_SMOKE_UI_LIFECYCLE must be 0 or 1." >&2
+    exit 2
+fi
+if [[ "$LIFECYCLE_MODE" == "1" && "$UI_LIFECYCLE_MODE" == "1" ]]; then
+    echo "Select only one physical lifecycle smoke mode per run." >&2
     exit 2
 fi
 if [[ "$(stat -f '%z' "$ARCHIVE_PATH")" != "$EXPECTED_BYTE_COUNT" ]]; then
@@ -254,9 +268,9 @@ xcrun devicectl device copy to \
   --domain-identifier "$BUNDLE_ID" \
   --timeout "$SMOKE_TIMEOUT_SECONDS"
 
-if [[ "$LIFECYCLE_MODE" == "1" ]]; then
-    # A failed uninstall can preserve the prior data container. Clear both
-    # handshake files so this run cannot accept stale lifecycle evidence.
+if [[ "$LIFECYCLE_MODE" == "1" || "$UI_LIFECYCLE_MODE" == "1" ]]; then
+    # A failed uninstall can preserve the prior data container. Clear progress
+    # before launch so this run cannot accept stale host-control evidence.
     xcrun devicectl device copy to \
       --device "$DEVICE_ID" \
       --source "$EMPTY_REPORT_PATH" \
@@ -264,13 +278,23 @@ if [[ "$LIFECYCLE_MODE" == "1" ]]; then
       --domain-type appDataContainer \
       --domain-identifier "$BUNDLE_ID" \
       --timeout "$SMOKE_TIMEOUT_SECONDS"
-    xcrun devicectl device copy to \
-      --device "$DEVICE_ID" \
-      --source "$EMPTY_REPORT_PATH" \
-      --destination "Documents/$RESUME_MARKER_NAME" \
-      --domain-type appDataContainer \
-      --domain-identifier "$BUNDLE_ID" \
-      --timeout "$SMOKE_TIMEOUT_SECONDS"
+    if [[ "$LIFECYCLE_MODE" == "1" ]]; then
+        xcrun devicectl device copy to \
+          --device "$DEVICE_ID" \
+          --source "$EMPTY_REPORT_PATH" \
+          --destination "Documents/$RESUME_MARKER_NAME" \
+          --domain-type appDataContainer \
+          --domain-identifier "$BUNDLE_ID" \
+          --timeout "$SMOKE_TIMEOUT_SECONDS"
+    else
+        xcrun devicectl device copy to \
+          --device "$DEVICE_ID" \
+          --source "$EMPTY_REPORT_PATH" \
+          --destination "Documents/$UI_LIFECYCLE_NAME" \
+          --domain-type appDataContainer \
+          --domain-identifier "$BUNDLE_ID" \
+          --timeout "$SMOKE_TIMEOUT_SECONDS"
+    fi
 fi
 
 REPORT_READY="false"
@@ -294,6 +318,29 @@ bounded_smoke_timeout() {
     printf '%s' "$remaining_seconds"
 }
 
+wait_for_remote_smoke_process_match() {
+    local query_timeout
+    local match_status
+
+    while [[ "$SECONDS" -lt "$REPORT_DEADLINE" ]]; do
+        if ! query_timeout="$(bounded_smoke_timeout 5)"; then
+            return 2
+        fi
+        if remote_process_matches_smoke_app "$query_timeout"; then
+            return 0
+        else
+            match_status=$?
+        fi
+        if [[ "$match_status" == "1" ]]; then
+            return 1
+        fi
+        # CoreDevice process enumeration can fail transiently. Retry an
+        # indeterminate query within the shared smoke deadline.
+        sleep 1
+    done
+    return 2
+}
+
 retrieve_device_report() {
     local timeout_seconds="$1"
 
@@ -313,11 +360,20 @@ retrieve_device_report() {
     return 1
 }
 
-if [[ "$LIFECYCLE_MODE" == "1" ]]; then
+if [[ "$LIFECYCLE_MODE" == "1" || "$UI_LIFECYCLE_MODE" == "1" ]]; then
+    if [[ "$LIFECYCLE_MODE" == "1" ]]; then
+        HOST_CONTROL_ENVIRONMENT='{"POCKETROOT_SMOKE_LIFECYCLE":"1"}'
+        HOST_CONTROL_CHECKPOINT="awaiting-host-suspend"
+        HOST_CONTROL_LABEL="Process-suspend"
+    else
+        HOST_CONTROL_ENVIRONMENT='{"POCKETROOT_SMOKE_UI_LIFECYCLE":"1"}'
+        HOST_CONTROL_CHECKPOINT="awaiting-host-background"
+        HOST_CONTROL_LABEL="UIKit-lifecycle"
+    fi
     xcrun devicectl device process launch \
       --device "$DEVICE_ID" \
       --terminate-existing \
-      --environment-variables '{"POCKETROOT_SMOKE_LIFECYCLE":"1"}' \
+      --environment-variables "$HOST_CONTROL_ENVIRONMENT" \
       --timeout "$SMOKE_TIMEOUT_SECONDS" \
       --json-output "$LAUNCH_RESULT_PATH" \
       "$BUNDLE_ID"
@@ -326,11 +382,11 @@ if [[ "$LIFECYCLE_MODE" == "1" ]]; then
         -o - "$LAUNCH_RESULT_PATH" 2>/dev/null || true
     )"
     if [[ ! "$REMOTE_PROCESS_PID" =~ ^[1-9][0-9]*$ ]]; then
-        echo "Lifecycle smoke launch did not return a process identifier." >&2
+        echo "$HOST_CONTROL_LABEL smoke launch did not return a process identifier." >&2
         exit 1
     fi
 
-    LIFECYCLE_CHECKPOINT_READY="false"
+    HOST_CONTROL_CHECKPOINT_READY="false"
     while [[ "$SECONDS" -lt "$REPORT_DEADLINE" ]]; do
         if ! COPY_TIMEOUT_SECONDS="$(bounded_smoke_timeout 5)"; then
             break
@@ -344,8 +400,8 @@ if [[ "$LIFECYCLE_MODE" == "1" ]]; then
           --domain-identifier "$BUNDLE_ID" \
           --timeout "$COPY_TIMEOUT_SECONDS" \
           >/dev/null 2>&1 \
-          && [[ "$(cat "$PROGRESS_PATH")" == "awaiting-host-suspend" ]]; then
-            LIFECYCLE_CHECKPOINT_READY="true"
+          && [[ "$(cat "$PROGRESS_PATH")" == "$HOST_CONTROL_CHECKPOINT" ]]; then
+            HOST_CONTROL_CHECKPOINT_READY="true"
             break
         fi
         if ! COPY_TIMEOUT_SECONDS="$(bounded_smoke_timeout 5)"; then
@@ -353,7 +409,7 @@ if [[ "$LIFECYCLE_MODE" == "1" ]]; then
         fi
         if retrieve_device_report "$COPY_TIMEOUT_SECONDS"; then
             cat "$REPORT_PATH" >&2
-            echo "Lifecycle smoke App reported before reaching the host-suspend checkpoint." >&2
+            echo "$HOST_CONTROL_LABEL smoke App reported before reaching its host checkpoint." >&2
             exit 1
         fi
         if ! PROCESS_QUERY_TIMEOUT="$(bounded_smoke_timeout 5)"; then
@@ -364,53 +420,152 @@ if [[ "$LIFECYCLE_MODE" == "1" ]]; then
         else
             PROCESS_MATCH_STATUS=$?
             if [[ "$PROCESS_MATCH_STATUS" == "1" ]]; then
-                echo "Lifecycle smoke App exited before reaching the host-suspend checkpoint." >&2
+                echo "$HOST_CONTROL_LABEL smoke App exited before reaching its host checkpoint." >&2
                 exit 1
             fi
         fi
         sleep 1
     done
-    if [[ "$LIFECYCLE_CHECKPOINT_READY" != "true" ]]; then
+    if [[ "$HOST_CONTROL_CHECKPOINT_READY" != "true" ]]; then
         if [[ -f "$PROGRESS_PATH" ]]; then
-            echo "Last lifecycle smoke progress: $(cat "$PROGRESS_PATH")" >&2
+            echo "Last host-control smoke progress: $(cat "$PROGRESS_PATH")" >&2
         fi
-        echo "Lifecycle smoke did not reach its host-suspend checkpoint." >&2
+        echo "$HOST_CONTROL_LABEL smoke did not reach its host checkpoint." >&2
         exit 1
     fi
 
-    if ! LIFECYCLE_OPERATION_TIMEOUT="$(bounded_smoke_timeout 15)"; then
-        echo "Lifecycle smoke deadline expired before process suspension." >&2
-        exit 1
+    if [[ "$LIFECYCLE_MODE" == "1" ]]; then
+        if ! HOST_OPERATION_TIMEOUT="$(bounded_smoke_timeout 15)"; then
+            echo "Lifecycle smoke deadline expired before process suspension." >&2
+            exit 1
+        fi
+        xcrun devicectl device process suspend \
+          --device "$DEVICE_ID" \
+          --pid "$REMOTE_PROCESS_PID" \
+          --timeout "$HOST_OPERATION_TIMEOUT"
+        if [[ $((REPORT_DEADLINE - SECONDS)) -lt 8 ]]; then
+            echo "Lifecycle smoke deadline cannot cover suspension and resume." >&2
+            exit 1
+        fi
+        sleep 3
+        if ! HOST_OPERATION_TIMEOUT="$(bounded_smoke_timeout 15)"; then
+            echo "Lifecycle smoke deadline expired before process resume." >&2
+            exit 1
+        fi
+        xcrun devicectl device process resume \
+          --device "$DEVICE_ID" \
+          --pid "$REMOTE_PROCESS_PID" \
+          --timeout "$HOST_OPERATION_TIMEOUT"
+        printf 'resume\n' >"$RESUME_MARKER_PATH"
+        if ! HOST_OPERATION_TIMEOUT="$(bounded_smoke_timeout 15)"; then
+            echo "Lifecycle smoke deadline expired before resume acknowledgement." >&2
+            exit 1
+        fi
+        xcrun devicectl device copy to \
+          --device "$DEVICE_ID" \
+          --source "$RESUME_MARKER_PATH" \
+          --destination "Documents/$RESUME_MARKER_NAME" \
+          --domain-type appDataContainer \
+          --domain-identifier "$BUNDLE_ID" \
+          --timeout "$HOST_OPERATION_TIMEOUT"
+    else
+        if wait_for_remote_smoke_process_match; then
+            :
+        else
+            PROCESS_MATCH_STATUS=$?
+            if [[ "$PROCESS_MATCH_STATUS" == "1" ]]; then
+                echo "UIKit lifecycle App exited before backgrounding." >&2
+            else
+                echo "UIKit lifecycle process query deadline expired before backgrounding." >&2
+            fi
+            exit 1
+        fi
+        if ! HOST_OPERATION_TIMEOUT="$(bounded_smoke_timeout 15)"; then
+            echo "UIKit lifecycle deadline expired before launching Settings." >&2
+            exit 1
+        fi
+        rm -f "$SETTINGS_LAUNCH_RESULT_PATH"
+        xcrun devicectl device process launch \
+          --device "$DEVICE_ID" \
+          --timeout "$HOST_OPERATION_TIMEOUT" \
+          --json-output "$SETTINGS_LAUNCH_RESULT_PATH" \
+          "$SETTINGS_BUNDLE_ID"
+
+        UI_BACKGROUND_READY="false"
+        while [[ "$SECONDS" -lt "$REPORT_DEADLINE" ]]; do
+            if ! COPY_TIMEOUT_SECONDS="$(bounded_smoke_timeout 5)"; then
+                break
+            fi
+            rm -f "$PROGRESS_PATH"
+            if xcrun devicectl device copy from \
+              --device "$DEVICE_ID" \
+              --source "Documents/$PROGRESS_NAME" \
+              --destination "$PROGRESS_PATH" \
+              --domain-type appDataContainer \
+              --domain-identifier "$BUNDLE_ID" \
+              --timeout "$COPY_TIMEOUT_SECONDS" \
+              >/dev/null 2>&1 \
+              && [[ "$(cat "$PROGRESS_PATH")" == "host-backgrounded" ]]; then
+                UI_BACKGROUND_READY="true"
+                break
+            fi
+            if ! COPY_TIMEOUT_SECONDS="$(bounded_smoke_timeout 5)"; then
+                break
+            fi
+            if retrieve_device_report "$COPY_TIMEOUT_SECONDS"; then
+                cat "$REPORT_PATH" >&2
+                echo "UIKit lifecycle App reported before its background callback." >&2
+                exit 1
+            fi
+            if ! PROCESS_QUERY_TIMEOUT="$(bounded_smoke_timeout 5)"; then
+                break
+            fi
+            if remote_process_matches_smoke_app "$PROCESS_QUERY_TIMEOUT"; then
+                sleep 1
+            else
+                PROCESS_MATCH_STATUS=$?
+                if [[ "$PROCESS_MATCH_STATUS" == "1" ]]; then
+                    echo "UIKit lifecycle App exited while backgrounded." >&2
+                    exit 1
+                fi
+                sleep 1
+            fi
+        done
+        if [[ "$UI_BACKGROUND_READY" != "true" ]]; then
+            echo "UIKit lifecycle App did not report its background callback." >&2
+            exit 1
+        fi
+
+        if ! HOST_OPERATION_TIMEOUT="$(bounded_smoke_timeout 15)"; then
+            echo "UIKit lifecycle deadline expired before foreground activation." >&2
+            exit 1
+        fi
+        rm -f "$REACTIVATION_RESULT_PATH"
+        xcrun devicectl device process launch \
+          --device "$DEVICE_ID" \
+          --timeout "$HOST_OPERATION_TIMEOUT" \
+          --json-output "$REACTIVATION_RESULT_PATH" \
+          "$BUNDLE_ID"
+        REACTIVATED_PROCESS_PID="$(
+          plutil -extract result.process.processIdentifier raw \
+            -o - "$REACTIVATION_RESULT_PATH" 2>/dev/null || true
+        )"
+        if [[ "$REACTIVATED_PROCESS_PID" != "$REMOTE_PROCESS_PID" ]]; then
+            echo "UIKit lifecycle activation did not preserve the smoke process PID." >&2
+            exit 1
+        fi
+        if wait_for_remote_smoke_process_match; then
+            :
+        else
+            PROCESS_MATCH_STATUS=$?
+            if [[ "$PROCESS_MATCH_STATUS" == "1" ]]; then
+                echo "UIKit lifecycle activation lost the original smoke process." >&2
+            else
+                echo "UIKit lifecycle process query deadline expired after activation." >&2
+            fi
+            exit 1
+        fi
     fi
-    xcrun devicectl device process suspend \
-      --device "$DEVICE_ID" \
-      --pid "$REMOTE_PROCESS_PID" \
-      --timeout "$LIFECYCLE_OPERATION_TIMEOUT"
-    if [[ $((REPORT_DEADLINE - SECONDS)) -lt 8 ]]; then
-        echo "Lifecycle smoke deadline cannot cover suspension and resume." >&2
-        exit 1
-    fi
-    sleep 3
-    if ! LIFECYCLE_OPERATION_TIMEOUT="$(bounded_smoke_timeout 15)"; then
-        echo "Lifecycle smoke deadline expired before process resume." >&2
-        exit 1
-    fi
-    xcrun devicectl device process resume \
-      --device "$DEVICE_ID" \
-      --pid "$REMOTE_PROCESS_PID" \
-      --timeout "$LIFECYCLE_OPERATION_TIMEOUT"
-    printf 'resume\n' >"$RESUME_MARKER_PATH"
-    if ! LIFECYCLE_OPERATION_TIMEOUT="$(bounded_smoke_timeout 15)"; then
-        echo "Lifecycle smoke deadline expired before resume acknowledgement." >&2
-        exit 1
-    fi
-    xcrun devicectl device copy to \
-      --device "$DEVICE_ID" \
-      --source "$RESUME_MARKER_PATH" \
-      --destination "Documents/$RESUME_MARKER_NAME" \
-      --domain-type appDataContainer \
-      --domain-identifier "$BUNDLE_ID" \
-      --timeout "$LIFECYCLE_OPERATION_TIMEOUT"
 else
     xcrun devicectl device process launch \
       --device "$DEVICE_ID" \
@@ -465,7 +620,7 @@ if [[ "$REPORT_READY" != "true" ]]; then
     if [[ -f "$CONSOLE_LOG" ]]; then
         cat "$CONSOLE_LOG" >&2
     fi
-    if [[ "$LIFECYCLE_MODE" == "1" ]]; then
+    if [[ "$LIFECYCLE_MODE" == "1" || "$UI_LIFECYCLE_MODE" == "1" ]]; then
         rm -f "$PROGRESS_PATH"
         if xcrun devicectl device copy from \
           --device "$DEVICE_ID" \
@@ -475,7 +630,7 @@ if [[ "$REPORT_READY" != "true" ]]; then
           --domain-identifier "$BUNDLE_ID" \
           --timeout 5 \
           >/dev/null 2>&1; then
-            echo "Last lifecycle smoke progress: $(cat "$PROGRESS_PATH")" >&2
+            echo "Last host-control smoke progress: $(cat "$PROGRESS_PATH")" >&2
         fi
     fi
     echo "The device smoke report could not be retrieved before launch ended or timed out." >&2

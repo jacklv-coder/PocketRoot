@@ -37,13 +37,15 @@ private enum PocketRootRuntimeSmokeRunner {
     static let reportFileName = "pocketroot-smoke-result.json"
     static let progressFileName = "pocketroot-smoke-progress.txt"
     static let lifecycleResumeFileName = "pocketroot-smoke-lifecycle-resume.txt"
+    static let uiLifecycleFileName = "pocketroot-smoke-ui-lifecycle.txt"
     static let sustainedOutputByteCount = 8 * 1_024 * 1_024
     static let maximumStandardErrorBytes = 64
     static let maximumPeakResidentBytes: UInt64 = 256 * 1_024 * 1_024
 
     static func run(
         environment: PocketRootSmokeEnvironment,
-        lifecycleMode: Bool = false
+        lifecycleMode: Bool = false,
+        uiLifecycleMode: Bool = false
     ) async -> PocketRootSmokeReport {
         let startedAt = Date()
         var checks: [PocketRootSmokeCheck] = []
@@ -350,6 +352,30 @@ private enum PocketRootRuntimeSmokeRunner {
                 )
             }
 
+            if uiLifecycleMode {
+                try await awaitHostUIKitLifecycle(in: documentsURL)
+                let afterUIKitLifecycle = try await prepared.system.execute(
+                    PocketRootCommandRequest(
+                        command: "printf 'after-ui-lifecycle-ok'",
+                        workingDirectory: "/"
+                    )
+                )
+                try require(
+                    afterUIKitLifecycle.stdout == "after-ui-lifecycle-ok",
+                    "Runtime did not execute after the UIKit lifecycle transition."
+                )
+                try require(
+                    await prepared.system.state == .ready,
+                    "Runtime was not ready after the UIKit lifecycle transition."
+                )
+                checks.append(
+                    PocketRootSmokeCheck(
+                        name: "ui-background-foreground",
+                        detail: "background, foreground, active, runtime ready"
+                    )
+                )
+            }
+
             // v0.4.0-abi.6 must return after soft-halting and joining the
             // embedded kernel. Do not persist success until both the terminal
             // state and the no-reboot contract have been observed.
@@ -446,6 +472,21 @@ private enum PocketRootRuntimeSmokeRunner {
         try? Data(stage.utf8).write(to: progressURL, options: .atomic)
     }
 
+    static func recordUIKitLifecycleEvent(_ event: String) {
+        guard ProcessInfo.processInfo.environment["POCKETROOT_SMOKE_UI_LIFECYCLE"] == "1",
+              let documentsURL = FileManager.default.urls(
+                  for: .documentDirectory,
+                  in: .userDomainMask
+              ).first else {
+            return
+        }
+        let eventURL = documentsURL.appendingPathComponent(uiLifecycleFileName)
+        var events = (try? Data(contentsOf: eventURL)) ?? Data()
+        events.append(Data("\(event)\n".utf8))
+        try? events.write(to: eventURL, options: .atomic)
+        writeProgress("host-\(event)")
+    }
+
     private static func awaitHostSuspendResume(in documentsURL: URL) async throws {
         let fileManager = FileManager.default
         let resumeURL = documentsURL.appendingPathComponent(lifecycleResumeFileName)
@@ -465,6 +506,29 @@ private enum PocketRootRuntimeSmokeRunner {
         }
         throw PocketRootSmokeFailure(
             message: "Host did not complete process suspend/resume within 60 seconds."
+        )
+    }
+
+    private static func awaitHostUIKitLifecycle(in documentsURL: URL) async throws {
+        let fileManager = FileManager.default
+        let eventURL = documentsURL.appendingPathComponent(uiLifecycleFileName)
+        if fileManager.fileExists(atPath: eventURL.path) {
+            try fileManager.removeItem(at: eventURL)
+        }
+        writeProgress("awaiting-host-background")
+
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: .seconds(60))
+        let expectedEvents = Data("backgrounded\nforegrounded\nactive\n".utf8)
+        while clock.now < deadline {
+            if let events = try? Data(contentsOf: eventURL),
+               events == expectedEvents {
+                return
+            }
+            try await Task.sleep(for: .milliseconds(200))
+        }
+        throw PocketRootSmokeFailure(
+            message: "UIKit did not complete background, foreground, and active callbacks."
         )
     }
 
@@ -541,9 +605,12 @@ final class PocketRootIshRuntimeSmokeApp: UIResponder, UIApplicationDelegate {
             )
             let lifecycleMode =
                 ProcessInfo.processInfo.environment["POCKETROOT_SMOKE_LIFECYCLE"] == "1"
+            let uiLifecycleMode =
+                ProcessInfo.processInfo.environment["POCKETROOT_SMOKE_UI_LIFECYCLE"] == "1"
             let report = await PocketRootRuntimeSmokeRunner.run(
                 environment: environment,
-                lifecycleMode: lifecycleMode
+                lifecycleMode: lifecycleMode,
+                uiLifecycleMode: uiLifecycleMode
             )
             do {
                 try PocketRootRuntimeSmokeRunner.write(report)
@@ -556,5 +623,17 @@ final class PocketRootIshRuntimeSmokeApp: UIResponder, UIApplicationDelegate {
         }
 
         return true
+    }
+
+    func applicationDidEnterBackground(_ application: UIApplication) {
+        PocketRootRuntimeSmokeRunner.recordUIKitLifecycleEvent("backgrounded")
+    }
+
+    func applicationWillEnterForeground(_ application: UIApplication) {
+        PocketRootRuntimeSmokeRunner.recordUIKitLifecycleEvent("foregrounded")
+    }
+
+    func applicationDidBecomeActive(_ application: UIApplication) {
+        PocketRootRuntimeSmokeRunner.recordUIKitLifecycleEvent("active")
     }
 }

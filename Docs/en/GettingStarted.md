@@ -141,6 +141,11 @@ The runner suspends the PID for three seconds while the runtime is `.ready`,
 resumes it, and requires a new guest command to succeed. This is not a UIKit
 foreground/background callback test.
 
+Use the mutually exclusive `POCKETROOT_SMOKE_UI_LIFECYCLE=1` mode for real
+UIKit callbacks. The runner opens Settings to background the App, activates
+the original process, and requires background, foreground, active, and a new
+guest command to succeed.
+
 ## 8. Command reference
 
 | Goal | Command |
@@ -154,6 +159,7 @@ foreground/background callback test.
 | Native smoke | `POCKETROOT_ROOTFS_ARCHIVE=... ./Scripts/run-runtime-smoke.sh` |
 | Signed physical native smoke | `POCKETROOT_ROOTFS_ARCHIVE=... POCKETROOT_SMOKE_DEVICE=... POCKETROOT_DEVELOPMENT_TEAM=... ./Scripts/run-runtime-device-smoke.sh` |
 | Signed process suspend/resume smoke | Add `POCKETROOT_SMOKE_LIFECYCLE=1` to the signed physical smoke command |
+| Signed UIKit lifecycle smoke | Add `POCKETROOT_SMOKE_UI_LIFECYCLE=1` to the signed physical smoke command |
 | Documentation checks | `./Scripts/check-docs.sh` |
 
 ## 9. Do not commit

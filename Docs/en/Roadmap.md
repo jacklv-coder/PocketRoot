@@ -70,6 +70,8 @@ Status: **Experimental, in progress**.
 - “Jack iPhone” (iPhone 14 Pro / iOS 26.6) passed the standard 17-check path
   and the 18-check process-suspend/resume path; guest execution recovered
   after a three-second suspension, with 89.8 MiB and 89.7 MiB peaks.
+- The same device passed the 18-check real UIKit background/foreground/active
+  gate with its original PID, a post-activation guest command, and an 89.4 MiB peak.
 
 This establishes the current Simulator, minimum-Xcode 16, and single-iPhone one-shot paths, not iPad, complete physical-device lifecycle, PTY, or distribution readiness.
 
@@ -92,7 +94,7 @@ This establishes the current Simulator, minimum-Xcode 16, and single-iPhone one-
 | Signed iPhone | Passed | v0.4.0-abi.6 completed the 17-check one-shot/soft-shutdown/peak-memory smoke; keep rerunning after runtime changes |
 | Signed iPad | Blocked | Physical boot and command smoke |
 | Minimum Xcode 16 native | Passed | Xcode 16.0 / iOS 18.0 SDK completed RootFS install, Simulator/device final links, and the 17-check native smoke |
-| App lifecycle and memory | In progress | Simulator and Jack iPhone have 256 MiB `ru_maxrss` gates and physical process suspend/resume passed; add UIKit foreground/background, physical jetsam, failure injection, and persistence |
+| App lifecycle and memory | In progress | Simulator and Jack iPhone have 256 MiB `ru_maxrss` gates, and physical process suspend/resume plus UIKit foreground/background passed; add physical jetsam, failure injection, and persistence |
 | RootFS ENOSPC/power faults | In progress | Peak-space preflight, full ENOSPC, seven persistence barriers, and deterministic power-loss cuts are covered; add physical storage-pressure/power-cut evidence |
 | License-reviewed RootFS | Blocked | Complete license, NOTICE, source, and SBOM |
 | App Store 2.5.2 | Blocked | Written guest download/execute policy decision |
