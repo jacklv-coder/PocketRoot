@@ -176,6 +176,10 @@ POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
 `POCKETROOT_KEEP_DEVICE_APP=1` 才会保留。不要把设备标识、provisioning profile
 或本地报告提交到仓库。
 
+需要验证真机进程暂停/恢复时，在同一命令增加
+`POCKETROOT_SMOKE_LIFECYCLE=1`。runner 会在 runtime `.ready` 时按 PID 暂停
+3 秒、恢复并要求新的 guest 命令成功；这不等价于 UIKit 前后台回调验证。
+
 ## 8. 常用命令
 
 | 目标 | 命令 |
@@ -188,6 +192,7 @@ POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
 | 真实 RootFS 集成测试 | `POCKETROOT_ROOTFS_ARCHIVE=... swift test --filter testPinnedReleaseArchiveWhenProvidedByEnvironment` |
 | iOS 18 原生 smoke | `POCKETROOT_ROOTFS_ARCHIVE=... ./Scripts/run-runtime-smoke.sh` |
 | 签名真机原生 smoke | `POCKETROOT_ROOTFS_ARCHIVE=... POCKETROOT_SMOKE_DEVICE=... POCKETROOT_DEVELOPMENT_TEAM=... ./Scripts/run-runtime-device-smoke.sh` |
+| 签名真机暂停/恢复 smoke | `POCKETROOT_SMOKE_LIFECYCLE=1` 加到签名真机 smoke 命令 |
 | 双语文档和链接检查 | `./Scripts/check-docs.sh` |
 
 ## 9. 不应提交的本地内容

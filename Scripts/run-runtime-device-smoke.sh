@@ -8,11 +8,13 @@ DEVICE_REFERENCE="${POCKETROOT_SMOKE_DEVICE:-}"
 DEVICE_ID=""
 DEVELOPMENT_TEAM="${POCKETROOT_DEVELOPMENT_TEAM:-}"
 BUNDLE_ID="com.jacklv.PocketRootIshRuntimeSmoke"
+APP_PROCESS_NAME="PocketRootIshRuntimeSmoke"
 ARCHIVE_NAME="pocketroot-fs-v0.3.3.tar.gz"
 REPORT_NAME="pocketroot-smoke-result.json"
 EXPECTED_SHA256="be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"
 EXPECTED_BYTE_COUNT="6581376"
 SMOKE_TIMEOUT_SECONDS="${POCKETROOT_SMOKE_TIMEOUT_SECONDS:-300}"
+LIFECYCLE_MODE="${POCKETROOT_SMOKE_LIFECYCLE:-0}"
 RUN_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/PocketRootDeviceSmoke.XXXXXX")"
 DERIVED_DATA_ROOT="$RUN_ROOT/DerivedData"
 CLONED_SOURCE_PACKAGES_DIR="${POCKETROOT_CLONED_SOURCE_PACKAGES_DIR:-${TMPDIR:-/tmp}/PocketRootSharedSourcePackages}"
@@ -21,13 +23,87 @@ REPORT_PATH="$RUN_ROOT/$REPORT_NAME"
 EMPTY_REPORT_PATH="$RUN_ROOT/empty-$REPORT_NAME"
 ENTITLEMENTS_PATH="$RUN_ROOT/PocketRootIshRuntimeSmoke.entitlements.plist"
 DEVICE_DETAILS_PATH="$RUN_ROOT/device-details.json"
+LAUNCH_RESULT_PATH="$RUN_ROOT/launch-result.json"
+PROCESS_LIST_PATH="$RUN_ROOT/processes.json"
+PROGRESS_NAME="pocketroot-smoke-progress.txt"
+PROGRESS_PATH="$RUN_ROOT/$PROGRESS_NAME"
+RESUME_MARKER_NAME="pocketroot-smoke-lifecycle-resume.txt"
+RESUME_MARKER_PATH="$RUN_ROOT/$RESUME_MARKER_NAME"
 APP_INSTALLED="false"
 LAUNCH_CLIENT_PID=""
+REMOTE_PROCESS_PID=""
+
+remote_process_matches_smoke_app() {
+    local timeout_seconds="$1"
+    local executable_suffix="/$APP_PROCESS_NAME.app/$APP_PROCESS_NAME"
+
+    if [[ -z "$REMOTE_PROCESS_PID" || -z "$DEVICE_ID" ]]; then
+        return 1
+    fi
+    rm -f "$PROCESS_LIST_PATH"
+    if ! xcrun devicectl device info processes \
+      --device "$DEVICE_ID" \
+      --timeout "$timeout_seconds" \
+      --json-output "$PROCESS_LIST_PATH" \
+      >/dev/null 2>&1; then
+        return 2
+    fi
+    if plutil -extract result.runningProcesses xml1 \
+      -o - "$PROCESS_LIST_PATH" 2>/dev/null \
+      | awk \
+        -v expected_pid="$REMOTE_PROCESS_PID" \
+        -v expected_suffix="$executable_suffix" '
+          /<dict>/ {
+              process_identifier = ""
+              executable = ""
+          }
+          /<key>processIdentifier<\/key>/ {
+              getline
+              process_identifier = $0
+              gsub(/.*<integer>|<\/integer>.*/, "", process_identifier)
+          }
+          /<key>executable<\/key>/ {
+              getline
+              executable = $0
+              gsub(/.*<string>|<\/string>.*/, "", executable)
+          }
+          /<\/dict>/ {
+              suffix_start = length(executable) - length(expected_suffix) + 1
+              if (process_identifier == expected_pid &&
+                  suffix_start > 0 &&
+                  substr(executable, suffix_start) == expected_suffix) {
+                  found = 1
+              }
+          }
+          END {
+              exit(found ? 0 : 1)
+          }
+        '; then
+        return 0
+    fi
+    return 1
+}
+
+terminate_remote_smoke_process() {
+    local timeout_seconds="$1"
+
+    if remote_process_matches_smoke_app "$timeout_seconds"; then
+        xcrun devicectl device process terminate \
+          --device "$DEVICE_ID" \
+          --pid "$REMOTE_PROCESS_PID" \
+          --timeout "$timeout_seconds" \
+          >/dev/null 2>&1 || true
+    fi
+    REMOTE_PROCESS_PID=""
+}
 
 cleanup() {
     if [[ -n "$LAUNCH_CLIENT_PID" ]] && kill -0 "$LAUNCH_CLIENT_PID" >/dev/null 2>&1; then
         kill "$LAUNCH_CLIENT_PID" >/dev/null 2>&1 || true
         wait "$LAUNCH_CLIENT_PID" >/dev/null 2>&1 || true
+    fi
+    if [[ -n "$REMOTE_PROCESS_PID" ]]; then
+        terminate_remote_smoke_process 5
     fi
     if [[ "$APP_INSTALLED" == "true" && "${POCKETROOT_KEEP_DEVICE_APP:-0}" != "1" ]]; then
         xcrun devicectl device uninstall app \
@@ -45,6 +121,7 @@ Usage:
   POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \\
   POCKETROOT_SMOKE_DEVICE=<physical-device-reference> \\
   POCKETROOT_DEVELOPMENT_TEAM=<team-id> \\
+  [POCKETROOT_SMOKE_LIFECYCLE=1] \\
   $0
 EOF
 }
@@ -66,8 +143,13 @@ if [[ "$(uname -m)" != "arm64" ]]; then
     echo "The native smoke requires an Apple Silicon host." >&2
     exit 2
 fi
-if [[ ! "$SMOKE_TIMEOUT_SECONDS" =~ ^[1-9][0-9]*$ ]]; then
-    echo "POCKETROOT_SMOKE_TIMEOUT_SECONDS must be a positive integer." >&2
+if [[ ! "$SMOKE_TIMEOUT_SECONDS" =~ ^[1-9][0-9]*$ ]] \
+  || [[ "$SMOKE_TIMEOUT_SECONDS" -lt 5 ]]; then
+    echo "POCKETROOT_SMOKE_TIMEOUT_SECONDS must be an integer of at least 5." >&2
+    exit 2
+fi
+if [[ "$LIFECYCLE_MODE" != "0" && "$LIFECYCLE_MODE" != "1" ]]; then
+    echo "POCKETROOT_SMOKE_LIFECYCLE must be 0 or 1." >&2
     exit 2
 fi
 if [[ "$(stat -f '%z' "$ARCHIVE_PATH")" != "$EXPECTED_BYTE_COUNT" ]]; then
@@ -172,28 +254,49 @@ xcrun devicectl device copy to \
   --domain-identifier "$BUNDLE_ID" \
   --timeout "$SMOKE_TIMEOUT_SECONDS"
 
-xcrun devicectl device process launch \
-  --device "$DEVICE_ID" \
-  --terminate-existing \
-  --console \
-  --timeout "$SMOKE_TIMEOUT_SECONDS" \
-  "$BUNDLE_ID" \
-  >"$CONSOLE_LOG" 2>&1 &
-LAUNCH_CLIENT_PID=$!
+if [[ "$LIFECYCLE_MODE" == "1" ]]; then
+    # A failed uninstall can preserve the prior data container. Clear both
+    # handshake files so this run cannot accept stale lifecycle evidence.
+    xcrun devicectl device copy to \
+      --device "$DEVICE_ID" \
+      --source "$EMPTY_REPORT_PATH" \
+      --destination "Documents/$PROGRESS_NAME" \
+      --domain-type appDataContainer \
+      --domain-identifier "$BUNDLE_ID" \
+      --timeout "$SMOKE_TIMEOUT_SECONDS"
+    xcrun devicectl device copy to \
+      --device "$DEVICE_ID" \
+      --source "$EMPTY_REPORT_PATH" \
+      --destination "Documents/$RESUME_MARKER_NAME" \
+      --domain-type appDataContainer \
+      --domain-identifier "$BUNDLE_ID" \
+      --timeout "$SMOKE_TIMEOUT_SECONDS"
+fi
 
 REPORT_READY="false"
 REPORT_SUCCESS=""
 REPORT_DEADLINE=$((SECONDS + SMOKE_TIMEOUT_SECONDS))
 LAUNCH_EXIT_OBSERVED="false"
-while [[ "$SECONDS" -lt "$REPORT_DEADLINE" ]]; do
-    REMAINING_SECONDS=$((REPORT_DEADLINE - SECONDS))
-    if [[ "$REMAINING_SECONDS" -lt 1 ]]; then
-        break
+REMOTE_EXIT_OBSERVED="false"
+
+bounded_smoke_timeout() {
+    local maximum_seconds="$1"
+    local remaining_seconds=$((REPORT_DEADLINE - SECONDS))
+
+    # devicectl rejects timeout values below five seconds. Stop early instead
+    # of issuing an operation that would exceed the shared smoke deadline.
+    if [[ "$remaining_seconds" -lt 5 ]]; then
+        return 1
     fi
-    COPY_TIMEOUT_SECONDS="$REMAINING_SECONDS"
-    if [[ "$COPY_TIMEOUT_SECONDS" -gt 5 ]]; then
-        COPY_TIMEOUT_SECONDS=5
+    if [[ "$remaining_seconds" -gt "$maximum_seconds" ]]; then
+        remaining_seconds="$maximum_seconds"
     fi
+    printf '%s' "$remaining_seconds"
+}
+
+retrieve_device_report() {
+    local timeout_seconds="$1"
+
     rm -f "$REPORT_PATH"
     if xcrun devicectl device copy from \
       --device "$DEVICE_ID" \
@@ -201,42 +304,205 @@ while [[ "$SECONDS" -lt "$REPORT_DEADLINE" ]]; do
       --destination "$REPORT_PATH" \
       --domain-type appDataContainer \
       --domain-identifier "$BUNDLE_ID" \
-      --timeout "$COPY_TIMEOUT_SECONDS" \
+      --timeout "$timeout_seconds" \
       >/dev/null 2>&1 \
       && REPORT_SUCCESS="$(plutil -extract success raw -o - "$REPORT_PATH" 2>/dev/null)"; then
         REPORT_READY="true"
+        return 0
+    fi
+    return 1
+}
+
+if [[ "$LIFECYCLE_MODE" == "1" ]]; then
+    xcrun devicectl device process launch \
+      --device "$DEVICE_ID" \
+      --terminate-existing \
+      --environment-variables '{"POCKETROOT_SMOKE_LIFECYCLE":"1"}' \
+      --timeout "$SMOKE_TIMEOUT_SECONDS" \
+      --json-output "$LAUNCH_RESULT_PATH" \
+      "$BUNDLE_ID"
+    REMOTE_PROCESS_PID="$(
+      plutil -extract result.process.processIdentifier raw \
+        -o - "$LAUNCH_RESULT_PATH" 2>/dev/null || true
+    )"
+    if [[ ! "$REMOTE_PROCESS_PID" =~ ^[1-9][0-9]*$ ]]; then
+        echo "Lifecycle smoke launch did not return a process identifier." >&2
+        exit 1
+    fi
+
+    LIFECYCLE_CHECKPOINT_READY="false"
+    while [[ "$SECONDS" -lt "$REPORT_DEADLINE" ]]; do
+        if ! COPY_TIMEOUT_SECONDS="$(bounded_smoke_timeout 5)"; then
+            break
+        fi
+        rm -f "$PROGRESS_PATH"
+        if xcrun devicectl device copy from \
+          --device "$DEVICE_ID" \
+          --source "Documents/$PROGRESS_NAME" \
+          --destination "$PROGRESS_PATH" \
+          --domain-type appDataContainer \
+          --domain-identifier "$BUNDLE_ID" \
+          --timeout "$COPY_TIMEOUT_SECONDS" \
+          >/dev/null 2>&1 \
+          && [[ "$(cat "$PROGRESS_PATH")" == "awaiting-host-suspend" ]]; then
+            LIFECYCLE_CHECKPOINT_READY="true"
+            break
+        fi
+        if ! COPY_TIMEOUT_SECONDS="$(bounded_smoke_timeout 5)"; then
+            break
+        fi
+        if retrieve_device_report "$COPY_TIMEOUT_SECONDS"; then
+            cat "$REPORT_PATH" >&2
+            echo "Lifecycle smoke App reported before reaching the host-suspend checkpoint." >&2
+            exit 1
+        fi
+        if ! PROCESS_QUERY_TIMEOUT="$(bounded_smoke_timeout 5)"; then
+            break
+        fi
+        if remote_process_matches_smoke_app "$PROCESS_QUERY_TIMEOUT"; then
+            :
+        else
+            PROCESS_MATCH_STATUS=$?
+            if [[ "$PROCESS_MATCH_STATUS" == "1" ]]; then
+                echo "Lifecycle smoke App exited before reaching the host-suspend checkpoint." >&2
+                exit 1
+            fi
+        fi
+        sleep 1
+    done
+    if [[ "$LIFECYCLE_CHECKPOINT_READY" != "true" ]]; then
+        if [[ -f "$PROGRESS_PATH" ]]; then
+            echo "Last lifecycle smoke progress: $(cat "$PROGRESS_PATH")" >&2
+        fi
+        echo "Lifecycle smoke did not reach its host-suspend checkpoint." >&2
+        exit 1
+    fi
+
+    if ! LIFECYCLE_OPERATION_TIMEOUT="$(bounded_smoke_timeout 15)"; then
+        echo "Lifecycle smoke deadline expired before process suspension." >&2
+        exit 1
+    fi
+    xcrun devicectl device process suspend \
+      --device "$DEVICE_ID" \
+      --pid "$REMOTE_PROCESS_PID" \
+      --timeout "$LIFECYCLE_OPERATION_TIMEOUT"
+    if [[ $((REPORT_DEADLINE - SECONDS)) -lt 8 ]]; then
+        echo "Lifecycle smoke deadline cannot cover suspension and resume." >&2
+        exit 1
+    fi
+    sleep 3
+    if ! LIFECYCLE_OPERATION_TIMEOUT="$(bounded_smoke_timeout 15)"; then
+        echo "Lifecycle smoke deadline expired before process resume." >&2
+        exit 1
+    fi
+    xcrun devicectl device process resume \
+      --device "$DEVICE_ID" \
+      --pid "$REMOTE_PROCESS_PID" \
+      --timeout "$LIFECYCLE_OPERATION_TIMEOUT"
+    printf 'resume\n' >"$RESUME_MARKER_PATH"
+    if ! LIFECYCLE_OPERATION_TIMEOUT="$(bounded_smoke_timeout 15)"; then
+        echo "Lifecycle smoke deadline expired before resume acknowledgement." >&2
+        exit 1
+    fi
+    xcrun devicectl device copy to \
+      --device "$DEVICE_ID" \
+      --source "$RESUME_MARKER_PATH" \
+      --destination "Documents/$RESUME_MARKER_NAME" \
+      --domain-type appDataContainer \
+      --domain-identifier "$BUNDLE_ID" \
+      --timeout "$LIFECYCLE_OPERATION_TIMEOUT"
+else
+    xcrun devicectl device process launch \
+      --device "$DEVICE_ID" \
+      --terminate-existing \
+      --console \
+      --timeout "$SMOKE_TIMEOUT_SECONDS" \
+      "$BUNDLE_ID" \
+      >"$CONSOLE_LOG" 2>&1 &
+    LAUNCH_CLIENT_PID=$!
+fi
+
+while [[ "$SECONDS" -lt "$REPORT_DEADLINE" ]]; do
+    if ! COPY_TIMEOUT_SECONDS="$(bounded_smoke_timeout 5)"; then
         break
     fi
-    if ! kill -0 "$LAUNCH_CLIENT_PID" >/dev/null 2>&1; then
+    if retrieve_device_report "$COPY_TIMEOUT_SECONDS"; then
+        break
+    fi
+    if [[ -n "$LAUNCH_CLIENT_PID" ]] \
+      && ! kill -0 "$LAUNCH_CLIENT_PID" >/dev/null 2>&1; then
         if [[ "$LAUNCH_EXIT_OBSERVED" == "true" ]]; then
             break
         fi
         # Permit one final bounded copy attempt if the console client ends.
         LAUNCH_EXIT_OBSERVED="true"
         sleep 0.25
+    elif [[ -n "$REMOTE_PROCESS_PID" ]]; then
+        if ! PROCESS_QUERY_TIMEOUT="$(bounded_smoke_timeout 5)"; then
+            break
+        fi
+        if remote_process_matches_smoke_app "$PROCESS_QUERY_TIMEOUT"; then
+            sleep 1
+        else
+            PROCESS_MATCH_STATUS=$?
+            if [[ "$PROCESS_MATCH_STATUS" == "1" ]]; then
+                if [[ "$REMOTE_EXIT_OBSERVED" == "true" ]]; then
+                    break
+                fi
+                # Permit one final bounded report copy after remote exit.
+                REMOTE_EXIT_OBSERVED="true"
+                sleep 0.25
+            else
+                sleep 1
+            fi
+        fi
     else
         sleep 1
     fi
 done
 
 if [[ "$REPORT_READY" != "true" ]]; then
-    cat "$CONSOLE_LOG" >&2 || true
+    if [[ -f "$CONSOLE_LOG" ]]; then
+        cat "$CONSOLE_LOG" >&2
+    fi
+    if [[ "$LIFECYCLE_MODE" == "1" ]]; then
+        rm -f "$PROGRESS_PATH"
+        if xcrun devicectl device copy from \
+          --device "$DEVICE_ID" \
+          --source "Documents/$PROGRESS_NAME" \
+          --destination "$PROGRESS_PATH" \
+          --domain-type appDataContainer \
+          --domain-identifier "$BUNDLE_ID" \
+          --timeout 5 \
+          >/dev/null 2>&1; then
+            echo "Last lifecycle smoke progress: $(cat "$PROGRESS_PATH")" >&2
+        fi
+    fi
     echo "The device smoke report could not be retrieved before launch ended or timed out." >&2
     exit 1
 fi
 
 cat "$REPORT_PATH"
 if [[ "$REPORT_SUCCESS" != "true" ]]; then
-    cat "$CONSOLE_LOG" >&2 || true
+    if [[ -f "$CONSOLE_LOG" ]]; then
+        cat "$CONSOLE_LOG" >&2
+    fi
     exit 1
 fi
 
 # Success is written only after soft shutdown returned, `.terminated` was
-# observed, and a later command returned restartRequired. Detach the console
-# client; normal cleanup uninstalls the otherwise idle test App.
-kill "$LAUNCH_CLIENT_PID" >/dev/null 2>&1 || true
-wait "$LAUNCH_CLIENT_PID" >/dev/null 2>&1 || true
+# observed, and a later command returned restartRequired. Stop the console
+# client or detached lifecycle process; normal cleanup then uninstalls the App.
+if [[ -n "$LAUNCH_CLIENT_PID" ]]; then
+    kill "$LAUNCH_CLIENT_PID" >/dev/null 2>&1 || true
+    wait "$LAUNCH_CLIENT_PID" >/dev/null 2>&1 || true
+fi
 LAUNCH_CLIENT_PID=""
-cat "$CONSOLE_LOG"
+if [[ -n "$REMOTE_PROCESS_PID" ]]; then
+    terminate_remote_smoke_process 5
+fi
+if [[ -f "$CONSOLE_LOG" ]]; then
+    cat "$CONSOLE_LOG"
+fi
 
 echo "Physical-device native smoke passed on $DEVICE_ID."

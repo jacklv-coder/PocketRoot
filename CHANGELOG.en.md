@@ -97,6 +97,10 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 - v0.4.0-abi.6 passed the current 17-check native smoke on a signed iPhone
   17 Pro running iOS 26.1; soft shutdown returned to Swift and lifecycle peak
   memory was 84.6 MiB.
+- The physical runner adds an explicit `POCKETROOT_SMOKE_LIFECYCLE=1` mode that
+  suspends/resumes the App by the launch-JSON PID and requires a post-resume
+  guest command plus shutdown. Jack iPhone (iPhone 14 Pro / iOS 26.6) passed
+  all 18 checks with an 89.7 MiB peak.
 
 ### Security
 

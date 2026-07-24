@@ -58,8 +58,16 @@ if ! grep -Fq -- '"$SIGNED_TEAM_IDENTIFIER" != "$DEVELOPMENT_TEAM"' "$DEVICE_RUN
     exit 1
 fi
 
-REPORT_RESET_LINE="$(grep -nF -- '--source "$EMPTY_REPORT_PATH"' "$DEVICE_RUNNER" | cut -d: -f1)"
-LAUNCH_LINE="$(grep -nF -- 'xcrun devicectl device process launch' "$DEVICE_RUNNER" | cut -d: -f1)"
+REPORT_RESET_LINE="$(
+  grep -nF -- '--destination "Documents/$REPORT_NAME"' "$DEVICE_RUNNER" \
+    | head -1 \
+    | cut -d: -f1
+)"
+LAUNCH_LINE="$(
+  grep -nF -- 'xcrun devicectl device process launch' "$DEVICE_RUNNER" \
+    | head -1 \
+    | cut -d: -f1
+)"
 if [[ -z "$REPORT_RESET_LINE" || -z "$LAUNCH_LINE" || "$REPORT_RESET_LINE" -ge "$LAUNCH_LINE" ]]; then
     echo "Physical-device runner does not clear stale evidence before launch." >&2
     exit 1
@@ -78,6 +86,33 @@ fi
 
 if ! grep -Fq -- 'Success is written only after soft shutdown returned' "$DEVICE_RUNNER"; then
     echo "Physical-device runner does not require post-shutdown success evidence." >&2
+    exit 1
+fi
+
+if ! grep -Fq -- 'POCKETROOT_SMOKE_LIFECYCLE must be 0 or 1.' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- 'result.process.processIdentifier' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- 'xcrun devicectl device process suspend' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- 'xcrun devicectl device process resume' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- 'Documents/$RESUME_MARKER_NAME' "$DEVICE_RUNNER"; then
+    echo "Physical-device runner does not control the lifecycle suspend/resume gate." >&2
+    exit 1
+fi
+
+if ! grep -Fq -- '--destination "Documents/$PROGRESS_NAME"' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- 'remote_process_matches_smoke_app' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- 'plutil -extract result.runningProcesses xml1' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- 'process_identifier == expected_pid' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- 'retrieve_device_report "$COPY_TIMEOUT_SECONDS"' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- 'bounded_smoke_timeout 15' "$DEVICE_RUNNER" \
+  || grep -Fq -- 'jq ' "$DEVICE_RUNNER"; then
+    echo "Physical-device runner does not reject stale or unsafe lifecycle evidence." >&2
+    exit 1
+fi
+
+if ! grep -Fq -- 'name: "process-suspend-resume"' "$SMOKE_APP" \
+  || ! grep -Fq -- 'awaitHostSuspendResume(in: documentsURL)' "$SMOKE_APP" \
+  || ! grep -Fq -- 'after-suspend-resume-ok' "$SMOKE_APP"; then
+    echo "Native smoke does not verify guest recovery after process resume." >&2
     exit 1
 fi
 

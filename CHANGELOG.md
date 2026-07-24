@@ -95,6 +95,9 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
   和后续设备操作。
 - v0.4.0-abi.6 在签名 iPhone 17 Pro / iOS 26.1 上通过当前 17 项 native smoke；
   soft shutdown 返回 Swift，完整生命周期峰值为 84.6 MiB。
+- 真机 runner 增加显式 `POCKETROOT_SMOKE_LIFECYCLE=1` 模式：按 launch JSON PID
+  暂停/恢复 App，并要求恢复后的 guest 命令和 shutdown 成功；Jack iPhone
+  （iPhone 14 Pro / iOS 26.6）通过 18 项，峰值 89.7 MiB。
 
 ### Security
 

@@ -13,7 +13,7 @@ PocketRoot 把验证分成宿主逻辑、真实 RootFS、iOS 构建、完整原�
 | 默认 Demo 构建 | `./Scripts/build.sh` | Xcode + iOS SDK | 伞形产品和 UIKit Demo 可构建 | 实验 runtime 已链接 |
 | 原生最终链接 | `./Scripts/build-runtime-spike.sh` | Apple toolchain | 完整实验依赖图可生成 iOS 可执行文件 | 真机或 guest 行为 |
 | Simulator 原生 smoke | `./Scripts/run-runtime-smoke.sh` | Apple Silicon + iOS 18 Simulator + archive | prepare、boot、命令边界和 soft shutdown 返回 | 其他工具链、真机或发行可用 |
-| 物理设备原生 smoke | `./Scripts/run-runtime-device-smoke.sh` | 签名 iOS 18+ iPhone/iPad + archive | 同一 17 项检查、development entitlement 与 shutdown 返回 | 完整 lifecycle、jetsam、iPad 或发行可用 |
+| 物理设备原生 smoke | `./Scripts/run-runtime-device-smoke.sh` | 签名 iOS 18+ iPhone/iPad + archive | 同一 17 项检查、可选进程暂停/恢复、development entitlement 与 shutdown 返回 | UIKit 前后台事件、jetsam、iPad 或发行可用 |
 | 文档检查 | `./Scripts/check-docs.sh` | macOS/Linux shell | 中英文成对、中文覆盖和相对链接 | 技术实现正确 |
 
 ## 2. 宿主 Swift Package 测试
@@ -248,6 +248,11 @@ xcrun simctl shutdown "$SMOKE_DEVICE_UDID"
 16. shutdown 返回 Swift，状态变为 `.terminated`，随后命令得到 `restartRequired`；
 17. 完整 smoke 生命周期的进程 `ru_maxrss` 不超过 256 MiB，随后 App 主动成功结束。
 
+真机设置 `POCKETROOT_SMOKE_LIFECYCLE=1` 时增加第 18 项：runtime 为 `.ready` 时，
+host 按 launch 返回的 PID 暂停 App 进程 3 秒，再恢复并写入一次性继续标记；App 必须
+执行新的 guest 命令、保持 `.ready`，随后完成同一 shutdown/peak-memory 门禁。这是
+进程级 suspend/resume 证据，不等价于 UIKit foreground/background 回调。
+
 第 9 项证明持续二进制输出可以被 Swift 持续消费，不会因 4 MiB native backlog
 本身而截断或损坏。第 17 项在 Simulator 上约束包含 RootFS 准备、8 MiB 输出、
 超限恢复、取消与 shutdown 的完整进程峰值；它不是物理设备 jetsam 证明。第 10 项
@@ -281,13 +286,24 @@ POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
   ./Scripts/run-runtime-device-smoke.sh
 ```
 
+在同一套门禁上增加真机进程暂停/恢复：
+
+```bash
+POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
+POCKETROOT_SMOKE_DEVICE=<physical-device-reference> \
+POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
+POCKETROOT_SMOKE_LIFECYCLE=1 \
+  ./Scripts/run-runtime-device-smoke.sh
+```
+
 runner 接受 `devicectl` 可识别的 CoreDevice UUID、硬件 UDID 或设备名，先通过官方
 JSON 输出验证 physical iOS 属性并解析硬件 UDID，再用于 `xcodebuild` 与后续
 `devicectl` 操作。设备必须已配对、启用 Developer Mode 且能用 development profile
 签名。runner 生成并签名 `PocketRootIshRuntimeSmoke`，验证 application identifier
-与 `get-task-allow`，安装 App、把固定 archive 复制到 App data container、attached
-launch 并取回 JSON report。默认结束后卸载 smoke App 并删除其 RootFS 数据；只有
-显式设置 `POCKETROOT_KEEP_DEVICE_APP=1` 才保留。
+与 `get-task-allow`，安装 App、把固定 archive 复制到 App data container 并取回
+JSON report。标准模式使用 attached launch；生命周期模式使用 launch JSON 返回的
+PID 驱动 suspend/resume。默认结束后终止进程、卸载 smoke App 并删除其 RootFS 数据；
+只有显式设置 `POCKETROOT_KEEP_DEVICE_APP=1` 才保留 App。
 
 2026-07-24 使用 Xcode 26.1.1、签名 iPhone 17 Pro / iOS 26.1、development
 provisioning 和 v0.4.0-abi.6 runtime pin 完成重跑。设备生成的 `success: true`
@@ -296,6 +312,11 @@ provisioning 和 v0.4.0-abi.6 runtime pin 完成重跑。设备生成的 `succes
 峰值为 84.6 MiB（门禁 256 MiB）。仓库不提交设备标识、profile 或本地报告。这关闭
 当前 signed iPhone one-shot/soft-shutdown/peak-memory smoke 基线，不代表 iPad、
 foreground/background、真机 jetsam、storage pressure 或强制断电门禁完成。
+
+同日，“Jack iPhone”（iPhone 14 Pro / iOS 26.6）通过标准 17 项和进程暂停/恢复
+18 项两条路径。暂停 3 秒后 runtime 保持 `.ready` 且新 guest 命令成功；生命周期
+模式峰值 89.7 MiB，标准模式峰值 89.8 MiB。这个结果证明 process suspend/resume
+恢复，不声明 UIKit foreground/background、jetsam 或长期后台执行已通过。
 
 ## 8. GitHub Actions
 
@@ -363,6 +384,7 @@ smoke。CI 的 Simulator 结果不证明签名真机或发行可用。
 - “iOS 18.2 arm64 Simulator smoke 通过”；
 - “Xcode 16.0 / iOS 18.0 SDK 完成 RootFS install、两个 final-link 和 17 项 smoke”；
 - “iPhone 17 Pro / iOS 26.1 signed one-shot smoke 通过”。
+- “Jack iPhone（iPhone 14 Pro / iOS 26.6）通过 18 项 process suspend/resume smoke”。
 
 不能由这些结果推导：
 
