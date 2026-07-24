@@ -29,8 +29,11 @@ Coverage includes the following relevant boundaries:
 - Synthetic Resources fixtures cover first install and reuse, private
   archive-snapshot isolation and byte bounds, pre-staging insufficient-capacity
   rejection, exact-budget acceptance, wider custom-extractor budgeting,
-  low-space upgrade preservation, ENOSPC rollback after both destructive
-  promotion checkpoints, reserved versions,
+  and low-space upgrade preservation. ENOSPC injection across snapshot,
+  partial gzip output, tar payload, installation record, promotion journal,
+  `current.json`, and both destructive promotion checkpoints verifies partial
+  gzip cleanup, staging/transaction removal, prior-install preservation, and
+  current-record rollback. Fixtures also cover reserved versions,
   corrupt replacement, failed upgrade/promotion rollback, interrupted
   transaction recovery, and a single installation under concurrent
   preparation.

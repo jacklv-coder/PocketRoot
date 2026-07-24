@@ -66,7 +66,7 @@ Use `PocketRootIshSystemFactory.prepareSystem` for composition, or use `PocketRo
 | Caller path replacement | Extract only a private snapshot and verify it twice |
 | Resource exhaustion | Compressed, expanded, payload, and entry-count limits |
 | Clearly insufficient new-install peak space | Preflight same-volume snapshot, temporary tar, payload, and 16 MiB reserve before staging |
-| Partial gzip output | Streaming failure cleanup |
+| Mid-operation ENOSPC leaving partial files or damaging the prior install | Snapshot/gzip/tar/record/journal/current fault matrix, staging cleanup, and promotion rollback |
 | Tar traversal | UTF-8 relative-path validation and destination containment |
 | Links and special nodes | Reject unsupported entry types |
 | Duplicate file or directory overwrite | Reject entries that map to the same path or filesystem target |
@@ -75,7 +75,9 @@ Use `PocketRootIshSystemFactory.prepareSystem` for composition, or use `PocketRo
 | Process interruption | Infer commit or restore from expected-final match, backup presence, and prior-install facts |
 | Concurrent preparation | Process-wide serial installation executor |
 
-Out of scope include an incorrectly trusted manifest, guest vulnerabilities, the app's download policy, complete ENOSPC/power/jetsam coverage, compliance, and user-data migration.
+Out of scope include an incorrectly trusted manifest, guest vulnerabilities,
+the app's download policy, physical storage pressure, power-loss durability,
+jetsam, compliance, and user-data migration.
 
 ## Install flow
 
@@ -138,8 +140,12 @@ The preflight reads important-usage capacity from the volume containing
 `rootfs/`. It prevents writes when a known manifest clearly cannot fit, but it
 does not reserve capacity. Mid-operation exhaustion still depends on staging
 cleanup, promotion rollback, and next-start recovery. Tests cover rejection,
-exact-budget acceptance, low-space upgrade preservation, and injected ENOSPC
-rollback after both destructive promotion checkpoints.
+exact-budget acceptance and low-space upgrade preservation. Deterministic
+ENOSPC injection covers snapshot, partial gzip tar output, tar payload,
+installation record, journal, and current record; every point verifies that
+the prior install and `current.json` remain unchanged and no staging or
+transaction residue remains. Both destructive promotion checkpoints remain
+covered as well.
 
 The replacement journal stores **no phase**. It contains the target version,
 expected installation record, whether an old installation existed, and the
@@ -165,9 +171,8 @@ recovery.
 The implementation uses atomic single-record writes and same-volume renames,
 but does not explicitly `fsync` files or directories. Recovery therefore
 covers filesystem state readable after ordinary process interruption; it does
-not promise that every write survives sudden power loss. Remaining ENOSPC work
-covers snapshot, gzip/tar, journal, and current-record write injection;
-power-loss claims also require explicit persistence work.
+not promise that every write survives sudden power loss. Power-loss claims
+still require explicit persistence work and a corresponding fault matrix.
 
 ## Update rule
 

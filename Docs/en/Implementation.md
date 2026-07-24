@@ -67,6 +67,12 @@ The returned instance never replaces `PocketRootSystem.shared`.
     Missing or mismatched `current.json` does not block reuse; rewrite it before
     returning.
 
+Test-only write fault points inject ENOSPC into snapshot, gzip output, tar
+payload, installation-record, promotion-journal, and current-record paths. The
+gzip fault fires after C/zlib accepts a configured output count so partial-tar
+deletion is exercised; the other points use production cleanup and rollback
+without changing the public API.
+
 The installer does not run SQLite integrity checks on every install; archive authenticity comes from the fixed digest. See [RootFS security](RootFS.md).
 
 ## Boot

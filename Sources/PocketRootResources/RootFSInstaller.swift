@@ -69,6 +69,10 @@ public actor PocketRootRootFSInstaller {
     private let promotionCheckpointHandler: (
         @Sendable (RootFSInstallerPromotionCheckpoint) throws -> Void
     )?
+    private let writeCheckpointHandler: (
+        @Sendable (RootFSInstallerWriteCheckpoint) throws -> Void
+    )?
+    private let injectedGzipENOSPCAfterByteCount: UInt64?
     private let availableCapacityProvider: (
         @Sendable (URL) throws -> UInt64
     )?
@@ -91,6 +95,8 @@ public actor PocketRootRootFSInstaller {
             ?? 256 * 1_024 * 1_024
         archiveSnapshotHandler = nil
         promotionCheckpointHandler = nil
+        writeCheckpointHandler = nil
+        injectedGzipENOSPCAfterByteCount = nil
         availableCapacityProvider = nil
         executor = .shared
     }
@@ -113,6 +119,9 @@ public actor PocketRootRootFSInstaller {
             ?? 256 * 1_024 * 1_024
         archiveSnapshotHandler = testHooks.archiveSnapshotHandler
         promotionCheckpointHandler = testHooks.promotionCheckpointHandler
+        writeCheckpointHandler = testHooks.writeCheckpointHandler
+        injectedGzipENOSPCAfterByteCount =
+            testHooks.injectedGzipENOSPCAfterByteCount
         availableCapacityProvider = testHooks.availableCapacityProvider
         executor = .shared
     }
@@ -126,6 +135,9 @@ public actor PocketRootRootFSInstaller {
         let maximumArchiveByteCount = maximumArchiveByteCount
         let archiveSnapshotHandler = archiveSnapshotHandler
         let promotionCheckpointHandler = promotionCheckpointHandler
+        let writeCheckpointHandler = writeCheckpointHandler
+        let injectedGzipENOSPCAfterByteCount =
+            injectedGzipENOSPCAfterByteCount
         let availableCapacityProvider = availableCapacityProvider
 
         return try await executor.perform { cancellation in
@@ -137,6 +149,9 @@ public actor PocketRootRootFSInstaller {
                 maximumArchiveByteCount: maximumArchiveByteCount,
                 archiveSnapshotHandler: archiveSnapshotHandler,
                 promotionCheckpointHandler: promotionCheckpointHandler,
+                writeCheckpointHandler: writeCheckpointHandler,
+                injectedGzipENOSPCAfterByteCount:
+                    injectedGzipENOSPCAfterByteCount,
                 availableCapacityProvider: availableCapacityProvider,
                 cancellation: cancellation
             )
@@ -153,6 +168,10 @@ public actor PocketRootRootFSInstaller {
         promotionCheckpointHandler: (
             @Sendable (RootFSInstallerPromotionCheckpoint) throws -> Void
         )?,
+        writeCheckpointHandler: (
+            @Sendable (RootFSInstallerWriteCheckpoint) throws -> Void
+        )?,
+        injectedGzipENOSPCAfterByteCount: UInt64?,
         availableCapacityProvider: (
             @Sendable (URL) throws -> UInt64
         )?,
@@ -246,6 +265,7 @@ public actor PocketRootRootFSInstaller {
             from: archiveURL,
             to: stagedArchiveURL,
             maximumByteCount: maximumArchiveByteCount,
+            writeCheckpointHandler: writeCheckpointHandler,
             cancellation: cancellation
         )
         try PocketRootRootFSValidator.validateArchive(
@@ -254,7 +274,13 @@ public actor PocketRootRootFSInstaller {
         )
         archiveSnapshotHandler?(stagedArchiveURL)
         try cancellation.check()
-        try extractor.extract(archiveURL: stagedArchiveURL, to: extractedURL)
+        try extractor.extract(
+            archiveURL: stagedArchiveURL,
+            to: extractedURL,
+            writeCheckpointHandler: writeCheckpointHandler,
+            injectedGzipENOSPCAfterByteCount:
+                injectedGzipENOSPCAfterByteCount
+        )
         try PocketRootRootFSValidator.validateArchive(
             at: stagedArchiveURL,
             against: manifest
@@ -266,7 +292,11 @@ public actor PocketRootRootFSInstaller {
             throw PocketRootRootFSInstallationError.missingArchiveRoot(candidateURL.path)
         }
         try PocketRootRootFSValidator.validateMaterializedFakeFS(at: candidateURL)
-        try writeInstallationRecord(expectedRecord, to: candidateURL)
+        try writeInstallationRecord(
+            expectedRecord,
+            to: candidateURL,
+            writeCheckpointHandler: writeCheckpointHandler
+        )
         try cancellation.check()
 
         try promote(
@@ -275,7 +305,8 @@ public actor PocketRootRootFSInstaller {
             currentRecordURL: currentRecordURL,
             record: expectedRecord,
             relativePath: version,
-            promotionCheckpointHandler: promotionCheckpointHandler
+            promotionCheckpointHandler: promotionCheckpointHandler,
+            writeCheckpointHandler: writeCheckpointHandler
         )
 
         return PocketRootRootFSInstallation(
@@ -359,6 +390,9 @@ public actor PocketRootRootFSInstaller {
         from sourceURL: URL,
         to destinationURL: URL,
         maximumByteCount: UInt64,
+        writeCheckpointHandler: (
+            @Sendable (RootFSInstallerWriteCheckpoint) throws -> Void
+        )?,
         cancellation: RootFSInstallationCancellation
     ) throws {
         guard sourceURL.isFileURL, destinationURL.isFileURL else {
@@ -458,6 +492,14 @@ public actor PocketRootRootFSInstaller {
                     )
                 }
                 writtenByteCount += bytesWritten
+                do {
+                    try writeCheckpointHandler?(.archiveSnapshot)
+                } catch {
+                    throw PocketRootRootFSInstallationError.installationFailed(
+                        "Unable to write staged RootFS archive: "
+                            + failureDescription(error)
+                    )
+                }
             }
             copiedByteCount += chunkByteCount
         }
@@ -502,26 +544,48 @@ public actor PocketRootRootFSInstaller {
 
     private static func writeInstallationRecord(
         _ record: InstallationRecord,
-        to rootFSURL: URL
+        to rootFSURL: URL,
+        writeCheckpointHandler: (
+            @Sendable (RootFSInstallerWriteCheckpoint) throws -> Void
+        )?
     ) throws {
         let recordURL = rootFSURL.appendingPathComponent(
             ".pocketroot-rootfs.json",
             isDirectory: false
         )
-        try encoded(record).write(to: recordURL, options: .atomic)
+        do {
+            try encoded(record).write(to: recordURL, options: .atomic)
+            try writeCheckpointHandler?(.installationRecord)
+        } catch {
+            throw PocketRootRootFSInstallationError.installationFailed(
+                "Unable to write the RootFS installation record: "
+                    + failureDescription(error)
+            )
+        }
     }
 
     private static func writeCurrentRecord(
         _ record: InstallationRecord,
         relativePath: String,
-        to url: URL
+        to url: URL,
+        writeCheckpointHandler: (
+            @Sendable (RootFSInstallerWriteCheckpoint) throws -> Void
+        )? = nil
     ) throws {
         let current = CurrentInstallationRecord(
             version: record.version,
             sha256: record.sha256,
             relativePath: relativePath
         )
-        try encoded(current).write(to: url, options: .atomic)
+        do {
+            try encoded(current).write(to: url, options: .atomic)
+            try writeCheckpointHandler?(.currentRecord)
+        } catch {
+            throw PocketRootRootFSInstallationError.installationFailed(
+                "Unable to write the current RootFS record: "
+                    + failureDescription(error)
+            )
+        }
     }
 
     private static func encoded<T: Encodable>(_ value: T) throws -> Data {
@@ -715,6 +779,9 @@ public actor PocketRootRootFSInstaller {
         relativePath: String,
         promotionCheckpointHandler: (
             @Sendable (RootFSInstallerPromotionCheckpoint) throws -> Void
+        )?,
+        writeCheckpointHandler: (
+            @Sendable (RootFSInstallerWriteCheckpoint) throws -> Void
         )?
     ) throws {
         let fileManager = FileManager.default
@@ -748,10 +815,12 @@ public actor PocketRootRootFSInstaller {
         )
         do {
             try encoded(journal).write(to: journalURL, options: .atomic)
+            try writeCheckpointHandler?(.promotionJournal)
         } catch {
             try? fileManager.removeItem(at: transactionURL)
             throw PocketRootRootFSInstallationError.installationFailed(
-                "Unable to record the RootFS promotion transaction: \(error.localizedDescription)"
+                "Unable to record the RootFS promotion transaction: "
+                    + failureDescription(error)
             )
         }
 
@@ -770,7 +839,8 @@ public actor PocketRootRootFSInstaller {
             try writeCurrentRecord(
                 record,
                 relativePath: relativePath,
-                to: currentRecordURL
+                to: currentRecordURL,
+                writeCheckpointHandler: writeCheckpointHandler
             )
         } catch {
             let promotionError = error
@@ -799,6 +869,11 @@ public actor PocketRootRootFSInstaller {
     }
 
     private static func failureDescription(_ error: Error) -> String {
+        if case .installationFailed(let message) =
+            error as? PocketRootRootFSInstallationError
+        {
+            return message
+        }
         let cocoaError = error as NSError
         if cocoaError.domain == NSPOSIXErrorDomain,
            let errorNumber = Int32(exactly: cocoaError.code)
@@ -822,11 +897,24 @@ enum RootFSInstallerPromotionCheckpoint: Sendable, Equatable {
     case candidatePromoted
 }
 
+enum RootFSInstallerWriteCheckpoint: Sendable, Equatable {
+    case archiveSnapshot
+    case gzipOutput
+    case tarPayload
+    case installationRecord
+    case promotionJournal
+    case currentRecord
+}
+
 struct RootFSInstallerTestHooks: Sendable {
     let archiveSnapshotHandler: (@Sendable (URL) -> Void)?
     let promotionCheckpointHandler: (
         @Sendable (RootFSInstallerPromotionCheckpoint) throws -> Void
     )?
+    let writeCheckpointHandler: (
+        @Sendable (RootFSInstallerWriteCheckpoint) throws -> Void
+    )?
+    let injectedGzipENOSPCAfterByteCount: UInt64?
     let availableCapacityProvider: (
         @Sendable (URL) throws -> UInt64
     )?
@@ -836,12 +924,19 @@ struct RootFSInstallerTestHooks: Sendable {
         promotionCheckpointHandler: (
             @Sendable (RootFSInstallerPromotionCheckpoint) throws -> Void
         )? = nil,
+        writeCheckpointHandler: (
+            @Sendable (RootFSInstallerWriteCheckpoint) throws -> Void
+        )? = nil,
+        injectedGzipENOSPCAfterByteCount: UInt64? = nil,
         availableCapacityProvider: (
             @Sendable (URL) throws -> UInt64
         )? = nil
     ) {
         self.archiveSnapshotHandler = archiveSnapshotHandler
         self.promotionCheckpointHandler = promotionCheckpointHandler
+        self.writeCheckpointHandler = writeCheckpointHandler
+        self.injectedGzipENOSPCAfterByteCount =
+            injectedGzipENOSPCAfterByteCount
         self.availableCapacityProvider = availableCapacityProvider
     }
 }
