@@ -121,10 +121,15 @@ The physical runner requires Xcode to select a valid development profile for `PO
 - `No Account for Team`: the selected team has no usable Xcode account/profile. Select the team that can development-sign locally or complete account/signing setup in Xcode.
 - `No profiles`: no development profile matches the bundle ID or device.
 - `Unable to launch ... Locked`: keep the device unlocked and rerun; successful installation does not permit a foreground launch while locked.
-- `Lifecycle smoke did not reach its host-suspend checkpoint`: confirm that
-  the App did not exit early and inspect the last progress printed by the
-  runner; do not forge the resume marker.
-- `Lifecycle smoke launch did not return a process identifier`: the current
+- `Process-suspend smoke did not reach its host checkpoint`: confirm that the
+  App did not exit early and inspect the last progress; do not forge the marker.
+- `UIKit-lifecycle smoke did not reach its host checkpoint` or
+  `UIKit lifecycle App did not report its background callback`: keep the
+  device unlocked, confirm Settings can open, and inspect the last progress.
+- `UIKit lifecycle activation did not preserve the smoke process PID`: iOS
+  terminated or relaunched the App, so the run cannot prove one runtime
+  survived the transition and must fail.
+- `... smoke launch did not return a process identifier`: the current
   Xcode/CoreDevice did not return the supported launch-JSON PID; do not infer
   a PID from human-readable output.
 - entitlement validation failure: do not bypass it; verify the application identifier, team identifier, and `get-task-allow`.

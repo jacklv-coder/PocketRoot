@@ -101,6 +101,10 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   suspends/resumes the App by the launch-JSON PID and requires a post-resume
   guest command plus shutdown. Jack iPhone (iPhone 14 Pro / iOS 26.6) passed
   all 18 checks with an 89.7 MiB peak.
+- The mutually exclusive `POCKETROOT_SMOKE_UI_LIFECYCLE=1` mode uses Settings
+  to produce a real UIKit background/foreground transition, requires the
+  original PID and ordered App-delegate callbacks, and executes a new guest
+  command after activation. Jack iPhone passed all 18 checks at an 89.4 MiB peak.
 
 ### Security
 

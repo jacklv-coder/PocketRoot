@@ -98,6 +98,9 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
 - 真机 runner 增加显式 `POCKETROOT_SMOKE_LIFECYCLE=1` 模式：按 launch JSON PID
   暂停/恢复 App，并要求恢复后的 guest 命令和 shutdown 成功；Jack iPhone
   （iPhone 14 Pro / iOS 26.6）通过 18 项，峰值 89.7 MiB。
+- 真机 runner 增加互斥的 `POCKETROOT_SMOKE_UI_LIFECYCLE=1` 模式：用 Settings
+  触发真实 UIKit 后台/前台切换，要求原 PID 不变、三项 App delegate 回调按序到达，
+  且恢复后的 guest 命令成功；Jack iPhone 通过 18 项，峰值 89.4 MiB。
 
 ### Security
 

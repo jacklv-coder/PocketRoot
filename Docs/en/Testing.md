@@ -13,7 +13,7 @@ PocketRoot separates host logic, real RootFS, iOS build, native final-link, and 
 | Demo build | `./Scripts/build.sh` | Umbrella and UIKit build | Experimental graph |
 | Native final link | `./Scripts/build-runtime-spike.sh` | Full graph forms arm64 executables | Physical or guest behavior |
 | Simulator native smoke | `./Scripts/run-runtime-smoke.sh` | Prepare, boot, command bounds, returning soft shutdown | Other toolchains, physical devices, distribution |
-| Physical native smoke | `./Scripts/run-runtime-device-smoke.sh` | Same 17 checks, development entitlements, returning soft shutdown | Sustained lifecycle, jetsam, iPad, distribution |
+| Physical native smoke | `./Scripts/run-runtime-device-smoke.sh` | Same 17 checks, optional process suspend/resume or UIKit lifecycle, development entitlements, returning soft shutdown | Jetsam, iPad, distribution |
 | Documentation | `./Scripts/check-docs.sh` | Pairs, Chinese coverage, relative links | Implementation correctness |
 
 ## Package tests
@@ -138,6 +138,12 @@ marker. The App must execute a new guest command, remain `.ready`, and then
 complete the same shutdown and peak-memory gates. This is process-level
 suspend/resume evidence, not UIKit foreground/background callback evidence.
 
+With the mutually exclusive `POCKETROOT_SMOKE_UI_LIFECYCLE=1`, the eighteenth
+check covers real UIKit lifecycle delivery. The host opens Settings, waits for
+`applicationDidEnterBackground`, activates the original PID, and requires
+ordered `applicationWillEnterForeground` and `applicationDidBecomeActive`
+callbacks, followed by a new guest command, `.ready`, shutdown, and peak memory.
+
 The sustained-output check proves that Swift can continuously consume binary
 output without truncation or corruption merely because it exceeds the 4 MiB
 native backlog. The lifecycle high-water check covers RootFS preparation,
@@ -186,6 +192,16 @@ POCKETROOT_SMOKE_LIFECYCLE=1 \
   ./Scripts/run-runtime-device-smoke.sh
 ```
 
+Use a separate mode for real UIKit background/foreground callbacks:
+
+```bash
+POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
+POCKETROOT_SMOKE_DEVICE=<physical-device-reference> \
+POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
+POCKETROOT_SMOKE_UI_LIFECYCLE=1 \
+  ./Scripts/run-runtime-device-smoke.sh
+```
+
 The reference may be any CoreDevice UUID, hardware UDID, or device name
 accepted by `devicectl`. The runner validates a physical iOS device through
 the supported JSON output and resolves its hardware UDID before `xcodebuild`
@@ -193,9 +209,10 @@ and later `devicectl` operations. The paired device must have Developer Mode
 enabled and support development provisioning. The runner verifies the
 application identifier and `get-task-allow`, installs the App, copies the
 pinned archive into its data container, and retrieves the JSON report. Standard
-mode uses an attached launch; lifecycle mode uses the PID returned by launch
-JSON to drive suspend/resume. It terminates the process and uninstalls the App
-and RootFS data by default; `POCKETROOT_KEEP_DEVICE_APP=1` retains the App.
+mode uses an attached launch. The mutually exclusive host-control modes use
+the launch-JSON PID for suspend/resume or open Settings and reactivate that
+same PID for UIKit callbacks. The runner terminates the process and uninstalls
+the App and RootFS data by default; `POCKETROOT_KEEP_DEVICE_APP=1` retains it.
 
 The 2026-07-24 rerun used Xcode 26.1.1, a development-provisioned iPhone 17 Pro
 on iOS 26.1, and the v0.4.0-abi.6 runtime pin. The device-produced
@@ -214,6 +231,13 @@ three-second suspension the runtime remained `.ready` and a new guest command
 passed. Lifecycle-mode peak memory was 89.7 MiB and standard-mode peak memory
 was 89.8 MiB. This proves process suspend/resume recovery, not UIKit
 foreground/background callbacks, jetsam, or sustained background execution.
+
+The same Jack iPhone then passed the real UIKit 18-check path: Settings caused
+the background callback, reactivation preserved the original PID, ordered
+foreground/active callbacks arrived, the new guest command passed, and peak
+memory was 89.4 MiB. After the shared-runner refactor, the standard 17-check
+and process-suspend 18-check paths also regressed green at 82.7 MiB each.
+These results do not prove jetsam, memory-warning, sustained background, or iPad.
 
 ## CI
 

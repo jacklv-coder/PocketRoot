@@ -180,6 +180,10 @@ POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
 `POCKETROOT_SMOKE_LIFECYCLE=1`。runner 会在 runtime `.ready` 时按 PID 暂停
 3 秒、恢复并要求新的 guest 命令成功；这不等价于 UIKit 前后台回调验证。
 
+需要验证真实 UIKit 前后台回调时，改用互斥的
+`POCKETROOT_SMOKE_UI_LIFECYCLE=1`。runner 会打开 Settings 使 App 进入后台，
+再激活原进程，并要求 background、foreground、active 回调和新 guest 命令成功。
+
 ## 8. 常用命令
 
 | 目标 | 命令 |
@@ -193,6 +197,7 @@ POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
 | iOS 18 原生 smoke | `POCKETROOT_ROOTFS_ARCHIVE=... ./Scripts/run-runtime-smoke.sh` |
 | 签名真机原生 smoke | `POCKETROOT_ROOTFS_ARCHIVE=... POCKETROOT_SMOKE_DEVICE=... POCKETROOT_DEVELOPMENT_TEAM=... ./Scripts/run-runtime-device-smoke.sh` |
 | 签名真机暂停/恢复 smoke | `POCKETROOT_SMOKE_LIFECYCLE=1` 加到签名真机 smoke 命令 |
+| 签名真机 UIKit lifecycle smoke | `POCKETROOT_SMOKE_UI_LIFECYCLE=1` 加到签名真机 smoke 命令 |
 | 双语文档和链接检查 | `./Scripts/check-docs.sh` |
 
 ## 9. 不应提交的本地内容
