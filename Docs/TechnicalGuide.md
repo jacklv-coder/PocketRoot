@@ -56,10 +56,10 @@ flowchart LR
 | 层 | 仓库或资产 | 负责内容 | 不负责内容 |
 | --- | --- | --- | --- |
 | 产品与集成层 | [`jacklv-coder/PocketRoot`](https://github.com/jacklv-coder/PocketRoot) | Swift 公共 API、RootFS 安装、iSH adapter、Demo、集成测试和产品文档 | 构建 iSH 原生二进制 |
-| 包装源码层 | [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) 的固定 revision | Swift wrapper、C ABI 源码和 binary target 声明 | 当前声明中的 URL 可以仍指向第三方已发布制品 |
+| 包装源码层 | [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) `fe4ed63` | Swift wrapper、C ABI 源码和 binary target 声明 | 当前声明仍固定已发布 ABI.5 制品 |
 | 当前原生制品 | `v0.4.0-abi.5` URL/checksum | 被 PocketRoot 最终链接的 XCFramework | 用户 fork 自托管 prerelease，不含 RootFS |
 | 当前原生运行时层 | 上述 package revision 记录的精确 iSH gitlink | iSH 内核、进程、signal、halt 和线程生命周期等底层行为 | 不能用另一个 branch 或本地 checkout 替代 |
-| 当前 release commit | [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) `bcbf8dd` | manifest-only 固定 ABI.5 URL/checksum | 与 tag、Release target 和 `main` 一致 |
+| 当前 release commit | [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) `bcbf8dd` | manifest-only 固定 ABI.5 URL/checksum | 与 tag 和 Release target 一致；wrapper pin 在其后增加 source-only deadline 修复 |
 | Guest 文件系统 | 经许可审查的 `fs.tar.gz` | Alpine 用户空间、fakefs 数据与 guest 工具 | 不存放在 PocketRoot Git 仓库中 |
 
 ### 为什么需要修改 `ish-arm64-pkg`
@@ -97,9 +97,10 @@ PocketRootIshSystemFactory
 ```
 
 PocketRoot 负责链路的前半段和产品边界；后半段必须阅读当前 package revision 的对应源码
-和 gitlink。当前固定 revision 是 `v0.4.0-abi.5` 的 manifest-only release commit，
-其 binaryTarget 指向已独立验证的 ABI.5 资产；原生二进制行为以该 Release 的对应源码、
-哈希和运行验证为证据。ABI.5 会在 embedded bootstrap 和 guest task 线程解除内部
+和 gitlink。当前 wrapper revision `fe4ed63` 在 ABI.5 release commit 后增加 Swift
+参数封送与 native admission 共用的绝对 deadline 修复，其 binaryTarget 仍指向已独立
+验证的 ABI.5 资产；原生二进制行为以该 Release 的对应源码、哈希和运行验证为证据。
+ABI.5 会在 embedded bootstrap 和 guest task 线程解除内部
 SIGUSR1 屏蔽，使 guest signal 可打断阻塞中的宿主 syscall；它同时包含 ABI.3 的
 固定大小 uname 有界复制和 ABI.2 的 `/proc` 生命周期锁修复。
 

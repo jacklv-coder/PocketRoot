@@ -12,7 +12,7 @@ SHA-256 的唯一事实源。branch、moving tag、未验证 release alias 和�
 | 字段 | 审核值 |
 | --- | --- |
 | 仓库 | `https://github.com/jacklv-coder/ish-arm64-pkg.git` |
-| 完整 revision | `bcbf8ddb3ee855cd119050a9e16b55dbfe8ceec6` |
+| 完整 wrapper revision | `fe4ed63331a7e72f1d12f69296cd3c07231a4f0e` |
 | Release | `v0.4.0-abi.5`（prerelease） |
 | Tag peeled commit | `bcbf8ddb3ee855cd119050a9e16b55dbfe8ceec6` |
 | Swift product | `IshEmbed` |
@@ -25,13 +25,15 @@ SHA-256 的唯一事实源。branch、moving tag、未验证 release alias 和�
 ```swift
 .package(
     url: "https://github.com/jacklv-coder/ish-arm64-pkg.git",
-    revision: "bcbf8ddb3ee855cd119050a9e16b55dbfe8ceec6"
+    revision: "fe4ed63331a7e72f1d12f69296cd3c07231a4f0e"
 )
 ```
 
-消费 revision 就是 `v0.4.0-abi.5` 的 manifest-only release commit；该提交只把
-`Package.swift` 的 binary target URL/checksum 切到已经公开且独立验证的 ABI.5
-资产。Release tag peeled commit、Release target 与 `origin/main` 都是
+消费 revision `fe4ed63331a7e72f1d12f69296cd3c07231a4f0e` 在已发布 ABI.5
+manifest 之上加入 source-only Swift deadline 修复：wrapper 从 API 入口保留绝对
+budget，在 argv/env/cwd/chroot 封送后、紧贴 C 调用重新计算剩余毫秒，期限已耗尽时
+不会进入 native。该 revision 的 `Package.swift` 仍通过同一 URL/checksum 固定公开且
+独立验证的 ABI.5 资产；Release tag peeled commit 与 Release target 仍是
 `bcbf8ddb3ee855cd119050a9e16b55dbfe8ceec6`。包仓库继续使用绝对 SSH-over-443
 submodule URL；无 SSH 私钥的 GitHub CI 只在 checkout 时应用公开 HTTPS 只读重写。
 
@@ -71,7 +73,7 @@ XCFramework 只有 `ios-arm64` 和 `ios-arm64-simulator` 两个 arm64 slice，mi
 - iOS 18.2 Simulator 使用固定 v0.3.3 RootFS 通过 17 项 native smoke，其中 8 MiB
   二进制 stdout 跨越 backlog 后逐字节精确、阻塞命令取消后可恢复执行，shutdown
   返回 Swift、状态为 `.terminated`，后续命令得到 `restartRequired`，完整生命周期
-  `ru_maxrss` 为 156.8 MiB、低于 256 MiB 门限。
+  `ru_maxrss` 为 154.6 MiB、低于 256 MiB 门限。
 - Xcode 16.0 / iOS 18.0 SDK 在 arm64 hosted runner 上完成真实 RootFS install、
   Simulator/device final-link，并通过同一套 17 项 native smoke。
 

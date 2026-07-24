@@ -16,7 +16,7 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
 - 加入 XcodeGen `project.yml`、工程生成、测试和构建脚本。
 - 加入 placeholder runtime、terminal API 基础与单元测试。
 - 统一 package、Demo、tests 和 CI 的 iOS 18.0 deployment baseline。
-- 固定 Experimental `PocketRootIshRuntime` 到 IshEmbed revision `bcbf8ddb3ee855cd119050a9e16b55dbfe8ceec6` 与 `v0.4.0-abi.5` XCFramework。
+- 固定 Experimental `PocketRootIshRuntime` 到 IshEmbed wrapper revision `fe4ed63331a7e72f1d12f69296cd3c07231a4f0e` 与 `v0.4.0-abi.5` XCFramework。
 - 加入 Experimental `PocketRootIshRuntimeIntegration`，组合调用方本地 RootFS 与原生 runtime。
 - 加入 process-wide ownership、serial native execution、lifecycle reentrancy protection。
 - 加入一次性命令的 cwd、environment、stderr merge、exit、signal、timeout 和 stream mapping。

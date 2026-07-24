@@ -13,7 +13,7 @@ Audit date: 2026-07-24
 | Field | Audited value |
 | --- | --- |
 | Repository | `https://github.com/jacklv-coder/ish-arm64-pkg.git` |
-| Exact revision | `bcbf8ddb3ee855cd119050a9e16b55dbfe8ceec6` |
+| Exact wrapper revision | `fe4ed63331a7e72f1d12f69296cd3c07231a4f0e` |
 | Release | `v0.4.0-abi.5` prerelease |
 | Tag peeled commit | `bcbf8ddb3ee855cd119050a9e16b55dbfe8ceec6` |
 | Swift product | `IshEmbed` |
@@ -26,14 +26,17 @@ Both `Package.swift` and `Package.resolved` pin the full revision:
 ```swift
 .package(
     url: "https://github.com/jacklv-coder/ish-arm64-pkg.git",
-    revision: "bcbf8ddb3ee855cd119050a9e16b55dbfe8ceec6"
+    revision: "fe4ed63331a7e72f1d12f69296cd3c07231a4f0e"
 )
 ```
 
-The consumed revision is the manifest-only release commit for
-`v0.4.0-abi.5`; it changes only the binary-target URL/checksum in
-`Package.swift` to the published and independently verified ABI.5 asset. The
-peeled tag, Release target, and `origin/main` all identify
+Consumed revision `fe4ed63331a7e72f1d12f69296cd3c07231a4f0e` adds a
+source-only Swift deadline fix on top of the published ABI.5 manifest. The
+wrapper preserves an absolute budget from API entry and recomputes the native
+milliseconds after argv/env/cwd/chroot marshalling, immediately before the C
+call, so an expired request never enters native admission. Its `Package.swift`
+still pins the published and independently verified ABI.5 asset by the same
+URL/checksum. The peeled tag and Release target remain
 `bcbf8ddb3ee855cd119050a9e16b55dbfe8ceec6`. The package repository keeps an
 absolute SSH-over-443 submodule URL; GitHub CI without an SSH private key
 applies a public read-only HTTPS rewrite only while checking out source.
@@ -76,7 +79,7 @@ SwiftPM validates the zip checksum. The release transaction also verified:
 - an iOS 18.2 Simulator passed the 17-check native smoke with the pinned v0.3.3
   RootFS, returned byte-exact 8 MiB binary stdout beyond the backlog, recovered
   after cancelling a blocked command, returned `.terminated` from shutdown,
-  returned `restartRequired` afterward, and reported a 156.8 MiB lifecycle
+  returned `restartRequired` afterward, and reported a 154.6 MiB lifecycle
   `ru_maxrss` against the 256 MiB limit.
 - Xcode 16.0 / iOS 18.0 SDK on an arm64 hosted runner completed real RootFS
   installation, Simulator/device final links, and the same 17-check native smoke.

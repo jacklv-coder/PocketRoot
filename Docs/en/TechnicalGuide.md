@@ -59,10 +59,10 @@ The textual relationship is:
 | Layer | Repository or asset | Owns | Does not own |
 | --- | --- | --- | --- |
 | Product and integration | [`jacklv-coder/PocketRoot`](https://github.com/jacklv-coder/PocketRoot) | Public Swift API, RootFS installation, iSH adapter, Demo, integration tests, and product docs | Building the native iSH binary |
-| Packaging source | A pinned revision of [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) | Swift wrapper, C ABI source, and binary-target declaration | The URL in the current declaration may still select a third-party published artifact |
+| Packaging source | [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) `fe4ed63` | Swift wrapper, C ABI source, and binary-target declaration | The current declaration still pins the published ABI.5 artifact |
 | Current native artifact | The `v0.4.0-abi.5` URL/checksum | XCFramework final-linked by PocketRoot | Self-hosted fork prerelease; no RootFS |
 | Current native runtime | The exact iSH gitlink recorded by that package revision | The iSH kernel and low-level process, signal, halt, and thread lifecycle | It cannot be replaced by another branch or local checkout |
-| Current release commit | [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) `bcbf8dd` | Manifest-only pin to the ABI.5 URL/checksum | Matches the tag, Release target, and `main` |
+| Current release commit | [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) `bcbf8dd` | Manifest-only pin to the ABI.5 URL/checksum | Matches the tag and Release target; the wrapper pin adds a later source-only deadline fix |
 | Guest filesystem | License-reviewed `fs.tar.gz` | Alpine userspace, fakefs data, and guest tools | Storage in the PocketRoot Git repository |
 
 ### Why `ish-arm64-pkg` must sometimes change
@@ -102,8 +102,9 @@ PocketRootIshSystemFactory
 
 PocketRoot owns the first half and the product boundary. For the second half,
 read the corresponding source and gitlink from the package revision currently
-pinned by PocketRoot. The pin is the manifest-only release commit for
-`v0.4.0-abi.5`, and its binary target selects the independently verified ABI.5
+pinned by PocketRoot. Wrapper revision `fe4ed63` adds an absolute deadline
+across Swift option marshalling and native admission after the ABI.5 release
+commit, while its binary target still selects the independently verified ABI.5
 asset. Native behavior remains evidenced by that Release's corresponding
 source, hashes, and runtime validation. ABI.5 unblocks internal SIGUSR1 on the
 embedded bootstrap and guest task threads so guest signals can interrupt

@@ -148,8 +148,9 @@ smoke App and waits for the console client. A pre-success crash cannot produce
 a passing report. The script serves as a repository-owned local gate and is
 also invoked by the dedicated minimum-toolchain GitHub Actions job.
 
-On 2026-07-24, `v0.4.0-abi.5` passed all 17 checks on an iOS 18.2 arm64
-Simulator with byte-exact 8 MiB binary stdout and a 156.8 MiB lifecycle peak
+On 2026-07-24, `v0.4.0-abi.5` with wrapper revision `fe4ed63` passed all 17
+checks on an iOS 18.2 arm64 Simulator with byte-exact 8 MiB binary stdout and
+a 154.6 MiB lifecycle peak
 against the 256 MiB limit; shutdown recorded `returned, terminated, restart required`.
 
 The repository's minimum-toolchain job explicitly selects Xcode 16.0 and the

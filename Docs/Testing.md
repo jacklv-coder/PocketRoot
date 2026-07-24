@@ -261,8 +261,9 @@ console client 结束。shutdown 前的 crash 不会产生成功 report，不能
 
 该脚本既可作为仓库维护的本地门禁，也由最低工具链 GitHub Actions job 调用。
 
-2026-07-24，`v0.4.0-abi.5` 在 iOS 18.2 arm64 Simulator 通过全部 17 项；8 MiB
-binary stdout 逐字节精确，完整生命周期峰值为 156.8 MiB（门限 256 MiB），shutdown
+2026-07-24，`v0.4.0-abi.5` 与 wrapper revision `fe4ed63` 在 iOS 18.2 arm64
+Simulator 通过全部 17 项；8 MiB binary stdout 逐字节精确，完整生命周期峰值为
+154.6 MiB（门限 256 MiB），shutdown
 记录为 `returned, terminated, restart required`。
 
 仓库的最低工具链 job 会在 arm64 macOS runner 上明确选择 Xcode 16.0 与 iOS 18.0

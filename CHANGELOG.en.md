@@ -16,7 +16,7 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 - XcodeGen project source, generation, test, and build scripts.
 - Placeholder runtime, terminal API foundations, and unit tests.
 - Unified iOS 18 deployment baseline.
-- Experimental `PocketRootIshRuntime` pinned to IshEmbed revision `bcbf8ddb3ee855cd119050a9e16b55dbfe8ceec6` and the `v0.4.0-abi.5` XCFramework.
+- Experimental `PocketRootIshRuntime` pinned to IshEmbed wrapper revision `fe4ed63331a7e72f1d12f69296cd3c07231a4f0e` and the `v0.4.0-abi.5` XCFramework.
 - Experimental `PocketRootIshRuntimeIntegration` composing caller-local RootFS installation and native runtime.
 - Process ownership, serial native execution, and lifecycle reentrancy protection.
 - One-shot cwd, environment, stderr merge, exit, signal, timeout, and stream mapping.
