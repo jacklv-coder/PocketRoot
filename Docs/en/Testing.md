@@ -160,16 +160,24 @@ final-links arm64 Simulator and unsigned-device Apps, and runs the same
 
 ### Signed iPhone/iPad runner
 
-Use explicit physical-device and team identifiers:
+Use an explicit physical-device reference and team identifier:
 
 ```bash
 POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
-POCKETROOT_SMOKE_DEVICE=<physical-device-udid> \
+POCKETROOT_SMOKE_DEVICE=<physical-device-reference> \
 POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
   ./Scripts/run-runtime-device-smoke.sh
 ```
 
-The paired device must have Developer Mode enabled and support development provisioning. The runner verifies the application identifier and `get-task-allow`, installs with `devicectl`, copies the pinned archive into the App data container, performs an attached launch, and retrieves the JSON report. It uninstalls the App and RootFS data by default; `POCKETROOT_KEEP_DEVICE_APP=1` is the explicit opt-out.
+The reference may be any CoreDevice UUID, hardware UDID, or device name
+accepted by `devicectl`. The runner validates a physical iOS device through
+the supported JSON output and resolves its hardware UDID before `xcodebuild`
+and later `devicectl` operations. The paired device must have Developer Mode
+enabled and support development provisioning. The runner verifies the
+application identifier and `get-task-allow`, installs the App, copies the
+pinned archive into its data container, performs an attached launch, and
+retrieves the JSON report. It uninstalls the App and RootFS data by default;
+`POCKETROOT_KEEP_DEVICE_APP=1` is the explicit opt-out.
 
 The 2026-07-23 record used Xcode 26.1.1 (17B100), an iPhone 17 Pro, iOS 26.1
 (23B85), and development provisioning. Archive size/digest, report environment,

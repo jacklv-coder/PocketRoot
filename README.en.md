@@ -175,12 +175,12 @@ POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
   ./Scripts/run-runtime-smoke.sh
 
 POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
-POCKETROOT_SMOKE_DEVICE=<physical-device-udid> \
+POCKETROOT_SMOKE_DEVICE=<physical-device-reference> \
 POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
   ./Scripts/run-runtime-device-smoke.sh
 ```
 
-Both native runners require Apple Silicon and the exact local archive. The first uses an iOS 18 Simulator; the second requires a paired iOS 18+ physical device with Developer Mode and development signing. They cover preparation, guest identity, command context, streams, exit, timeout/output-limit recovery, and soft shutdown that returns to Swift. See [Testing](Docs/en/Testing.md).
+Both native runners require Apple Silicon and the exact local archive. The first uses an iOS 18 Simulator; the second requires a paired iOS 18+ physical device with Developer Mode and development signing. Its reference may be any CoreDevice UUID, hardware UDID, or device name accepted by `devicectl`; the runner validates a physical iOS device and resolves its hardware UDID first. They cover preparation, guest identity, command context, streams, exit, timeout/output-limit recovery, and soft shutdown that returns to Swift. See [Testing](Docs/en/Testing.md).
 
 ## Documentation
 

@@ -165,12 +165,16 @@ xcrun simctl uninstall "$SMOKE_DEVICE_UDID" com.jacklv.PocketRootIshRuntimeSmoke
 
 ```bash
 POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
-POCKETROOT_SMOKE_DEVICE=<physical-device-udid> \
+POCKETROOT_SMOKE_DEVICE=<physical-device-reference> \
 POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
   ./Scripts/run-runtime-device-smoke.sh
 ```
 
-真机 runner 默认在取回报告后卸载测试 App 和注入的 RootFS；设置 `POCKETROOT_KEEP_DEVICE_APP=1` 才会保留。不要把 UDID、provisioning profile 或本地报告提交到仓库。
+`POCKETROOT_SMOKE_DEVICE` 可以使用 `devicectl` 接受的 CoreDevice UUID、硬件 UDID
+或设备名；runner 会先验证它是 physical iOS device，再把解析出的硬件 UDID 传给
+`xcodebuild`。真机 runner 默认在取回报告后卸载测试 App 和注入的 RootFS；设置
+`POCKETROOT_KEEP_DEVICE_APP=1` 才会保留。不要把设备标识、provisioning profile
+或本地报告提交到仓库。
 
 ## 8. 常用命令
 

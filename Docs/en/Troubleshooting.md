@@ -114,6 +114,10 @@ Uninstalling also removes the App data container. If the device was shut down be
 
 The physical runner requires Xcode to select a valid development profile for `POCKETROOT_DEVELOPMENT_TEAM`; the target must be paired, in Developer Mode, and unlocked. Common failures:
 
+- `POCKETROOT_SMOKE_DEVICE did not resolve`: pass a CoreDevice UUID, hardware
+  UDID, or device name recognized by `devicectl`; the runner validates physical
+  iOS properties and resolves the hardware UDID required by the Xcode
+  destination.
 - `No Account for Team`: the selected team has no usable Xcode account/profile. Select the team that can development-sign locally or complete account/signing setup in Xcode.
 - `No profiles`: no development profile matches the bundle ID or device.
 - `Unable to launch ... Locked`: keep the device unlocked and rerun; successful installation does not permit a foreground launch while locked.

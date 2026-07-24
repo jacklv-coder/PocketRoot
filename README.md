@@ -180,12 +180,12 @@ POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
   ./Scripts/run-runtime-smoke.sh
 
 POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
-POCKETROOT_SMOKE_DEVICE=<physical-device-udid> \
+POCKETROOT_SMOKE_DEVICE=<physical-device-reference> \
 POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
   ./Scripts/run-runtime-device-smoke.sh
 ```
 
-两个 smoke runner 都要求 Apple Silicon 和精确匹配固定清单的本地归档；前者使用 iOS 18 Simulator，后者要求已配对、已启用 Developer Mode 且可开发签名的 iOS 18+ 真机。它们验证 RootFS 准备、启动、guest 身份、命令上下文、输出、退出码、超时恢复、输出上限恢复和返回 Swift 的 soft shutdown。详细矩阵见[测试与验证](Docs/Testing.md)。
+两个 smoke runner 都要求 Apple Silicon 和精确匹配固定清单的本地归档；前者使用 iOS 18 Simulator，后者要求已配对、已启用 Developer Mode 且可开发签名的 iOS 18+ 真机。真机引用可以是 `devicectl` 接受的 CoreDevice UUID、硬件 UDID 或设备名；runner 会先验证 physical iOS 属性并解析硬件 UDID。它们验证 RootFS 准备、启动、guest 身份、命令上下文、输出、退出码、超时恢复、输出上限恢复和返回 Swift 的 soft shutdown。详细矩阵见[测试与验证](Docs/Testing.md)。
 
 ## 文档导航
 

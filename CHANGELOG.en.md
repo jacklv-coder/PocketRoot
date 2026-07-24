@@ -90,6 +90,10 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 - Native spike/smoke targets explicitly exclude x86_64 Simulator, and documentation clarifies that `isAvailable` is a post-link probe rather than a substitute for the arm64-only binary's build constraint.
 - The native smoke runner now selects an iOS 18 Simulator by its stable runtime identifier instead of the final `simctl` output field, with fixture regression tests for multiple output formats.
 - The native smoke App now enforces an iOS 18+ lower bound instead of incorrectly requiring 18.x and records device family, system name, and version in its report.
+- The signed-device runner now accepts a CoreDevice UUID, hardware UDID, or
+  device name recognized by `devicectl`, validates physical iOS properties
+  through the supported JSON output, and passes the resolved hardware UDID to
+  `xcodebuild` and later device operations.
 
 ### Security
 
