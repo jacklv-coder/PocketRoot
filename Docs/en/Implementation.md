@@ -102,17 +102,24 @@ so PocketRoot permanently closes the process gate.
 
 The command is a shell string; quoting and injection policy belong to the caller.
 
+`BlockingIshExecutor.performCancellable` checks cancellation before enqueue,
+when the serial queue starts the operation, and after native return. A queued
+cancelled command never spawns. For an active command, the driver polls the
+token at most every 250 ms, terminates the session, and throws
+`CancellationError` only after authoritative `EXITED`. Cleanup errors take
+precedence and fail the runtime closed; successful cancellation leaves it ready.
+
 ## Shutdown
 
 The actor rejects shutdown while a command is active, changes state before
 suspension, verifies ownership, and calls native shutdown on the serial
-executor. Pinned v0.4.0-abi.3 stops the supervisor, soft-halts the kernel,
+executor. Pinned v0.4.0-abi.4 stops the supervisor, soft-halts the kernel,
 performs a bounded join, and returns. State becomes `.terminated`; the same
 host process cannot boot another iSH lifecycle.
 
 ## Demo, final link, and smoke
 
-The default Demo stays asset-free and placeholder-backed. The compile spike proves the complete native graph final-links. The smoke injects a verified archive into a dedicated App, runs composition and command checks, waits for soft shutdown to return, verifies `.terminated` and `restartRequired`, and only then persists a successful report. The host explicitly stops the otherwise idle test App during cleanup.
+The default Demo stays asset-free and placeholder-backed. The compile spike proves the complete native graph final-links. The smoke injects a verified archive into a dedicated App, runs composition and command checks, cancels a blocked command and verifies recovery, waits for soft shutdown to return, verifies `.terminated` and `restartRequired`, and only then persists a successful report. The host explicitly stops the otherwise idle test App during cleanup.
 
 ## Invariants
 
@@ -131,6 +138,6 @@ The default Demo stays asset-free and placeholder-backed. The compile spike prov
 
 ## Open implementation
 
-Complete Task cancellation, public interactive sessions, session registry,
-bounded PTY reads, input/resize/signal/EOF, Demo injection, and new-artifact
+Public interactive sessions, session registry, bounded PTY reads,
+input/resize/signal/EOF, Demo injection, and new-artifact
 physical-device hardening remain open. See the [roadmap](Roadmap.md).

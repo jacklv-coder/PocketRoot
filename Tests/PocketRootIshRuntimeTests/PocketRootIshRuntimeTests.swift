@@ -812,6 +812,149 @@ final class PocketRootIshRuntimeTests: XCTestCase {
         XCTAssertTrue(driver.snapshot.didShutdown)
     }
 
+    func testTaskCancellationStopsActiveCommandAndKeepsRuntimeReady() async throws {
+        let rootFSURL = try makeFakeFSFixture()
+        let commandStarted = expectation(description: "cancellable command started")
+        let cancellationObserved = expectation(
+            description: "native driver observed cancellation"
+        )
+        let driver = FakeIshRuntimeDriver(
+            result: IshDriverCommandResult(
+                exitCode: 0,
+                signal: 0,
+                standardOutput: Data("after-cancellation".utf8),
+                standardError: Data(),
+                timedOut: false
+            ),
+            commandStarted: commandStarted,
+            cancellationCommand: "sleep 30",
+            cancellationObserved: cancellationObserved
+        )
+        let runtime = IshLinuxRuntime(
+            configuration: .init(rootFSURL: rootFSURL),
+            driver: driver
+        )
+        try await runtime.boot(configuration: PocketRootConfiguration())
+
+        let command = Task {
+            try await runtime.execute(
+                PocketRootCommandRequest(command: "sleep 30")
+            )
+        }
+        await fulfillment(of: [commandStarted], timeout: 2)
+        command.cancel()
+        await fulfillment(of: [cancellationObserved], timeout: 2)
+
+        do {
+            _ = try await command.value
+            XCTFail("A cancelled native command must not return success.")
+        } catch is CancellationError {
+            // Expected after the native driver confirms command cleanup.
+        }
+
+        let stateAfterCancellation = await runtime.state
+        XCTAssertEqual(stateAfterCancellation, .ready)
+        let recovery = try await runtime.execute(
+            PocketRootCommandRequest(command: "printf after-cancellation")
+        )
+        XCTAssertEqual(recovery.standardOutput, Data("after-cancellation".utf8))
+    }
+
+    func testCancellationCleanupFailureFailsRuntimeClosed() async throws {
+        let rootFSURL = try makeFakeFSFixture()
+        let commandStarted = expectation(description: "cancellable command started")
+        let cancellationObserved = expectation(
+            description: "native driver observed cancellation"
+        )
+        let driver = FakeIshRuntimeDriver(
+            commandStarted: commandStarted,
+            cancellationCommand: "sleep 30",
+            cancellationObserved: cancellationObserved,
+            cancellationError: IshRuntimeDriverError.sessionTerminationUnconfirmed(
+                "synthetic cancellation cleanup failure"
+            )
+        )
+        let runtime = IshLinuxRuntime(
+            configuration: .init(rootFSURL: rootFSURL),
+            driver: driver
+        )
+        try await runtime.boot(configuration: PocketRootConfiguration())
+
+        let command = Task {
+            try await runtime.execute(
+                PocketRootCommandRequest(command: "sleep 30")
+            )
+        }
+        await fulfillment(of: [commandStarted], timeout: 2)
+        command.cancel()
+        await fulfillment(of: [cancellationObserved], timeout: 2)
+
+        do {
+            _ = try await command.value
+            XCTFail("Unconfirmed cancellation cleanup must fail closed.")
+        } catch let error as PocketRootError {
+            XCTAssertEqual(
+                error,
+                .runtimeFailure(
+                    "Guest process termination could not be confirmed: "
+                        + "synthetic cancellation cleanup failure"
+                )
+            )
+        }
+
+        let state = await runtime.state
+        XCTAssertEqual(
+            state,
+            .failed(
+                "Guest process termination could not be confirmed: "
+                    + "synthetic cancellation cleanup failure"
+            )
+        )
+    }
+
+    func testCancelledQueuedCommandNeverEntersNativeDriver() async throws {
+        let rootFSURL = try makeFakeFSFixture()
+        let executor = BlockingIshExecutor(
+            label: "PocketRootIshRuntimeTests.queuedCancellation"
+        )
+        let driver = FakeIshRuntimeDriver()
+        let runtime = IshLinuxRuntime(
+            configuration: .init(rootFSURL: rootFSURL),
+            driver: driver,
+            executor: executor
+        )
+        try await runtime.boot(configuration: PocketRootConfiguration())
+
+        let blockerStarted = expectation(description: "executor blocker started")
+        let releaseBlocker = DispatchSemaphore(value: 0)
+        let blocker = Task {
+            try await executor.perform {
+                blockerStarted.fulfill()
+                releaseBlocker.wait()
+            }
+        }
+        await fulfillment(of: [blockerStarted], timeout: 2)
+
+        let command = Task {
+            try await runtime.execute(
+                PocketRootCommandRequest(command: "must-not-run")
+            )
+        }
+        command.cancel()
+        releaseBlocker.signal()
+        try await blocker.value
+
+        do {
+            _ = try await command.value
+            XCTFail("A cancelled queued command must not enter the driver.")
+        } catch is CancellationError {
+            // Expected before the queued native operation starts.
+        }
+        XCTAssertNil(driver.snapshot.commandRequest)
+        let state = await runtime.state
+        XCTAssertEqual(state, .ready)
+    }
+
     func testDriverOutputLimitErrorMapsToPublicError() async throws {
         let rootFSURL = try makeFakeFSFixture()
         let driver = FakeIshRuntimeDriver(
@@ -1128,6 +1271,9 @@ private final class FakeIshRuntimeDriver: IshRuntimeDriver, @unchecked Sendable 
     private let bootBlocker: DispatchSemaphore?
     private let commandStarted: XCTestExpectation?
     private let commandBlocker: DispatchSemaphore?
+    private let cancellationCommand: String?
+    private let cancellationObserved: XCTestExpectation?
+    private let cancellationError: Error?
     private var bootOptions: IshDriverBootOptions?
     private var healthCheckRequest: IshDriverCommandRequest?
     private var commandRequest: IshDriverCommandRequest?
@@ -1151,7 +1297,10 @@ private final class FakeIshRuntimeDriver: IshRuntimeDriver, @unchecked Sendable 
         bootStarted: XCTestExpectation? = nil,
         bootBlocker: DispatchSemaphore? = nil,
         commandStarted: XCTestExpectation? = nil,
-        commandBlocker: DispatchSemaphore? = nil
+        commandBlocker: DispatchSemaphore? = nil,
+        cancellationCommand: String? = nil,
+        cancellationObserved: XCTestExpectation? = nil,
+        cancellationError: Error? = nil
     ) {
         self.result = result
         self.healthResult = healthResult ?? Self.defaultHealthResult
@@ -1162,6 +1311,9 @@ private final class FakeIshRuntimeDriver: IshRuntimeDriver, @unchecked Sendable 
         self.bootBlocker = bootBlocker
         self.commandStarted = commandStarted
         self.commandBlocker = commandBlocker
+        self.cancellationCommand = cancellationCommand
+        self.cancellationObserved = cancellationObserved
+        self.cancellationError = cancellationError
     }
 
     var snapshot: Snapshot {
@@ -1192,6 +1344,20 @@ private final class FakeIshRuntimeDriver: IshRuntimeDriver, @unchecked Sendable 
     }
 
     func execute(_ request: IshDriverCommandRequest) throws -> IshDriverCommandResult {
+        try execute(request, cancellation: nil)
+    }
+
+    func execute(
+        _ request: IshDriverCommandRequest,
+        cancellation: IshCommandCancellation
+    ) throws -> IshDriverCommandResult {
+        try execute(request, cancellation: Optional(cancellation))
+    }
+
+    private func execute(
+        _ request: IshDriverCommandRequest,
+        cancellation: IshCommandCancellation?
+    ) throws -> IshDriverCommandResult {
         if request.arguments.count == 5,
            Array(request.arguments.prefix(3))
             == ["/bin/sh", "-c", IshRuntimeHealthCheck.shellCommand] {
@@ -1210,7 +1376,23 @@ private final class FakeIshRuntimeDriver: IshRuntimeDriver, @unchecked Sendable 
         commandRequest = request
         calledOnMainThread = calledOnMainThread || Thread.isMainThread
         lock.unlock()
-        commandStarted?.fulfill()
+        if cancellationCommand == nil
+            || request.arguments.last == cancellationCommand
+        {
+            commandStarted?.fulfill()
+        }
+        if request.arguments.last == cancellationCommand,
+           let cancellation
+        {
+            while !cancellation.isCancelled {
+                Thread.sleep(forTimeInterval: 0.001)
+            }
+            cancellationObserved?.fulfill()
+            if let cancellationError {
+                throw cancellationError
+            }
+            try cancellation.check()
+        }
         commandBlocker?.wait()
         if let executeError {
             throw executeError

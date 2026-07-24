@@ -184,6 +184,7 @@ fi
 
 cat "$REPORT_PATH"
 if [[ "$(plutil -extract success raw -o - "$REPORT_PATH")" != "true" ]]; then
+    dump_failure_diagnostics
     exit 1
 fi
 

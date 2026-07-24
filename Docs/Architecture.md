@@ -257,6 +257,7 @@ IshEmbed 暴露同步、进程级 API。adapter 使用：
 - `BlockingIshExecutor`：所有 native call 在共享 serial DispatchQueue 上执行；
 - actor 状态：在第一次 suspension 前关闭 boot/shutdown reentrancy window；
 - `commandInFlight`：同一 runtime 只允许一个 one-shot；
+- `IshCommandCancellation`：把 Swift Task 取消传入同步 driver，确认 `EXITED` 后才完成；
 - bounded poll：native read 最长约 250 ms 后回到 deadline 检查；
 - stdout/stderr limits：超限终止 session。
 - 退出确认：session 建立后的 stdin/read/timeout/产品超限错误先终止并确认可信
@@ -267,8 +268,9 @@ IshEmbed 暴露同步、进程级 API。adapter 使用：
 这些机制避免并发 boot、命令越过 shutdown，并限制 event-read wait、Swift 结果、
 每 session 4 MiB/4096 帧 native backlog 和 4 MiB/256 帧 control 总预算。spawn 直接
 返回 not-running、protocol 或 broken-pipe 会关闭 process gate。deadline 在同步 `spawn`
-与 `closeStdin` 后创建，所以尚不是完整端到端命令界限；Swift Task cancellation、持续
-负载峰值内存和 jetsam 也仍是开放门禁。
+与 `closeStdin` 后创建，所以尚不是完整端到端命令界限；持续负载峰值内存和 jetsam
+仍是开放门禁。一次性命令的 Swift Task 取消已终止并确认 guest 退出；交互 session 的
+read/close 取消仍属于后续 PTY 生命周期。
 
 ## 7. 生命周期
 

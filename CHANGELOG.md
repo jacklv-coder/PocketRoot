@@ -16,7 +16,7 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
 - 加入 XcodeGen `project.yml`、工程生成、测试和构建脚本。
 - 加入 placeholder runtime、terminal API 基础与单元测试。
 - 统一 package、Demo、tests 和 CI 的 iOS 18.0 deployment baseline。
-- 固定 Experimental `PocketRootIshRuntime` 到 IshEmbed revision `7cb201eed14b77b1a5b60a2498de25eb66710b1a` 与 `v0.4.0-abi.3` XCFramework。
+- 固定 Experimental `PocketRootIshRuntime` 到 IshEmbed revision `1c761d4c6de4ceb5ec9f15a4a958be9207ace756` 与 `v0.4.0-abi.4` XCFramework。
 - 加入 Experimental `PocketRootIshRuntimeIntegration`，组合调用方本地 RootFS 与原生 runtime。
 - 加入 process-wide ownership、serial native execution、lifecycle reentrancy protection。
 - 加入一次性命令的 cwd、environment、stderr merge、exit、signal、timeout 和 stream mapping。
@@ -27,7 +27,7 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
 - 加入 fakefs layout validation、versioned install、verified reuse，以及 journal 保护、可恢复/可回滚的同卷 promotion。
 - 加入真实 release archive integration test。
 - 加入完整 Experimental graph 的 arm64 Simulator 与 unsigned device final-link gate。
-- 加入 repository-owned iOS 18 native smoke App 和 runner，覆盖 13 项 prepare、boot、guest、command、recovery 与 shutdown。
+- 加入 repository-owned iOS 18 native smoke App 和 runner，覆盖 14 项 prepare、boot、guest、command、取消、recovery 与 shutdown。
 - 加入签名 iPhone/iPad smoke runner，通过 `devicectl` 安装、注入固定 RootFS、取回报告并校验 development entitlement；iPhone 17 Pro / iOS 26.1 基线已通过。
 - 提交精确 SwiftPM resolution 到 `Package.resolved`。
 - 加入 IshEmbed 可行性 [ADR-001](Docs/Decisions/ADR-001-IshEmbed-Feasibility.md)。
@@ -54,9 +54,12 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
 - Git 贡献流程明确使用 SSH fetch/push。
 - 明确默认 `PocketRootSystem.shared` 是 placeholder，真实 system 必须保存 `prepareSystem` 返回实例。
 - native `shutdown()` 现在 soft-halt/join 后返回 `.terminated`；同一宿主进程仍只允许一次 lifecycle。
-- IshEmbed 更新到 ABI.3：包含 ABI.2 的 `/proc` 生命周期锁修复，并对固定 65-byte
-  `uname` 字段使用有界复制，避免长宿主 hostname 触发 fortified libc `SIGTRAP`；
-  公共 C ABI 与 Swift API 不变。
+- IshEmbed 更新到 ABI.4：embedded bootstrap 与 guest task 线程解除内部 SIGUSR1
+  屏蔽，使 guest signal 可打断阻塞中的宿主 syscall；同时包含 ABI.3 的固定 65-byte
+  `uname` 有界复制和 ABI.2 的 `/proc` 生命周期锁修复，公共 C ABI 与 Swift API 不变。
+- 一次性命令支持 Swift Task 取消：排队命令可在 native entry 前取消；活动命令会终止
+  session，并在确认可信 `EXITED` 后返回 `CancellationError`。清理无法确认时 runtime
+  失败关闭，成功取消后保持 ready。
 - CI 增加并通过最低 Xcode 16.0 的完整 final-link、RootFS install 与 native smoke 门禁；
   Node.js/npm 仍只是调用方可选的 guest package，Codex CLI 不属于手机端安装路径。
 - 记录自托管 XCFramework 与对应源码资产、精确大小/hash、nested iSH gitlink 和 RootFS 独立 pin。

@@ -28,7 +28,23 @@ struct IshDriverCommandResult: Sendable, Equatable {
 protocol IshRuntimeDriver: Sendable {
     func boot(_ options: IshDriverBootOptions) throws
     func execute(_ request: IshDriverCommandRequest) throws -> IshDriverCommandResult
+    func execute(
+        _ request: IshDriverCommandRequest,
+        cancellation: IshCommandCancellation
+    ) throws -> IshDriverCommandResult
     func shutdown() throws
+}
+
+extension IshRuntimeDriver {
+    func execute(
+        _ request: IshDriverCommandRequest,
+        cancellation: IshCommandCancellation
+    ) throws -> IshDriverCommandResult {
+        try cancellation.check()
+        let result = try execute(request)
+        try cancellation.check()
+        return result
+    }
 }
 
 enum IshRuntimeDriverError: LocalizedError, Equatable {

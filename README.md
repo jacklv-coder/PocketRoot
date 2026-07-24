@@ -6,7 +6,7 @@ PocketRoot 是面向 iOS 的可嵌入 ARM64 Linux 运行时、终端与上层轻
 
 > [!WARNING]
 > 真实 iSH 集成目前仍是 **实验性（Experimental）** 能力。固定的
-> `v0.4.0-abi.3` 已支持返回 Swift 的 soft shutdown，但每个宿主进程仍只允许一次有效
+> `v0.4.0-abi.4` 已支持返回 Swift 的 soft shutdown，但每个宿主进程仍只允许一次有效
 > boot/shutdown；iPad、持续负载和发行合规门禁尚未闭环。当前版本不得用于
 > 生产、TestFlight 或公开二进制分发。
 
@@ -17,7 +17,7 @@ PocketRoot 是面向 iOS 的可嵌入 ARM64 Linux 运行时、终端与上层轻
 | Swift Package 模块与公共 API | 可用 | Core、Resources、Terminal、Agent、Agent Runtime Tools 及默认伞形产品 |
 | UIKit Demo 外壳 | 可用 | 展示 System、Terminal、Commands、Diagnostics 四个入口 |
 | RootFS 校验与安全安装 | 可用 | 固定大小和 SHA-256、安全解包、journal 保护的同卷 promotion、复用与中断恢复 |
-| iSH 启动与一次性命令 | 实验性 | 仅 `iOS + arm64`，必须显式依赖实验产品 |
+| iSH 启动与一次性命令 | 实验性 | 仅 `iOS + arm64`；支持确认 guest 退出的一次性命令取消 |
 | 轻量 agent loop | 核心、OpenAI transport 与审批命令工具可用 | Agent 与 Runtime Tools 均显式 opt-in；不安装 Codex CLI，不自动批准 shell |
 | 交互式 PTY 与 SwiftTerm | 未实现 | 会话、输入、resize、signal 和安全关闭仍在规划中 |
 | 真机与公开发行 | 部分通过 / 阻塞 | iPhone 一次性命令和 Xcode 16 基线已通过；仍需 iPad、生命周期、许可证、SBOM 和 App Store 审查 |
@@ -47,6 +47,8 @@ flowchart LR
 - RootFS 在私有、同卷 staging 中解包；校验通过后，通过文件型 journal 保护的多步同卷 rename 完成可恢复、可回滚的 promotion。每次 rename 和记录写入各自具有原子性，但整个替换流程不是一次整体原子操作；当前未显式 `fsync` 文件和目录，因此不承诺突然掉电时的持久性。
 - IshEmbed 是进程级单例；PocketRoot 只允许一个原生运行时所有者和一个在途命令。
 - 同步原生调用在串行阻塞队列中执行，不阻塞主线程和 Swift cooperative executor。
+- 取消一次性命令会终止 native session，确认 guest `EXITED` 后才返回；成功后 runtime
+  可继续使用，无法确认清理则失败关闭。取消不回滚此前副作用。
 - `boot()` 只有在固定 post-boot 命令验证 guest 架构、Alpine 身份和命令上下文后才报告 `ready`；内置 v0.3.3 RootFS 清单还严格要求 Alpine `3.19.1`。
 - session 建立后的 event-read loop 使用 deadline，Swift 结果有独立 stdout/stderr 配额；新 native transport 另有每 session 4 MiB/4096 帧输出积压、4 MiB/256 帧 control 总预算及 lifecycle reserve。supervisor/transport failure 以类型化错误返回，正常 guest `exit 17` 不再与 broken pipe 混淆。PocketRoot 对无法确认 guest 已退出的路径仍失败关闭；请求 timeout 目前从 session 建立后开始，因此仍不是覆盖此前 spawn/closeStdin 的端到端命令 deadline。
 
@@ -65,7 +67,7 @@ flowchart LR
 - macOS 13 仅是运行 Swift Package 宿主测试的最低声明，不是受支持的 Linux 运行时平台。
 - IshEmbed XCFramework 只有 arm64 iOS 真机和 arm64 iOS Simulator 切片，不支持 x86_64 Simulator 或 macOS。链接实验产品的 App target 必须在选择 Swift Package 产品前就排除 x86_64 Simulator；`isAvailable` 是已成功链接后的运行时探针，不能挽救缺失切片的 target。
 - 原生路径已在 Xcode 16.0 / iOS 18.0 SDK 和 Xcode 26.1.1 / iOS 18.2
-  arm64 Simulator 验证；两套环境都完成最终链接和 13 项 native smoke。
+  arm64 Simulator 验证；两套环境都完成最终链接和 14 项 native smoke。
 
 ## 从源码开始
 

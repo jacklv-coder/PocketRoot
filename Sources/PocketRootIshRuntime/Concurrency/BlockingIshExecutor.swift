@@ -29,4 +29,33 @@ final class BlockingIshExecutor: @unchecked Sendable {
             }
         }
     }
+
+    @available(macOS 13.0, *)
+    func performCancellable<T: Sendable>(
+        _ operation: @escaping @Sendable (IshCommandCancellation) throws -> T
+    ) async throws -> T {
+        try Task.checkCancellation()
+        let cancellation = IshCommandCancellation()
+
+        return try await withTaskCancellationHandler {
+            let result = try await withCheckedThrowingContinuation { continuation in
+                queue.async {
+                    do {
+                        try cancellation.check()
+                        let result = try operation(cancellation)
+                        try cancellation.check()
+                        continuation.resume(returning: result)
+                    } catch {
+                        continuation.resume(throwing: error)
+                    }
+                }
+            }
+            // Cancellation can race with the queue's final token check and
+            // continuation resume. The resumed Task is the final authority.
+            try Task.checkCancellation()
+            return result
+        } onCancel: {
+            cancellation.cancel()
+        }
+    }
 }

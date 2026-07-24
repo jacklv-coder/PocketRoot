@@ -161,8 +161,10 @@ recoverable; native backlog overflow closes the PocketRoot process gate because
 the void close ABI cannot prove whether cleanup escalated to instance
 fail-close. Native limits include a 4 MiB/4096 frame backlog per session and a
 4 MiB/256 frame total control budget. The PocketRoot deadline begins after
-synchronous `spawn` and `closeStdin`, so it is not yet end-to-end. Swift Task
-cancellation and sustained-load peak memory remain open.
+synchronous `spawn` and `closeStdin`, so it is not yet end-to-end. One-shot
+Swift Task cancellation now terminates the guest and confirms exit before
+returning; interactive-session read/close cancellation remains part of the
+future PTY lifecycle. Sustained-load peak memory also remains open.
 
 ## Lifecycle
 

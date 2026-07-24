@@ -3,7 +3,10 @@ import Foundation
 import IshEmbed
 
 struct IshEmbedDriver: IshRuntimeDriver {
-    private let terminationConfirmationTimeout: TimeInterval = 3
+    // The supervisor grants SIGTERM 1.5 seconds before SIGKILL and may spend
+    // up to another two seconds proving adopted descendants are gone before
+    // publishing EXITED. Leave bounded scheduling margin around that protocol.
+    private let terminationConfirmationTimeout: TimeInterval = 5
     func boot(_ options: IshDriverBootOptions) throws {
         try IshInstance.shared.boot(
             .init(
@@ -16,6 +19,14 @@ struct IshEmbedDriver: IshRuntimeDriver {
     }
 
     func execute(_ request: IshDriverCommandRequest) throws -> IshDriverCommandResult {
+        try execute(request, cancellation: IshCommandCancellation())
+    }
+
+    func execute(
+        _ request: IshDriverCommandRequest,
+        cancellation: IshCommandCancellation
+    ) throws -> IshDriverCommandResult {
+        try cancellation.check()
         let session: IshSession
         do {
             session = try IshInstance.shared.spawn(
@@ -40,6 +51,7 @@ struct IshEmbedDriver: IshRuntimeDriver {
             session.close()
         }
         do {
+            try cancellation.check()
             try session.closeStdin()
 
             var standardOutput = Data()
@@ -47,6 +59,7 @@ struct IshEmbedDriver: IshRuntimeDriver {
             let deadline = ProcessInfo.processInfo.systemUptime + request.timeout
 
             while true {
+                try cancellation.check()
                 let remaining = deadline - ProcessInfo.processInfo.systemUptime
                 guard remaining > 0 else {
                     try terminateAndConfirmExit(session)
@@ -85,6 +98,7 @@ struct IshEmbedDriver: IshRuntimeDriver {
 
                 switch event {
                 case .data(let data, kind: .stdout, seq: _):
+                    try cancellation.check()
                     try append(
                         data,
                         to: &standardOutput,
@@ -92,6 +106,7 @@ struct IshEmbedDriver: IshRuntimeDriver {
                         stream: "stdout"
                     )
                 case .data(let data, kind: .stderr, seq: _):
+                    try cancellation.check()
                     try append(
                         data,
                         to: &standardError,
@@ -118,6 +133,7 @@ struct IshEmbedDriver: IshRuntimeDriver {
                 // ERROR is terminal in wire v4. The supervisor either rejected
                 // the spawn or force-closed the tracked session; deferred close
                 // releases the host handle without sending a second terminate.
+                try cancellation.check()
                 throw error
             case .nativeOutputLimitExceeded:
                 // Native already requested SESSION_CLOSE when it published the
@@ -130,11 +146,19 @@ struct IshEmbedDriver: IshRuntimeDriver {
                 throw error
             case .outputLimitExceeded:
                 try terminateAndConfirmExit(session)
+                try cancellation.check()
                 throw error
             }
+        } catch is CancellationError {
+            // Cancellation is acknowledged only after the guest process has an
+            // authoritative EXITED event. A cleanup failure replaces
+            // CancellationError and forces the runtime into fail-close.
+            try terminateAndConfirmExit(session)
+            throw CancellationError()
         } catch {
             let executionError = error
             try terminateAndConfirmExit(session)
+            try cancellation.check()
             throw executionError
         }
     }
@@ -198,7 +222,7 @@ struct IshEmbedDriver: IshRuntimeDriver {
     }
 
     func shutdown() throws {
-        // v0.4.0-abi.3 asks the supervisor to stop, soft-halts the embedded
+        // v0.4.0-abi.4 asks the supervisor to stop, soft-halts the embedded
         // kernel, joins its pthread, and returns to Swift. The underlying iSH
         // process-global state still permits only one boot/shutdown lifecycle.
         try IshInstance.shared.shutdown()

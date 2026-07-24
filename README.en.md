@@ -8,7 +8,7 @@ install a verified Alpine fakefs and, through the Experimental iSH/IshEmbed
 adapter, execute bounded one-shot shell commands inside the iOS sandbox.
 
 > [!WARNING]
-> Native iSH integration is **Experimental**. Pinned `v0.4.0-abi.3` has a soft shutdown that returns to Swift, but each host process still permits only one valid boot/shutdown lifecycle. iPad, sustained-load, and distribution gates remain open. This version is not approved for production, TestFlight, or public binary distribution.
+> Native iSH integration is **Experimental**. Pinned `v0.4.0-abi.4` has a soft shutdown that returns to Swift, but each host process still permits only one valid boot/shutdown lifecycle. iPad, sustained-load, and distribution gates remain open. This version is not approved for production, TestFlight, or public binary distribution.
 
 ## Capability status
 
@@ -17,7 +17,7 @@ adapter, execute bounded one-shot shell commands inside the iOS sandbox.
 | Swift Package modules and public API | Available | Core, Resources, Terminal, Agent, Agent Runtime Tools, and safe umbrella |
 | UIKit Demo shell | Available | System, Terminal, Commands, and Diagnostics entry points |
 | RootFS verification and safe install | Available | Fixed digest, secure extraction, journal-protected same-volume promotion, reuse, recovery |
-| iSH boot and one-shot commands | Experimental | `iOS + arm64` and explicit products only |
+| iSH boot and one-shot commands | Experimental | `iOS + arm64`; one-shot cancellation confirms guest exit |
 | Lightweight agent loop | Core, OpenAI transport, and approval-gated command tool available | Agent and Runtime Tools are explicit opt-ins; no Codex CLI install or automatic shell approval |
 | Interactive PTY and SwiftTerm | Not implemented | Session input, resize, signal, and safe close remain planned |
 | Physical devices and distribution | Partially passed / blocked | The iPhone one-shot and Xcode 16 baselines passed; iPad, lifecycle, license, SBOM, and App Store gates remain |
@@ -49,6 +49,9 @@ Design principles:
 - Extraction occurs in private same-volume staging. An on-disk journal protects the multi-step, same-volume rename promotion so it can recover or roll back. Each rename and record write is atomic on its own, but the sequence is not one atomic operation. Files and directories are not explicitly `fsync`ed, so sudden-power-loss durability is not promised.
 - IshEmbed is process-global: one native owner and one in-flight command.
 - Synchronous native work runs on a serial blocking executor away from the main and Swift cooperative executors.
+- Cancelling a one-shot command terminates its native session and returns only
+  after guest `EXITED`; success keeps the runtime reusable, while unconfirmed
+  cleanup fails closed. It does not roll back earlier side effects.
 - `boot()` reports `ready` only after a fixed post-boot command verifies guest architecture, Alpine identity, and command context. The built-in v0.3.3 RootFS manifest also requires Alpine `3.19.1` exactly.
 - The event-read loop uses a post-establishment deadline and Swift stdout/stderr budgets. The native transport adds a 4 MiB/4096-frame output backlog per session, a 4 MiB/256-frame total control budget, and lifecycle reserve. Supervisor and transport failures are typed, so a normal guest exit 17 is no longer confused with broken pipe. PocketRoot still fails closed when guest exit cannot be proven. The request timeout starts after spawn/closeStdin and is therefore not yet an end-to-end command deadline.
 
@@ -62,7 +65,7 @@ See [Architecture](Docs/en/Architecture.md), [Implementation](Docs/en/Implementa
 - iOS 18.0+
 - Homebrew and XcodeGen
 
-macOS 13 is a host-test declaration, not a supported guest platform. IshEmbed has arm64 iOS device and arm64 Simulator slices only. An App target that selects the Experimental products must exclude x86_64 Simulator before SwiftPM product resolution; `isAvailable` is a post-link runtime probe, not a remedy for a missing binary slice. Native behavior has been validated with Xcode 16.0 / iOS 18.0 SDK and Xcode 26.1.1 / iOS 18.2 arm64 Simulator; both environments completed final links and the 13-check native smoke.
+macOS 13 is a host-test declaration, not a supported guest platform. IshEmbed has arm64 iOS device and arm64 Simulator slices only. An App target that selects the Experimental products must exclude x86_64 Simulator before SwiftPM product resolution; `isAvailable` is a post-link runtime probe, not a remedy for a missing binary slice. Native behavior has been validated with Xcode 16.0 / iOS 18.0 SDK and Xcode 26.1.1 / iOS 18.2 arm64 Simulator; both environments completed final links and the 14-check native smoke.
 
 ## Build from source
 

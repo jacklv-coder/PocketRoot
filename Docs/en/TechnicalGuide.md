@@ -56,16 +56,16 @@ The textual relationship is:
 | --- | --- | --- | --- |
 | Product and integration | [`jacklv-coder/PocketRoot`](https://github.com/jacklv-coder/PocketRoot) | Public Swift API, RootFS installation, iSH adapter, Demo, integration tests, and product docs | Building the native iSH binary |
 | Packaging source | A pinned revision of [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) | Swift wrapper, C ABI source, and binary-target declaration | The URL in the current declaration may still select a third-party published artifact |
-| Current native artifact | The `v0.4.0-abi.3` URL/checksum | XCFramework final-linked by PocketRoot | Self-hosted fork prerelease; no RootFS |
+| Current native artifact | The `v0.4.0-abi.4` URL/checksum | XCFramework final-linked by PocketRoot | Self-hosted fork prerelease; no RootFS |
 | Current native runtime | The exact iSH gitlink recorded by that package revision | The iSH kernel and low-level process, signal, halt, and thread lifecycle | It cannot be replaced by another branch or local checkout |
-| Current release commit | [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) `7cb201e` | Manifest-only pin to the ABI.3 URL/checksum | Matches the tag, Release target, and `main` |
+| Current release commit | [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) `1c761d4` | Manifest-only pin to the ABI.4 URL/checksum | Matches the tag, Release target, and `main` |
 | Guest filesystem | License-reviewed `fs.tar.gz` | Alpine userspace, fakefs data, and guest tools | Storage in the PocketRoot Git repository |
 
 ### Why `ish-arm64-pkg` must sometimes change
 
 Although `ish-arm64-pkg` originated elsewhere, PocketRoot compiles the Swift
 wrapper at an exact revision and links the XCFramework selected by its
-URL/checksum. The current pin uses the fork's `v0.4.0-abi.3`; a separate
+URL/checksum. The current pin uses the fork's `v0.4.0-abi.4`; a separate
 corresponding-source asset records nested iSH, musl, and build inputs. RootFS
 remains the separately pinned parent v0.3.3 asset.
 
@@ -99,10 +99,12 @@ PocketRootIshSystemFactory
 PocketRoot owns the first half and the product boundary. For the second half,
 read the corresponding source and gitlink from the package revision currently
 pinned by PocketRoot. The pin is the manifest-only release commit for
-`v0.4.0-abi.3`, and its binary target selects the independently verified ABI.3
+`v0.4.0-abi.4`, and its binary target selects the independently verified ABI.4
 asset. Native behavior remains evidenced by that Release's corresponding
-source, hashes, and runtime validation. ABI.3 bounds copies into fixed-size
-uname fields and includes the ABI.2 `/proc` lifecycle-lock fix.
+source, hashes, and runtime validation. ABI.4 unblocks internal SIGUSR1 on the
+embedded bootstrap and guest task threads so guest signals can interrupt
+blocking host syscalls. It also contains ABI.3's bounded fixed-size uname
+copies and the ABI.2 `/proc` lifecycle-lock fix.
 
 ## 3. PocketRoot repository map
 
@@ -237,11 +239,19 @@ instance fail-close, so PocketRoot conservatively closes its process gate and
 requires a restart. The request timeout still does not cover the
 pre-spawn/closeStdin stage.
 
+Swift Task cancellation crosses the serial native queue through a thread-safe
+token. A command cancelled while queued never enters the driver. Once spawned,
+the driver terminates the session and throws `CancellationError` only after a
+trusted `EXITED` event. If cleanup cannot be confirmed, that cleanup error
+replaces cancellation and the runtime fails closed. Successful cancellation
+keeps the runtime ready for another command. It stops the process but cannot
+undo filesystem, network, or other guest side effects that already happened.
+
 ### 5.4 `shutdown`
 
 Shutdown semantics depend on the native artifact currently pinned by PocketRoot. While learning or debugging, inspect `Package.swift` and [Upstream Dependencies](UpstreamDependencies.md) first. Do not treat fork code that is not yet released and integrated as current product behavior.
 
-Pinned `v0.4.0-abi.3` stops the supervisor, soft-halts the embedded kernel,
+Pinned `v0.4.0-abi.4` stops the supervisor, soft-halts the embedded kernel,
 performs a bounded join, and returns to Swift. Public state becomes
 `.terminated`; process-global iSH state still permits only one valid
 boot/shutdown lifecycle, so the same host process cannot boot again.
@@ -257,6 +267,7 @@ PocketRoot combines Swift actors with synchronous C APIs. The key question is no
 | `IshProcessGate` actor | Allows only one iSH owner in a host process |
 | `BlockingIshExecutor` | Keeps synchronous native calls off the main and Swift cooperative executors |
 | `commandInFlight` | Prevents concurrent one-shot commands in the current phase |
+| `IshCommandCancellation` | Bridges Swift Task cancellation into the synchronous driver and completes only after guest exit is confirmed |
 | Timeout and output limits | The deadline bounds the post-establishment read loop and budgets bound consumed Swift results; neither is an end-to-end time or memory bound for the current native control path |
 
 Typical state direction:

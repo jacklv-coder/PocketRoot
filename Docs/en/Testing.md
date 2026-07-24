@@ -13,7 +13,7 @@ PocketRoot separates host logic, real RootFS, iOS build, native final-link, and 
 | Demo build | `./Scripts/build.sh` | Umbrella and UIKit build | Experimental graph |
 | Native final link | `./Scripts/build-runtime-spike.sh` | Full graph forms arm64 executables | Physical or guest behavior |
 | Simulator native smoke | `./Scripts/run-runtime-smoke.sh` | Prepare, boot, command bounds, returning soft shutdown | Other toolchains, physical devices, distribution |
-| Physical native smoke | `./Scripts/run-runtime-device-smoke.sh` | Same 13 checks, development entitlements, returning soft shutdown | Sustained lifecycle, memory, iPad, distribution |
+| Physical native smoke | `./Scripts/run-runtime-device-smoke.sh` | Same 14 checks, development entitlements, returning soft shutdown | Sustained lifecycle, memory, iPad, distribution |
 | Documentation | `./Scripts/check-docs.sh` | Pairs, Chinese coverage, relative links | Implementation correctness |
 
 ## Package tests
@@ -32,7 +32,9 @@ Coverage includes the following relevant boundaries:
   validation, ownership and concurrent admission, active-command shutdown,
   Swift output-limit and native byte/frame backlog error mapping, typed recoverable supervisor rejection,
   valid guest exit 17, rejection of negative `EXITED`, unconfirmed-exit
-  fail-close, terminal spawn errors, and terminated/`restartRequired`.
+  fail-close, terminal spawn errors, active-command cancellation with recovery,
+  cancellation-cleanup fail-close, queued cancellation before native entry,
+  and terminated/`restartRequired`.
 - Agent tests cover direct final text, response/call ID continuation, structured unknown-tool and ordinary-tool failures, repeated response/call IDs, whole-batch validation before side effects, turn/call/input/model/identifier/name/argument/output limits, rejection of concurrent runs and unfinishable last-turn tools, plus configuration, name, and object-schema validation. OpenAI transport tests cover initial and continuation request mapping, text/function-call/refusal/incomplete/malformed response decoding, strict schema preflight, HTTPS and body limits, credential sanitization, and non-2xx errors without token exposure.
 - Agent runtime-tool tests cover the strict command schema, unknown-field rejection, policy and approval no-side-effect paths, normalized final approval requests, whole-batch tool-specific preflight, command/cwd/environment/timeout/output bounds, UTF-8/Base64 result encoding and truncation, plus cancellation after non-cooperative approval and execution.
 - Integration and Terminal tests cover preparation/configuration alignment and the placeholder terminal configuration, theme, transcript, and clear behavior.
@@ -104,10 +106,11 @@ If the device was shut down before the smoke, restore that state with
 UDID confirmed to be a script-dedicated temporary device, never for a shared
 development Simulator.
 
-The 13 checks cover preparation, ready boot, aarch64, Alpine 3.19.1, cwd,
+The 14 checks cover preparation, ready boot, aarch64, Alpine 3.19.1, cwd,
 environment, split streams and exit 7, merged stderr, 100 ms timeout and
-recovery, 64-byte output limit and recovery, and soft shutdown returning
-`.terminated` before the smoke App exits successfully.
+recovery, 64-byte output limit and recovery, blocked-command cancellation and
+post-cancellation recovery, and soft shutdown returning `.terminated` before
+the smoke App exits successfully.
 
 The 100 ms check proves recovery after an established session observes its event-read deadline. It does not cover the earlier synchronous spawn/control write or prove that terminate/close have the same end-to-end hard limit. The [Roadmap](Roadmap.md) tracks that native control-path gate.
 
@@ -117,13 +120,13 @@ smoke App and waits for the console client. A pre-success crash cannot produce
 a passing report. The script serves as a repository-owned local gate and is
 also invoked by the dedicated minimum-toolchain GitHub Actions job.
 
-On 2026-07-24, `v0.4.0-abi.3` passed all 13 checks on an iOS 18.2 arm64
+On 2026-07-24, `v0.4.0-abi.4` passed all 14 checks on an iOS 18.2 arm64
 Simulator; shutdown recorded `returned, terminated, restart required`.
 
-On the same day, PR #7 GitHub Actions run `30059180189` explicitly selected
-Xcode 16.0 and the iOS 18.0 SDK on an arm64 macOS runner, materialized the
-pinned RootFS, final-linked arm64 Simulator and unsigned-device Apps, and
-passed the same 13-check native smoke on an iOS 18.0 Simulator.
+The repository's minimum-toolchain job explicitly selects Xcode 16.0 and the
+iOS 18.0 SDK on an arm64 macOS runner, materializes the pinned RootFS,
+final-links arm64 Simulator and unsigned-device Apps, and runs the same
+14-check native smoke on an iOS 18.0 Simulator.
 
 ### Signed iPhone/iPad runner
 
@@ -138,7 +141,7 @@ POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
 
 The paired device must have Developer Mode enabled and support development provisioning. The runner verifies the application identifier and `get-task-allow`, installs with `devicectl`, copies the pinned archive into the App data container, performs an attached launch, and retrieves the JSON report. It uninstalls the App and RootFS data by default; `POCKETROOT_KEEP_DEVICE_APP=1` is the explicit opt-out.
 
-The 2026-07-23 record used Xcode 26.1.1 (17B100), an iPhone 17 Pro, iOS 26.1 (23B85), and development provisioning. Archive size/digest, report environment, all 13 checks, and exit status passed. No UDID, profile, or local report is committed. This closes the signed iPhone one-shot baseline, not iPad, foreground/background, memory/jetsam, or storage pressure.
+The 2026-07-23 record used Xcode 26.1.1 (17B100), an iPhone 17 Pro, iOS 26.1 (23B85), and development provisioning. Archive size/digest, report environment, all 14 checks, and exit status passed. No UDID, profile, or local report is committed. This closes the signed iPhone one-shot baseline, not iPad, foreground/background, memory/jetsam, or storage pressure.
 
 ## CI
 
@@ -152,7 +155,7 @@ the Demo, and final-links arm64 Simulator and unsigned-device runtime Apps.
 
 The minimum-toolchain job explicitly selects Xcode 16.0 / iOS 18.0 SDK,
 validates real RootFS installation, installs the iOS 18.0 Simulator runtime,
-final-links Simulator/device Apps, and runs the 13-check native smoke. This
+final-links Simulator/device Apps, and runs the 14-check native smoke. This
 Simulator evidence does not prove signed-device or distribution readiness.
 
 ## Minimum checks by change
