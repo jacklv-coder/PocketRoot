@@ -43,6 +43,7 @@ targets:
         ONLY_ACTIVE_ARCH: YES
         SKIP_INSTALL: YES
         SUPPORTS_MACCATALYST: NO
+        ENABLE_DEBUG_DYLIB: NO
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
 
   PocketRootIshRuntimeSmoke:
@@ -68,6 +69,7 @@ targets:
         ONLY_ACTIVE_ARCH: YES
         SKIP_INSTALL: YES
         SUPPORTS_MACCATALYST: NO
+        ENABLE_DEBUG_DYLIB: NO
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
 
   PocketRootDemo:

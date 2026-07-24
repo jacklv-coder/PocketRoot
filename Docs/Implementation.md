@@ -266,7 +266,7 @@ fail-close，因此 PocketRoot 对该错误始终进入 `failed` 并永久关闭
 4. 确认 process ownership；
 5. 在 serial native executor 调用 `IshInstance.shared.shutdown()`。
 
-固定的 `v0.4.0-abi.1` 会等待 supervisor 退出、soft-halt kernel 并 bounded join 原生线程，
+固定的 `v0.4.0-abi.3` 会等待 supervisor 退出、soft-halt kernel 并 bounded join 原生线程，
 然后返回 Swift。runtime 发布 `.terminated`，调用方可在返回后完成宿主清理；但 iSH
 进程级全局状态仍只支持一次 lifecycle，因此不能在同一进程再次 boot。
 

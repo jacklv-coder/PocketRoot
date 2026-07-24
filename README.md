@@ -6,8 +6,8 @@ PocketRoot 是面向 iOS 的可嵌入 ARM64 Linux 运行时、终端与上层轻
 
 > [!WARNING]
 > 真实 iSH 集成目前仍是 **实验性（Experimental）** 能力。固定的
-> `v0.4.0-abi.1` 已支持返回 Swift 的 soft shutdown，但每个宿主进程仍只允许一次有效
-> boot/shutdown；iPad、最低 Xcode、持续负载和发行合规门禁尚未闭环。当前版本不得用于
+> `v0.4.0-abi.3` 已支持返回 Swift 的 soft shutdown，但每个宿主进程仍只允许一次有效
+> boot/shutdown；iPad、持续负载和发行合规门禁尚未闭环。当前版本不得用于
 > 生产、TestFlight 或公开二进制分发。
 
 ## 当前能做什么
@@ -20,7 +20,7 @@ PocketRoot 是面向 iOS 的可嵌入 ARM64 Linux 运行时、终端与上层轻
 | iSH 启动与一次性命令 | 实验性 | 仅 `iOS + arm64`，必须显式依赖实验产品 |
 | 轻量 agent loop | 核心、OpenAI transport 与审批命令工具可用 | Agent 与 Runtime Tools 均显式 opt-in；不安装 Codex CLI，不自动批准 shell |
 | 交互式 PTY 与 SwiftTerm | 未实现 | 会话、输入、resize、signal 和安全关闭仍在规划中 |
-| 真机与公开发行 | 部分通过 / 阻塞 | iPhone 一次性命令基线已通过；仍需 iPad、生命周期、Xcode 16、许可证、SBOM 和 App Store 审查 |
+| 真机与公开发行 | 部分通过 / 阻塞 | iPhone 一次性命令和 Xcode 16 基线已通过；仍需 iPad、生命周期、许可证、SBOM 和 App Store 审查 |
 
 默认 `PocketRoot` 产品不会带入 agent loop 或真实 iSH 运行时，也不会打包或下载 RootFS。
 需要 agent 的应用显式依赖 `PocketRootAgent`；只有需要审批命令 adapter 时才额外依赖
@@ -64,7 +64,8 @@ flowchart LR
 
 - macOS 13 仅是运行 Swift Package 宿主测试的最低声明，不是受支持的 Linux 运行时平台。
 - IshEmbed XCFramework 只有 arm64 iOS 真机和 arm64 iOS Simulator 切片，不支持 x86_64 Simulator 或 macOS。链接实验产品的 App target 必须在选择 Swift Package 产品前就排除 x86_64 Simulator；`isAvailable` 是已成功链接后的运行时探针，不能挽救缺失切片的 target。
-- 原生路径已在 Xcode 26.1.1 与 iOS 18.2 arm64 Simulator 验证；最低 Xcode 16 的原生行为验证仍是开放门禁。
+- 原生路径已在 Xcode 16.0 / iOS 18.0 SDK 和 Xcode 26.1.1 / iOS 18.2
+  arm64 Simulator 验证；两套环境都完成最终链接和 13 项 native smoke。
 
 ## 从源码开始
 
@@ -202,4 +203,4 @@ POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
 
 ## 许可证与发行状态
 
-PocketRoot 自身许可证仍在首个公开版本前确认中。实验性运行时链接 GPL 标识的上游代码，候选 RootFS 包含多种 copyleft 与 permissive 许可证。生产、TestFlight 和公开二进制分发保持关闭，直到真机、最低 Xcode 16 原生验证、许可证、NOTICE、对应源码、SBOM 和 App Store Review Guideline 2.5.2 均有明确结论。
+PocketRoot 自身许可证仍在首个公开版本前确认中。实验性运行时链接 GPL 标识的上游代码，候选 RootFS 包含多种 copyleft 与 permissive 许可证。生产、TestFlight 和公开二进制分发保持关闭，直到完整真机生命周期、许可证、NOTICE、对应源码、SBOM 和 App Store Review Guideline 2.5.2 均有明确结论。

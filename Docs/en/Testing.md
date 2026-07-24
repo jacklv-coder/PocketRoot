@@ -12,7 +12,7 @@ PocketRoot separates host logic, real RootFS, iOS build, native final-link, and 
 | Real asset test | Filtered test with archive env | Exact release archive validates and materializes once | Existing-installation reuse or iSH boot |
 | Demo build | `./Scripts/build.sh` | Umbrella and UIKit build | Experimental graph |
 | Native final link | `./Scripts/build-runtime-spike.sh` | Full graph forms arm64 executables | Physical or guest behavior |
-| Simulator native smoke | `./Scripts/run-runtime-smoke.sh` | Prepare, boot, command bounds, returning soft shutdown | Physical, minimum-Xcode, distribution |
+| Simulator native smoke | `./Scripts/run-runtime-smoke.sh` | Prepare, boot, command bounds, returning soft shutdown | Other toolchains, physical devices, distribution |
 | Physical native smoke | `./Scripts/run-runtime-device-smoke.sh` | Same 13 checks, development entitlements, returning soft shutdown | Sustained lifecycle, memory, iPad, distribution |
 | Documentation | `./Scripts/check-docs.sh` | Pairs, Chinese coverage, relative links | Implementation correctness |
 
@@ -114,10 +114,16 @@ The 100 ms check proves recovery after an established session observes its event
 Success is written only after shutdown returns `.terminated` and another
 command produces `restartRequired`. The host then explicitly stops the idle
 smoke App and waits for the console client. A pre-success crash cannot produce
-a passing report. This is a local gate, not a GitHub Actions step.
+a passing report. The script serves as a repository-owned local gate and is
+also invoked by the dedicated minimum-toolchain GitHub Actions job.
 
-On 2026-07-23, `v0.4.0-abi.1` passed all 13 checks on an iOS 18.2 arm64
+On 2026-07-24, `v0.4.0-abi.3` passed all 13 checks on an iOS 18.2 arm64
 Simulator; shutdown recorded `returned, terminated, restart required`.
+
+On the same day, PR #7 GitHub Actions run `30059180189` explicitly selected
+Xcode 16.0 and the iOS 18.0 SDK on an arm64 macOS runner, materialized the
+pinned RootFS, final-linked arm64 Simulator and unsigned-device Apps, and
+passed the same 13-check native smoke on an iOS 18.0 Simulator.
 
 ### Signed iPhone/iPad runner
 
@@ -132,11 +138,11 @@ POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
 
 The paired device must have Developer Mode enabled and support development provisioning. The runner verifies the application identifier and `get-task-allow`, installs with `devicectl`, copies the pinned archive into the App data container, performs an attached launch, and retrieves the JSON report. It uninstalls the App and RootFS data by default; `POCKETROOT_KEEP_DEVICE_APP=1` is the explicit opt-out.
 
-The 2026-07-23 record used Xcode 26.1.1 (17B100), an iPhone 17 Pro, iOS 26.1 (23B85), and development provisioning. Archive size/digest, report environment, all 13 checks, and exit status passed. No UDID, profile, or local report is committed. This closes the signed iPhone one-shot baseline, not iPad, foreground/background, memory/jetsam, storage pressure, or minimum-Xcode 16.
+The 2026-07-23 record used Xcode 26.1.1 (17B100), an iPhone 17 Pro, iOS 26.1 (23B85), and development provisioning. Archive size/digest, report environment, all 13 checks, and exit status passed. No UDID, profile, or local report is committed. This closes the signed iPhone one-shot baseline, not iPad, foreground/background, memory/jetsam, or storage pressure.
 
 ## CI
 
-GitHub Actions pins the `actions/checkout` action implementation to an exact
+The standard GitHub Actions job pins the `actions/checkout` action implementation to an exact
 revision; that action still checks out the commit SHA selected by the workflow
 event (the push SHA or PR merge SHA). On a macOS runner CI then runs
 `./Scripts/check-docs.sh`, reports toolchains, runs package tests, downloads and
@@ -144,7 +150,10 @@ independently verifies the exact RootFS, runs its first-materialization test,
 obtains pinned XcodeGen with checksum validation, generates the project, builds
 the Demo, and final-links arm64 Simulator and unsigned-device runtime Apps.
 
-CI does not boot native iSH.
+The minimum-toolchain job explicitly selects Xcode 16.0 / iOS 18.0 SDK,
+validates real RootFS installation, installs the iOS 18.0 Simulator runtime,
+final-links Simulator/device Apps, and runs the 13-check native smoke. This
+Simulator evidence does not prove signed-device or distribution readiness.
 
 ## Minimum checks by change
 
@@ -162,6 +171,6 @@ CI does not boot native iSH.
 
 ## Evidence language
 
-State the exact environment. The recorded iPhone baseline does not imply iPad support, complete physical-device lifecycle, minimum-Xcode native validation, TestFlight readiness, or App Store approval.
+State the exact environment. The recorded iPhone and minimum-Xcode baselines do not imply iPad support, complete physical-device lifecycle, TestFlight readiness, or App Store approval.
 
 See the [roadmap](Roadmap.md) for open gates.

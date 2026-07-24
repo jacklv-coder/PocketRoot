@@ -19,7 +19,7 @@ The design keeps the default dependency safe, Core independent from UIKit and co
 | Native platforms | arm64 iOS device and arm64 Simulator |
 | Host-test declaration | macOS 13 only |
 
-The XCFramework has no macOS or x86_64 Simulator slice. The macOS fallback tests adapter contracts only. SwiftPM cannot condition a product dependency on destination architecture, so an App target selecting the Experimental product must exclude x86_64 before linking instead of relying on a runtime feature probe.
+The XCFramework has no macOS or x86_64 Simulator slice. The macOS fallback tests adapter contracts only. SwiftPM cannot condition a product dependency on destination architecture, so an App target selecting the Experimental product must exclude x86_64 before linking instead of relying on a runtime feature probe. Native final links and smoke passed with Xcode 16.0 / iOS 18.0 SDK and with the newer validation toolchain.
 
 ## Module graph
 

@@ -16,7 +16,7 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
 - 加入 XcodeGen `project.yml`、工程生成、测试和构建脚本。
 - 加入 placeholder runtime、terminal API 基础与单元测试。
 - 统一 package、Demo、tests 和 CI 的 iOS 18.0 deployment baseline。
-- 固定 Experimental `PocketRootIshRuntime` 到 IshEmbed revision `41e5c0a8b215c18239308c787a4a4de53d685076` 与 `v0.4.0-abi.1` XCFramework。
+- 固定 Experimental `PocketRootIshRuntime` 到 IshEmbed revision `7cb201eed14b77b1a5b60a2498de25eb66710b1a` 与 `v0.4.0-abi.3` XCFramework。
 - 加入 Experimental `PocketRootIshRuntimeIntegration`，组合调用方本地 RootFS 与原生 runtime。
 - 加入 process-wide ownership、serial native execution、lifecycle reentrancy protection。
 - 加入一次性命令的 cwd、environment、stderr merge、exit、signal、timeout 和 stream mapping。
@@ -54,6 +54,11 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
 - Git 贡献流程明确使用 SSH fetch/push。
 - 明确默认 `PocketRootSystem.shared` 是 placeholder，真实 system 必须保存 `prepareSystem` 返回实例。
 - native `shutdown()` 现在 soft-halt/join 后返回 `.terminated`；同一宿主进程仍只允许一次 lifecycle。
+- IshEmbed 更新到 ABI.3：包含 ABI.2 的 `/proc` 生命周期锁修复，并对固定 65-byte
+  `uname` 字段使用有界复制，避免长宿主 hostname 触发 fortified libc `SIGTRAP`；
+  公共 C ABI 与 Swift API 不变。
+- CI 增加并通过最低 Xcode 16.0 的完整 final-link、RootFS install 与 native smoke 门禁；
+  Node.js/npm 仍只是调用方可选的 guest package，Codex CLI 不属于手机端安装路径。
 - 记录自托管 XCFramework 与对应源码资产、精确大小/hash、nested iSH gitlink 和 RootFS 独立 pin。
 - 一次性命令和 boot 的可选 supervisor 路径在进入 native driver 前拒绝含 NUL 的 C 字符串输入；命令环境还拒绝歧义 key。
 - v4 transport 将 supervisor rejection、broken pipe 与 native backlog overflow 作为

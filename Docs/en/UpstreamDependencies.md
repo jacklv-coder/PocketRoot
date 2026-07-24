@@ -6,16 +6,16 @@ This is the sole source of truth for immutable revisions, nested gitlinks,
 artifact URLs, sizes, and SHA-256 values used by the Experimental runtime.
 Branches, moving tags, unverified release aliases, and local caches are not pins.
 
-Audit date: 2026-07-23
+Audit date: 2026-07-24
 
 ## 1. IshEmbed Swift package
 
 | Field | Audited value |
 | --- | --- |
 | Repository | `https://github.com/jacklv-coder/ish-arm64-pkg.git` |
-| Exact revision | `41e5c0a8b215c18239308c787a4a4de53d685076` |
-| Release | `v0.4.0-abi.1` prerelease |
-| Tag peeled commit | `4e311bcea4fe806491e76a23c0e4caeeb1c513bf` |
+| Exact revision | `7cb201eed14b77b1a5b60a2498de25eb66710b1a` |
+| Release | `v0.4.0-abi.3` prerelease |
+| Tag peeled commit | `7cb201eed14b77b1a5b60a2498de25eb66710b1a` |
 | Swift product | `IshEmbed` |
 | Manifest platform | iOS 18.0 |
 | Native slices | iOS arm64 device and arm64 Simulator |
@@ -26,16 +26,17 @@ Both `Package.swift` and `Package.resolved` pin the full revision:
 ```swift
 .package(
     url: "https://github.com/jacklv-coder/ish-arm64-pkg.git",
-    revision: "41e5c0a8b215c18239308c787a4a4de53d685076"
+    revision: "7cb201eed14b77b1a5b60a2498de25eb66710b1a"
 )
 ```
 
-The consumed revision is a post-release package-metadata fix. It changes
-`third_party/ish` from a relative URL to an absolute SSH-over-443 URL and uses
-a public read-only HTTPS rewrite in GitHub CI, where no SSH private key exists.
-It does not change the binary URL/checksum in `Package.swift`. The Release tag
-still identifies `4e311bcea4fe806491e76a23c0e4caeeb1c513bf`, so the consumed native
-XCFramework and corresponding-source assets are unchanged.
+The consumed revision is the manifest-only release commit for
+`v0.4.0-abi.3`; it changes only the binary-target URL/checksum in
+`Package.swift` to the published and independently verified ABI.3 asset. The
+peeled tag, Release target, and `origin/main` all identify
+`7cb201eed14b77b1a5b60a2498de25eb66710b1a`. The package repository keeps an
+absolute SSH-over-443 submodule URL; GitHub CI without an SSH private key
+applies a public read-only HTTPS rewrite only while checking out source.
 
 ## 2. iSH source gitlink
 
@@ -43,22 +44,22 @@ XCFramework and corresponding-source assets are unchanged.
 | --- | --- |
 | Repository | `https://github.com/jacklv-coder/ish-arm64.git` |
 | Package path | `third_party/ish` |
-| Exact gitlink | `576ffaf2574310b5fb2d148aab39ddcd2b8fe67d` |
+| Exact gitlink | `5f7535ee945a96aaabd0d59e063f04443ba759df` |
 | Recorded branch | `embed-chroot-containment` |
 
 The corresponding-source archive records the parent package revision, this
 gitlink, Zig 0.16.0, and the musl source used by the static supervisor.
 Recursive branch checkout is not a substitute for these exact identities.
 
-## 3. v0.4.0-abi.1 assets
+## 3. v0.4.0-abi.3 assets
 
 Release:
-`https://github.com/jacklv-coder/ish-arm64-pkg/releases/tag/v0.4.0-abi.1`
+`https://github.com/jacklv-coder/ish-arm64-pkg/releases/tag/v0.4.0-abi.3`
 
 | Artifact | Size | SHA-256 | Use |
 | --- | ---: | --- | --- |
-| `libIshKernel.xcframework.zip` | 2,446,031 bytes | `5bd6f691ed2af1e157118b26f62b962a3568ebe96a608d75f5b2f661d07e1450` | SwiftPM binary target |
-| `IshEmbed-corresponding-source.tar.gz` | 2,350,872 bytes | `52b10b3b1dfedf221b4af37b125cde9b5fd03cc819944ab2d77d9893f6a76122` | Corresponding source |
+| `libIshKernel.xcframework.zip` | 2,448,357 bytes | `daa5beeb6cfd0469d0c7aab3556e5b2e3f6d3a62f75210dd625b155f8bfed3c6` | SwiftPM binary target |
+| `IshEmbed-corresponding-source.tar.gz` | 2,356,871 bytes | `3f6558abe447c39887920adc6512a98e05c6f1456773dd1e4c468725388efdea` | Corresponding source |
 
 The XCFramework contains only `ios-arm64` and `ios-arm64-simulator`, both
 arm64 with an iOS 18.0 minimum. It has no x86_64 Simulator or macOS slice.
@@ -74,6 +75,8 @@ SwiftPM validates the zip checksum. The release transaction also verified:
   and unsigned device; and
 - an iOS 18.2 Simulator passed the 13-check native smoke with the pinned v0.3.3
   RootFS, returning `.terminated` from shutdown and `restartRequired` afterward.
+- Xcode 16.0 / iOS 18.0 SDK on an arm64 hosted runner completed real RootFS
+  installation, Simulator/device final links, and the same 13-check native smoke.
 
 This release contains **no RootFS**.
 
@@ -105,6 +108,9 @@ configuration path for it.
 The pinned artifact provides:
 
 - kernel soft-halt and bounded join, so `shutdown()` returns to Swift;
+- bounded copies into the fixed 65-byte `uname` fields, preventing long host
+  names from triggering a fortified-libc `SIGTRAP`, plus the ABI.2 `/proc`
+  lifecycle-lock fix;
 - one valid boot/shutdown lifecycle per host process;
 - typed supervisor and transport failures, with normal guest exit 17 no longer
   confused with broken pipe;
@@ -118,7 +124,6 @@ The pinned artifact provides:
 PocketRoot remains Experimental. Open gates include:
 
 - physical iPad execution;
-- native final-link and behavior with minimum Xcode 16;
 - complete Swift Task-to-native command cancellation;
 - complete PTY, resize, signal, and interactive-session lifecycle;
 - sustained workload, peak memory, and jetsam behavior;

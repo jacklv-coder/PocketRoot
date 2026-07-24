@@ -198,7 +198,7 @@ struct IshEmbedDriver: IshRuntimeDriver {
     }
 
     func shutdown() throws {
-        // v0.4.0-abi.1 asks the supervisor to stop, soft-halts the embedded
+        // v0.4.0-abi.3 asks the supervisor to stop, soft-halts the embedded
         // kernel, joins its pthread, and returns to Swift. The underlying iSH
         // process-global state still permits only one boot/shutdown lifecycle.
         try IshInstance.shared.shutdown()

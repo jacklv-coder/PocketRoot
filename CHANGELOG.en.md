@@ -16,7 +16,7 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 - XcodeGen project source, generation, test, and build scripts.
 - Placeholder runtime, terminal API foundations, and unit tests.
 - Unified iOS 18 deployment baseline.
-- Experimental `PocketRootIshRuntime` pinned to IshEmbed revision `41e5c0a8b215c18239308c787a4a4de53d685076` and the `v0.4.0-abi.1` XCFramework.
+- Experimental `PocketRootIshRuntime` pinned to IshEmbed revision `7cb201eed14b77b1a5b60a2498de25eb66710b1a` and the `v0.4.0-abi.3` XCFramework.
 - Experimental `PocketRootIshRuntimeIntegration` composing caller-local RootFS installation and native runtime.
 - Process ownership, serial native execution, and lifecycle reentrancy protection.
 - One-shot cwd, environment, stderr merge, exit, signal, timeout, and stream mapping.
@@ -42,6 +42,13 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 - Contribution Git fetch/push uses SSH.
 - Documentation now states that the default shared system is a placeholder and applications must retain the system returned by composition.
 - Native shutdown now soft-halts, joins, and returns `.terminated`; the host process still permits one lifecycle.
+- IshEmbed moves to ABI.3, including the ABI.2 `/proc` lifecycle-lock fix and
+  bounded copies into fixed 65-byte `uname` fields so long host names cannot
+  trigger a fortified-libc `SIGTRAP`; the public C ABI and Swift API are
+  unchanged.
+- CI adds and passes a minimum-Xcode 16.0 full final-link, RootFS-install, and
+  native-smoke gate. Node.js/npm remain optional caller-managed guest packages; Codex CLI is
+  not part of the mobile installation path.
 - The self-hosted XCFramework and corresponding-source assets, exact size/hash, nested iSH gitlink, and separate RootFS pin are recorded.
 - One-shot commands and the optional boot supervisor path reject NUL-containing C-string inputs before entering the native driver; command environments also reject ambiguous keys.
 - Wire v4 returns supervisor rejection, broken pipe, and native backlog overflow

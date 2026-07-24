@@ -27,7 +27,7 @@ PocketRoot 把可复用 Linux 能力与 UIKit Demo 分离，并把高风险的�
 | 原生平台 | arm64 iOS device 与 arm64 iOS Simulator |
 | 宿主测试声明 | macOS 13，仅用于 package tests |
 
-IshEmbed XCFramework 没有 macOS 或 x86_64 Simulator 切片。macOS fallback 只用于测试 adapter seam；SwiftPM 不能按 destination architecture 条件化 product dependency，因此链接实验产品的 App target 必须预先排除 x86_64，而不能依赖运行时探针降级。原生路径已在较新 Xcode 上验证；最低 Xcode 16 行为仍以[路线图](Roadmap.md)为准。
+IshEmbed XCFramework 没有 macOS 或 x86_64 Simulator 切片。macOS fallback 只用于测试 adapter seam；SwiftPM 不能按 destination architecture 条件化 product dependency，因此链接实验产品的 App target 必须预先排除 x86_64，而不能依赖运行时探针降级。原生路径已在 Xcode 16.0 / iOS 18.0 SDK 和较新 Xcode 上完成最终链接与 native smoke。
 
 ## 3. 模块依赖
 
