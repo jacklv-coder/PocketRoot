@@ -124,12 +124,17 @@ Run the same checks on a paired iOS 18+ device with Developer Mode and developme
 
 ```bash
 POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
-POCKETROOT_SMOKE_DEVICE=<physical-device-udid> \
+POCKETROOT_SMOKE_DEVICE=<physical-device-reference> \
 POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
   ./Scripts/run-runtime-device-smoke.sh
 ```
 
-The physical runner uninstalls the smoke App and injected RootFS after retrieving the report unless `POCKETROOT_KEEP_DEVICE_APP=1` is set. Never commit a UDID, provisioning profile, or local report.
+`POCKETROOT_SMOKE_DEVICE` may be any CoreDevice UUID, hardware UDID, or device
+name accepted by `devicectl`. The runner validates that it resolves to a
+physical iOS device and passes the resolved hardware UDID to `xcodebuild`.
+It uninstalls the smoke App and injected RootFS after retrieving the report
+unless `POCKETROOT_KEEP_DEVICE_APP=1` is set. Never commit a device identifier,
+provisioning profile, or local report.
 
 ## 8. Command reference
 

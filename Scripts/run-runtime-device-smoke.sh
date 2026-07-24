@@ -4,7 +4,8 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 ARCHIVE_PATH="${1:-${POCKETROOT_ROOTFS_ARCHIVE:-}}"
-DEVICE_ID="${POCKETROOT_SMOKE_DEVICE:-}"
+DEVICE_REFERENCE="${POCKETROOT_SMOKE_DEVICE:-}"
+DEVICE_ID=""
 DEVELOPMENT_TEAM="${POCKETROOT_DEVELOPMENT_TEAM:-}"
 BUNDLE_ID="com.jacklv.PocketRootIshRuntimeSmoke"
 ARCHIVE_NAME="pocketroot-fs-v0.3.3.tar.gz"
@@ -19,6 +20,7 @@ CONSOLE_LOG="$RUN_ROOT/device-smoke-console.log"
 REPORT_PATH="$RUN_ROOT/$REPORT_NAME"
 EMPTY_REPORT_PATH="$RUN_ROOT/empty-$REPORT_NAME"
 ENTITLEMENTS_PATH="$RUN_ROOT/PocketRootIshRuntimeSmoke.entitlements.plist"
+DEVICE_DETAILS_PATH="$RUN_ROOT/device-details.json"
 APP_INSTALLED="false"
 LAUNCH_CLIENT_PID=""
 
@@ -41,7 +43,7 @@ usage() {
     cat >&2 <<EOF
 Usage:
   POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \\
-  POCKETROOT_SMOKE_DEVICE=<physical-device-udid> \\
+  POCKETROOT_SMOKE_DEVICE=<physical-device-reference> \\
   POCKETROOT_DEVELOPMENT_TEAM=<team-id> \\
   $0
 EOF
@@ -51,7 +53,7 @@ if [[ -z "$ARCHIVE_PATH" || ! -f "$ARCHIVE_PATH" ]]; then
     usage
     exit 2
 fi
-if [[ -z "$DEVICE_ID" ]]; then
+if [[ -z "$DEVICE_REFERENCE" ]]; then
     echo "POCKETROOT_SMOKE_DEVICE must identify one physical iPhone or iPad." >&2
     usage
     exit 2
@@ -73,6 +75,29 @@ if [[ "$(stat -f '%z' "$ARCHIVE_PATH")" != "$EXPECTED_BYTE_COUNT" ]]; then
     exit 2
 fi
 echo "$EXPECTED_SHA256  $ARCHIVE_PATH" | shasum -a 256 --check
+
+xcrun devicectl device info details \
+  --device "$DEVICE_REFERENCE" \
+  --timeout 30 \
+  --json-output "$DEVICE_DETAILS_PATH" \
+  >/dev/null 2>&1 || true
+DEVICE_ID="$(
+  plutil -extract result.hardwareProperties.udid raw \
+    -o - "$DEVICE_DETAILS_PATH" 2>/dev/null || true
+)"
+DEVICE_PLATFORM="$(
+  plutil -extract result.hardwareProperties.platform raw \
+    -o - "$DEVICE_DETAILS_PATH" 2>/dev/null || true
+)"
+DEVICE_REALITY="$(
+  plutil -extract result.hardwareProperties.reality raw \
+    -o - "$DEVICE_DETAILS_PATH" 2>/dev/null || true
+)"
+if [[ -z "$DEVICE_ID" || "$DEVICE_PLATFORM" != "iOS" || "$DEVICE_REALITY" != "physical" ]]; then
+    echo "POCKETROOT_SMOKE_DEVICE did not resolve to a physical iOS device." >&2
+    exit 2
+fi
+echo "Resolved physical device reference '$DEVICE_REFERENCE' to hardware UDID '$DEVICE_ID'."
 
 cd "$ROOT_DIR"
 "$ROOT_DIR/Scripts/generate-project.sh"

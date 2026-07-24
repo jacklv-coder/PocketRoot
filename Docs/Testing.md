@@ -272,16 +272,22 @@ iOS 18.0 Simulator 执行同一套 17 项 native smoke。
 
 ### 签名 iPhone/iPad runner
 
-物理设备 runner 使用明确的设备 UDID 与 Apple team ID，避免误装到其他设备：
+物理设备 runner 使用明确的设备引用与 Apple team ID，避免误装到其他设备：
 
 ```bash
 POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
-POCKETROOT_SMOKE_DEVICE=<physical-device-udid> \
+POCKETROOT_SMOKE_DEVICE=<physical-device-reference> \
 POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
   ./Scripts/run-runtime-device-smoke.sh
 ```
 
-runner 要求设备已配对、启用 Developer Mode 且能用 development profile 签名。它生成并签名 `PocketRootIshRuntimeSmoke`，验证 application identifier 与 `get-task-allow`，通过 `devicectl` 安装 App、把固定 archive 复制到 App data container、attached launch 并取回 JSON report。默认结束后卸载 smoke App 并删除其 RootFS 数据；只有显式设置 `POCKETROOT_KEEP_DEVICE_APP=1` 才保留。
+runner 接受 `devicectl` 可识别的 CoreDevice UUID、硬件 UDID 或设备名，先通过官方
+JSON 输出验证 physical iOS 属性并解析硬件 UDID，再用于 `xcodebuild` 与后续
+`devicectl` 操作。设备必须已配对、启用 Developer Mode 且能用 development profile
+签名。runner 生成并签名 `PocketRootIshRuntimeSmoke`，验证 application identifier
+与 `get-task-allow`，安装 App、把固定 archive 复制到 App data container、attached
+launch 并取回 JSON report。默认结束后卸载 smoke App 并删除其 RootFS 数据；只有
+显式设置 `POCKETROOT_KEEP_DEVICE_APP=1` 才保留。
 
 2026-07-23 的签名 iPhone 记录使用旧 v0.3.3 runtime 基线；它证明设备 runner、archive
 与签名链路，但 runtime pin 变化后必须用 v0.4.0-abi.6 重跑，不能作为新 soft shutdown

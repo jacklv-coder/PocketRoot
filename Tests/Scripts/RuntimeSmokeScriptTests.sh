@@ -44,6 +44,14 @@ if ! grep -Fq -- "-allowProvisioningDeviceRegistration" "$DEVICE_RUNNER"; then
     exit 1
 fi
 
+if ! grep -Fq -- '--json-output "$DEVICE_DETAILS_PATH"' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- 'result.hardwareProperties.udid' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- '"$DEVICE_PLATFORM" != "iOS"' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- '"$DEVICE_REALITY" != "physical"' "$DEVICE_RUNNER"; then
+    echo "Physical-device runner does not resolve and validate a hardware UDID." >&2
+    exit 1
+fi
+
 if ! grep -Fq -- '"$SIGNED_TEAM_IDENTIFIER" != "$DEVELOPMENT_TEAM"' "$DEVICE_RUNNER" \
   || grep -Fq -- '"$SIGNED_TEAM_IDENTIFIER.$BUNDLE_ID"' "$DEVICE_RUNNER"; then
     echo "Physical-device runner assumes the App ID prefix equals the team ID." >&2

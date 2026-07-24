@@ -90,6 +90,9 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
 - 原生 spike/smoke target 显式排除 x86_64 Simulator；文档明确 `isAvailable` 是链接后的探针，不能替代 arm64-only binary 的构建架构约束。
 - 原生 smoke runner 按稳定 runtime identifier 自动选择 iOS 18 Simulator，不再依赖 `simctl` 输出的最后一列，并加入多格式 fixture 回归测试。
 - 原生 smoke App 以 iOS 18+ 版本下限取代仅允许 18.x 的错误限制，并把设备 family、系统名和版本写入报告。
+- 签名真机 runner 现在接受 `devicectl` 可识别的 CoreDevice UUID、硬件 UDID 或设备名，
+  通过官方 JSON 输出验证 physical iOS 属性，并把解析出的硬件 UDID 传给 `xcodebuild`
+  和后续设备操作。
 
 ### Security
 

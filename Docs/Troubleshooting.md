@@ -273,6 +273,9 @@ xcrun simctl uninstall "$SMOKE_DEVICE_UDID" com.jacklv.PocketRootIshRuntimeSmoke
 
 真机 runner 要求 Xcode 能为 `POCKETROOT_DEVELOPMENT_TEAM` 选择有效 development profile，且目标设备已配对、启用 Developer Mode 并保持解锁。常见错误：
 
+- `POCKETROOT_SMOKE_DEVICE did not resolve`：传入 `devicectl` 可识别的 CoreDevice UUID、
+  硬件 UDID 或设备名；runner 会验证 physical iOS 属性并自动解析 Xcode destination
+  所需的硬件 UDID。
 - `No Account for Team`：指定的 team 没有可用 Xcode account/profile；改用实际可开发签名的 team，或先在 Xcode 完成账号与签名设置。
 - `No profiles`：bundle ID 没有匹配的 development profile，或设备不在 profile 中。
 - `Unable to launch ... Locked`：保持设备解锁后重跑；安装成功不代表锁屏状态允许 foreground launch。
