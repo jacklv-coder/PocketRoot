@@ -30,6 +30,7 @@ PocketRoot 是一个最低支持 iOS 18 的 Swift 模块化工程：它在 iOS �
 本文所说的命令“有界”包括 session 建立后的 event-read deadline、Swift stdout/stderr
 配额、每 session 4 MiB/4096 帧 native 输出积压和 4 MiB/256 帧 control 总预算。
 超时或产品配额超限后的恢复仍要求明确观察到 `EXITED`；无法确认时 runtime 会失败关闭。
+8 MiB 二进制 stdout smoke 会跨越 backlog 并逐字节验证持续消费路径，但不测量峰值内存。
 PocketRoot deadline 在同步 `spawn` / `closeStdin` 返回后才开始，因此还不是完整端到端命令
 deadline；持续负载下的宿主峰值内存和 jetsam 也仍需验证。
 

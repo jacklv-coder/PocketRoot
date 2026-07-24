@@ -27,7 +27,7 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
 - 加入 fakefs layout validation、versioned install、verified reuse，以及 journal 保护、可恢复/可回滚的同卷 promotion。
 - 加入真实 release archive integration test。
 - 加入完整 Experimental graph 的 arm64 Simulator 与 unsigned device final-link gate。
-- 加入 repository-owned iOS 18 native smoke App 和 runner，覆盖 14 项 prepare、boot、guest、command、取消、recovery 与 shutdown。
+- 加入 repository-owned iOS 18 native smoke App 和 runner，覆盖 16 项 prepare、boot、guest、8 MiB 持续二进制输出、stdout/stderr 超限、command、取消、recovery 与 shutdown。
 - 加入签名 iPhone/iPad smoke runner，通过 `devicectl` 安装、注入固定 RootFS、取回报告并校验 development entitlement；iPhone 17 Pro / iOS 26.1 基线已通过。
 - 提交精确 SwiftPM resolution 到 `Package.resolved`。
 - 加入 IshEmbed 可行性 [ADR-001](Docs/Decisions/ADR-001-IshEmbed-Feasibility.md)。

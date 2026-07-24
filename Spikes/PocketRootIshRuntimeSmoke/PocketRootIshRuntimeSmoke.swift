@@ -35,6 +35,8 @@ private enum PocketRootRuntimeSmokeRunner {
     static let archiveFileName = "pocketroot-fs-v0.3.3.tar.gz"
     static let reportFileName = "pocketroot-smoke-result.json"
     static let progressFileName = "pocketroot-smoke-progress.txt"
+    static let sustainedOutputByteCount = 8 * 1_024 * 1_024
+    static let maximumStandardErrorBytes = 64
 
     static func run(environment: PocketRootSmokeEnvironment) async -> PocketRootSmokeReport {
         let startedAt = Date()
@@ -70,8 +72,8 @@ private enum PocketRootRuntimeSmokeRunner {
                 archiveURL: archiveURL,
                 applicationSupportURL: applicationSupportURL,
                 workDirectory: "/",
-                maximumStandardOutputBytes: 64,
-                maximumStandardErrorBytes: 64
+                maximumStandardOutputBytes: sustainedOutputByteCount,
+                maximumStandardErrorBytes: maximumStandardErrorBytes
             )
             system = prepared.system
             checks.append(
@@ -146,6 +148,40 @@ private enum PocketRootRuntimeSmokeRunner {
             try require(merged.standardError.isEmpty, "Merged stderr was also returned separately.")
             checks.append(PocketRootSmokeCheck(name: "stderr-merge", detail: "merged"))
 
+            writeProgress("running-sustained-output-check")
+            do {
+                let sustainedOutput = try await prepared.system.execute(
+                    PocketRootCommandRequest(
+                        command: "/bin/dd if=/dev/zero bs=65536 count=128 2>/dev/null",
+                        workingDirectory: "/",
+                        timeout: .seconds(60)
+                    )
+                )
+                try require(
+                    sustainedOutput.exitCode == 0,
+                    "Sustained output command exited \(sustainedOutput.exitCode)."
+                )
+                try require(
+                    sustainedOutput.standardOutput.count == sustainedOutputByteCount,
+                    "Sustained output returned "
+                        + "\(sustainedOutput.standardOutput.count) bytes."
+                )
+                try require(
+                    sustainedOutput.standardOutput.allSatisfy { $0 == 0 },
+                    "Sustained binary output was corrupted."
+                )
+                try require(
+                    sustainedOutput.standardError.isEmpty,
+                    "Sustained output unexpectedly wrote stderr."
+                )
+            }
+            checks.append(
+                PocketRootSmokeCheck(
+                    name: "sustained-output",
+                    detail: "8 MiB binary stdout, byte-exact"
+                )
+            )
+
             let timedOut = try await prepared.system.execute(
                 PocketRootCommandRequest(
                     command: "sleep 2",
@@ -168,15 +204,47 @@ private enum PocketRootRuntimeSmokeRunner {
             do {
                 _ = try await prepared.system.execute(
                     PocketRootCommandRequest(
-                        command: "i=0; while [ \"$i\" -lt 256 ]; do printf x; i=$((i + 1)); done",
-                        workingDirectory: "/"
+                        command: "/bin/dd if=/dev/zero bs=65536 count=129 2>/dev/null",
+                        workingDirectory: "/",
+                        timeout: .seconds(60)
                     )
                 )
                 throw PocketRootSmokeFailure(message: "stdout limit was not enforced.")
             } catch PocketRootError.commandOutputLimitExceeded(let stream, let limit) {
                 try require(stream == "stdout", "Unexpected limited stream: \(stream)")
-                try require(limit == 64, "Unexpected stdout limit: \(limit)")
-                checks.append(PocketRootSmokeCheck(name: "output-limit", detail: "64 bytes"))
+                try require(
+                    limit == sustainedOutputByteCount,
+                    "Unexpected stdout limit: \(limit)"
+                )
+                checks.append(
+                    PocketRootSmokeCheck(
+                        name: "stdout-output-limit",
+                        detail: "8 MiB"
+                    )
+                )
+            }
+
+            do {
+                _ = try await prepared.system.execute(
+                    PocketRootCommandRequest(
+                        command: "i=0; while [ \"$i\" -lt 256 ]; do "
+                            + "printf x >&2; i=$((i + 1)); done",
+                        workingDirectory: "/"
+                    )
+                )
+                throw PocketRootSmokeFailure(message: "stderr limit was not enforced.")
+            } catch PocketRootError.commandOutputLimitExceeded(let stream, let limit) {
+                try require(stream == "stderr", "Unexpected limited stream: \(stream)")
+                try require(
+                    limit == maximumStandardErrorBytes,
+                    "Unexpected stderr limit: \(limit)"
+                )
+                checks.append(
+                    PocketRootSmokeCheck(
+                        name: "stderr-output-limit",
+                        detail: "stderr, 64 bytes"
+                    )
+                )
             }
 
             let afterOutputLimit = try await prepared.system.execute(
@@ -189,7 +257,7 @@ private enum PocketRootRuntimeSmokeRunner {
                 afterOutputLimit.stdout == "after-limit-ok",
                 "Runtime did not recover after output-limit termination."
             )
-            checks.append(PocketRootSmokeCheck(name: "post-output-limit", detail: "ready"))
+            checks.append(PocketRootSmokeCheck(name: "post-output-limits", detail: "ready"))
 
             writeProgress("running-cancellation-check")
             let cancellationCommand = Task {

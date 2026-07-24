@@ -53,7 +53,7 @@ Design principles:
   after guest `EXITED`; success keeps the runtime reusable, while unconfirmed
   cleanup fails closed. It does not roll back earlier side effects.
 - `boot()` reports `ready` only after a fixed post-boot command verifies guest architecture, Alpine identity, and command context. The built-in v0.3.3 RootFS manifest also requires Alpine `3.19.1` exactly.
-- The event-read loop uses a post-establishment deadline and Swift stdout/stderr budgets. The native transport adds a 4 MiB/4096-frame output backlog per session, a 4 MiB/256-frame total control budget, and lifecycle reserve. Supervisor and transport failures are typed, so a normal guest exit 17 is no longer confused with broken pipe. PocketRoot still fails closed when guest exit cannot be proven. The request timeout starts after spawn/closeStdin and is therefore not yet an end-to-end command deadline.
+- The event-read loop uses a post-establishment deadline and Swift stdout/stderr budgets. The native transport adds a 4 MiB/4096-frame output backlog per session, a 4 MiB/256-frame total control budget, and lifecycle reserve. An 8 MiB binary-stdout smoke crosses the native backlog and verifies every byte; peak memory and jetsam remain separate gates. Supervisor and transport failures are typed, so a normal guest exit 17 is no longer confused with broken pipe. PocketRoot still fails closed when guest exit cannot be proven. The request timeout starts after spawn/closeStdin and is therefore not yet an end-to-end command deadline.
 
 See [Architecture](Docs/en/Architecture.md), [Implementation](Docs/en/Implementation.md), and [RootFS Security](Docs/en/RootFS.md).
 
@@ -65,7 +65,7 @@ See [Architecture](Docs/en/Architecture.md), [Implementation](Docs/en/Implementa
 - iOS 18.0+
 - Homebrew and XcodeGen
 
-macOS 13 is a host-test declaration, not a supported guest platform. IshEmbed has arm64 iOS device and arm64 Simulator slices only. An App target that selects the Experimental products must exclude x86_64 Simulator before SwiftPM product resolution; `isAvailable` is a post-link runtime probe, not a remedy for a missing binary slice. Native behavior has been validated with Xcode 16.0 / iOS 18.0 SDK and Xcode 26.1.1 / iOS 18.2 arm64 Simulator; both environments completed final links and the 14-check native smoke.
+macOS 13 is a host-test declaration, not a supported guest platform. IshEmbed has arm64 iOS device and arm64 Simulator slices only. An App target that selects the Experimental products must exclude x86_64 Simulator before SwiftPM product resolution; `isAvailable` is a post-link runtime probe, not a remedy for a missing binary slice. Native behavior has been validated with Xcode 16.0 / iOS 18.0 SDK and Xcode 26.1.1 / iOS 18.2 arm64 Simulator; both environments completed final links and the 16-check native smoke.
 
 ## Build from source
 

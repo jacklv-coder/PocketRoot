@@ -94,7 +94,7 @@ The current code does not provide a complete product-level privacy policy.
 
 ### Apple platforms
 
-- [x] Complete RootFS install, native final links, and the 14-check smoke with
+- [x] Complete RootFS install, native final links, and the 16-check smoke with
   the minimum Xcode 16 toolchain.
 - [x] Run the signed iPhone one-shot smoke.
 - [ ] Run the signed iPad smoke and complete iPhone/iPad lifecycle coverage.

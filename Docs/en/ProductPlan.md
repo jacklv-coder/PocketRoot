@@ -115,10 +115,11 @@ than download counts:
 - Runtime or RootFS changes must pass their corresponding unit, real-asset,
   final-link, and smoke gates.
 - A failed installation cannot damage the last verified RootFS.
-- One-shot cancellation now confirms guest exit. After end-to-end native
-  control-path deadlines, sustained-output, and peak-memory hardening, blocked
-  writes or unbounded output cannot leave a command occupying the process
-  indefinitely; the remaining gaps stay explicit gates until then.
+- One-shot cancellation now confirms guest exit, and the 8 MiB sustained
+  binary-output baseline passes. After end-to-end native control-path deadlines
+  and peak-memory hardening, blocked writes or unbounded output cannot leave a
+  command occupying the process indefinitely; the remaining gaps stay explicit
+  gates until then.
 - Every production blocker has an actionable exit criterion in the roadmap.
 - Links, commands, and critical facts remain synchronized between the Chinese
   and English documentation.

@@ -50,7 +50,7 @@ flowchart LR
 - 取消一次性命令会终止 native session，确认 guest `EXITED` 后才返回；成功后 runtime
   可继续使用，无法确认清理则失败关闭。取消不回滚此前副作用。
 - `boot()` 只有在固定 post-boot 命令验证 guest 架构、Alpine 身份和命令上下文后才报告 `ready`；内置 v0.3.3 RootFS 清单还严格要求 Alpine `3.19.1`。
-- session 建立后的 event-read loop 使用 deadline，Swift 结果有独立 stdout/stderr 配额；新 native transport 另有每 session 4 MiB/4096 帧输出积压、4 MiB/256 帧 control 总预算及 lifecycle reserve。supervisor/transport failure 以类型化错误返回，正常 guest `exit 17` 不再与 broken pipe 混淆。PocketRoot 对无法确认 guest 已退出的路径仍失败关闭；请求 timeout 目前从 session 建立后开始，因此仍不是覆盖此前 spawn/closeStdin 的端到端命令 deadline。
+- session 建立后的 event-read loop 使用 deadline，Swift 结果有独立 stdout/stderr 配额；新 native transport 另有每 session 4 MiB/4096 帧输出积压、4 MiB/256 帧 control 总预算及 lifecycle reserve。8 MiB 二进制 stdout smoke 会跨越 native backlog 并逐字节验证结果；峰值内存和 jetsam 仍是独立门禁。supervisor/transport failure 以类型化错误返回，正常 guest `exit 17` 不再与 broken pipe 混淆。PocketRoot 对无法确认 guest 已退出的路径仍失败关闭；请求 timeout 目前从 session 建立后开始，因此仍不是覆盖此前 spawn/closeStdin 的端到端命令 deadline。
 
 完整实现见[架构说明](Docs/Architecture.md)、[实现原理](Docs/Implementation.md)和 [RootFS 安全方案](Docs/RootFS.md)。
 
@@ -67,7 +67,7 @@ flowchart LR
 - macOS 13 仅是运行 Swift Package 宿主测试的最低声明，不是受支持的 Linux 运行时平台。
 - IshEmbed XCFramework 只有 arm64 iOS 真机和 arm64 iOS Simulator 切片，不支持 x86_64 Simulator 或 macOS。链接实验产品的 App target 必须在选择 Swift Package 产品前就排除 x86_64 Simulator；`isAvailable` 是已成功链接后的运行时探针，不能挽救缺失切片的 target。
 - 原生路径已在 Xcode 16.0 / iOS 18.0 SDK 和 Xcode 26.1.1 / iOS 18.2
-  arm64 Simulator 验证；两套环境都完成最终链接和 14 项 native smoke。
+  arm64 Simulator 验证；两套环境都完成最终链接和 16 项 native smoke。
 
 ## 从源码开始
 
