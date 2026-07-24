@@ -1,0 +1,197 @@
+{
+  "schemaVersion": 1,
+  "archive": {
+    "version": "v0.3.3",
+    "sha256": "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"
+  },
+  "sourceOrigins": [
+    {
+      "sourceOrigin": "alpine-baselayout",
+      "aportsCommit": "7749273fed55f6e1df7c9ee6a127f18099f98a94",
+      "aportsRepository": "main",
+      "buildRecipeURL": "https://gitlab.alpinelinux.org/alpine/aports/-/raw/7749273fed55f6e1df7c9ee6a127f18099f98a94/main/alpine-baselayout/APKBUILD",
+      "buildRecipeTreeURL": "https://gitlab.alpinelinux.org/alpine/aports/-/tree/7749273fed55f6e1df7c9ee6a127f18099f98a94/main/alpine-baselayout",
+      "binaryPackages": [
+        "alpine-baselayout",
+        "alpine-baselayout-data"
+      ],
+      "binaryVersions": [
+        "3.4.3-r2"
+      ],
+      "declaredLicenseExpressions": [
+        "GPL-2.0-only"
+      ],
+      "containsDeclaredCopyleft": true,
+      "correspondingSourceStatus": "locator-recorded-bundle-not-collected"
+    },
+    {
+      "sourceOrigin": "alpine-keys",
+      "aportsCommit": "aab68f8c9ab434a46710de8e12fb3206e2930a59",
+      "aportsRepository": "main",
+      "buildRecipeURL": "https://gitlab.alpinelinux.org/alpine/aports/-/raw/aab68f8c9ab434a46710de8e12fb3206e2930a59/main/alpine-keys/APKBUILD",
+      "buildRecipeTreeURL": "https://gitlab.alpinelinux.org/alpine/aports/-/tree/aab68f8c9ab434a46710de8e12fb3206e2930a59/main/alpine-keys",
+      "binaryPackages": [
+        "alpine-keys"
+      ],
+      "binaryVersions": [
+        "2.4-r1"
+      ],
+      "declaredLicenseExpressions": [
+        "MIT"
+      ],
+      "containsDeclaredCopyleft": false,
+      "correspondingSourceStatus": "locator-recorded-bundle-not-collected"
+    },
+    {
+      "sourceOrigin": "apk-tools",
+      "aportsCommit": "33283848034c9885d984c8e8697c645c57324938",
+      "aportsRepository": "main",
+      "buildRecipeURL": "https://gitlab.alpinelinux.org/alpine/aports/-/raw/33283848034c9885d984c8e8697c645c57324938/main/apk-tools/APKBUILD",
+      "buildRecipeTreeURL": "https://gitlab.alpinelinux.org/alpine/aports/-/tree/33283848034c9885d984c8e8697c645c57324938/main/apk-tools",
+      "binaryPackages": [
+        "apk-tools"
+      ],
+      "binaryVersions": [
+        "2.14.0-r5"
+      ],
+      "declaredLicenseExpressions": [
+        "GPL-2.0-only"
+      ],
+      "containsDeclaredCopyleft": true,
+      "correspondingSourceStatus": "locator-recorded-bundle-not-collected"
+    },
+    {
+      "sourceOrigin": "busybox",
+      "aportsCommit": "d1b6f274f29076967826e0ecf6ebcaa5d360272f",
+      "aportsRepository": "main",
+      "buildRecipeURL": "https://gitlab.alpinelinux.org/alpine/aports/-/raw/d1b6f274f29076967826e0ecf6ebcaa5d360272f/main/busybox/APKBUILD",
+      "buildRecipeTreeURL": "https://gitlab.alpinelinux.org/alpine/aports/-/tree/d1b6f274f29076967826e0ecf6ebcaa5d360272f/main/busybox",
+      "binaryPackages": [
+        "busybox",
+        "busybox-binsh",
+        "ssl_client"
+      ],
+      "binaryVersions": [
+        "1.36.1-r15"
+      ],
+      "declaredLicenseExpressions": [
+        "GPL-2.0-only"
+      ],
+      "containsDeclaredCopyleft": true,
+      "correspondingSourceStatus": "locator-recorded-bundle-not-collected"
+    },
+    {
+      "sourceOrigin": "ca-certificates",
+      "aportsCommit": "59534a02716a92a10d177a118c34066162eff4a6",
+      "aportsRepository": "main",
+      "buildRecipeURL": "https://gitlab.alpinelinux.org/alpine/aports/-/raw/59534a02716a92a10d177a118c34066162eff4a6/main/ca-certificates/APKBUILD",
+      "buildRecipeTreeURL": "https://gitlab.alpinelinux.org/alpine/aports/-/tree/59534a02716a92a10d177a118c34066162eff4a6/main/ca-certificates",
+      "binaryPackages": [
+        "ca-certificates-bundle"
+      ],
+      "binaryVersions": [
+        "20230506-r0"
+      ],
+      "declaredLicenseExpressions": [
+        "MPL-2.0 AND MIT"
+      ],
+      "containsDeclaredCopyleft": true,
+      "correspondingSourceStatus": "locator-recorded-bundle-not-collected"
+    },
+    {
+      "sourceOrigin": "libc-dev",
+      "aportsCommit": "988f183cc9d6699930c3e18ccf4a9e36010afb56",
+      "aportsRepository": "main",
+      "buildRecipeURL": "https://gitlab.alpinelinux.org/alpine/aports/-/raw/988f183cc9d6699930c3e18ccf4a9e36010afb56/main/libc-dev/APKBUILD",
+      "buildRecipeTreeURL": "https://gitlab.alpinelinux.org/alpine/aports/-/tree/988f183cc9d6699930c3e18ccf4a9e36010afb56/main/libc-dev",
+      "binaryPackages": [
+        "libc-utils"
+      ],
+      "binaryVersions": [
+        "0.7.2-r5"
+      ],
+      "declaredLicenseExpressions": [
+        "BSD-2-Clause AND BSD-3-Clause"
+      ],
+      "containsDeclaredCopyleft": false,
+      "correspondingSourceStatus": "locator-recorded-bundle-not-collected"
+    },
+    {
+      "sourceOrigin": "musl",
+      "aportsCommit": "ca7f2ab5e88794e4e654b40776f8a92256f50639",
+      "aportsRepository": "main",
+      "buildRecipeURL": "https://gitlab.alpinelinux.org/alpine/aports/-/raw/ca7f2ab5e88794e4e654b40776f8a92256f50639/main/musl/APKBUILD",
+      "buildRecipeTreeURL": "https://gitlab.alpinelinux.org/alpine/aports/-/tree/ca7f2ab5e88794e4e654b40776f8a92256f50639/main/musl",
+      "binaryPackages": [
+        "musl",
+        "musl-utils"
+      ],
+      "binaryVersions": [
+        "1.2.4_git20230717-r4"
+      ],
+      "declaredLicenseExpressions": [
+        "MIT",
+        "MIT AND BSD-2-Clause AND GPL-2.0-or-later"
+      ],
+      "containsDeclaredCopyleft": true,
+      "correspondingSourceStatus": "locator-recorded-bundle-not-collected"
+    },
+    {
+      "sourceOrigin": "openssl",
+      "aportsCommit": "b784a22cad0c452586b438cb7a597d846fc09ff4",
+      "aportsRepository": "main",
+      "buildRecipeURL": "https://gitlab.alpinelinux.org/alpine/aports/-/raw/b784a22cad0c452586b438cb7a597d846fc09ff4/main/openssl/APKBUILD",
+      "buildRecipeTreeURL": "https://gitlab.alpinelinux.org/alpine/aports/-/tree/b784a22cad0c452586b438cb7a597d846fc09ff4/main/openssl",
+      "binaryPackages": [
+        "libcrypto3",
+        "libssl3"
+      ],
+      "binaryVersions": [
+        "3.1.4-r5"
+      ],
+      "declaredLicenseExpressions": [
+        "Apache-2.0"
+      ],
+      "containsDeclaredCopyleft": false,
+      "correspondingSourceStatus": "locator-recorded-bundle-not-collected"
+    },
+    {
+      "sourceOrigin": "pax-utils",
+      "aportsCommit": "e65a4f2d0470e70d862ef2b5c412ecf2cb9ad0a6",
+      "aportsRepository": "main",
+      "buildRecipeURL": "https://gitlab.alpinelinux.org/alpine/aports/-/raw/e65a4f2d0470e70d862ef2b5c412ecf2cb9ad0a6/main/pax-utils/APKBUILD",
+      "buildRecipeTreeURL": "https://gitlab.alpinelinux.org/alpine/aports/-/tree/e65a4f2d0470e70d862ef2b5c412ecf2cb9ad0a6/main/pax-utils",
+      "binaryPackages": [
+        "scanelf"
+      ],
+      "binaryVersions": [
+        "1.3.7-r2"
+      ],
+      "declaredLicenseExpressions": [
+        "GPL-2.0-only"
+      ],
+      "containsDeclaredCopyleft": true,
+      "correspondingSourceStatus": "locator-recorded-bundle-not-collected"
+    },
+    {
+      "sourceOrigin": "zlib",
+      "aportsCommit": "9406f6fc5fca057d990eb0d260d75839eeb34d83",
+      "aportsRepository": "main",
+      "buildRecipeURL": "https://gitlab.alpinelinux.org/alpine/aports/-/raw/9406f6fc5fca057d990eb0d260d75839eeb34d83/main/zlib/APKBUILD",
+      "buildRecipeTreeURL": "https://gitlab.alpinelinux.org/alpine/aports/-/tree/9406f6fc5fca057d990eb0d260d75839eeb34d83/main/zlib",
+      "binaryPackages": [
+        "zlib"
+      ],
+      "binaryVersions": [
+        "1.3.1-r0"
+      ],
+      "declaredLicenseExpressions": [
+        "Zlib"
+      ],
+      "containsDeclaredCopyleft": false,
+      "correspondingSourceStatus": "locator-recorded-bundle-not-collected"
+    }
+  ],
+  "completeCorrespondingSourceBundlePresent": false,
+  "status": "exact-recipe-locators-recorded-source-bundle-open"
+}

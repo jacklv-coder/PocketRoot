@@ -66,7 +66,11 @@ RootFS 合规材料和完整可分发组合仍未闭环，因此不会解除发�
 | CA certificates | MPL-2.0 与 MIT |
 | zlib | Zlib |
 
-release archive 没有完整 license bundle、NOTICE set 或 machine-readable SBOM。copyleft package 的对应源码可用性也必须建立。
+release archive 自身没有完整 license bundle 或 NOTICE set，也没有随附
+machine-readable SBOM。仓库现在从固定 archive 可复现生成 15 个已安装二进制包、
+10 个 source origin、SPDX 2.3 JSON SBOM、声明许可证/attribution inventory 和
+`apk`、repository、DNS 默认配置快照。archive 内没有发现可识别的
+LICENSE/COPYING/NOTICE 文件；copyleft package 的自包含对应源码 bundle 仍未建立。
 
 ## 当前仓库保护
 
@@ -78,6 +82,9 @@ release archive 没有完整 license bundle、NOTICE set 或 machine-readable SB
 - 默认伞形产品不导出实验 runtime。
 - composition 只接受调用方本地 archive，不下载。
 - CI 下载 RootFS 仅用于校验和测试，不把它保存为发行 artifact。
+- CI 从固定 archive 重新生成并比对
+  [`Compliance/RootFS/v0.3.3`](../Compliance/RootFS/v0.3.3/README.md) 的包清单、
+  SPDX SBOM、来源 locator、许可证声明与默认配置证据。
 - README、API 注释和 ADR 明确标注 Experimental 与 shutdown 风险。
 
 这些工程措施降低意外分发风险，但不替代法律审查。
@@ -154,13 +161,14 @@ Alpine `apk` 可以下载、安装和执行新增代码。即使初始 RootFS �
 
 ### RootFS
 
-- [ ] 生成完整 package inventory。
-- [ ] 生成 machine-readable SBOM。
+- [x] 从固定 APK database 生成完整 package inventory。
+- [x] 生成并通过 SPDX 2.3 JSON schema 校验的 machine-readable SBOM。
 - [ ] 收集 license text 和 NOTICE。
 - [ ] 建立 copyleft corresponding source bundle。
-- [ ] 审查 DNS、repository 和 package-manager 默认配置。
-- [ ] 决定 archive 是 bundle、按需资源还是外部输入。
-- [ ] 更新 manifest、hash 和测试证据。
+- [x] 固定 DNS、repository 和 package-manager 默认配置事实。
+- [ ] 决定保留、限制、代理或禁用 guest package manager/network 的产品策略。
+- [x] 当前决定 archive 由调用方作为外部本地输入；若改为 bundle 或按需资源须重审。
+- [x] 更新 manifest、hash 和 CI 可复现测试证据。
 
 ### Apple 平台
 

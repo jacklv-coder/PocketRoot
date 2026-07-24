@@ -27,11 +27,24 @@ provides a corresponding-source asset, but product-level RootFS compliance
 material and the complete distributable combination remain open, so this does
 not unblock distribution.
 
-The Alpine archive includes GPL-2.0-only, GPL-2.0-or-later, Apache-2.0, MPL-2.0, MIT, BSD, and Zlib families. It lacks a complete license bundle, NOTICE set, machine-readable SBOM, and established corresponding-source bundle.
+The Alpine archive includes GPL-2.0-only, GPL-2.0-or-later, Apache-2.0,
+MPL-2.0, MIT, BSD, and Zlib families. The archive itself lacks a complete
+license bundle, NOTICE set, and embedded machine-readable SBOM. The repository
+now reproducibly generates all 15 installed binary packages, 10 source
+origins, an SPDX 2.3 JSON SBOM, declared-license/attribution inventories, and
+the default `apk`, repository, and DNS snapshot. No identifiable
+LICENSE/COPYING/NOTICE file was found in the archive, and a self-contained
+corresponding-source bundle for copyleft packages is still absent.
 
 ## Repository safeguards
 
-The RootFS is not committed or bundled. Upstream source, nested gitlink, and hashes are pinned. Experimental products are excluded from the umbrella. Composition accepts local input only. CI downloads only for ephemeral validation. Documentation and APIs label Experimental and shutdown risks.
+The RootFS is not committed or bundled. Upstream source, nested gitlink, and
+hashes are pinned. Experimental products are excluded from the umbrella.
+Composition accepts local input only. CI downloads only for ephemeral
+validation and regenerates the package inventory, SPDX SBOM, source locators,
+declared-license data, and default configuration under
+[`Compliance/RootFS/v0.3.3`](../../Compliance/RootFS/v0.3.3/README.md).
+Documentation and APIs label Experimental and shutdown risks.
 
 These engineering controls reduce the risk of accidental distribution; they do
 not replace legal review.
@@ -84,14 +97,16 @@ The current code does not provide a complete product-level privacy policy.
 
 ### RootFS
 
-- [ ] Generate a complete package inventory.
-- [ ] Generate a machine-readable SBOM.
+- [x] Generate a complete inventory from the pinned APK database.
+- [x] Generate a machine-readable SBOM validated against the SPDX 2.3 JSON schema.
 - [ ] Collect license texts and NOTICE files.
 - [ ] Establish a corresponding-source bundle for copyleft components.
-- [ ] Review default DNS, repository, and package-manager configuration.
-- [ ] Decide whether the archive is bundled, delivered as an on-demand resource,
-  or supplied as an external input.
-- [ ] Update the manifest, hashes, and test evidence.
+- [x] Record default DNS, repository, and package-manager facts.
+- [ ] Decide the product policy to retain, restrict, proxy, or disable guest
+  package management and networking.
+- [x] Keep the current caller-supplied local-input decision; re-review any
+  bundle or on-demand-resource change.
+- [x] Update the manifest, hashes, and reproducible CI evidence.
 
 ### Apple platforms
 

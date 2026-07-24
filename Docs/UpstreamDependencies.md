@@ -122,7 +122,8 @@ PocketRoot 仍保持 Experimental。尚未闭环的门禁：
 - interactive session 的 read/close 取消契约；
 - 完整 PTY、resize、signal、interactive session 生命周期；
 - sustained workload、峰值内存与 jetsam；
-- RootFS license/NOTICE/SBOM/对应源码；
+- RootFS 已生成 package inventory、SPDX SBOM、source locator 和默认配置证据，
+  但完整 license/NOTICE 与对应源码 bundle 仍未完成；
 - App Store Review Guideline 2.5.2 结论。
 
 ## 6. 依赖更新流程

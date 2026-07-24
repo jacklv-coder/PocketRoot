@@ -26,6 +26,10 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
 - 加入 zlib gzip 与 constrained ustar extractor，拒绝 traversal、link、special node 和 duplicate。
 - 加入 fakefs layout validation、versioned install、verified reuse，以及 journal 保护、可恢复/可回滚的同卷 promotion。
 - 加入真实 release archive integration test。
+- 加入固定 RootFS 的可复现合规证据生成器、CI 比对与固定官方 schema 验证，提交 15 包 inventory、
+  10 个 source origin、SPDX 2.3 JSON SBOM、许可证声明/attribution inventory
+  和 `apk`、repository、DNS 默认配置快照；完整 LICENSE/NOTICE 与对应源码 bundle
+  仍保持发行阻塞。
 - 加入完整 Experimental graph 的 arm64 Simulator 与 unsigned device final-link gate。
 - 加入 repository-owned iOS 18 native smoke App 和 runner，覆盖 17 项 prepare、boot、guest、8 MiB 持续二进制输出、stdout/stderr 超限、command、取消、recovery、shutdown 与 256 MiB Simulator 生命周期峰值内存门禁。
 - 加入签名 iPhone/iPad smoke runner，通过 `devicectl` 安装、注入固定 RootFS、取回报告并校验 development entitlement；iPhone 17 Pro / iOS 26.1 基线已通过。

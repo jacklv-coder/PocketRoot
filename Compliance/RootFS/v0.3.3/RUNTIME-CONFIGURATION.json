@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "archive": {
+    "version": "v0.3.3",
+    "sha256": "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"
+  },
+  "guest": {
+    "id": "alpine",
+    "versionID": "3.19.1",
+    "architecture": "aarch64"
+  },
+  "apk": {
+    "installed": true,
+    "paths": [
+      "sbin/apk"
+    ],
+    "repositories": [
+      "https://dl-cdn.alpinelinux.org/alpine/v3.19/main",
+      "https://dl-cdn.alpinelinux.org/alpine/v3.19/community"
+    ],
+    "world": [
+      "alpine-baselayout",
+      "alpine-keys",
+      "apk-tools",
+      "busybox",
+      "libc-utils"
+    ]
+  },
+  "resolverConfiguration": [
+    "nameserver 1.1.1.1",
+    "nameserver 8.8.8.8",
+    "nameserver 9.9.9.9",
+    "options timeout:2 attempts:2"
+  ],
+  "review": {
+    "status": "recorded-requires-product-policy",
+    "observations": [
+      "The package manager remains installed.",
+      "The configured repositories allow retrieval from Alpine main and community.",
+      "The resolver contains fixed public DNS server addresses.",
+      "No product decision to retain, restrict, proxy, or disable these capabilities is recorded."
+    ]
+  }
+}

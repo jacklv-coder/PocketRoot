@@ -5,7 +5,7 @@
 A RootFS is an external supply-chain input, not a normal fixture. PocketRoot commits immutable metadata and secure install code, not the payload.
 
 > [!WARNING]
-> The pinned v0.3.3 archive still has license, NOTICE, corresponding-source, and SBOM gates. The URL and commands below support audit and local development; they do not grant redistribution rights.
+> The pinned v0.3.3 archive now has a reproducible package inventory, SPDX SBOM, and default-configuration evidence. License texts, package notices, a corresponding-source bundle, and distribution approval remain open. The URL and commands below support audit and local development; they do not grant redistribution rights.
 
 ## Pinned manifest
 
@@ -46,6 +46,24 @@ printf '%s  %s\n' \
   "$ROOTFS_ARCHIVE" \
   | shasum -a 256 --check
 ```
+
+[`Compliance/RootFS/v0.3.3`](../../Compliance/RootFS/v0.3.3/README.md)
+contains the 15-binary-package inventory, 10 source origins, SPDX 2.3 JSON
+SBOM, declared-license inventory, attribution inventory, `apk`/repository/DNS
+snapshot, and input digests generated from this exact archive. The generator
+verifies size and SHA-256 before reading only fixed, small metadata members:
+
+```bash
+ruby Scripts/generate-rootfs-compliance.rb \
+  --archive "$ROOTFS_ARCHIVE" \
+  --check
+```
+
+This closes reproducible engineering fact collection, not legal review. The
+archive contains no identifiable LICENSE/COPYING/NOTICE files. A complete
+third-party license/notice bundle and a corresponding-source bundle containing
+recipes, patches, upstream sources, and build instructions remain independent
+distribution gates.
 
 Do not put it in package resources, Demo resources, Git, or Git LFS.
 

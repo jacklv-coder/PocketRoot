@@ -238,14 +238,14 @@ Experimental 产品加入默认 umbrella。
 
 ## RootFS 与发行约束
 
-审核 package 有 GPL 标识，但缺少完整顶层 LICENSE/NOTICE 组合。iSH submodule 有 GPL 和 `LICENSE.IOS`。Alpine RootFS 包含 GPL、Apache、MPL、MIT、BSD、Zlib 等 family，但 release asset 没有完整 license bundle、NOTICE、SBOM 或对应源码交付材料。
+审核 package 有 GPL 标识，但缺少完整顶层 LICENSE/NOTICE 组合。iSH submodule 有 GPL 和 `LICENSE.IOS`。Alpine RootFS 包含 GPL、Apache、MPL、MIT、BSD、Zlib 等 family。仓库已从固定 release asset 生成包清单与 SPDX SBOM，但该 asset 仍没有完整 license bundle、NOTICE 或对应源码交付材料，完整发行物 SBOM 也尚未完成。
 
 静态链接和 RootFS 分发保持阻塞，直到：
 
 - PocketRoot license 兼容性确认；
 - upstream notice 与修改说明完整；
 - corresponding source 可提供；
-- SBOM 完整；
+- 完整发行物 SBOM 可复现；
 - App Store 2.5.2 有结论。
 
 Alpine `apk` 可下载并执行新代码，因此“把固定 RootFS 打入 App”不会自动消除 App Store downloaded-code 风险。

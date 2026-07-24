@@ -137,7 +137,9 @@ PocketRoot remains Experimental. Open gates include:
 - interactive-session read/close cancellation;
 - complete PTY, resize, signal, and interactive-session lifecycle;
 - sustained workload, peak memory, and jetsam behavior;
-- RootFS license/NOTICE/SBOM/corresponding source; and
+- generated RootFS package inventory, SPDX SBOM, source locators, and default
+  configuration are present, while the complete license/NOTICE and
+  corresponding-source bundles remain open; and
 - an App Store Review Guideline 2.5.2 decision.
 
 ## 6. Update procedure

@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "archive": {
+    "version": "v0.3.3",
+    "sha256": "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"
+  },
+  "declaredLicenseExpressions": {
+    "Apache-2.0": 2,
+    "BSD-2-Clause AND BSD-3-Clause": 1,
+    "GPL-2.0-only": 7,
+    "MIT": 2,
+    "MIT AND BSD-2-Clause AND GPL-2.0-or-later": 1,
+    "MPL-2.0 AND MIT": 1,
+    "Zlib": 1
+  },
+  "declaredLicenseIdentifiers": [
+    "Apache-2.0",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "GPL-2.0-only",
+    "GPL-2.0-or-later",
+    "MIT",
+    "MPL-2.0",
+    "Zlib"
+  ],
+  "licenseOrNoticeFilesFoundInGuestTemplate": [
+
+  ],
+  "completeLicenseTextBundlePresent": false,
+  "completePackageNoticeSetPresent": false,
+  "status": "declared-identifiers-recorded-text-and-notice-collection-open"
+}
