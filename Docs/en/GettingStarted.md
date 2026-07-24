@@ -152,6 +152,12 @@ syncs a guest marker, terminates the first App PID, starts a new PID, and
 requires it to reuse the RootFS, recover and remove the marker, and complete
 the standard command, shutdown, and peak-memory gates.
 
+Use the mutually exclusive `POCKETROOT_SMOKE_STORAGE_FAILURE=1` mode to verify
+storage-failure recovery without filling the whole device. The App fixes
+available capacity at zero, then injects ENOSPC after one gzip-output byte.
+Both failures must leave no staging/transaction residue before a normal
+install, boot, and standard smoke recover in the same directory.
+
 ## 8. Command reference
 
 | Goal | Command |
@@ -167,6 +173,7 @@ the standard command, shutdown, and peak-memory gates.
 | Signed process suspend/resume smoke | Add `POCKETROOT_SMOKE_LIFECYCLE=1` to the signed physical smoke command |
 | Signed UIKit lifecycle smoke | Add `POCKETROOT_SMOKE_UI_LIFECYCLE=1` to the signed physical smoke command |
 | Signed forced-relaunch persistence smoke | Add `POCKETROOT_SMOKE_RELAUNCH_PERSISTENCE=1` to the signed physical smoke command |
+| Signed bounded storage-failure smoke | Add `POCKETROOT_SMOKE_STORAGE_FAILURE=1` to the signed physical smoke command |
 | Documentation checks | `./Scripts/check-docs.sh` |
 
 ## 9. Do not commit

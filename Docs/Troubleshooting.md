@@ -292,6 +292,12 @@ xcrun simctl uninstall "$SMOKE_DEVICE_UDID" com.jacklv.PocketRootIshRuntimeSmoke
   CoreDevice 没有确认旧进程结束/新进程建立，不能把本次结果当成跨进程恢复。
 - `The guest marker did not survive forced App termination`：RootFS 被重新安装、同步数据
   没有保留或 fakefs 恢复失败；保留失败日志排查，不要跳过复用与标记检查。
+- `The zero-capacity preflight unexpectedly installed a RootFS`：受限容量 SPI 没有进入
+  生产容量预检；本次结果无效，不要改成真实填满设备。
+- `Storage failure left RootFS entries`：容量或 ENOSPC 失败留下 staging、事务或安装项；
+  保留失败容器排查，不能继续正常 boot 来掩盖残留。
+- `Unexpected gzip ENOSPC error`：固定 1 字节故障没有从实际 gzip 写入路径返回空间错误；
+  检查 SPI 映射和 C extractor，不要扩大写入量。
 - `... smoke launch did not return a process identifier`：当前 Xcode/CoreDevice
   没有返回受支持的 launch JSON PID；不要从人类可读输出猜 PID。
 - entitlement 校验失败：不要跳过；确认 profile 的 application identifier、team identifier 和 `get-task-allow`。

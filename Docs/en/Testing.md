@@ -13,7 +13,7 @@ PocketRoot separates host logic, real RootFS, iOS build, native final-link, and 
 | Demo build | `./Scripts/build.sh` | Umbrella and UIKit build | Experimental graph |
 | Native final link | `./Scripts/build-runtime-spike.sh` | Full graph forms arm64 executables | Physical or guest behavior |
 | Simulator native smoke | `./Scripts/run-runtime-smoke.sh` | Prepare, boot, command bounds, returning soft shutdown | Other toolchains, physical devices, distribution |
-| Physical native smoke | `./Scripts/run-runtime-device-smoke.sh` | Same 17 checks, optional process suspend/resume or UIKit lifecycle, development entitlements, returning soft shutdown | Jetsam, iPad, distribution |
+| Physical native smoke | `./Scripts/run-runtime-device-smoke.sh` | Same 17 checks with optional process suspend/resume, UIKit lifecycle, forced-relaunch persistence, or bounded storage-failure recovery; development entitlements and returning soft shutdown | Real storage pressure/power cut, jetsam, iPad, distribution |
 | Documentation | `./Scripts/check-docs.sh` | Pairs, Chinese coverage, relative links | Implementation correctness |
 
 ## Package tests
@@ -152,6 +152,14 @@ existing RootFS, recover and remove the marker, and complete the standard
 command, shutdown, and peak-memory gates. The host clears report and progress
 again before verification so stale evidence cannot pass.
 
+With the mutually exclusive `POCKETROOT_SMOKE_STORAGE_FAILURE=1`, two checks
+are added for a total of 19. The first fixes installer capacity at zero and
+requires typed `insufficientStorage` before staging. The second uses the real
+snapshot/gzip path but injects ENOSPC after one gzip-output byte. `rootfs/`
+must be empty after each failure before the same directory completes a normal
+install, boot, and the standard 17 checks. This bounded injection does not fill
+the device and is not real storage pressure or a physical power cut.
+
 The sustained-output check proves that Swift can continuously consume binary
 output without truncation or corruption merely because it exceeds the 4 MiB
 native backlog. The lifecycle high-water check covers RootFS preparation,
@@ -220,6 +228,16 @@ POCKETROOT_SMOKE_RELAUNCH_PERSISTENCE=1 \
   ./Scripts/run-runtime-device-smoke.sh
 ```
 
+Use a separate mode for bounded capacity/ENOSPC cleanup recovery:
+
+```bash
+POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
+POCKETROOT_SMOKE_DEVICE=<physical-device-reference> \
+POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
+POCKETROOT_SMOKE_STORAGE_FAILURE=1 \
+  ./Scripts/run-runtime-device-smoke.sh
+```
+
 The reference may be any CoreDevice UUID, hardware UDID, or device name
 accepted by `devicectl`. The runner validates a physical iOS device through
 the supported JSON output and resolves its hardware UDID before `xcodebuild`
@@ -227,10 +245,11 @@ and later `devicectl` operations. The paired device must have Developer Mode
 enabled and support development provisioning. The runner verifies the
 application identifier and `get-task-allow`, installs the App, copies the
 pinned archive into its data container, and retrieves the JSON report. Standard
-mode uses an attached launch. The mutually exclusive host-control modes use
-the launch-JSON PID for suspend/resume, open Settings and reactivate the same
-PID for UIKit callbacks, or terminate a seed PID and require a different
-verification PID. The runner terminates the process and uninstalls the App and
+and bounded storage-failure modes use an attached launch. The mutually
+exclusive host-control modes use the launch-JSON PID for suspend/resume, open
+Settings and reactivate the same PID for UIKit callbacks, or terminate a seed
+PID and require a different verification PID. The runner terminates the
+process and uninstalls the App and
 RootFS data by default; `POCKETROOT_KEEP_DEVICE_APP=1` retains it.
 
 The 2026-07-24 rerun used Xcode 26.1.1, a development-provisioned iPhone 17 Pro
@@ -266,6 +285,15 @@ and soft shutdown at a 51.8 MiB peak. The same shared-runner regression passed
 the standard 17-check, process-suspend 18-check, and UIKit 18-check paths at
 90.2, 89.9, and 87.1 MiB. This proves synced guest-data recovery across forced
 App termination, not jetsam, storage pressure, physical power cut, or iPad.
+
+On the same date, the same Jack iPhone passed the 19-check bounded
+storage-failure path. Capacity preflight rejected zero available bytes before
+staging, gzip returned ENOSPC after one output byte, and `rootfs/` was empty
+after both failures. The same directory then installed normally, booted, and
+completed all standard commands and soft shutdown at a 91.2 MiB peak. This
+proves bounded capacity/ENOSPC cleanup recovery through the production
+installer and extractor in a physical App container, not near-full-device
+storage pressure, a physical power cut, or iPad.
 
 ## CI
 

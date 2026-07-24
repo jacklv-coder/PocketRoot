@@ -13,7 +13,7 @@ PocketRoot 把验证分成宿主逻辑、真实 RootFS、iOS 构建、完整原�
 | 默认 Demo 构建 | `./Scripts/build.sh` | Xcode + iOS SDK | 伞形产品和 UIKit Demo 可构建 | 实验 runtime 已链接 |
 | 原生最终链接 | `./Scripts/build-runtime-spike.sh` | Apple toolchain | 完整实验依赖图可生成 iOS 可执行文件 | 真机或 guest 行为 |
 | Simulator 原生 smoke | `./Scripts/run-runtime-smoke.sh` | Apple Silicon + iOS 18 Simulator + archive | prepare、boot、命令边界和 soft shutdown 返回 | 其他工具链、真机或发行可用 |
-| 物理设备原生 smoke | `./Scripts/run-runtime-device-smoke.sh` | 签名 iOS 18+ iPhone/iPad + archive | 同一 17 项检查、可选进程暂停/恢复或 UIKit 前后台、development entitlement 与 shutdown 返回 | jetsam、iPad 或发行可用 |
+| 物理设备原生 smoke | `./Scripts/run-runtime-device-smoke.sh` | 签名 iOS 18+ iPhone/iPad + archive | 同一 17 项检查、可选进程暂停/恢复、UIKit 前后台、强制重启持久化或受限存储故障恢复，development entitlement 与 shutdown 返回 | 真实 storage pressure/断电、jetsam、iPad 或发行可用 |
 | 文档检查 | `./Scripts/check-docs.sh` | macOS/Linux shell | 中英文成对、中文覆盖和相对链接 | 技术实现正确 |
 
 ## 2. 宿主 Swift Package 测试
@@ -264,6 +264,13 @@ host 按 launch 返回的 PID 暂停 App 进程 3 秒，再恢复并写入一次
 guest 标记必须可读且可清理，然后继续完成标准命令、shutdown 和 peak-memory 门禁。
 host 会在第二次 launch 前再次清空 report/progress，旧证据不能冒充通过。
 
+真机改设互斥的 `POCKETROOT_SMOKE_STORAGE_FAILURE=1` 时增加两项，共 19 项。
+第 1 项把安装器可用容量固定为 0，要求在 staging 前返回类型化
+`insufficientStorage`；第 2 项复用真实 snapshot/gzip 路径，但固定在 gzip 输出
+1 字节后返回 ENOSPC。每次失败后 `rootfs/` 必须为空，随后同一目录正常安装、
+boot 并完成标准 17 项。这是受限故障注入，不会填满整台设备，也不等价于真实
+storage pressure 或物理断电。
+
 第 9 项证明持续二进制输出可以被 Swift 持续消费，不会因 4 MiB native backlog
 本身而截断或损坏。第 17 项在 Simulator 上约束包含 RootFS 准备、8 MiB 输出、
 超限恢复、取消与 shutdown 的完整进程峰值；它不是物理设备 jetsam 证明。第 10 项
@@ -327,12 +334,23 @@ POCKETROOT_SMOKE_RELAUNCH_PERSISTENCE=1 \
   ./Scripts/run-runtime-device-smoke.sh
 ```
 
+验证不会填满设备的受限容量/ENOSPC 清理恢复时使用独立模式：
+
+```bash
+POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
+POCKETROOT_SMOKE_DEVICE=<physical-device-reference> \
+POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
+POCKETROOT_SMOKE_STORAGE_FAILURE=1 \
+  ./Scripts/run-runtime-device-smoke.sh
+```
+
 runner 接受 `devicectl` 可识别的 CoreDevice UUID、硬件 UDID 或设备名，先通过官方
 JSON 输出验证 physical iOS 属性并解析硬件 UDID，再用于 `xcodebuild` 与后续
 `devicectl` 操作。设备必须已配对、启用 Developer Mode 且能用 development profile
 签名。runner 生成并签名 `PocketRootIshRuntimeSmoke`，验证 application identifier
 与 `get-task-allow`，安装 App、把固定 archive 复制到 App data container 并取回
-JSON report。标准模式使用 attached launch；三种互斥的 host-control 模式使用 launch
+JSON report。标准模式和受限存储故障模式使用 attached launch；三种互斥的
+host-control 模式使用 launch
 JSON 返回的 PID。进程模式驱动 suspend/resume；UIKit 模式打开 Settings 后重新激活
 同一 PID；强制重启持久化模式终止 seed PID 并要求 verify PID 不同。默认结束后终止
 进程、卸载 smoke App 并删除其 RootFS 数据；只有显式设置
@@ -363,6 +381,12 @@ foreground/background、真机 jetsam、storage pressure 或强制断电门禁�
 同次公共 runner 回归中，标准 17 项、进程暂停/恢复 18 项和 UIKit 18 项分别以
 90.2、89.9、87.1 MiB 通过。这证明同步 guest 数据可跨强制 App 终止恢复，不声明
 jetsam、storage pressure、真实强制断电或 iPad 已通过。
+
+同日，同一 Jack iPhone 通过受限存储故障 19 项路径：容量预检以 0 可用字节在
+staging 前拒绝，gzip 在输出 1 字节后返回 ENOSPC；两次失败后 `rootfs/` 均无残留，
+随后同一目录正常安装、boot、完成标准命令与 soft shutdown，峰值 91.2 MiB。
+这证明生产安装/解压路径在真机容器内的受限容量与 ENOSPC 清理恢复，不证明整机
+磁盘接近耗尽、真实 storage pressure、物理强制断电或 iPad。
 
 ## 8. GitHub Actions
 
@@ -434,6 +458,7 @@ smoke。CI 的 Simulator 结果不证明签名真机或发行可用。
 - “Jack iPhone（iPhone 14 Pro / iOS 26.6）通过 18 项 process suspend/resume smoke”。
 - “Jack iPhone（iPhone 14 Pro / iOS 26.6）通过 18 项真实 UIKit lifecycle smoke”。
 - “Jack iPhone（iPhone 14 Pro / iOS 26.6）通过 18 项强制重启持久化 smoke”。
+- “Jack iPhone（iPhone 14 Pro / iOS 26.6）通过 19 项受限存储故障恢复 smoke”。
 
 不能由这些结果推导：
 
