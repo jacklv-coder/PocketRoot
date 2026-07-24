@@ -73,12 +73,13 @@ SwiftPM validates the zip checksum. The release transaction also verified:
   and 0 failures.
 - the complete PocketRoot Experimental graph final-linked for arm64 Simulator
   and unsigned device; and
-- an iOS 18.2 Simulator passed the 16-check native smoke with the pinned v0.3.3
+- an iOS 18.2 Simulator passed the 17-check native smoke with the pinned v0.3.3
   RootFS, returned byte-exact 8 MiB binary stdout beyond the backlog, recovered
   after cancelling a blocked command, returned `.terminated` from shutdown,
-  and returned `restartRequired` afterward.
+  returned `restartRequired` afterward, and reported a 155.7 MiB lifecycle
+  `ru_maxrss` against the 256 MiB limit.
 - Xcode 16.0 / iOS 18.0 SDK on an arm64 hosted runner completed real RootFS
-  installation, Simulator/device final links, and the same 16-check native smoke.
+  installation, Simulator/device final links, and the same 17-check native smoke.
 
 This release contains **no RootFS**.
 

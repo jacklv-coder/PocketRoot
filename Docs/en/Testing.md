@@ -13,7 +13,7 @@ PocketRoot separates host logic, real RootFS, iOS build, native final-link, and 
 | Demo build | `./Scripts/build.sh` | Umbrella and UIKit build | Experimental graph |
 | Native final link | `./Scripts/build-runtime-spike.sh` | Full graph forms arm64 executables | Physical or guest behavior |
 | Simulator native smoke | `./Scripts/run-runtime-smoke.sh` | Prepare, boot, command bounds, returning soft shutdown | Other toolchains, physical devices, distribution |
-| Physical native smoke | `./Scripts/run-runtime-device-smoke.sh` | Same 16 checks, development entitlements, returning soft shutdown | Sustained lifecycle, memory, iPad, distribution |
+| Physical native smoke | `./Scripts/run-runtime-device-smoke.sh` | Same 17 checks, development entitlements, returning soft shutdown | Sustained lifecycle, jetsam, iPad, distribution |
 | Documentation | `./Scripts/check-docs.sh` | Pairs, Chinese coverage, relative links | Implementation correctness |
 
 ## Package tests
@@ -123,17 +123,19 @@ If the device was shut down before the smoke, restore that state with
 UDID confirmed to be a script-dedicated temporary device, never for a shared
 development Simulator.
 
-The 16 checks cover preparation, ready boot, aarch64, Alpine 3.19.1, cwd,
+The 17 checks cover preparation, ready boot, aarch64, Alpine 3.19.1, cwd,
 environment, split streams and exit 7, merged stderr, byte-exact 8 MiB binary
 stdout beyond the 4 MiB native backlog, 100 ms timeout and recovery, an 8 MiB
 stdout limit with another 64 KiB attempted, a 64-byte stderr limit, recovery
 after both limit paths, blocked-command cancellation and post-cancellation
-recovery, and soft shutdown returning `.terminated` before the smoke App exits
-successfully.
+recovery, soft shutdown returning `.terminated`, and a 256 MiB `ru_maxrss`
+limit over the complete smoke lifecycle before the App exits successfully.
 
 The sustained-output check proves that Swift can continuously consume binary
 output without truncation or corruption merely because it exceeds the 4 MiB
-native backlog. It is not peak-memory or jetsam evidence. The 100 ms check
+native backlog. The lifecycle high-water check covers RootFS preparation,
+8 MiB output, overflow recovery, cancellation, and shutdown on Simulator; it
+is not physical-device jetsam evidence. The 100 ms check
 proves recovery after an established session observes its event-read deadline.
 It does not cover the earlier synchronous spawn/control write or prove that
 terminate/close have the same end-to-end hard limit. The [Roadmap](Roadmap.md)
@@ -145,14 +147,14 @@ smoke App and waits for the console client. A pre-success crash cannot produce
 a passing report. The script serves as a repository-owned local gate and is
 also invoked by the dedicated minimum-toolchain GitHub Actions job.
 
-On 2026-07-24, `v0.4.0-abi.4` passed all 16 checks on an iOS 18.2 arm64
-Simulator with byte-exact 8 MiB binary stdout; shutdown recorded
-`returned, terminated, restart required`.
+On 2026-07-24, `v0.4.0-abi.4` passed all 17 checks on an iOS 18.2 arm64
+Simulator with byte-exact 8 MiB binary stdout and a 155.7 MiB lifecycle peak
+against the 256 MiB limit; shutdown recorded `returned, terminated, restart required`.
 
 The repository's minimum-toolchain job explicitly selects Xcode 16.0 and the
 iOS 18.0 SDK on an arm64 macOS runner, materializes the pinned RootFS,
 final-links arm64 Simulator and unsigned-device Apps, and runs the same
-16-check native smoke on an iOS 18.0 Simulator.
+17-check native smoke on an iOS 18.0 Simulator.
 
 ### Signed iPhone/iPad runner
 
@@ -171,7 +173,7 @@ The 2026-07-23 record used Xcode 26.1.1 (17B100), an iPhone 17 Pro, iOS 26.1
 (23B85), and development provisioning. Archive size/digest, report environment,
 all 14 checks in that older runner, and exit status passed. No UDID, profile,
 or local report is committed. This closes the signed iPhone one-shot baseline,
-not the current 16-check runner, iPad, foreground/background, memory/jetsam, or
+not the current 17-check runner, iPad, foreground/background, memory/jetsam, or
 storage pressure.
 
 ## CI
@@ -186,7 +188,7 @@ the Demo, and final-links arm64 Simulator and unsigned-device runtime Apps.
 
 The minimum-toolchain job explicitly selects Xcode 16.0 / iOS 18.0 SDK,
 validates real RootFS installation, installs the iOS 18.0 Simulator runtime,
-final-links Simulator/device Apps, and runs the 16-check native smoke. This
+final-links Simulator/device Apps, and runs the 17-check native smoke. This
 Simulator evidence does not prove signed-device or distribution readiness.
 
 ## Minimum checks by change

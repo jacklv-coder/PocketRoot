@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 import PocketRootCore
 import PocketRootIshRuntimeIntegration
@@ -37,6 +38,7 @@ private enum PocketRootRuntimeSmokeRunner {
     static let progressFileName = "pocketroot-smoke-progress.txt"
     static let sustainedOutputByteCount = 8 * 1_024 * 1_024
     static let maximumStandardErrorBytes = 64
+    static let maximumPeakResidentBytes: UInt64 = 256 * 1_024 * 1_024
 
     static func run(environment: PocketRootSmokeEnvironment) async -> PocketRootSmokeReport {
         let startedAt = Date()
@@ -336,6 +338,20 @@ private enum PocketRootRuntimeSmokeRunner {
                 )
             }
 
+            let peakResidentBytes = try peakResidentByteCount()
+            try require(
+                peakResidentBytes <= maximumPeakResidentBytes,
+                "Peak resident memory exceeded \(formatMebibytes(maximumPeakResidentBytes)): "
+                    + "\(formatMebibytes(peakResidentBytes))."
+            )
+            checks.append(
+                PocketRootSmokeCheck(
+                    name: "peak-memory",
+                    detail: "lifecycle peak \(formatMebibytes(peakResidentBytes)), "
+                        + "limit \(formatMebibytes(maximumPeakResidentBytes))"
+                )
+            )
+
             writeProgress("completed")
             return PocketRootSmokeReport(
                 success: true,
@@ -404,6 +420,22 @@ private enum PocketRootRuntimeSmokeRunner {
         guard condition else {
             throw PocketRootSmokeFailure(message: message)
         }
+    }
+
+    private static func peakResidentByteCount() throws -> UInt64 {
+        var usage = rusage()
+        guard getrusage(RUSAGE_SELF, &usage) == 0 else {
+            throw PocketRootSmokeFailure(
+                message: "Unable to read peak resident memory: "
+                    + String(cString: strerror(errno))
+            )
+        }
+        try require(usage.ru_maxrss > 0, "Peak resident memory was not reported.")
+        return UInt64(usage.ru_maxrss)
+    }
+
+    private static func formatMebibytes(_ byteCount: UInt64) -> String {
+        String(format: "%.1f MiB", Double(byteCount) / Double(1_024 * 1_024))
     }
 
     private static func trimmed(_ value: String) -> String {

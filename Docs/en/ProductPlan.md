@@ -116,10 +116,10 @@ than download counts:
   final-link, and smoke gates.
 - A failed installation cannot damage the last verified RootFS.
 - One-shot cancellation now confirms guest exit, and the 8 MiB sustained
-  binary-output baseline passes. After end-to-end native control-path deadlines
-  and peak-memory hardening, blocked writes or unbounded output cannot leave a
-  command occupying the process indefinitely; the remaining gaps stay explicit
-  gates until then.
+  binary-output plus 256 MiB Simulator lifecycle `ru_maxrss` baselines pass.
+  After end-to-end native control-path deadlines are hardened, blocked writes
+  or unbounded output cannot leave a command occupying the process indefinitely;
+  physical jetsam and the remaining gaps stay explicit gates.
 - Every production blocker has an actionable exit criterion in the roadmap.
 - Links, commands, and critical facts remain synchronized between the Chinese
   and English documentation.

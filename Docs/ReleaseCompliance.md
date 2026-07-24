@@ -163,10 +163,11 @@ Alpine `apk` 可以下载、安装和执行新增代码。即使初始 RootFS �
 
 ### Apple 平台
 
-- [x] Xcode 16 minimum-toolchain RootFS install、native final-link 与 16 项 smoke。
+- [x] Xcode 16 minimum-toolchain RootFS install、native final-link 与 17 项 smoke。
 - [x] signed iPhone 一次性命令 smoke。
 - [ ] signed iPad smoke 与完整 iPhone/iPad lifecycle。
-- [ ] foreground/background、jetsam、storage pressure。
+- [x] Simulator 完整 smoke 生命周期 `ru_maxrss` 不超过 256 MiB。
+- [ ] foreground/background、真机 jetsam、storage pressure。
 - [ ] entitlement、private API、JIT 与 archive scan。
 - [ ] Guideline 2.5.2 书面结论。
 - [ ] 隐私清单、网络与数据保留评审。

@@ -165,8 +165,9 @@ synchronous `spawn` and `closeStdin`, so it is not yet end-to-end. One-shot
 Swift Task cancellation now terminates the guest and confirms exit before
 returning; interactive-session read/close cancellation remains part of the
 future PTY lifecycle. An 8 MiB byte-exact binary-stdout smoke crosses the
-native backlog and proves continuous consumption; sustained-load peak memory
-and jetsam remain open.
+native backlog and proves continuous consumption. After shutdown, the complete
+Simulator smoke reads `ru_maxrss` and requires a lifecycle peak at or below
+256 MiB. Physical sustained-load and jetsam behavior remain open.
 
 ## Lifecycle
 
