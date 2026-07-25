@@ -12,7 +12,8 @@ pinned RootFS archive. It does not store the RootFS payload.
 - `SOURCE-INVENTORY.json`：10 个 source origin、精确 aports commit 和 build recipe
   locator；
 - `SOURCE-ACQUISITION.json`：与 inventory 一一对应的 aports snapshot、upstream
-  distfile URL 和 SHA-512/规范化目录 SHA-256；
+  distfile URL 和 SHA-512，以及覆盖条目类型、路径、普通文件权限位与内容的规范化目录
+  SHA-256；
 - `LICENSE-INVENTORY.json`：声明的许可证表达式、标识符和 archive 内
   license/notice 文件检查结果；
 - `RUNTIME-CONFIGURATION.json`：guest、`apk`、repository、world 和 DNS 默认配置；
@@ -66,12 +67,13 @@ ruby Scripts/prepare-rootfs-source-bundle.rb --validate-only
 ```
 
 如审查人员需要本地材料，可生成到一个尚不存在、位于仓库外的绝对路径。脚本会依次
-校验 aports archive SHA-512、解包后的规范化目录 SHA-256 和所有 upstream
-distfile SHA-512，并以临时目录完成后原子提升：
+校验 aports archive SHA-512、解包后的规范化目录 SHA-256（包括普通文件权限位）
+和所有 upstream distfile SHA-512，并以临时目录完成后原子提升：
 
 To prepare local review material, choose a new absolute directory outside the
 repository. The script verifies each aports archive and canonical extracted
-tree plus every upstream distfile before atomically promoting the result:
+tree—including regular-file permission bits—plus every upstream distfile
+before atomically promoting the result:
 
 ```bash
 ruby Scripts/prepare-rootfs-source-bundle.rb \

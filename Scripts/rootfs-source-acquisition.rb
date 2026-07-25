@@ -7,6 +7,7 @@ module RootFSSourceAcquisition
   ROOTFS_VERSION = "v0.3.3"
   ROOTFS_SHA256 =
     "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"
+  CANONICAL_TREE_FORMAT = "typed-path-mode-sha256-v1"
   SHA256_PATTERN = /\A[0-9a-f]{64}\z/
   SHA512_PATTERN = /\A[0-9a-f]{128}\z/
   COMMIT_PATTERN = /\A[0-9a-f]{40}\z/
@@ -33,6 +34,10 @@ module RootFSSourceAcquisition
     require_hash(manifest, "manifest")
     require_hash(source_inventory, "source inventory")
     raise ValidationError, "manifest.schemaVersion must be 1" unless manifest["schemaVersion"] == 1
+    unless manifest["aportsCanonicalTreeFormat"] == CANONICAL_TREE_FORMAT
+      raise ValidationError,
+        "manifest.aportsCanonicalTreeFormat must be #{CANONICAL_TREE_FORMAT}"
+    end
     unless manifest["bundleStatus"] == "external-materialization-required"
       raise ValidationError,
         "manifest.bundleStatus must remain external-materialization-required"

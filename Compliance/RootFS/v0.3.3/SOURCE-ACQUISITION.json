@@ -4,6 +4,7 @@
     "version": "v0.3.3",
     "sha256": "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"
   },
+  "aportsCanonicalTreeFormat": "typed-path-mode-sha256-v1",
   "bundleStatus": "external-materialization-required",
   "redistributionApproved": false,
   "sources": [
@@ -22,7 +23,7 @@
         "url": "https://gitlab.alpinelinux.org/api/v4/projects/alpine%2Faports/repository/archive.tar.gz?sha=7749273fed55f6e1df7c9ee6a127f18099f98a94&path=main%2Falpine-baselayout",
         "sha512": "680af6d932f258eb2f96c054ce48e5841270b09bbac4ad9021260a8d2d13ade4fcaac4cb1ce7c0ab28bd1c536d166984ae1c8fefa830fb3e361b17e15344d450",
         "regularFileCount": 16,
-        "canonicalTreeSha256": "ec21015a78233b8078713af426738b6490271399367fef8567267f9eb7d2f296"
+        "canonicalTreeSha256": "e7c713f5f8ce789099cf2ba44cb9f42ac168b8eacd48bf53ac452a55132a7197"
       },
       "distfiles": [
         {
@@ -57,7 +58,7 @@
         "url": "https://gitlab.alpinelinux.org/api/v4/projects/alpine%2Faports/repository/archive.tar.gz?sha=aab68f8c9ab434a46710de8e12fb3206e2930a59&path=main%2Falpine-keys",
         "sha512": "d72e70f1051da6a808e0e083b697aa0f198abbb08c3f8081ed2cc0d44d323c0f80588552d65af11c6787679a94179f1230c4ee8b9706ac0b460ae4d0b5393246",
         "regularFileCount": 18,
-        "canonicalTreeSha256": "c41e897d001086c509797b5efd8a4db19070be41b37578476b724cff2e9cec04"
+        "canonicalTreeSha256": "3d42fb39da4d6e99a273c6c0bdb41a6512fd1141a6340010690e73794debf89d"
       },
       "distfiles": []
     },
@@ -75,7 +76,7 @@
         "url": "https://gitlab.alpinelinux.org/api/v4/projects/alpine%2Faports/repository/archive.tar.gz?sha=33283848034c9885d984c8e8697c645c57324938&path=main%2Fapk-tools",
         "sha512": "e5fba1700880e6b7e93c5b497a76d29e0285f260ead34dedc1706131d8535c6ec875652966671ea174c3de97ef902a8555cea7e4e27177f3347ecf47b0843a4f",
         "regularFileCount": 4,
-        "canonicalTreeSha256": "3cb285008cbdd156bc364e93ac7fe8f2c876453b7554df134f0597f91ee73571"
+        "canonicalTreeSha256": "26af553022015184288abf7ff0f9acc29b8856d8e655530e08459a98e5eff8c2"
       },
       "distfiles": [
         {
@@ -103,7 +104,7 @@
         "url": "https://gitlab.alpinelinux.org/api/v4/projects/alpine%2Faports/repository/archive.tar.gz?sha=d1b6f274f29076967826e0ecf6ebcaa5d360272f&path=main%2Fbusybox",
         "sha512": "ed1c22b0a4722d1bb53acf623c11ed2090c376d70942aaa01b2a08f0f169225550fe7f3f19f831616ccfbc31d638ccd1b960c8e4b4296c56b44bcc90ef951cb1",
         "regularFileCount": 67,
-        "canonicalTreeSha256": "956b4854e4bcc01e2c705ab6698d9632de1853de5d45392a8d5f35b89370b11e"
+        "canonicalTreeSha256": "dc6638ec8911290daf4f56e2503e4917f2ae6ef27f67030dc83baade05a746f4"
       },
       "distfiles": [
         {
@@ -129,7 +130,7 @@
         "url": "https://gitlab.alpinelinux.org/api/v4/projects/alpine%2Faports/repository/archive.tar.gz?sha=59534a02716a92a10d177a118c34066162eff4a6&path=main%2Fca-certificates",
         "sha512": "b9832a0e7135570b367657ca4117ab97582552ead26c4c8d2ab0820c8d180c483e8d7c120eee1dbb43da4b927bfdf7ef9276f6416ff31c5a4c15a4ae35d1de0c",
         "regularFileCount": 3,
-        "canonicalTreeSha256": "d86b2a63ac45560bea0b1e5617717c3a9205b1f89ed846c060314706d91542bc"
+        "canonicalTreeSha256": "f0f1f604b0b6f74ed1ae514fbaeb1c7905a60c6fe43212c6fa4a295eb8e73726"
       },
       "distfiles": [
         {
@@ -155,7 +156,7 @@
         "url": "https://gitlab.alpinelinux.org/api/v4/projects/alpine%2Faports/repository/archive.tar.gz?sha=988f183cc9d6699930c3e18ccf4a9e36010afb56&path=main%2Flibc-dev",
         "sha512": "2b519998acbd6919c55538615cab79abcfccc1f379ae5d06cd91ca587ecce5737c17fb56101c75bb223eaea5ffa06d79cdb8603c93a9f486d4b011b8c5ffed3e",
         "regularFileCount": 5,
-        "canonicalTreeSha256": "a9d54d7c8704a1da85e966c968d2f47c0ed2d68156f36d3420db8c52bda8e8d0"
+        "canonicalTreeSha256": "4ea78882c9080c3bb943938d80bb7524f6f581817e5014da159ba9336bf1094e"
       },
       "distfiles": []
     },
@@ -175,7 +176,7 @@
         "url": "https://gitlab.alpinelinux.org/api/v4/projects/alpine%2Faports/repository/archive.tar.gz?sha=ca7f2ab5e88794e4e654b40776f8a92256f50639&path=main%2Fmusl",
         "sha512": "01fbdb2fb4f6a7c2ce34d252c75c467ac39d048d49e5f91b82beefdc920837f5aa995e85b16412603e81f6aba1d81bea3adb9a07cd1b33080b4875427259b562",
         "regularFileCount": 9,
-        "canonicalTreeSha256": "f11fbbed1b9415dc5e06b209ee6badebb379dedbd96d1034171a0cd409f2016b"
+        "canonicalTreeSha256": "6cc66bf00545ade81a70c3e33e131b3082057e647fea1b1913462b604d241b1b"
       },
       "distfiles": [
         {
@@ -202,7 +203,7 @@
         "url": "https://gitlab.alpinelinux.org/api/v4/projects/alpine%2Faports/repository/archive.tar.gz?sha=b784a22cad0c452586b438cb7a597d846fc09ff4&path=main%2Fopenssl",
         "sha512": "eaa24a522a47ac2bbef2826563b918950a32e22627a0e00878d7b8efc5caf52119ceb2d5f12646e55d6f5d02e29105f36a1f1389241200411a11752452b8d223",
         "regularFileCount": 6,
-        "canonicalTreeSha256": "0cc814323ad9c9b738af1420e51632b8be7c7ab8085da7713e9c0bb750424065"
+        "canonicalTreeSha256": "8a70f8907447e683e5b6d8202b3b8f8da838f7b89c6165695e6b35d840960056"
       },
       "distfiles": [
         {
@@ -229,7 +230,7 @@
         "url": "https://gitlab.alpinelinux.org/api/v4/projects/alpine%2Faports/repository/archive.tar.gz?sha=e65a4f2d0470e70d862ef2b5c412ecf2cb9ad0a6&path=main%2Fpax-utils",
         "sha512": "33a5f9d18a49326cb2726ff394bc183eec0a38715144abdb461cf11c59edc80764d5d969fa13de3d59d704722e4de248c5a89ac617450f100638feca60e717bc",
         "regularFileCount": 1,
-        "canonicalTreeSha256": "06735cf44a9e0dd0106fd0e451ea3fa9edcf46a184cac91053c2f68efe23b58d"
+        "canonicalTreeSha256": "7919e5b2822b2161d1781f18dec45693c119b276a8ab3fdd1076e5cd3c1c1193"
       },
       "distfiles": [
         {
@@ -255,7 +256,7 @@
         "url": "https://gitlab.alpinelinux.org/api/v4/projects/alpine%2Faports/repository/archive.tar.gz?sha=9406f6fc5fca057d990eb0d260d75839eeb34d83&path=main%2Fzlib",
         "sha512": "d559c5d58e020bfc079beb3908a5f82516513b1d71cea0aba2f8e1ff84867523389ff8cde9a95c5751da6d4dd82edeb6b52bf839d40e74a79bd10f6ba66e2fd8",
         "regularFileCount": 1,
-        "canonicalTreeSha256": "b5fbcd2b0c238e93ed6f12cfe5ae4d023bffe681318757f93ebc4f21e6e8319c"
+        "canonicalTreeSha256": "5214c8971822ad0c5a7119324c2b34e25e40a0155eed0db718e2e7a81aa0da4c"
       },
       "distfiles": [
         {

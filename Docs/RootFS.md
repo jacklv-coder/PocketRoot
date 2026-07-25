@@ -98,6 +98,9 @@ ruby Scripts/prepare-rootfs-source-bundle.rb \
   --verify /absolute/new/path/outside-the-repository/rootfs-v0.3.3-source-review
 ```
 
+规范化 aports 目录身份覆盖条目类型、路径、普通文件权限位和内容摘要；物化时会保留
+这些权限位，`--verify` 会再次校验。
+
 脚本固定并校验 10 个 aports source snapshot 和 9 个 upstream distfile，不执行
 `APKBUILD`；`--verify` 会复核普通文件摘要、目录集合和符号链接目标。脚本不向 App、
 Git 或 CI artifact 自动添加输出。这完成的是可复现的工程获取流程。archive 内没有

@@ -74,8 +74,10 @@ ruby Scripts/prepare-rootfs-source-bundle.rb \
 ```
 
 The script pins and verifies 10 aports source snapshots and 9 upstream
-distfiles. `--verify` rechecks regular-file digests, the directory set, and
-symbolic-link targets. The script does not execute `APKBUILD` or automatically
+distfiles. The canonical aports identity covers entry types, paths,
+regular-file permission bits, and content digests; materialization preserves
+those permission bits. `--verify` rechecks that identity, the directory set,
+and symbolic-link targets. The script does not execute `APKBUILD` or automatically
 add output to the App, Git, or a CI artifact. This closes a reproducible
 engineering acquisition workflow, not legal review. The RootFS archive
 contains no identifiable LICENSE/COPYING/NOTICE files, and the external review

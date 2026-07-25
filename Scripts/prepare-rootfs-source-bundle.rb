@@ -264,7 +264,13 @@ def extract_and_verify_snapshot(
 
         relative = components.drop(1).join("/")
         contents = entry.read
-        files << [relative, Digest::SHA256.hexdigest(contents), contents]
+        mode = entry.header.mode & 0o777
+        files << [
+          relative,
+          Digest::SHA256.hexdigest(contents),
+          mode,
+          contents
+        ]
       end
     end
   end
@@ -272,9 +278,11 @@ def extract_and_verify_snapshot(
   all_paths = files.map(&:first) + symlinks.map(&:first)
   raise SourceBundleError, "snapshot contains duplicate paths" unless all_paths.uniq.length == all_paths.length
 
-  regular_digests = files.to_h { |path, digest, _contents| [path, digest] }
-  canonical_entries = files.map do |path, digest, _contents|
-    ["file", path, digest]
+  regular_digests = files.to_h do |path, digest, _mode, _contents|
+    [path, digest]
+  end
+  canonical_entries = files.map do |path, digest, mode, _contents|
+    ["file", path, format("%04o", mode), digest]
   end
   symlinks.each do |relative, linkname|
     target_relative = resolved_symlink_target(relative, linkname)
@@ -302,7 +310,7 @@ def extract_and_verify_snapshot(
   end
 
   expected_prefix = "#{expected_path}/"
-  files.each do |relative, _digest, contents|
+  files.each do |relative, _digest, mode, contents|
     unless relative.start_with?(expected_prefix) && relative.length > expected_prefix.length
       raise SourceBundleError,
         "snapshot member is outside expected path #{expected_path}: #{relative}"
@@ -310,6 +318,7 @@ def extract_and_verify_snapshot(
     target = destination.join(relative.delete_prefix(expected_prefix))
     target.dirname.mkpath
     target.binwrite(contents)
+    target.chmod(mode)
   end
   symlinks.each do |relative, linkname|
     unless relative.start_with?(expected_prefix) && relative.length > expected_prefix.length
@@ -355,12 +364,14 @@ def tree_manifest_entries(root)
         {
           "path" => relative,
           "type" => "file",
+          "mode" => format("%04o", path.lstat.mode & 0o777),
           "sha256" => Digest::SHA256.file(path).hexdigest
         }
       elsif path.lstat.directory?
         {
           "path" => relative,
-          "type" => "directory"
+          "type" => "directory",
+          "mode" => format("%04o", path.lstat.mode & 0o777)
         }
       else
         raise SourceBundleError,
@@ -386,17 +397,20 @@ def canonical_materialized_tree(directory, expected_path)
     if entry.symlink?
       symlinks << [anchored_path, entry.readlink.to_s]
     elsif entry.lstat.file?
-      files[anchored_path] = Digest::SHA256.file(entry).hexdigest
+      files[anchored_path] = {
+        digest: Digest::SHA256.file(entry).hexdigest,
+        mode: entry.lstat.mode & 0o777
+      }
     end
   end
 
-  canonical_entries = files.map do |path, digest|
-    ["file", path, digest]
+  canonical_entries = files.map do |path, identity|
+    ["file", path, format("%04o", identity.fetch(:mode)), identity.fetch(:digest)]
   end
   symlinks.each do |anchored_path, target|
     target_path = resolved_symlink_target(anchored_path, target)
-    target_digest = files[target_path]
-    unless target_digest
+    target_identity = files[target_path]
+    unless target_identity
       raise SourceBundleError,
         "materialized symlink does not target a regular file: " \
         "#{anchored_path} -> #{target}"
@@ -405,7 +419,7 @@ def canonical_materialized_tree(directory, expected_path)
       "symlink",
       anchored_path,
       target,
-      target_digest
+      target_identity.fetch(:digest)
     ]
   end
   canonical = canonical_entries.sort_by { |entry| entry.fetch(1) }
@@ -478,6 +492,8 @@ def verify_receipt(receipt, manifest, sources, root, identities)
       recorded["sourceOrigin"] == origin &&
       recorded["aportsCommit"] == source["aportsCommit"] &&
       recorded["aportsSnapshotURL"] == snapshot["url"] &&
+      recorded["aportsCanonicalTreeFormat"] ==
+        manifest["aportsCanonicalTreeFormat"] &&
       recorded["aportsCanonicalTreeSha256"] ==
         snapshot["canonicalTreeSha256"]
       raise SourceBundleError,
@@ -727,7 +743,7 @@ def notice_text(manifest, source_count, distfile_count)
     origins and #{distfile_count} checksum-verified upstream distfile(s). The
     original acquisition manifest, a materialization receipt, a typed
     `TREE-MANIFEST.json`, and `SHA256SUMS` are included. Verify regular files,
-    directories, and symbolic-link targets with:
+    their permission bits, directories, and symbolic-link targets with:
 
         ruby Scripts/prepare-rootfs-source-bundle.rb --verify /absolute/bundle/path
 
@@ -795,6 +811,8 @@ def materialize(manifest, sources, output)
         "sourceOrigin" => origin,
         "aportsCommit" => entry.fetch("aportsCommit"),
         "aportsSnapshotURL" => snapshot_url,
+        "aportsCanonicalTreeFormat" =>
+          manifest.fetch("aportsCanonicalTreeFormat"),
         "aportsCanonicalTreeSha256" => snapshot.fetch("canonicalTreeSha256"),
         "aportsSymlinks" => snapshot_symlinks.map do |path, target|
           {

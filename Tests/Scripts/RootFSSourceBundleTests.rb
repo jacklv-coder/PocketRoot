@@ -46,10 +46,14 @@ class RootFSSourceBundleTests < Minitest::Test
     assert output.join("NOTICE.md").file?
     assert output.join("SHA256SUMS").file?
     assert output.join("TREE-MANIFEST.json").file?
-    tree_paths = JSON.parse(output.join("TREE-MANIFEST.json").read)
+    tree_entries = JSON.parse(output.join("TREE-MANIFEST.json").read)
       .fetch("entries")
-      .map { |entry| entry.fetch("path") }
+    tree_paths = tree_entries.map { |entry| entry.fetch("path") }
     assert_equal tree_paths.uniq, tree_paths
+    apkbuild_entry = tree_entries.find do |entry|
+      entry.fetch("path") == "aports/demo/APKBUILD"
+    end
+    assert_equal "0644", apkbuild_entry.fetch("mode")
 
     checksum_lines = output.join("SHA256SUMS").read.lines
     refute checksum_lines.any? { |line| line.end_with?("  SHA256SUMS\n") }
@@ -59,6 +63,40 @@ class RootFSSourceBundleTests < Minitest::Test
       run_script("--verify", output.to_s)
     assert verify_status.success?, "#{verify_stdout}\n#{verify_stderr}"
     assert_includes verify_stdout, "Verified materialized RootFS source-review bundle"
+  end
+
+  def test_materialization_preserves_and_verifies_executable_mode
+    write_snapshot(
+      @snapshot,
+      {"snapshot/main/demo/APKBUILD" => "pkgname=demo\n"},
+      {},
+      modes: {"snapshot/main/demo/APKBUILD" => 0o755}
+    )
+    manifest = JSON.parse(@manifest_path.read)
+    snapshot = manifest.fetch("sources").first.fetch("aportsSnapshot")
+    snapshot["sha512"] = Digest::SHA512.file(@snapshot).hexdigest
+    snapshot["canonicalTreeSha256"] =
+      canonical_tree_digest(
+        "main/demo/APKBUILD",
+        "pkgname=demo\n",
+        mode: 0o755
+      )
+    @manifest_path.write("#{JSON.pretty_generate(manifest)}\n")
+    output = @temporary_directory.join("executable-mode-output")
+
+    _stdout, stderr, status = run_script("--output", output.to_s)
+
+    assert status.success?, stderr
+    materialized = output.join("aports/demo/APKBUILD")
+    assert_equal 0o755, materialized.lstat.mode & 0o777
+
+    materialized.chmod(0o644)
+    refresh_self_authored_integrity(output)
+    _verify_stdout, verify_stderr, verify_status =
+      run_script("--verify", output.to_s)
+    refute verify_status.success?
+    assert_includes verify_stderr,
+      "bundle aports tree does not match the pinned manifest"
   end
 
   def test_validate_only_rejects_inventory_drift
@@ -191,8 +229,10 @@ class RootFSSourceBundleTests < Minitest::Test
     snapshot["regularFileCount"] = 2
     digest = Digest::SHA256.hexdigest(contents)
     snapshot["canonicalTreeSha256"] = Digest::SHA256.hexdigest(
-      "file\0main/demo/A\0#{digest}\0" \
-      "file\0main/demo/B\0#{digest}\0"
+      "file\0main/demo/A\0" \
+      "0644\0#{digest}\0" \
+      "file\0main/demo/B\0" \
+      "0644\0#{digest}\0"
     )
     @manifest_path.write("#{JSON.pretty_generate(manifest)}\n")
     output = @temporary_directory.join("node-type-output")
@@ -251,8 +291,10 @@ class RootFSSourceBundleTests < Minitest::Test
     snapshot["regularFileCount"] = 2
     digest = Digest::SHA256.hexdigest(contents)
     snapshot["canonicalTreeSha256"] = Digest::SHA256.hexdigest(
-      "file\0main/demo/A\0#{digest}\0" \
-      "file\0main/demo/a\0#{digest}\0"
+      "file\0main/demo/A\0" \
+      "0644\0#{digest}\0" \
+      "file\0main/demo/a\0" \
+      "0644\0#{digest}\0"
     )
     @manifest_path.write("#{JSON.pretty_generate(manifest)}\n")
 
@@ -391,7 +433,8 @@ class RootFSSourceBundleTests < Minitest::Test
     snapshot["regularFileCount"] = 2
     file_digest = Digest::SHA256.hexdigest("pkgname=demo\n")
     snapshot["canonicalTreeSha256"] = Digest::SHA256.hexdigest(
-      "file\0main/demo/APKBUILD\0#{file_digest}\0" \
+      "file\0main/demo/APKBUILD\0" \
+      "0644\0#{file_digest}\0" \
       "symlink\0main/demo/duplicate\0APKBUILD\0#{file_digest}\0"
     )
     @manifest_path.write("#{JSON.pretty_generate(manifest)}\n")
@@ -418,11 +461,15 @@ class RootFSSourceBundleTests < Minitest::Test
 
   private
 
-  def write_snapshot(path, files, symlinks = {})
+  def write_snapshot(path, files, symlinks = {}, modes: {})
     Zlib::GzipWriter.open(path.to_s) do |gzip|
       Gem::Package::TarWriter.new(gzip) do |tar|
         files.each do |name, contents|
-          tar.add_file_simple(name, 0o644, contents.bytesize) do |entry|
+          tar.add_file_simple(
+            name,
+            modes.fetch(name, 0o644),
+            contents.bytesize
+          ) do |entry|
             entry.write(contents)
           end
         end
@@ -437,9 +484,11 @@ class RootFSSourceBundleTests < Minitest::Test
     "file://#{path}"
   end
 
-  def canonical_tree_digest(relative_path, contents)
+  def canonical_tree_digest(relative_path, contents, mode: 0o644)
     file_digest = Digest::SHA256.hexdigest(contents)
-    Digest::SHA256.hexdigest("file\0#{relative_path}\0#{file_digest}\0")
+    Digest::SHA256.hexdigest(
+      "file\0#{relative_path}\0#{format("%04o", mode)}\0#{file_digest}\0"
+    )
   end
 
   def refresh_self_authored_integrity(root)
@@ -484,6 +533,7 @@ class RootFSSourceBundleTests < Minitest::Test
       "schemaVersion" => 1,
       "testFixture" => true,
       "archive" => archive,
+      "aportsCanonicalTreeFormat" => "typed-path-mode-sha256-v1",
       "bundleStatus" => "external-materialization-required",
       "redistributionApproved" => false,
       "sources" => [
