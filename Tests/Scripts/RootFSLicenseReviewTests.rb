@@ -121,6 +121,19 @@ class RootFSLicenseReviewTests < Minitest::Test
     refute output.exist?
   end
 
+  def test_rejects_output_nested_inside_source_bundle
+    output = @source_bundle.join("license-review-output")
+
+    _stdout, stderr, status = run_review("--output", output.to_s)
+
+    refute status.success?
+    assert_includes stderr, "--output must be outside --source-bundle"
+    refute output.exist?
+    verify_stdout, verify_stderr, verify_status =
+      run_source("--verify", @source_bundle.to_s)
+    assert verify_status.success?, "#{verify_stdout}\n#{verify_stderr}"
+  end
+
   def test_validate_only_rejects_missing_source_origin
     review = JSON.parse(@review_manifest_path.read)
     review["sources"] = []

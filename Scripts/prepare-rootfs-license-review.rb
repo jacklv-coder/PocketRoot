@@ -74,7 +74,7 @@ def within_path?(candidate, parent)
   candidate == parent || candidate.to_s.start_with?("#{parent}#{File::SEPARATOR}")
 end
 
-def validate_external_new_output(value)
+def validate_external_new_output(value, source_bundle)
   output = Pathname(value)
   raise LicenseReviewError, "--output must be absolute" unless output.absolute?
   raise LicenseReviewError, "--output already exists: #{output}" if output.exist? || output.symlink?
@@ -83,6 +83,9 @@ def validate_external_new_output(value)
   resolved = output.parent.realpath.join(output.basename)
   if within_path?(resolved, repository_root)
     raise LicenseReviewError, "--output must be outside the repository"
+  end
+  if within_path?(resolved, source_bundle)
+    raise LicenseReviewError, "--output must be outside --source-bundle"
   end
 
   resolved
@@ -407,6 +410,10 @@ begin
     options.fetch(:source_bundle),
     "--source-bundle"
   )
+  output =
+    if options[:output]
+      validate_external_new_output(options.fetch(:output), source_bundle)
+    end
   verify_source_bundle(source_bundle, options)
   payloads = expected_payloads(
     source_bundle,
@@ -416,7 +423,6 @@ begin
   )
 
   if options[:output]
-    output = validate_external_new_output(options.fetch(:output))
     materialize_review(output, payloads)
     puts "Materialized RootFS license/NOTICE candidate review at #{output}."
   else
