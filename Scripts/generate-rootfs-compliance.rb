@@ -8,6 +8,7 @@ require "pathname"
 require "rubygems/package"
 require "uri"
 require "zlib"
+require_relative "rootfs-source-acquisition"
 
 ARCHIVE_VERSION = "v0.3.3"
 ARCHIVE_URL =
@@ -34,6 +35,8 @@ end
 def parse_options
   options = {
     output: "Compliance/RootFS/v0.3.3",
+    source_acquisition:
+      "Compliance/RootFS/v0.3.3/SOURCE-ACQUISITION.json",
     check: false
   }
 
@@ -45,6 +48,12 @@ def parse_options
     end
     commands.on("--output DIR", "Evidence directory (default: #{options[:output]})") do |path|
       options[:output] = path
+    end
+    commands.on(
+      "--source-acquisition PATH",
+      "Pinned source-acquisition manifest"
+    ) do |path|
+      options[:source_acquisition] = path
     end
     commands.on("--check", "Compare generated evidence without writing files") do
       options[:check] = true
@@ -75,6 +84,33 @@ def verify_archive(path)
   end
 
   archive
+end
+
+def verify_source_acquisition(path)
+  manifest_path = Pathname(path)
+  unless manifest_path.file?
+    raise ComplianceError, "Source-acquisition manifest is not a regular file: #{path}"
+  end
+
+  contents = manifest_path.binread
+  manifest = JSON.parse(contents)
+  archive = manifest["archive"]
+  unless manifest["schemaVersion"] == 1 &&
+    archive.is_a?(Hash) &&
+    archive["version"] == ARCHIVE_VERSION &&
+    archive["sha256"] == ARCHIVE_SHA256 &&
+    manifest["bundleStatus"] == "external-materialization-required" &&
+    manifest["redistributionApproved"] == false
+    raise ComplianceError,
+      "Source-acquisition manifest does not preserve the pinned archive and release gates"
+  end
+
+  {
+    contents: contents,
+    document: manifest
+  }
+rescue JSON::ParserError => error
+  raise ComplianceError, "Source-acquisition manifest is invalid JSON: #{error.message}"
 end
 
 def license_or_notice_path?(name)
@@ -235,7 +271,8 @@ def source_inventory(packages)
         binaries.map { |package| package[:license] }.uniq.sort,
       "containsDeclaredCopyleft" =>
         binaries.any? { |package| copyleft_license?(package[:license]) },
-      "correspondingSourceStatus" => "locator-recorded-bundle-not-collected"
+      "correspondingSourceStatus" =>
+        "verified-acquisition-recorded-external-bundle-required"
     }
   end.sort_by { |source| source.fetch("sourceOrigin") }
 end
@@ -441,12 +478,16 @@ def notice_markdown(packages, source_entries, license_notice_paths)
 
     Exact Alpine aports recipe locators are recorded for all
     #{source_entries.length} source origins in `SOURCE-INVENTORY.json`.
+    `SOURCE-ACQUISITION.json` pins each aports snapshot and upstream distfile
+    with cryptographic checksums. The repository script can materialize those
+    inputs into a new external review directory.
     Source origins with declared copyleft terms are
     #{copyleft_sources.join(", ")}.
 
-    The referenced build recipes, patches, upstream source archives, build
-    instructions, and any other required corresponding source have not yet been
-    collected into a self-contained, verified bundle.
+    No source archive is committed or shipped by this repository. A materialized
+    directory still requires package-specific license/NOTICE, modification,
+    build-completeness, offer-mechanics, and legal review before it can be
+    treated as corresponding-source delivery material.
 
     ## Runtime configuration status
 
@@ -488,6 +529,7 @@ def evidence(packages, source_entries, inspected)
       "completeInstalledPackageInventory" => true,
       "machineReadableSPDXSBOM" => true,
       "runtimeConfigurationRecorded" => true,
+      "completeSourceAcquisitionManifest" => true,
       "completeLicenseAndNoticeBundle" => false,
       "correspondingSourceBundleCollected" => false,
       "redistributionApproved" => false
@@ -495,7 +537,7 @@ def evidence(packages, source_entries, inspected)
   }
 end
 
-def build_outputs(archive)
+def build_outputs(archive, source_acquisition)
   inspected = inspect_archive(archive)
   content = inspected.fetch(:content)
   packages = parse_installed_database(content.fetch(:installed_database))
@@ -509,6 +551,22 @@ def build_outputs(archive)
   end
 
   source_entries = source_inventory(packages)
+  generated_source_inventory = {
+    "archive" => {
+      "version" => ARCHIVE_VERSION,
+      "sha256" => ARCHIVE_SHA256
+    },
+    "sourceOrigins" => source_entries
+  }
+  begin
+    RootFSSourceAcquisition.validate_manifest(
+      source_acquisition.fetch(:document),
+      generated_source_inventory
+    )
+  rescue RootFSSourceAcquisition::ValidationError => error
+    raise ComplianceError,
+      "Invalid source-acquisition manifest: #{error.message}"
+  end
   outputs = {
     "EVIDENCE.json" => pretty_json(evidence(packages, source_entries, inspected)),
     "LICENSE-INVENTORY.json" => pretty_json(
@@ -524,6 +582,7 @@ def build_outputs(archive)
       runtime_configuration(content, inspected.fetch(:archive_paths), os_release)
     ),
     "SBOM.spdx.json" => pretty_json(sbom(packages)),
+    "SOURCE-ACQUISITION.json" => source_acquisition.fetch(:contents),
     "SOURCE-INVENTORY.json" => pretty_json(
       {
         "schemaVersion" => 1,
@@ -533,7 +592,7 @@ def build_outputs(archive)
         },
         "sourceOrigins" => source_entries,
         "completeCorrespondingSourceBundlePresent" => false,
-        "status" => "exact-recipe-locators-recorded-source-bundle-open"
+        "status" => "verified-acquisition-recorded-external-bundle-required"
       }
     )
   }
@@ -572,7 +631,9 @@ end
 begin
   options = parse_options
   archive = verify_archive(options.fetch(:archive))
-  outputs = build_outputs(archive)
+  source_acquisition =
+    verify_source_acquisition(options.fetch(:source_acquisition))
+  outputs = build_outputs(archive, source_acquisition)
   output_directory = Pathname(options.fetch(:output))
 
   if options.fetch(:check)

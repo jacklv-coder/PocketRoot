@@ -40,12 +40,16 @@ bundle.
 
 Exact Alpine aports recipe locators are recorded for all
 10 source origins in `SOURCE-INVENTORY.json`.
+`SOURCE-ACQUISITION.json` pins each aports snapshot and upstream distfile
+with cryptographic checksums. The repository script can materialize those
+inputs into a new external review directory.
 Source origins with declared copyleft terms are
 `alpine-baselayout`, `apk-tools`, `busybox`, `ca-certificates`, `musl`, `pax-utils`.
 
-The referenced build recipes, patches, upstream source archives, build
-instructions, and any other required corresponding source have not yet been
-collected into a self-contained, verified bundle.
+No source archive is committed or shipped by this repository. A materialized
+directory still requires package-specific license/NOTICE, modification,
+build-completeness, offer-mechanics, and legal review before it can be
+treated as corresponding-source delivery material.
 
 ## Runtime configuration status
 

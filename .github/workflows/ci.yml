@@ -37,10 +37,15 @@ jobs:
           bash -n Scripts/run-runtime-smoke.sh
           bash -n Scripts/run-runtime-device-smoke.sh
           ruby -c Scripts/prepare-rootfs-smoke-manifest.rb
+          ruby -c Scripts/rootfs-source-acquisition.rb
+          ruby -c Scripts/prepare-rootfs-source-bundle.rb
           bash -n Tests/Scripts/RuntimeSmokeScriptTests.sh
           bash -n Tests/Scripts/RootFSCandidateSmokeManifestTests.sh
+          ruby -c Tests/Scripts/RootFSSourceBundleTests.rb
           bash Tests/Scripts/RuntimeSmokeScriptTests.sh
           bash Tests/Scripts/RootFSCandidateSmokeManifestTests.sh
+          ruby Tests/Scripts/RootFSSourceBundleTests.rb
+          ruby Scripts/prepare-rootfs-source-bundle.rb --validate-only
 
       - name: Report Apple toolchain
         run: |

@@ -70,7 +70,10 @@ release archive 自身没有完整 license bundle 或 NOTICE set，也没有随�
 machine-readable SBOM。仓库现在从固定 archive 可复现生成 15 个已安装二进制包、
 10 个 source origin、SPDX 2.3 JSON SBOM、声明许可证/attribution inventory 和
 `apk`、repository、DNS 默认配置快照。archive 内没有发现可识别的
-LICENSE/COPYING/NOTICE 文件；copyleft package 的自包含对应源码 bundle 仍未建立。
+LICENSE/COPYING/NOTICE 文件。仓库另有与 inventory 一一对应、固定 checksum 的
+aports snapshot/upstream distfile 获取清单和仓库外 materializer；它建立了可复现的
+审查材料获取路径，但外置输出的许可证/NOTICE、修改与构建完整性、源码提供方式和
+法律审查仍未完成，不能视为已批准的对应源码交付。
 
 ## 当前仓库保护
 
@@ -84,7 +87,9 @@ LICENSE/COPYING/NOTICE 文件；copyleft package 的自包含对应源码 bundle
 - CI 下载 RootFS 仅用于校验和测试，不把它保存为发行 artifact。
 - CI 从固定 archive 重新生成并比对
   [`Compliance/RootFS/v0.3.3`](../Compliance/RootFS/v0.3.3/README.md) 的包清单、
-  SPDX SBOM、来源 locator、许可证声明与默认配置证据。
+  SPDX SBOM、来源 locator、源码获取清单、许可证声明与默认配置证据。
+- CI 离线测试仓库外 source-review materializer 的 checksum、路径隔离和安全解包；
+  不上传生成的源码材料。
 - README、API 注释和 ADR 明确标注 Experimental 与 shutdown 风险。
 
 这些工程措施降低意外分发风险，但不替代法律审查。

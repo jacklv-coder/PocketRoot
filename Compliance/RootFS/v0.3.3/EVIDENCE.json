@@ -44,6 +44,7 @@
     "completeInstalledPackageInventory": true,
     "machineReadableSPDXSBOM": true,
     "runtimeConfigurationRecorded": true,
+    "completeSourceAcquisitionManifest": true,
     "completeLicenseAndNoticeBundle": false,
     "correspondingSourceBundleCollected": false,
     "redistributionApproved": false
