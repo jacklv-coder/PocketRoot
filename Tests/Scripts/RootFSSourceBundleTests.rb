@@ -24,7 +24,10 @@ class RootFSSourceBundleTests < Minitest::Test
     @snapshot = @temporary_directory.join("demo.tar.gz")
     @distfile = @temporary_directory.join("demo-source.txt")
     @distfile.binwrite("demo source\n")
-    write_snapshot(@snapshot, "snapshot/main/demo/APKBUILD" => "pkgname=demo\n")
+    write_snapshot(
+      @snapshot,
+      {"snapshot/main/demo/APKBUILD" => "pkgname=demo\n"}
+    )
     @manifest_path = @temporary_directory.join("manifest.json")
     @inventory_path = @temporary_directory.join("inventory.json")
     write_fixture_documents
@@ -405,7 +408,7 @@ class RootFSSourceBundleTests < Minitest::Test
   end
 
   def test_rejects_unsafe_snapshot_member
-    write_snapshot(@snapshot, "snapshot/../escape" => "bad\n")
+    write_snapshot(@snapshot, {"snapshot/../escape" => "bad\n"})
     manifest = JSON.parse(@manifest_path.read)
     snapshot = manifest.fetch("sources").first.fetch("aportsSnapshot")
     snapshot["sha512"] = Digest::SHA512.file(@snapshot).hexdigest
