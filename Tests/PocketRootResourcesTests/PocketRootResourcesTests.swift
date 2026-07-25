@@ -267,6 +267,37 @@ final class PocketRootResourcesTests: XCTestCase {
         )
     }
 
+    func testGzipTarExtractorDiscardsControlOnlyPAXHeaderPath() throws {
+        let archiveURL = try makeTemporaryFile(
+            contents: try XCTUnwrap(
+                Data(base64Encoded: Self.controlPathPAXArchiveBase64)
+            )
+        )
+        let destinationURL = archiveURL.deletingLastPathComponent()
+            .appendingPathComponent("extracted", isDirectory: true)
+
+        try PocketRootGzipTarExtractor().extract(
+            archiveURL: archiveURL,
+            to: destinationURL
+        )
+
+        let fakeFSURL = destinationURL.appendingPathComponent("fs", isDirectory: true)
+        XCTAssertNoThrow(
+            try PocketRootRootFSValidator.validateMaterializedFakeFS(at: fakeFSURL)
+        )
+        XCTAssertEqual(
+            try Data(
+                contentsOf: fakeFSURL.appendingPathComponent("data/hello.txt")
+            ),
+            Data("hello".utf8)
+        )
+        XCTAssertFalse(
+            FileManager.default.fileExists(
+                atPath: destinationURL.appendingPathComponent("@PaxHeader").path
+            )
+        )
+    }
+
     func testGzipTarExtractorRejectsPathTraversalAndCleansDestination() throws {
         let archiveURL = try makeTemporaryFile(
             contents: try XCTUnwrap(Data(base64Encoded: Self.traversalArchiveBase64))
@@ -1713,6 +1744,8 @@ final class PocketRootResourcesTests: XCTestCase {
 
     private static let validFakeFSArchiveBase64 =
         "H4sIAAAAAAAC/+3VMQ6CMBiG4R6FE0ArtD1PDRAHjImtice3MAnK4PA3MbzPUoYmDG/4GGOjpOnMW7uc2fb88uzafL2yqoBHTOGeX6mOaYzNdUih7s+y/V3X7fc32/7eaaMqTX9xc/w+pKBw1O9/zi/6E/h9//3JOfa/ZP/LME23Oj2T1P5/dn9rbtf9TWbZ/xKW7swgAAAAAAAAAAAAAPy9F8wBBB8AKAAA"
+    private static let controlPathPAXArchiveBase64 =
+        "H4sIAAAAAAAC/+3VvQ6DIBQFYOY+hS+gchVwatKxY1+BKo1N/EmUJj5+0Q6mbRw6YBM93wJhYTjcQxRH8emih7PRhemYF/xlaeVciHk/nhNPKGXBwFbw6K3u3PVsn1IV5G1dm8Yec90U90JbE+ZtY7u2CsvpURwYbNatj73fMQ51JuXy/Ls9CSmE4DyZzpXgkgUS879G/rWxOiqufvNXc8d/50+f+WcqJRZw5O/dGL7rfI0m3O38j/F7/QR+7/8sJYX+XzP/0lRVG9nB/qP/3Wf/lj8RueeC/l/BlDtqEAAAAAAAAAAAAAAAYDOeUl4uQwAoAAA="
     private static let permissionRestrictedFakeFSArchiveBase64 =
         "H4sIAAAAAAAAE+3VTQrCMBBA4R6lJ2itdZLzRNrioiKYCB7faUHE+reQJILv2ySLwgQeSQdfF7GtlBWZV7Vcn+xNq5+XEv1k6uSDO+rIFLN+0ODrfR9c1W3jzXjR/da8Wfa3YtqiTNLkz/tP8TsXXO5zIA+9/1P+qD+Bj/f/YW/XG97/JK79d/04HqpwDhFmTFHN2/5y379Rwvufwtw99yEAAAAAAAAAAAAAAF+7AAnkDE4AKAAA"
     private static let traversalArchiveBase64 =

@@ -36,8 +36,11 @@ jobs:
         run: |
           bash -n Scripts/run-runtime-smoke.sh
           bash -n Scripts/run-runtime-device-smoke.sh
+          ruby -c Scripts/prepare-rootfs-smoke-manifest.rb
           bash -n Tests/Scripts/RuntimeSmokeScriptTests.sh
+          bash -n Tests/Scripts/RootFSCandidateSmokeManifestTests.sh
           bash Tests/Scripts/RuntimeSmokeScriptTests.sh
+          bash Tests/Scripts/RootFSCandidateSmokeManifestTests.sh
 
       - name: Report Apple toolchain
         run: |

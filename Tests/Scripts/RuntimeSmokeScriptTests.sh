@@ -39,6 +39,28 @@ assert_runtime "" \
 bash -n "$SIMULATOR_RUNNER"
 bash -n "$DEVICE_RUNNER"
 
+if ! grep -Fq -- 'POCKETROOT_ROOTFS_CANDIDATE' "$SIMULATOR_RUNNER" \
+  || ! grep -Fq -- 'prepare-rootfs-smoke-manifest.rb' "$SIMULATOR_RUNNER" \
+  || ! grep -Fq -- '"$DATA_CONTAINER/Documents/$SMOKE_MANIFEST_NAME"' "$SIMULATOR_RUNNER"; then
+    echo "Simulator runner does not validate and inject local candidate metadata." >&2
+    exit 1
+fi
+
+if ! grep -Fq -- 'POCKETROOT_ROOTFS_CANDIDATE' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- 'prepare-rootfs-smoke-manifest.rb' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- '--destination "Documents/$SMOKE_MANIFEST_NAME"' "$DEVICE_RUNNER"; then
+    echo "Physical-device runner does not validate and inject local candidate metadata." >&2
+    exit 1
+fi
+
+if ! grep -Fq -- 'rootFSInputFileName = "pocketroot-smoke-rootfs.json"' "$SMOKE_APP" \
+  || ! grep -Fq -- 'distributionAuthorized' "$SMOKE_APP" \
+  || ! grep -Fq -- 'healthCheck: .ishEmbedV0_3_3' "$SMOKE_APP" \
+  || ! grep -Fq -- 'name: "rootfs-input"' "$SMOKE_APP"; then
+    echo "Native smoke App does not fail closed on candidate metadata." >&2
+    exit 1
+fi
+
 if ! grep -Fq -- "-allowProvisioningDeviceRegistration" "$DEVICE_RUNNER"; then
     echo "Physical-device runner does not allow automatic device registration." >&2
     exit 1

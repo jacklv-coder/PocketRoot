@@ -198,6 +198,7 @@ POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
 | 变量 | 作用 |
 | --- | --- |
 | `POCKETROOT_ROOTFS_ARCHIVE` | archive 路径；也可使用第一个参数 |
+| `POCKETROOT_ROOTFS_CANDIDATE` | `ish-arm64-pkg` 生成的仓库外本地候选目录；设置后从其中选择并校验 `fs.tar.gz` 与全部候选凭据 |
 | `POCKETROOT_SMOKE_DEVICE` | 指定现有 Simulator UDID |
 | `POCKETROOT_SMOKE_TIMEOUT_SECONDS` | 启动 App 后等待 JSON report 的秒数，默认 300；不含工程生成、构建、Simulator boot 和 report 后固定 20 秒 runner 清理检查 |
 | `POCKETROOT_KEEP_SIMULATOR` | 设为 `1` 时保留脚本创建的临时 Simulator |
@@ -207,6 +208,12 @@ App，把 archive 注入 Documents，等待 JSON report，并在脚本退出时�
 设备（除非显式保留）。指定已有 Simulator 时，脚本会启动它并在运行前卸载
 旧 smoke App、安装新版本；结束时只终止运行中的 App，不卸载新 App、不删除
 注入数据，也不恢复设备原来的开关机状态。
+
+候选模式要求完整目录位于仓库外，并以 `distributionAuthorized=false`、两次逐字节
+一致构建、固定 source revision、receipt、identity 和伴随摘要为准。runner 生成的临时
+sidecar 只改变 repository-owned smoke App 的 installer manifest；公共 API 默认值和
+正式 `.ishEmbedV0_3_3` manifest 不变。PAX 扩展头作为有界控制记录在 guest 路径校验前
+丢弃，下一条真实文件仍执行 traversal、duplicate、link 和 materialization 检查。
 
 自动创建设备时，脚本从 `simctl list runtimes available` 的整行中识别稳定的
 `com.apple.CoreSimulator.SimRuntime.iOS-18-*` 标识，不依赖其列位置；fixture 回归测试覆盖
@@ -295,6 +302,14 @@ console client 结束。shutdown 前的 crash 不会产生成功 report，不能
 Simulator 通过全部 17 项；8 MiB binary stdout 逐字节精确，完整生命周期峰值为
 156.5 MiB（门限 256 MiB），shutdown
 记录为 `returned, terminated, restart required`。
+
+2026-07-25，从 `ish-arm64-pkg` revision
+`9375e0ecc9cf1bbe79b05ef0b45cab8405f1d08c` 构建的本地未授权候选
+（6,513,566 字节，SHA-256
+`eaa5dd15a6c983c0ac2ce9034060d15692c2cde811461bf9c17f8858c040bb91`）
+在 iOS 18.2 arm64 Simulator 通过候选感知的 18 项路径。它以
+`candidate-9375e0ecc9cf` 安装，报告 Alpine 3.19.1 与 aarch64，完成全部
+command/recovery/shutdown 检查，峰值 146.6 MiB。候选始终位于仓库外且未上传。
 
 仓库的最低工具链 job 会在 arm64 macOS runner 上明确选择 Xcode 16.0 与 iOS 18.0
 SDK，完成固定 RootFS 首次物化、arm64 Simulator/unsigned device final-link，并在
@@ -411,6 +426,11 @@ staging 前拒绝，gzip 在输出 1 字节后返回 ENOSPC；两次失败后 `r
 `.ready`、soft shutdown 和 256 MiB 峰值门禁全部通过，峰值 90.8 MiB；同次默认
 17 项回归也以 89.9 MiB 通过。该结果只证明 repository 回调注入下的 runtime
 连续性，不证明真实 memory pressure、系统低内存通知或 jetsam。
+
+同一 Jack iPhone 还通过上述未授权 `9375e0e` RootFS 的候选感知标准路径。设备报告
+绑定精确候选 SHA-256，观察到 aarch64 与 Alpine 3.19.1，完成
+command/recovery/shutdown，峰值 76.9 MiB；runner 随后卸载 smoke App 与注入的
+RootFS。这只是兼容性证据，不授权 RootFS 分发，也不改变正式固定 manifest。
 
 ## 8. GitHub Actions
 
