@@ -5,7 +5,7 @@
 A RootFS is an external supply-chain input, not a normal fixture. PocketRoot commits immutable metadata and secure install code, not the payload.
 
 > [!WARNING]
-> The pinned v0.3.3 archive now has a reproducible package inventory, SPDX SBOM, and default-configuration evidence. License texts, package notices, a corresponding-source bundle, and distribution approval remain open. The URL and commands below support audit and local development; they do not grant redistribution rights.
+> The pinned v0.3.3 archive now has a reproducible package inventory, SPDX SBOM, default-configuration evidence, and a source-acquisition manifest covering the complete inventory. License texts, package notices, corresponding-source delivery review, and distribution approval remain open. The URL and commands below support audit and local development; they do not grant redistribution rights.
 
 ## Pinned manifest
 
@@ -50,8 +50,9 @@ printf '%s  %s\n' \
 [`Compliance/RootFS/v0.3.3`](../../Compliance/RootFS/v0.3.3/README.md)
 contains the 15-binary-package inventory, 10 source origins, SPDX 2.3 JSON
 SBOM, declared-license inventory, attribution inventory, `apk`/repository/DNS
-snapshot, and input digests generated from this exact archive. The generator
-verifies size and SHA-256 before reading only fixed, small metadata members:
+snapshot, input digests, and pinned source-acquisition manifest for this exact
+archive. The generator verifies size and SHA-256 before reading only fixed,
+small metadata members:
 
 ```bash
 ruby Scripts/generate-rootfs-compliance.rb \
@@ -59,11 +60,28 @@ ruby Scripts/generate-rootfs-compliance.rb \
   --check
 ```
 
-This closes reproducible engineering fact collection, not legal review. The
-archive contains no identifiable LICENSE/COPYING/NOTICE files. A complete
-third-party license/notice bundle and a corresponding-source bundle containing
-recipes, patches, upstream sources, and build instructions remain independent
-distribution gates.
+Validate the source manifest or materialize a local review directory outside
+the repository:
+
+```bash
+ruby Scripts/prepare-rootfs-source-bundle.rb --validate-only
+
+ruby Scripts/prepare-rootfs-source-bundle.rb \
+  --output /absolute/new/path/outside-the-repository/rootfs-v0.3.3-source-review
+
+ruby Scripts/prepare-rootfs-source-bundle.rb \
+  --verify /absolute/new/path/outside-the-repository/rootfs-v0.3.3-source-review
+```
+
+The script pins and verifies 10 aports source snapshots and 9 upstream
+distfiles. `--verify` rechecks regular-file digests, the directory set, and
+symbolic-link targets. The script does not execute `APKBUILD` or automatically
+add output to the App, Git, or a CI artifact. This closes a reproducible
+engineering acquisition workflow, not legal review. The RootFS archive
+contains no identifiable LICENSE/COPYING/NOTICE files, and the external review
+directory still requires license-text, package copyright/notice, modification,
+build-completeness, source-offer, and legal review before it can serve as
+corresponding-source delivery material.
 
 Do not put it in package resources, Demo resources, Git, or Git LFS.
 

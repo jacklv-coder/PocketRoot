@@ -5,7 +5,7 @@
 RootFS 是 PocketRoot 的外部供应链输入，不是普通测试 fixture。仓库提交的是不可变清单、校验和安全安装代码，不提交、镜像或默认打包 RootFS 二进制。
 
 > [!WARNING]
-> 固定 v0.3.3 归档已有可复现 package inventory、SPDX SBOM 和默认配置证据，但许可证文本、包级 NOTICE、对应源码 bundle 与发行批准仍未闭环。以下 URL 与命令用于审计和本地开发，不构成公开再分发授权。应用必须先完成自己的法律与发行审查。
+> 固定 v0.3.3 归档已有可复现 package inventory、SPDX SBOM、默认配置证据和完整覆盖 inventory 的源码获取清单，但许可证文本、包级 NOTICE、对应源码交付审查与发行批准仍未闭环。以下 URL 与命令用于审计和本地开发，不构成公开再分发授权。应用必须先完成自己的法律与发行审查。
 
 ## 1. 固定清单
 
@@ -76,8 +76,9 @@ printf '%s  %s\n' \
 
 仓库中的 [`Compliance/RootFS/v0.3.3`](../Compliance/RootFS/v0.3.3/README.md)
 包含从这个精确 archive 生成的 15 个二进制包清单、10 个 source origin、SPDX 2.3
-JSON SBOM、声明许可证清单、attribution inventory、`apk`/repository/DNS 配置快照和
-输入摘要。生成器先验证大小与 SHA-256，再只读取固定的小型元数据成员：
+JSON SBOM、声明许可证清单、attribution inventory、`apk`/repository/DNS 配置快照、
+输入摘要和固定源码获取清单。生成器先验证大小与 SHA-256，再只读取固定的小型
+元数据成员：
 
 ```bash
 ruby Scripts/generate-rootfs-compliance.rb \
@@ -85,9 +86,24 @@ ruby Scripts/generate-rootfs-compliance.rb \
   --check
 ```
 
-这完成的是可复现的工程事实记录。archive 内没有随附可识别的
-LICENSE/COPYING/NOTICE 文件；完整第三方许可证/NOTICE bundle、build recipe/patch、
-上游源码和构建说明组成的对应源码 bundle 仍是独立发行门禁。
+源码清单可独立校验，也可在仓库外生成本地审查目录：
+
+```bash
+ruby Scripts/prepare-rootfs-source-bundle.rb --validate-only
+
+ruby Scripts/prepare-rootfs-source-bundle.rb \
+  --output /absolute/new/path/outside-the-repository/rootfs-v0.3.3-source-review
+
+ruby Scripts/prepare-rootfs-source-bundle.rb \
+  --verify /absolute/new/path/outside-the-repository/rootfs-v0.3.3-source-review
+```
+
+脚本固定并校验 10 个 aports source snapshot 和 9 个 upstream distfile，不执行
+`APKBUILD`；`--verify` 会复核普通文件摘要、目录集合和符号链接目标。脚本不向 App、
+Git 或 CI artifact 自动添加输出。这完成的是可复现的工程获取流程。archive 内没有
+随附可识别的 LICENSE/COPYING/NOTICE 文件；生成的外置目录仍需完成许可证文本、
+包级版权/notice、修改说明、构建完整性、源码提供方式和法律审查，才能作为对应源码
+交付材料。
 
 不要把归档放入 `Sources/PocketRootResources/Resources`、Demo resources 或 Git LFS。合规完成前，`PocketRootBundledRootFSProvider` 的资源查找预期返回 `nil`。
 

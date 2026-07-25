@@ -1,0 +1,271 @@
+{
+  "schemaVersion": 1,
+  "archive": {
+    "version": "v0.3.3",
+    "sha256": "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"
+  },
+  "bundleStatus": "external-materialization-required",
+  "redistributionApproved": false,
+  "sources": [
+    {
+      "sourceOrigin": "alpine-baselayout",
+      "aportsCommit": "7749273fed55f6e1df7c9ee6a127f18099f98a94",
+      "binaryPackages": [
+        "alpine-baselayout",
+        "alpine-baselayout-data"
+      ],
+      "declaredLicenseExpressions": [
+        "GPL-2.0-only"
+      ],
+      "aportsSnapshot": {
+        "path": "main/alpine-baselayout",
+        "url": "https://gitlab.alpinelinux.org/api/v4/projects/alpine%2Faports/repository/archive.tar.gz?sha=7749273fed55f6e1df7c9ee6a127f18099f98a94&path=main%2Falpine-baselayout",
+        "sha512": "680af6d932f258eb2f96c054ce48e5841270b09bbac4ad9021260a8d2d13ade4fcaac4cb1ce7c0ab28bd1c536d166984ae1c8fefa830fb3e361b17e15344d450",
+        "regularFileCount": 16,
+        "canonicalTreeSha256": "ec21015a78233b8078713af426738b6490271399367fef8567267f9eb7d2f296"
+      },
+      "distfiles": [
+        {
+          "filename": "protocols-6.4",
+          "retrievalURLs": [
+            "https://salsa.debian.org/md/netbase/-/raw/v6.4/etc/protocols",
+            "https://sources.debian.org/data/main/n/netbase/6.4/etc/protocols"
+          ],
+          "sha512": "3a00083bcdf5a9e884c9d07877d52311e3d99e79cbee656e236ba06e08ba0dddb7ba76494fdc9dd1a826c48e197a790a69e6bb458e9df64832d6b5e904e9fd15"
+        },
+        {
+          "filename": "services-6.4",
+          "retrievalURLs": [
+            "https://salsa.debian.org/md/netbase/-/raw/v6.4/etc/services",
+            "https://sources.debian.org/data/main/n/netbase/6.4/etc/services"
+          ],
+          "sha512": "47b0f3ee73af2d259bd206a026204be0ea25531a895a0b035a904b38fe5407bc3dd2beab7f8fcb3d760587e6159702ebdb9cbc4f508942befdf7f10c10c87888"
+        }
+      ]
+    },
+    {
+      "sourceOrigin": "alpine-keys",
+      "aportsCommit": "aab68f8c9ab434a46710de8e12fb3206e2930a59",
+      "binaryPackages": [
+        "alpine-keys"
+      ],
+      "declaredLicenseExpressions": [
+        "MIT"
+      ],
+      "aportsSnapshot": {
+        "path": "main/alpine-keys",
+        "url": "https://gitlab.alpinelinux.org/api/v4/projects/alpine%2Faports/repository/archive.tar.gz?sha=aab68f8c9ab434a46710de8e12fb3206e2930a59&path=main%2Falpine-keys",
+        "sha512": "d72e70f1051da6a808e0e083b697aa0f198abbb08c3f8081ed2cc0d44d323c0f80588552d65af11c6787679a94179f1230c4ee8b9706ac0b460ae4d0b5393246",
+        "regularFileCount": 18,
+        "canonicalTreeSha256": "c41e897d001086c509797b5efd8a4db19070be41b37578476b724cff2e9cec04"
+      },
+      "distfiles": []
+    },
+    {
+      "sourceOrigin": "apk-tools",
+      "aportsCommit": "33283848034c9885d984c8e8697c645c57324938",
+      "binaryPackages": [
+        "apk-tools"
+      ],
+      "declaredLicenseExpressions": [
+        "GPL-2.0-only"
+      ],
+      "aportsSnapshot": {
+        "path": "main/apk-tools",
+        "url": "https://gitlab.alpinelinux.org/api/v4/projects/alpine%2Faports/repository/archive.tar.gz?sha=33283848034c9885d984c8e8697c645c57324938&path=main%2Fapk-tools",
+        "sha512": "e5fba1700880e6b7e93c5b497a76d29e0285f260ead34dedc1706131d8535c6ec875652966671ea174c3de97ef902a8555cea7e4e27177f3347ecf47b0843a4f",
+        "regularFileCount": 4,
+        "canonicalTreeSha256": "3cb285008cbdd156bc364e93ac7fe8f2c876453b7554df134f0597f91ee73571"
+      },
+      "distfiles": [
+        {
+          "filename": "apk-tools-v2.14.0.tar.gz",
+          "retrievalURLs": [
+            "https://gitlab.alpinelinux.org/alpine/apk-tools/-/archive/v2.14.0/apk-tools-v2.14.0.tar.gz"
+          ],
+          "sha512": "95bfc6d4210c3fb0cd0226b01a67610d719bdf88574c4159b15594c379fa63a7aea88dbeba435af6920e68e65547c9472f987c53589d5f5cc3e1e1280ee8c227"
+        }
+      ]
+    },
+    {
+      "sourceOrigin": "busybox",
+      "aportsCommit": "d1b6f274f29076967826e0ecf6ebcaa5d360272f",
+      "binaryPackages": [
+        "busybox",
+        "busybox-binsh",
+        "ssl_client"
+      ],
+      "declaredLicenseExpressions": [
+        "GPL-2.0-only"
+      ],
+      "aportsSnapshot": {
+        "path": "main/busybox",
+        "url": "https://gitlab.alpinelinux.org/api/v4/projects/alpine%2Faports/repository/archive.tar.gz?sha=d1b6f274f29076967826e0ecf6ebcaa5d360272f&path=main%2Fbusybox",
+        "sha512": "ed1c22b0a4722d1bb53acf623c11ed2090c376d70942aaa01b2a08f0f169225550fe7f3f19f831616ccfbc31d638ccd1b960c8e4b4296c56b44bcc90ef951cb1",
+        "regularFileCount": 67,
+        "canonicalTreeSha256": "956b4854e4bcc01e2c705ab6698d9632de1853de5d45392a8d5f35b89370b11e"
+      },
+      "distfiles": [
+        {
+          "filename": "busybox-1.36.1.tar.bz2",
+          "retrievalURLs": [
+            "https://busybox.net/downloads/busybox-1.36.1.tar.bz2"
+          ],
+          "sha512": "8c0c754c9ae04b5e6b23596283a7d3a4ef96225fe179f92d6f6a99c69c0caa95b1aa56c267f52d7c807f6cc69e1f0b7dd29a8ac624098f601738f8c0c57980d4"
+        }
+      ]
+    },
+    {
+      "sourceOrigin": "ca-certificates",
+      "aportsCommit": "59534a02716a92a10d177a118c34066162eff4a6",
+      "binaryPackages": [
+        "ca-certificates-bundle"
+      ],
+      "declaredLicenseExpressions": [
+        "MPL-2.0 AND MIT"
+      ],
+      "aportsSnapshot": {
+        "path": "main/ca-certificates",
+        "url": "https://gitlab.alpinelinux.org/api/v4/projects/alpine%2Faports/repository/archive.tar.gz?sha=59534a02716a92a10d177a118c34066162eff4a6&path=main%2Fca-certificates",
+        "sha512": "b9832a0e7135570b367657ca4117ab97582552ead26c4c8d2ab0820c8d180c483e8d7c120eee1dbb43da4b927bfdf7ef9276f6416ff31c5a4c15a4ae35d1de0c",
+        "regularFileCount": 3,
+        "canonicalTreeSha256": "d86b2a63ac45560bea0b1e5617717c3a9205b1f89ed846c060314706d91542bc"
+      },
+      "distfiles": [
+        {
+          "filename": "ca-certificates-20230506.tar.bz2",
+          "retrievalURLs": [
+            "https://gitlab.alpinelinux.org/alpine/ca-certificates/-/archive/20230506/ca-certificates-20230506.tar.bz2"
+          ],
+          "sha512": "cb1941393b0e91cecb4febd149132fbd2ac2a663d07eb8b1333b1ce297b542718aeeb773dbdbdbe72425ec76c045d390ddd1e9ffa0d0d390311f549b1465f652"
+        }
+      ]
+    },
+    {
+      "sourceOrigin": "libc-dev",
+      "aportsCommit": "988f183cc9d6699930c3e18ccf4a9e36010afb56",
+      "binaryPackages": [
+        "libc-utils"
+      ],
+      "declaredLicenseExpressions": [
+        "BSD-2-Clause AND BSD-3-Clause"
+      ],
+      "aportsSnapshot": {
+        "path": "main/libc-dev",
+        "url": "https://gitlab.alpinelinux.org/api/v4/projects/alpine%2Faports/repository/archive.tar.gz?sha=988f183cc9d6699930c3e18ccf4a9e36010afb56&path=main%2Flibc-dev",
+        "sha512": "2b519998acbd6919c55538615cab79abcfccc1f379ae5d06cd91ca587ecce5737c17fb56101c75bb223eaea5ffa06d79cdb8603c93a9f486d4b011b8c5ffed3e",
+        "regularFileCount": 5,
+        "canonicalTreeSha256": "a9d54d7c8704a1da85e966c968d2f47c0ed2d68156f36d3420db8c52bda8e8d0"
+      },
+      "distfiles": []
+    },
+    {
+      "sourceOrigin": "musl",
+      "aportsCommit": "ca7f2ab5e88794e4e654b40776f8a92256f50639",
+      "binaryPackages": [
+        "musl",
+        "musl-utils"
+      ],
+      "declaredLicenseExpressions": [
+        "MIT",
+        "MIT AND BSD-2-Clause AND GPL-2.0-or-later"
+      ],
+      "aportsSnapshot": {
+        "path": "main/musl",
+        "url": "https://gitlab.alpinelinux.org/api/v4/projects/alpine%2Faports/repository/archive.tar.gz?sha=ca7f2ab5e88794e4e654b40776f8a92256f50639&path=main%2Fmusl",
+        "sha512": "01fbdb2fb4f6a7c2ce34d252c75c467ac39d048d49e5f91b82beefdc920837f5aa995e85b16412603e81f6aba1d81bea3adb9a07cd1b33080b4875427259b562",
+        "regularFileCount": 9,
+        "canonicalTreeSha256": "f11fbbed1b9415dc5e06b209ee6badebb379dedbd96d1034171a0cd409f2016b"
+      },
+      "distfiles": [
+        {
+          "filename": "musl-83b858f83b658bd34eca5d8ad4d145f673ae7e5e.tar.gz",
+          "retrievalURLs": [
+            "https://git.musl-libc.org/cgit/musl/snapshot/83b858f83b658bd34eca5d8ad4d145f673ae7e5e.tar.gz"
+          ],
+          "sha512": "29c8b33565f2f7aeacf274e8029b94dc515c569f2e3fc27acb0cf8254e22d6248bf0948076f2c2887ba0495ff2e2db59f760d69d2b4ee6697fea4cda1adf9136"
+        }
+      ]
+    },
+    {
+      "sourceOrigin": "openssl",
+      "aportsCommit": "b784a22cad0c452586b438cb7a597d846fc09ff4",
+      "binaryPackages": [
+        "libcrypto3",
+        "libssl3"
+      ],
+      "declaredLicenseExpressions": [
+        "Apache-2.0"
+      ],
+      "aportsSnapshot": {
+        "path": "main/openssl",
+        "url": "https://gitlab.alpinelinux.org/api/v4/projects/alpine%2Faports/repository/archive.tar.gz?sha=b784a22cad0c452586b438cb7a597d846fc09ff4&path=main%2Fopenssl",
+        "sha512": "eaa24a522a47ac2bbef2826563b918950a32e22627a0e00878d7b8efc5caf52119ceb2d5f12646e55d6f5d02e29105f36a1f1389241200411a11752452b8d223",
+        "regularFileCount": 6,
+        "canonicalTreeSha256": "0cc814323ad9c9b738af1420e51632b8be7c7ab8085da7713e9c0bb750424065"
+      },
+      "distfiles": [
+        {
+          "filename": "openssl-3.1.4.tar.gz",
+          "retrievalURLs": [
+            "https://www.openssl.org/source/openssl-3.1.4.tar.gz",
+            "https://www.openssl.org/source/old/3.1/openssl-3.1.4.tar.gz"
+          ],
+          "sha512": "a69df4a018f57dee7d8a57c8003a6869eba11f1eaa394518976642a993780d0de3326019e92dea4c679c6c581fef568ea616ec541afc0792800359c606dffcd2"
+        }
+      ]
+    },
+    {
+      "sourceOrigin": "pax-utils",
+      "aportsCommit": "e65a4f2d0470e70d862ef2b5c412ecf2cb9ad0a6",
+      "binaryPackages": [
+        "scanelf"
+      ],
+      "declaredLicenseExpressions": [
+        "GPL-2.0-only"
+      ],
+      "aportsSnapshot": {
+        "path": "main/pax-utils",
+        "url": "https://gitlab.alpinelinux.org/api/v4/projects/alpine%2Faports/repository/archive.tar.gz?sha=e65a4f2d0470e70d862ef2b5c412ecf2cb9ad0a6&path=main%2Fpax-utils",
+        "sha512": "33a5f9d18a49326cb2726ff394bc183eec0a38715144abdb461cf11c59edc80764d5d969fa13de3d59d704722e4de248c5a89ac617450f100638feca60e717bc",
+        "regularFileCount": 1,
+        "canonicalTreeSha256": "06735cf44a9e0dd0106fd0e451ea3fa9edcf46a184cac91053c2f68efe23b58d"
+      },
+      "distfiles": [
+        {
+          "filename": "pax-utils-1.3.7.tar.xz",
+          "retrievalURLs": [
+            "https://dev.gentoo.org/~sam/distfiles/app-misc/pax-utils/pax-utils-1.3.7.tar.xz"
+          ],
+          "sha512": "f1b87a564573da838a02c4cc10e0d5f9754c3b004ecb172a6290b48a8179b30695ae556942457dfac3caf07b91dd56eb1d801475c35e9708e4d671aa507f9576"
+        }
+      ]
+    },
+    {
+      "sourceOrigin": "zlib",
+      "aportsCommit": "9406f6fc5fca057d990eb0d260d75839eeb34d83",
+      "binaryPackages": [
+        "zlib"
+      ],
+      "declaredLicenseExpressions": [
+        "Zlib"
+      ],
+      "aportsSnapshot": {
+        "path": "main/zlib",
+        "url": "https://gitlab.alpinelinux.org/api/v4/projects/alpine%2Faports/repository/archive.tar.gz?sha=9406f6fc5fca057d990eb0d260d75839eeb34d83&path=main%2Fzlib",
+        "sha512": "d559c5d58e020bfc079beb3908a5f82516513b1d71cea0aba2f8e1ff84867523389ff8cde9a95c5751da6d4dd82edeb6b52bf839d40e74a79bd10f6ba66e2fd8",
+        "regularFileCount": 1,
+        "canonicalTreeSha256": "b5fbcd2b0c238e93ed6f12cfe5ae4d023bffe681318757f93ebc4f21e6e8319c"
+      },
+      "distfiles": [
+        {
+          "filename": "zlib-1.3.1.tar.gz",
+          "retrievalURLs": [
+            "https://zlib.net/fossils/zlib-1.3.1.tar.gz"
+          ],
+          "sha512": "580677aad97093829090d4b605ac81c50327e74a6c2de0b85dd2e8525553f3ddde17556ea46f8f007f89e435493c9a20bc997d1ef1c1c2c23274528e3c46b94f"
+        }
+      ]
+    }
+  ]
+}
