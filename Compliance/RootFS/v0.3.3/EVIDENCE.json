@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-25T00:00:00Z",
+  "generator": "Scripts/generate-rootfs-compliance.rb",
+  "archive": {
+    "version": "v0.3.3",
+    "url": "https://github.com/Lolendor/ish-arm64-pkg/releases/download/v0.3.3/fs.tar.gz",
+    "byteCount": 6581376,
+    "sha256": "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"
+  },
+  "inputMembers": {
+    "installed_database": {
+      "path": "fs/data/srv/vms/.template/lib/apk/db/installed",
+      "sha256": "039fb082cebcc6cadad755e387be14829f9f883ec83813db7ea8570216cc3b17"
+    },
+    "repositories": {
+      "path": "fs/data/srv/vms/.template/etc/apk/repositories",
+      "sha256": "8672eb6fb0740805ea01fd105ffd6f76b3594e0763a786a768fc2374379d54c7"
+    },
+    "resolver": {
+      "path": "fs/data/srv/vms/.template/etc/resolv.conf",
+      "sha256": "1e0c5647fa63a2b759fb48c3fea348d785684e623b10d2c2e9ea7c3369337b25"
+    },
+    "world": {
+      "path": "fs/data/srv/vms/.template/etc/apk/world",
+      "sha256": "713e3907167dce202d7c16034831af3d670191382a3e9026e0ac0a4023013201"
+    },
+    "architecture": {
+      "path": "fs/data/srv/vms/.template/etc/apk/arch",
+      "sha256": "5121ae59314a84da7b4d9587374398f1afa2000b243b3e54f491adefaac54f92"
+    },
+    "os_release": {
+      "path": "fs/data/srv/vms/.template/etc/os-release",
+      "sha256": "3b35a719387727c7b05d20e02c6496433dbc484ca4222f53953d876a397ca486"
+    }
+  },
+  "counts": {
+    "installedBinaryPackages": 15,
+    "sourceOrigins": 10,
+    "declaredLicenseExpressions": 7,
+    "licenseOrNoticeFilesInGuestTemplate": 0
+  },
+  "engineeringStatus": {
+    "completeInstalledPackageInventory": true,
+    "machineReadableSPDXSBOM": true,
+    "runtimeConfigurationRecorded": true,
+    "completeLicenseAndNoticeBundle": false,
+    "correspondingSourceBundleCollected": false,
+    "redistributionApproved": false
+  }
+}

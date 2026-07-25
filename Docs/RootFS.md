@@ -5,7 +5,7 @@
 RootFS 是 PocketRoot 的外部供应链输入，不是普通测试 fixture。仓库提交的是不可变清单、校验和安全安装代码，不提交、镜像或默认打包 RootFS 二进制。
 
 > [!WARNING]
-> 固定 v0.3.3 归档仍有许可证、NOTICE、对应源码和 SBOM 门禁。以下 URL 与命令用于审计和本地开发，不构成公开再分发授权。应用必须先完成自己的法律与发行审查。
+> 固定 v0.3.3 归档已有可复现 package inventory、SPDX SBOM 和默认配置证据，但许可证文本、包级 NOTICE、对应源码 bundle 与发行批准仍未闭环。以下 URL 与命令用于审计和本地开发，不构成公开再分发授权。应用必须先完成自己的法律与发行审查。
 
 ## 1. 固定清单
 
@@ -73,6 +73,21 @@ printf '%s  %s\n' \
   "$ROOTFS_ARCHIVE" \
   | shasum -a 256 --check
 ```
+
+仓库中的 [`Compliance/RootFS/v0.3.3`](../Compliance/RootFS/v0.3.3/README.md)
+包含从这个精确 archive 生成的 15 个二进制包清单、10 个 source origin、SPDX 2.3
+JSON SBOM、声明许可证清单、attribution inventory、`apk`/repository/DNS 配置快照和
+输入摘要。生成器先验证大小与 SHA-256，再只读取固定的小型元数据成员：
+
+```bash
+ruby Scripts/generate-rootfs-compliance.rb \
+  --archive "$ROOTFS_ARCHIVE" \
+  --check
+```
+
+这完成的是可复现的工程事实记录。archive 内没有随附可识别的
+LICENSE/COPYING/NOTICE 文件；完整第三方许可证/NOTICE bundle、build recipe/patch、
+上游源码和构建说明组成的对应源码 bundle 仍是独立发行门禁。
 
 不要把归档放入 `Sources/PocketRootResources/Resources`、Demo resources 或 Git LFS。合规完成前，`PocketRootBundledRootFSProvider` 的资源查找预期返回 `nil`。
 

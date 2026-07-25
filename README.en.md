@@ -20,7 +20,7 @@ adapter, execute bounded one-shot shell commands inside the iOS sandbox.
 | iSH boot and one-shot commands | Experimental | `iOS + arm64`; one-shot cancellation confirms guest exit |
 | Lightweight agent loop | Core, OpenAI transport, and approval-gated command tool available | Agent and Runtime Tools are explicit opt-ins; no Codex CLI install or automatic shell approval |
 | Interactive PTY and SwiftTerm | Not implemented | Session input, resize, signal, and safe close remain planned |
-| Physical devices and distribution | Partially passed / blocked | iPhone one-shot, suspend/resume, UIKit lifecycle, forced-relaunch persistence, bounded storage-failure recovery, and bounded memory-warning recovery passed; real storage pressure, iPad, jetsam/power-cut, license, SBOM, and App Store gates remain |
+| Physical devices and distribution | Partially passed / blocked | iPhone one-shot, suspend/resume, UIKit lifecycle, forced-relaunch persistence, bounded storage-failure recovery, and bounded memory-warning recovery passed; a RootFS package inventory and SPDX SBOM are generated, while real storage pressure, iPad, jetsam/power-cut, complete release SBOM, license/NOTICE/corresponding-source, and App Store gates remain |
 
 The default `PocketRoot` product includes neither the agent loop nor native
 iSH and never bundles or downloads a RootFS. Agent applications explicitly
@@ -158,7 +158,7 @@ The repository records metadata and secure install code, not `fs.tar.gz`:
 - expanded tar size `18,838,016` bytes
 - SHA-256 `be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4`
 
-The pinned URL is metadata, not an automatic download. Do not add the payload to a Package/App bundle before license, NOTICE, corresponding-source, and SBOM review.
+The pinned URL is metadata, not an automatic download. The repository now generates a RootFS package inventory and SPDX SBOM from the pinned archive. Do not add the payload to a Package/App bundle before license, NOTICE, corresponding-source, and complete release SBOM review.
 
 ## Validation
 
@@ -207,4 +207,4 @@ See the [Documentation Hub](Docs/en/README.md).
 
 ## License and release
 
-PocketRoot's first-public-release license policy is still being finalized. The Experimental runtime links GPL-identified upstream code and the candidate RootFS contains multiple copyleft and permissive licenses. Production, TestFlight, and public distribution remain blocked until complete physical-device lifecycle, license, NOTICE, corresponding source, SBOM, and App Store 2.5.2 gates have explicit dispositions.
+PocketRoot's first-public-release license policy is still being finalized. The Experimental runtime links GPL-identified upstream code and the candidate RootFS contains multiple copyleft and permissive licenses. A package-level SPDX SBOM is now generated for the RootFS, but production, TestFlight, and public distribution remain blocked until complete physical-device lifecycle, license, NOTICE, corresponding source, complete release SBOM, and App Store 2.5.2 gates have explicit dispositions.

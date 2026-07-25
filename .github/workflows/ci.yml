@@ -53,8 +53,11 @@ jobs:
           ROOTFS_SHA256: "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"
           ROOTFS_BYTE_COUNT: "6581376"
           ROOTFS_URL: "https://github.com/Lolendor/ish-arm64-pkg/releases/download/v0.3.3/fs.tar.gz"
+          SPDX_SCHEMA_SHA256: "239208b7ac287b3cf5d9a9af23f9d69863971102a5e1587a27a398b43490b89b"
+          SPDX_SCHEMA_URL: "https://raw.githubusercontent.com/spdx/spdx-spec/v2.3/schemas/spdx-schema.json"
         run: |
           archive="$RUNNER_TEMP/pocketroot-fs-v0.3.3.tar.gz"
+          spdx_schema="$RUNNER_TEMP/spdx-2.3-schema.json"
           curl --fail --location --retry 3 \
             --output "$archive" \
             "$ROOTFS_URL"
@@ -62,6 +65,22 @@ jobs:
           echo "$ROOTFS_SHA256  $archive" | shasum -a 256 --check
           POCKETROOT_ROOTFS_ARCHIVE="$archive" \
             swift test --filter testPinnedReleaseArchiveWhenProvidedByEnvironment
+          ruby Scripts/generate-rootfs-compliance.rb \
+            --archive "$archive" \
+            --check
+          curl --fail --location --retry 3 \
+            --output "$spdx_schema" \
+            "$SPDX_SCHEMA_URL"
+          echo "$SPDX_SCHEMA_SHA256  $spdx_schema" \
+            | shasum -a 256 --check
+          npm ci \
+            --prefix Scripts/rootfs-compliance-validator \
+            --ignore-scripts \
+            --no-audit \
+            --no-fund
+          node Scripts/rootfs-compliance-validator/validate-spdx.mjs \
+            "$spdx_schema" \
+            Compliance/RootFS/v0.3.3/SBOM.spdx.json
 
       - name: Install XcodeGen
         env:
