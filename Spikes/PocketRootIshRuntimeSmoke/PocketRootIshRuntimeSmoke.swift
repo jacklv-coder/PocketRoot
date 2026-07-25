@@ -25,6 +25,137 @@ private struct PocketRootSmokeReport: Codable, Sendable {
     let finishedAt: Date
 }
 
+private struct PocketRootSmokeRootFSInput: Decodable, Sendable {
+    let schemaVersion: Int
+    let source: String
+    let distributionAuthorized: Bool
+    let version: String
+    let architecture: String
+    let format: String
+    let downloadURL: String
+    let sha256: String
+    let archiveByteCount: UInt64
+    let expandedArchiveByteCount: UInt64?
+    let expectedAlpineVersion: String
+    let sourceRevision: String?
+
+    static let pinned = Self(
+        schemaVersion: 1,
+        source: "pinned-v0.3.3-local-development",
+        distributionAuthorized: false,
+        version: PocketRootRootFSArtifactManifest.ishEmbedV0_3_3.version,
+        architecture: "arm64",
+        format: PocketRootRootFSArtifactManifest.Format.fakeFSTarGzip.rawValue,
+        downloadURL:
+            PocketRootRootFSArtifactManifest.ishEmbedV0_3_3.downloadURL.absoluteString,
+        sha256: PocketRootRootFSArtifactManifest.ishEmbedV0_3_3.sha256,
+        archiveByteCount:
+            PocketRootRootFSArtifactManifest.ishEmbedV0_3_3.archiveByteCount ?? 0,
+        expandedArchiveByteCount:
+            PocketRootRootFSArtifactManifest.ishEmbedV0_3_3.expandedArchiveByteCount,
+        expectedAlpineVersion: "3.19.1",
+        sourceRevision: nil
+    )
+
+    func validatedManifest() throws -> PocketRootRootFSArtifactManifest {
+        try require(schemaVersion == 1, "Unsupported smoke RootFS manifest schema.")
+        try require(
+            !distributionAuthorized,
+            "A local smoke manifest cannot authorize RootFS distribution."
+        )
+        try require(
+            source == "pinned-v0.3.3-local-development"
+                || source == "local-unapproved-candidate",
+            "Unsupported smoke RootFS source."
+        )
+        let allowedVersionCharacters = CharacterSet(
+            charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-"
+        )
+        try require(
+            !version.isEmpty
+                && version.utf8.count <= 128
+                && version.unicodeScalars.allSatisfy {
+                    allowedVersionCharacters.contains($0)
+                },
+            "Smoke RootFS version is unsafe."
+        )
+        try require(architecture == "arm64", "Smoke RootFS architecture is not arm64.")
+        try require(
+            format == PocketRootRootFSArtifactManifest.Format.fakeFSTarGzip.rawValue,
+            "Smoke RootFS format is unsupported."
+        )
+        try require(
+            isLowercaseHex(sha256, count: 64),
+            "Smoke RootFS SHA-256 is malformed."
+        )
+        try require(archiveByteCount > 0, "Smoke RootFS byte count is invalid.")
+        if let expandedArchiveByteCount {
+            try require(
+                expandedArchiveByteCount > 0,
+                "Smoke RootFS expanded byte count is invalid."
+            )
+        }
+        try require(
+            expectedAlpineVersion == "3.19.1",
+            "Smoke only accepts the reviewed Alpine 3.19.1 identity."
+        )
+        guard let resolvedDownloadURL = URL(string: downloadURL),
+              resolvedDownloadURL.scheme == "https"
+        else {
+            throw PocketRootSmokeFailure(message: "Smoke RootFS URL is invalid.")
+        }
+
+        let manifest = PocketRootRootFSArtifactManifest(
+            version: version,
+            architecture: .arm64,
+            format: .fakeFSTarGzip,
+            downloadURL: resolvedDownloadURL,
+            sha256: sha256,
+            archiveByteCount: archiveByteCount,
+            expandedArchiveByteCount: expandedArchiveByteCount
+        )
+        if source == "pinned-v0.3.3-local-development" {
+            try require(
+                sourceRevision == nil
+                    && manifest == .ishEmbedV0_3_3,
+                "Pinned smoke metadata does not match the built-in v0.3.3 manifest."
+            )
+        } else {
+            try require(
+                version.hasPrefix("candidate-"),
+                "Candidate smoke version is missing its candidate prefix."
+            )
+            try require(
+                sourceRevision.map {
+                    isLowercaseHex($0, count: 40)
+                } == true,
+                "Candidate smoke source revision is malformed."
+            )
+            try require(
+                resolvedDownloadURL.host == "invalid.invalid",
+                "Candidate smoke metadata must not name a downloadable host."
+            )
+        }
+        return manifest
+    }
+
+    private func isLowercaseHex(_ value: String, count: Int) -> Bool {
+        value.utf8.count == count
+            && value.utf8.allSatisfy {
+                (48...57).contains($0) || (97...102).contains($0)
+            }
+    }
+
+    private func require(
+        _ condition: @autoclosure () -> Bool,
+        _ message: String
+    ) throws {
+        guard condition() else {
+            throw PocketRootSmokeFailure(message: message)
+        }
+    }
+}
+
 private struct PocketRootSmokeFailure: LocalizedError {
     let message: String
 
@@ -41,6 +172,7 @@ private enum PocketRootSmokeRelaunchPersistencePhase: Sendable {
 
 private enum PocketRootRuntimeSmokeRunner {
     static let archiveFileName = "pocketroot-fs-v0.3.3.tar.gz"
+    static let rootFSInputFileName = "pocketroot-smoke-rootfs.json"
     static let reportFileName = "pocketroot-smoke-result.json"
     static let progressFileName = "pocketroot-smoke-progress.txt"
     static let lifecycleResumeFileName = "pocketroot-smoke-lifecycle-resume.txt"
@@ -98,12 +230,15 @@ private enum PocketRootRuntimeSmokeRunner {
                 withIntermediateDirectories: true
             )
             let archiveURL = documentsURL.appendingPathComponent(archiveFileName)
+            let rootFSInput = try loadRootFSInput(from: documentsURL)
+            let rootFSManifest = try rootFSInput.validatedManifest()
 
             if storageFailureMode {
                 checks.append(
                     contentsOf: try await runStorageFailureChecks(
                         archiveURL: archiveURL,
-                        applicationSupportURL: applicationSupportURL
+                        applicationSupportURL: applicationSupportURL,
+                        manifest: rootFSManifest
                     )
                 )
             }
@@ -112,15 +247,23 @@ private enum PocketRootRuntimeSmokeRunner {
             let prepared = try await PocketRootIshSystemFactory.prepareSystem(
                 archiveURL: archiveURL,
                 applicationSupportURL: applicationSupportURL,
+                manifest: rootFSManifest,
                 workDirectory: "/",
                 maximumStandardOutputBytes: sustainedOutputByteCount,
-                maximumStandardErrorBytes: maximumStandardErrorBytes
+                maximumStandardErrorBytes: maximumStandardErrorBytes,
+                healthCheck: .ishEmbedV0_3_3
             )
             system = prepared.system
             checks.append(
                 PocketRootSmokeCheck(
                     name: "rootfs",
                     detail: "prepared \(prepared.installation.version)"
+                )
+            )
+            checks.append(
+                PocketRootSmokeCheck(
+                    name: "rootfs-input",
+                    detail: "\(rootFSInput.source), \(rootFSInput.sha256)"
                 )
             )
 
@@ -549,6 +692,23 @@ private enum PocketRootRuntimeSmokeRunner {
         try encoder.encode(report).write(to: try reportURL(), options: .atomic)
     }
 
+    static func loadRootFSInput(from documentsURL: URL) throws -> PocketRootSmokeRootFSInput {
+        let inputURL = documentsURL.appendingPathComponent(rootFSInputFileName)
+        guard FileManager.default.fileExists(atPath: inputURL.path) else {
+            return .pinned
+        }
+        do {
+            return try JSONDecoder().decode(
+                PocketRootSmokeRootFSInput.self,
+                from: Data(contentsOf: inputURL)
+            )
+        } catch {
+            throw PocketRootSmokeFailure(
+                message: "Unable to decode smoke RootFS metadata: \(error.localizedDescription)"
+            )
+        }
+    }
+
     static func reportURL() throws -> URL {
         let fileManager = FileManager.default
         guard let documentsURL = fileManager.urls(
@@ -738,7 +898,8 @@ private enum PocketRootRuntimeSmokeRunner {
 
     private static func runStorageFailureChecks(
         archiveURL: URL,
-        applicationSupportURL: URL
+        applicationSupportURL: URL,
+        manifest: PocketRootRootFSArtifactManifest
     ) async throws -> [PocketRootSmokeCheck] {
         var checks: [PocketRootSmokeCheck] = []
 
@@ -747,6 +908,7 @@ private enum PocketRootRuntimeSmokeRunner {
             _ = try await PocketRootIshSystemFactory.prepareSystemForFailureInjection(
                 archiveURL: archiveURL,
                 applicationSupportURL: applicationSupportURL,
+                manifest: manifest,
                 failureInjection: .insufficientStorage
             )
             throw PocketRootSmokeFailure(
@@ -772,6 +934,7 @@ private enum PocketRootRuntimeSmokeRunner {
             _ = try await PocketRootIshSystemFactory.prepareSystemForFailureInjection(
                 archiveURL: archiveURL,
                 applicationSupportURL: applicationSupportURL,
+                manifest: manifest,
                 failureInjection: .gzipENOSPC
             )
             throw PocketRootSmokeFailure(

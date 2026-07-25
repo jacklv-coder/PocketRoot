@@ -94,6 +94,22 @@ release asset's size, digest, extracted layout, and first materialization. It
 does not perform a second preparation and therefore does not by itself prove
 reuse; see [testing](Testing.md#real-asset).
 
+To exercise a repository-external local double-build candidate from
+`ish-arm64-pkg`, do not change the built-in manifest or copy the archive into
+this repository. Pass the complete directory produced by
+`scripts/prepare-rootfs-candidate.sh --output`:
+
+```bash
+POCKETROOT_ROOTFS_CANDIDATE=/absolute/path/to/local-candidate \
+  ./Scripts/run-runtime-smoke.sh
+```
+
+The runner verifies the candidate JSON, receipt, identity, every companion
+digest, the exact archive path, and `distributionAuthorized=false` before
+creating an ephemeral smoke-only manifest. This path does not download,
+bundle, upload, or authorize RootFS distribution, and it does not update the
+formal `.ishEmbedV0_3_3` manifest.
+
 The smoke requires Apple Silicon, an iOS 18 Simulator runtime, and the exact
 v0.3.3 archive. It may also receive the archive as its first argument.
 `POCKETROOT_SMOKE_DEVICE` selects an existing Simulator.
@@ -124,6 +140,16 @@ Run the same checks on a paired iOS 18+ device with Developer Mode and developme
 
 ```bash
 POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
+POCKETROOT_SMOKE_DEVICE=<physical-device-reference> \
+POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
+  ./Scripts/run-runtime-device-smoke.sh
+```
+
+For a local candidate, replace `POCKETROOT_ROOTFS_ARCHIVE` with the same
+complete-directory input:
+
+```bash
+POCKETROOT_ROOTFS_CANDIDATE=/absolute/path/to/local-candidate \
 POCKETROOT_SMOKE_DEVICE=<physical-device-reference> \
 POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
   ./Scripts/run-runtime-device-smoke.sh

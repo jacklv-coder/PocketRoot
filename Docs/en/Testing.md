@@ -94,6 +94,14 @@ POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
 
 Requirements: Apple Silicon, iOS 18 Simulator, XcodeGen, and the exact v0.3.3
 archive. The archive may be the first argument.
+`POCKETROOT_ROOTFS_CANDIDATE` instead selects the complete repository-external
+directory produced by `ish-arm64-pkg`'s candidate command. Candidate mode
+requires `distributionAuthorized=false`, two byte-identical builds, a fixed
+source revision, receipt, identity, and matching companion digests. Its
+ephemeral sidecar affects only the repository-owned smoke App; public defaults
+and the formal `.ishEmbedV0_3_3` manifest remain unchanged. Bounded PAX control
+headers are discarded before guest path validation; every real following entry
+still passes traversal, duplicate, link, and materialization checks.
 `POCKETROOT_SMOKE_DEVICE` selects an existing device.
 `POCKETROOT_SMOKE_TIMEOUT_SECONDS` changes only the default 300-second JSON
 report wait after App launch. It does not bound project generation, the build,
@@ -189,6 +197,14 @@ On 2026-07-24, `v0.4.0-abi.6` with wrapper revision `38d25d6` passed all 17
 checks on an iOS 18.2 arm64 Simulator with byte-exact 8 MiB binary stdout and
 a 156.5 MiB lifecycle peak
 against the 256 MiB limit; shutdown recorded `returned, terminated, restart required`.
+
+On 2026-07-25, the local unapproved candidate built from
+`ish-arm64-pkg` revision `9375e0ecc9cf1bbe79b05ef0b45cab8405f1d08c`
+(`eaa5dd15a6c983c0ac2ce9034060d15692c2cde811461bf9c17f8858c040bb91`,
+6,513,566 bytes) passed the candidate-aware 18-check path on an iOS 18.2 arm64
+Simulator. It installed as `candidate-9375e0ecc9cf`, reported Alpine 3.19.1 and
+aarch64, completed all command/recovery/shutdown checks, and peaked at
+146.6 MiB. The candidate stayed outside the repository and was not uploaded.
 
 The repository's minimum-toolchain job explicitly selects Xcode 16.0 and the
 iOS 18.0 SDK on an arm64 macOS runner, materializes the pinned RootFS,
@@ -323,6 +339,13 @@ gate all passed at a 90.8 MiB peak; the same default 17-check regression also
 passed at 89.9 MiB. This proves runtime continuity under the repository
 callback injection, not real memory pressure, system low-memory delivery, or
 jetsam.
+
+The same Jack iPhone also passed the candidate-aware standard path for the
+unapproved `9375e0e` RootFS above. The device report bound the exact candidate
+SHA-256, observed aarch64 and Alpine 3.19.1, passed command/recovery/shutdown,
+and peaked at 76.9 MiB. The runner then uninstalled the smoke App and injected
+RootFS. This is compatibility evidence only; it does not authorize RootFS
+distribution or change the pinned production manifest.
 
 ## CI
 

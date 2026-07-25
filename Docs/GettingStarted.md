@@ -136,6 +136,18 @@ POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
 ./Scripts/run-runtime-smoke.sh /path/to/fs.tar.gz
 ```
 
+若要验证 `ish-arm64-pkg` 的仓库外本地双构建候选，不要修改内置 manifest，也不要把
+archive 复制进仓库。把 `scripts/prepare-rootfs-candidate.sh --output` 生成的完整目录传给：
+
+```bash
+POCKETROOT_ROOTFS_CANDIDATE=/absolute/path/to/local-candidate \
+  ./Scripts/run-runtime-smoke.sh
+```
+
+runner 会校验候选 JSON、receipt、identity、全部伴随摘要、精确 archive 路径以及
+`distributionAuthorized=false`，再生成仅供 smoke App 使用的临时 manifest。该入口不会
+下载、打包、上传或授权分发 RootFS，也不会更新正式 `.ishEmbedV0_3_3` manifest。
+
 要求：
 
 - Apple Silicon 宿主机；
@@ -165,6 +177,15 @@ xcrun simctl uninstall "$SMOKE_DEVICE_UDID" com.jacklv.PocketRootIshRuntimeSmoke
 
 ```bash
 POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
+POCKETROOT_SMOKE_DEVICE=<physical-device-reference> \
+POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
+  ./Scripts/run-runtime-device-smoke.sh
+```
+
+本地候选的真机命令使用同一目录入口替代 `POCKETROOT_ROOTFS_ARCHIVE`：
+
+```bash
+POCKETROOT_ROOTFS_CANDIDATE=/absolute/path/to/local-candidate \
 POCKETROOT_SMOKE_DEVICE=<physical-device-reference> \
 POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
   ./Scripts/run-runtime-device-smoke.sh

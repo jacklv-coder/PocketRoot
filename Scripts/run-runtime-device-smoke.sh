@@ -4,6 +4,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 ARCHIVE_PATH="${1:-${POCKETROOT_ROOTFS_ARCHIVE:-}}"
+CANDIDATE_DIRECTORY="${POCKETROOT_ROOTFS_CANDIDATE:-}"
 DEVICE_REFERENCE="${POCKETROOT_SMOKE_DEVICE:-}"
 DEVICE_ID=""
 DEVELOPMENT_TEAM="${POCKETROOT_DEVELOPMENT_TEAM:-}"
@@ -11,9 +12,8 @@ BUNDLE_ID="com.jacklv.PocketRootIshRuntimeSmoke"
 APP_PROCESS_NAME="PocketRootIshRuntimeSmoke"
 SETTINGS_BUNDLE_ID="com.apple.Preferences"
 ARCHIVE_NAME="pocketroot-fs-v0.3.3.tar.gz"
+SMOKE_MANIFEST_NAME="pocketroot-smoke-rootfs.json"
 REPORT_NAME="pocketroot-smoke-result.json"
-EXPECTED_SHA256="be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"
-EXPECTED_BYTE_COUNT="6581376"
 SMOKE_TIMEOUT_SECONDS="${POCKETROOT_SMOKE_TIMEOUT_SECONDS:-300}"
 LIFECYCLE_MODE="${POCKETROOT_SMOKE_LIFECYCLE:-0}"
 UI_LIFECYCLE_MODE="${POCKETROOT_SMOKE_UI_LIFECYCLE:-0}"
@@ -28,6 +28,7 @@ REPORT_PATH="$RUN_ROOT/$REPORT_NAME"
 EMPTY_REPORT_PATH="$RUN_ROOT/empty-$REPORT_NAME"
 ENTITLEMENTS_PATH="$RUN_ROOT/PocketRootIshRuntimeSmoke.entitlements.plist"
 DEVICE_DETAILS_PATH="$RUN_ROOT/device-details.json"
+SMOKE_MANIFEST_PATH="$RUN_ROOT/$SMOKE_MANIFEST_NAME"
 LAUNCH_RESULT_PATH="$RUN_ROOT/launch-result.json"
 PROCESS_LIST_PATH="$RUN_ROOT/processes.json"
 REACTIVATION_RESULT_PATH="$RUN_ROOT/reactivation-result.json"
@@ -135,9 +136,16 @@ Usage:
   [POCKETROOT_SMOKE_STORAGE_FAILURE=1] \\
   [POCKETROOT_SMOKE_MEMORY_WARNING=1] \\
   $0
+
+For a local unapproved double-build candidate, replace
+POCKETROOT_ROOTFS_ARCHIVE with:
+  POCKETROOT_ROOTFS_CANDIDATE=/absolute/candidate-directory
 EOF
 }
 
+if [[ -n "$CANDIDATE_DIRECTORY" && -z "$ARCHIVE_PATH" ]]; then
+    ARCHIVE_PATH="$CANDIDATE_DIRECTORY/fs.tar.gz"
+fi
 if [[ -z "$ARCHIVE_PATH" || ! -f "$ARCHIVE_PATH" ]]; then
     usage
     exit 2
@@ -194,11 +202,16 @@ if [[ "$MEMORY_WARNING_MODE" == "1" \
     echo "Memory-warning smoke cannot be combined with another optional mode." >&2
     exit 2
 fi
-if [[ "$(stat -f '%z' "$ARCHIVE_PATH")" != "$EXPECTED_BYTE_COUNT" ]]; then
-    echo "RootFS archive size does not match the pinned v0.3.3 artifact." >&2
-    exit 2
+SMOKE_MANIFEST_ARGS=(
+  --archive "$ARCHIVE_PATH"
+  --output "$SMOKE_MANIFEST_PATH"
+  --repository-root "$ROOT_DIR"
+)
+if [[ -n "$CANDIDATE_DIRECTORY" ]]; then
+    SMOKE_MANIFEST_ARGS+=(--candidate-directory "$CANDIDATE_DIRECTORY")
 fi
-echo "$EXPECTED_SHA256  $ARCHIVE_PATH" | shasum -a 256 --check
+ruby "$ROOT_DIR/Scripts/prepare-rootfs-smoke-manifest.rb" \
+  "${SMOKE_MANIFEST_ARGS[@]}"
 
 xcrun devicectl device info details \
   --device "$DEVICE_REFERENCE" \
@@ -292,6 +305,14 @@ xcrun devicectl device copy to \
   --device "$DEVICE_ID" \
   --source "$ARCHIVE_PATH" \
   --destination "Documents/$ARCHIVE_NAME" \
+  --domain-type appDataContainer \
+  --domain-identifier "$BUNDLE_ID" \
+  --timeout "$SMOKE_TIMEOUT_SECONDS"
+
+xcrun devicectl device copy to \
+  --device "$DEVICE_ID" \
+  --source "$SMOKE_MANIFEST_PATH" \
+  --destination "Documents/$SMOKE_MANIFEST_NAME" \
   --domain-type appDataContainer \
   --domain-identifier "$BUNDLE_ID" \
   --timeout "$SMOKE_TIMEOUT_SECONDS"

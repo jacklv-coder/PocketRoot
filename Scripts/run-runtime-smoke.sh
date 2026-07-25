@@ -4,6 +4,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 ARCHIVE_PATH="${1:-${POCKETROOT_ROOTFS_ARCHIVE:-}}"
+CANDIDATE_DIRECTORY="${POCKETROOT_ROOTFS_CANDIDATE:-}"
 DEVICE_UDID="${POCKETROOT_SMOKE_DEVICE:-}"
 CREATED_DEVICE="false"
 SIMCTL_LAUNCH_PID=""
@@ -11,13 +12,13 @@ SIMCTL_LAUNCH_STATUS=""
 BUNDLE_ID="com.jacklv.PocketRootIshRuntimeSmoke"
 APP_PROCESS_NAME="PocketRootIshRuntimeSmoke"
 ARCHIVE_NAME="pocketroot-fs-v0.3.3.tar.gz"
+SMOKE_MANIFEST_NAME="pocketroot-smoke-rootfs.json"
 REPORT_NAME="pocketroot-smoke-result.json"
 PROGRESS_NAME="pocketroot-smoke-progress.txt"
-EXPECTED_SHA256="be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"
-EXPECTED_BYTE_COUNT="6581376"
 SMOKE_TIMEOUT_SECONDS="${POCKETROOT_SMOKE_TIMEOUT_SECONDS:-300}"
 DERIVED_DATA_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/PocketRootRuntimeSmoke.XXXXXX")"
 CLONED_SOURCE_PACKAGES_DIR="${POCKETROOT_CLONED_SOURCE_PACKAGES_DIR:-${TMPDIR:-/tmp}/PocketRootSharedSourcePackages}"
+SMOKE_MANIFEST_PATH="$DERIVED_DATA_ROOT/$SMOKE_MANIFEST_NAME"
 
 cleanup() {
     if [[ -n "$DEVICE_UDID" ]]; then
@@ -71,8 +72,12 @@ dump_failure_diagnostics() {
     fi
 }
 
+if [[ -n "$CANDIDATE_DIRECTORY" && -z "$ARCHIVE_PATH" ]]; then
+    ARCHIVE_PATH="$CANDIDATE_DIRECTORY/fs.tar.gz"
+fi
 if [[ -z "$ARCHIVE_PATH" || ! -f "$ARCHIVE_PATH" ]]; then
     echo "Usage: POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz $0" >&2
+    echo "   or: POCKETROOT_ROOTFS_CANDIDATE=/absolute/candidate-directory $0" >&2
     exit 2
 fi
 if [[ "$(uname -m)" != "arm64" ]]; then
@@ -84,11 +89,16 @@ if [[ ! "$SMOKE_TIMEOUT_SECONDS" =~ ^[1-9][0-9]*$ ]]; then
     exit 2
 fi
 
-if [[ "$(stat -f '%z' "$ARCHIVE_PATH")" != "$EXPECTED_BYTE_COUNT" ]]; then
-    echo "RootFS archive size does not match the pinned v0.3.3 artifact." >&2
-    exit 2
+SMOKE_MANIFEST_ARGS=(
+  --archive "$ARCHIVE_PATH"
+  --output "$SMOKE_MANIFEST_PATH"
+  --repository-root "$ROOT_DIR"
+)
+if [[ -n "$CANDIDATE_DIRECTORY" ]]; then
+    SMOKE_MANIFEST_ARGS+=(--candidate-directory "$CANDIDATE_DIRECTORY")
 fi
-echo "$EXPECTED_SHA256  $ARCHIVE_PATH" | shasum -a 256 --check
+ruby "$ROOT_DIR/Scripts/prepare-rootfs-smoke-manifest.rb" \
+  "${SMOKE_MANIFEST_ARGS[@]}"
 
 if [[ -z "$DEVICE_UDID" ]]; then
     RUNTIME_ID="$(
@@ -140,6 +150,9 @@ xcrun simctl install "$DEVICE_UDID" "$APP_PATH"
 DATA_CONTAINER="$(xcrun simctl get_app_container "$DEVICE_UDID" "$BUNDLE_ID" data)"
 mkdir -p "$DATA_CONTAINER/Documents"
 install -m 0644 "$ARCHIVE_PATH" "$DATA_CONTAINER/Documents/$ARCHIVE_NAME"
+install -m 0644 \
+  "$SMOKE_MANIFEST_PATH" \
+  "$DATA_CONTAINER/Documents/$SMOKE_MANIFEST_NAME"
 rm -f "$DATA_CONTAINER/Documents/$REPORT_NAME"
 rm -f "$DATA_CONTAINER/Documents/$PROGRESS_NAME"
 

@@ -32,6 +32,9 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
   仍保持发行阻塞。
 - 加入完整 Experimental graph 的 arm64 Simulator 与 unsigned device final-link gate。
 - 加入 repository-owned iOS 18 native smoke App 和 runner，覆盖 17 项 prepare、boot、guest、8 MiB 持续二进制输出、stdout/stderr 超限、command、取消、recovery、shutdown 与 256 MiB Simulator 生命周期峰值内存门禁。
+- native smoke 新增仓库外、未授权 RootFS 双构建候选入口：校验候选 provenance、
+  receipt、identity、伴随摘要与 `distributionAuthorized=false` 后才生成临时 sidecar；
+  解包器会在 guest 路径物化前丢弃有界 PAX 控制头，同时继续拒绝真实 traversal。
 - 加入签名 iPhone/iPad smoke runner，通过 `devicectl` 安装、注入固定 RootFS、取回报告并校验 development entitlement；iPhone 17 Pro / iOS 26.1 基线已通过。
 - 加入签名真机强制重启持久化门禁：guest 标记同步后以 SIGKILL 终止 seed PID，新 verify PID 必须复用 RootFS、恢复并清理数据，再完成标准 shutdown 与内存检查。
 - 加入签名真机受限存储故障门禁：容量预检固定注入 0 可用字节，gzip 固定在 1 字节输出后注入 ENOSPC；两次失败都必须无安装残留，随后同目录正常恢复并完成标准 smoke。

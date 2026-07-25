@@ -245,6 +245,17 @@ public struct PocketRootGzipTarExtractor: Sendable, Equatable {
             }
             expandedFileByteCount += entry.size
 
+            if entry.type == .extendedHeader {
+                // PAX control records describe the following archive entry and
+                // are never materialized as guest paths. Their conventional
+                // names may contain control-only components such as
+                // `././@PaxHeader`; discard their bounded payload before any
+                // guest path validation while retaining the entry/size limits.
+                try discardPayload(size: entry.size, from: input)
+                try discardPadding(afterPayloadSize: entry.size, from: input)
+                continue
+            }
+
             let entryURL = try safeDestinationURL(
                 for: entry.path,
                 under: destinationURL
@@ -254,20 +265,16 @@ public struct PocketRootGzipTarExtractor: Sendable, Equatable {
                 try discardPadding(afterPayloadSize: entry.size, from: input)
                 continue
             }
-            if entry.type != .extendedHeader,
-               !materializedPaths.insert(entryURL.path).inserted
-            {
+            if !materializedPaths.insert(entryURL.path).inserted {
                 throw PocketRootArchiveExtractionError.fileSystemFailure(
                     "A duplicate entry exists at \(entryURL.path)."
                 )
             }
             switch entry.type {
             case .extendedHeader:
-                // The audited archive uses per-entry PAX records only for
-                // timestamps and macOS provenance xattrs. Guest filesystem
-                // metadata lives in fakefs meta.db, so these host attributes
-                // are intentionally not restored.
-                try discardPayload(size: entry.size, from: input)
+                throw PocketRootArchiveExtractionError.invalidHeader(
+                    "PAX header reached guest materialization"
+                )
 
             case .directory:
                 try materializeParentDirectories(
