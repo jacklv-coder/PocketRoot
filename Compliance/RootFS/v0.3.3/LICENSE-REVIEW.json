@@ -1,0 +1,429 @@
+{
+  "schemaVersion": 1,
+  "archive": {
+    "version": "v0.3.3",
+    "sha256": "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"
+  },
+  "sourceAcquisitionSha256": "ef66d6907b676ac365a980ae94e6360516c8f9a188ae53a46f1fd5d1037cd4c5",
+  "status": "candidate-evidence-indexed-external-review-required",
+  "completeLicenseTextBundlePresent": false,
+  "completePackageNoticeSetPresent": false,
+  "legalReviewApproved": false,
+  "redistributionApproved": false,
+  "sources": [
+    {
+      "sourceOrigin": "alpine-baselayout",
+      "binaryPackages": [
+        "alpine-baselayout",
+        "alpine-baselayout-data"
+      ],
+      "declaredLicenseExpressions": [
+        "GPL-2.0-only"
+      ],
+      "reviewState": "engineering-indexed-legal-review-open",
+      "candidateEvidence": [
+        {
+          "sourceKind": "aports-file",
+          "path": "aports/alpine-baselayout/APKBUILD",
+          "outputPath": "evidence/alpine-baselayout/APKBUILD",
+          "byteCount": 8053,
+          "sha256": "80af34ff14881421241beca05d78b9b85fabfcf77899f078036283a961fd4870",
+          "evidenceKinds": [
+            "license-declaration"
+          ],
+          "reviewState": "unreviewed-candidate"
+        }
+      ],
+      "openReviewItems": [
+        "collect-complete-gpl-2.0-license-text",
+        "identify-package-specific-copyright-and-notice"
+      ]
+    },
+    {
+      "sourceOrigin": "alpine-keys",
+      "binaryPackages": [
+        "alpine-keys"
+      ],
+      "declaredLicenseExpressions": [
+        "MIT"
+      ],
+      "reviewState": "engineering-indexed-legal-review-open",
+      "candidateEvidence": [
+        {
+          "sourceKind": "aports-file",
+          "path": "aports/alpine-keys/APKBUILD",
+          "outputPath": "evidence/alpine-keys/APKBUILD",
+          "byteCount": 5661,
+          "sha256": "25cee7fa37277c0542da0dd9b5470ba403f338e19c19d7e6d56f2c5a3f52d946",
+          "evidenceKinds": [
+            "license-declaration"
+          ],
+          "reviewState": "unreviewed-candidate"
+        }
+      ],
+      "openReviewItems": [
+        "collect-mit-license-grant-and-copyright-notice"
+      ]
+    },
+    {
+      "sourceOrigin": "apk-tools",
+      "binaryPackages": [
+        "apk-tools"
+      ],
+      "declaredLicenseExpressions": [
+        "GPL-2.0-only"
+      ],
+      "reviewState": "engineering-indexed-legal-review-open",
+      "candidateEvidence": [
+        {
+          "sourceKind": "distfile-member",
+          "distfile": "apk-tools-v2.14.0.tar.gz",
+          "member": "apk-tools-v2.14.0/LICENSE",
+          "outputPath": "evidence/apk-tools/LICENSE",
+          "byteCount": 17622,
+          "sha256": "b3c87315aae4c9f276c37168f2655dd8bd990544d7a0bbfb929664155c7ab257",
+          "evidenceKinds": [
+            "license-text"
+          ],
+          "reviewState": "unreviewed-candidate"
+        },
+        {
+          "sourceKind": "distfile-member",
+          "distfile": "apk-tools-v2.14.0.tar.gz",
+          "member": "apk-tools-v2.14.0/AUTHORS",
+          "outputPath": "evidence/apk-tools/AUTHORS",
+          "byteCount": 61,
+          "sha256": "c238557e70557a79ea0ac30ea6d05342144f02b07ae4e9988171f70de3d66f2e",
+          "evidenceKinds": [
+            "attribution"
+          ],
+          "reviewState": "unreviewed-candidate"
+        }
+      ],
+      "openReviewItems": [
+        "confirm-package-specific-attribution-and-aports-patch-notices"
+      ]
+    },
+    {
+      "sourceOrigin": "busybox",
+      "binaryPackages": [
+        "busybox",
+        "busybox-binsh",
+        "ssl_client"
+      ],
+      "declaredLicenseExpressions": [
+        "GPL-2.0-only"
+      ],
+      "reviewState": "engineering-indexed-legal-review-open",
+      "candidateEvidence": [
+        {
+          "sourceKind": "distfile-member",
+          "distfile": "busybox-1.36.1.tar.bz2",
+          "member": "busybox-1.36.1/LICENSE",
+          "outputPath": "evidence/busybox/LICENSE",
+          "byteCount": 18348,
+          "sha256": "bbfc9843646d483c334664f651c208b9839626891d8f17604db2146962f43548",
+          "evidenceKinds": [
+            "license-text"
+          ],
+          "reviewState": "unreviewed-candidate"
+        },
+        {
+          "sourceKind": "distfile-member",
+          "distfile": "busybox-1.36.1.tar.bz2",
+          "member": "busybox-1.36.1/AUTHORS",
+          "outputPath": "evidence/busybox/AUTHORS",
+          "byteCount": 5386,
+          "sha256": "384fc3a9cfc7c435bdd9d169e5ec60a7d898d9ef9557ec859394d7f97b4b6f07",
+          "evidenceKinds": [
+            "attribution"
+          ],
+          "reviewState": "unreviewed-candidate"
+        },
+        {
+          "sourceKind": "distfile-member",
+          "distfile": "busybox-1.36.1.tar.bz2",
+          "member": "busybox-1.36.1/archival/libarchive/bz/LICENSE",
+          "outputPath": "evidence/busybox/bzip2-LICENSE",
+          "byteCount": 1999,
+          "sha256": "b5a136ed67798e51fe2e0ca0b2a21cb01b904ff0c9f7d563a6292e276607e58f",
+          "evidenceKinds": [
+            "license-text",
+            "attribution"
+          ],
+          "reviewState": "unreviewed-candidate"
+        }
+      ],
+      "openReviewItems": [
+        "review-bundled-third-party-license-and-attribution-coverage",
+        "confirm-aports-patch-notices"
+      ]
+    },
+    {
+      "sourceOrigin": "ca-certificates",
+      "binaryPackages": [
+        "ca-certificates-bundle"
+      ],
+      "declaredLicenseExpressions": [
+        "MPL-2.0 AND MIT"
+      ],
+      "reviewState": "engineering-indexed-legal-review-open",
+      "candidateEvidence": [
+        {
+          "sourceKind": "distfile-member",
+          "distfile": "ca-certificates-20230506.tar.bz2",
+          "member": "ca-certificates-20230506/certdata.txt",
+          "outputPath": "evidence/ca-certificates/certdata.txt",
+          "byteCount": 1324018,
+          "sha256": "c47475103fb05bb562bbadff0d1e72346b03236154e1448a6ca191b740f83507",
+          "evidenceKinds": [
+            "inline-license-notice",
+            "attribution"
+          ],
+          "reviewState": "unreviewed-candidate"
+        },
+        {
+          "sourceKind": "distfile-member",
+          "distfile": "ca-certificates-20230506.tar.bz2",
+          "member": "ca-certificates-20230506/mk-ca-bundle.pl",
+          "outputPath": "evidence/ca-certificates/mk-ca-bundle.pl",
+          "byteCount": 20863,
+          "sha256": "9d828d97053868907ce6229d132132f0f26772393405dadd037b6f85a5c5b219",
+          "evidenceKinds": [
+            "inline-license-notice",
+            "attribution"
+          ],
+          "reviewState": "unreviewed-candidate"
+        }
+      ],
+      "openReviewItems": [
+        "collect-complete-mpl-2.0-license-text",
+        "confirm-certificate-attribution-and-trust-store-requirements",
+        "confirm-mit-script-notices-relevant-to-shipped-bundle"
+      ]
+    },
+    {
+      "sourceOrigin": "libc-dev",
+      "binaryPackages": [
+        "libc-utils"
+      ],
+      "declaredLicenseExpressions": [
+        "BSD-2-Clause AND BSD-3-Clause"
+      ],
+      "reviewState": "engineering-indexed-legal-review-open",
+      "candidateEvidence": [
+        {
+          "sourceKind": "aports-file",
+          "path": "aports/libc-dev/APKBUILD",
+          "outputPath": "evidence/libc-dev/APKBUILD",
+          "byteCount": 1722,
+          "sha256": "10e805d10ff77425e131296b7c79bd443e8f08325300dc2933ab7eb4deaa5ebc",
+          "evidenceKinds": [
+            "license-declaration"
+          ],
+          "reviewState": "unreviewed-candidate"
+        },
+        {
+          "sourceKind": "aports-file",
+          "path": "aports/libc-dev/sys-queue.h",
+          "outputPath": "evidence/libc-dev/sys-queue.h",
+          "byteCount": 30075,
+          "sha256": "c13407edd0e33be73cae72514cb234f8612e1c0e54401c9448daffd3a240158b",
+          "evidenceKinds": [
+            "inline-license-notice",
+            "attribution"
+          ],
+          "reviewState": "unreviewed-candidate"
+        },
+        {
+          "sourceKind": "aports-file",
+          "path": "aports/libc-dev/sys-tree.h",
+          "outputPath": "evidence/libc-dev/sys-tree.h",
+          "byteCount": 26161,
+          "sha256": "e0ea17940260f9c1fdd2d35f74eec141d21f09844eaea91131993cb950901a16",
+          "evidenceKinds": [
+            "inline-license-notice",
+            "attribution"
+          ],
+          "reviewState": "unreviewed-candidate"
+        }
+      ],
+      "openReviewItems": [
+        "confirm-empty-libc-utils-subpackage-license-obligations",
+        "confirm-bsd-2-clause-and-bsd-3-clause-notice-coverage"
+      ]
+    },
+    {
+      "sourceOrigin": "musl",
+      "binaryPackages": [
+        "musl",
+        "musl-utils"
+      ],
+      "declaredLicenseExpressions": [
+        "MIT",
+        "MIT AND BSD-2-Clause AND GPL-2.0-or-later"
+      ],
+      "reviewState": "engineering-indexed-legal-review-open",
+      "candidateEvidence": [
+        {
+          "sourceKind": "distfile-member",
+          "distfile": "musl-83b858f83b658bd34eca5d8ad4d145f673ae7e5e.tar.gz",
+          "member": "83b858f83b658bd34eca5d8ad4d145f673ae7e5e/COPYRIGHT",
+          "outputPath": "evidence/musl/COPYRIGHT",
+          "byteCount": 6204,
+          "sha256": "f9bc4423732350eb0b3f7ed7e91d530298476f8fec0c6c427a1c04ade22655af",
+          "evidenceKinds": [
+            "license-text",
+            "attribution"
+          ],
+          "reviewState": "unreviewed-candidate"
+        },
+        {
+          "sourceKind": "aports-file",
+          "path": "aports/musl/APKBUILD",
+          "outputPath": "evidence/musl/APKBUILD",
+          "byteCount": 5345,
+          "sha256": "041bcf81a5c9ddae5dfcdb0728eb2a0331f49cb0eaf18a02832e9af9b2ebbb8e",
+          "evidenceKinds": [
+            "license-declaration"
+          ],
+          "reviewState": "unreviewed-candidate"
+        },
+        {
+          "sourceKind": "aports-file",
+          "path": "aports/musl/getconf.c",
+          "outputPath": "evidence/musl/getconf.c",
+          "byteCount": 11614,
+          "sha256": "d87d0cbb3690ae2c5d8cc218349fd8278b93855dd625deaf7ae50e320aad247c",
+          "evidenceKinds": [
+            "inline-license-notice",
+            "attribution"
+          ],
+          "reviewState": "unreviewed-candidate"
+        },
+        {
+          "sourceKind": "aports-file",
+          "path": "aports/musl/getent.c",
+          "outputPath": "evidence/musl/getent.c",
+          "byteCount": 11656,
+          "sha256": "002c1a216f6bed0f816ab1cfebde94a0b127193ef410c36b2190599983e015b8",
+          "evidenceKinds": [
+            "inline-license-notice",
+            "attribution"
+          ],
+          "reviewState": "unreviewed-candidate"
+        },
+        {
+          "sourceKind": "aports-file",
+          "path": "aports/musl/iconv.c",
+          "outputPath": "evidence/musl/iconv.c",
+          "byteCount": 2577,
+          "sha256": "f79a2930a2e5bb0624321589edf8b889d1e9b603e01e6b7ae214616605b3fdd7",
+          "evidenceKinds": [
+            "inline-license-notice",
+            "attribution"
+          ],
+          "reviewState": "unreviewed-candidate"
+        }
+      ],
+      "openReviewItems": [
+        "confirm-third-party-musl-files-and-aports-helper-notice-coverage"
+      ]
+    },
+    {
+      "sourceOrigin": "openssl",
+      "binaryPackages": [
+        "libcrypto3",
+        "libssl3"
+      ],
+      "declaredLicenseExpressions": [
+        "Apache-2.0"
+      ],
+      "reviewState": "engineering-indexed-legal-review-open",
+      "candidateEvidence": [
+        {
+          "sourceKind": "distfile-member",
+          "distfile": "openssl-3.1.4.tar.gz",
+          "member": "openssl-3.1.4/LICENSE.txt",
+          "outputPath": "evidence/openssl/LICENSE.txt",
+          "byteCount": 10175,
+          "sha256": "7d5450cb2d142651b8afa315b5f238efc805dad827d91ba367d8516bc9d49e7a",
+          "evidenceKinds": [
+            "license-text"
+          ],
+          "reviewState": "unreviewed-candidate"
+        },
+        {
+          "sourceKind": "distfile-member",
+          "distfile": "openssl-3.1.4.tar.gz",
+          "member": "openssl-3.1.4/AUTHORS.md",
+          "outputPath": "evidence/openssl/AUTHORS.md",
+          "byteCount": 990,
+          "sha256": "5076ca441daef7fb35e904c2ac070880c7b3d58300a5a6aecac41e8f525f4412",
+          "evidenceKinds": [
+            "attribution"
+          ],
+          "reviewState": "unreviewed-candidate"
+        }
+      ],
+      "openReviewItems": [
+        "confirm-required-apache-notice-and-attribution-material"
+      ]
+    },
+    {
+      "sourceOrigin": "pax-utils",
+      "binaryPackages": [
+        "scanelf"
+      ],
+      "declaredLicenseExpressions": [
+        "GPL-2.0-only"
+      ],
+      "reviewState": "engineering-indexed-legal-review-open",
+      "candidateEvidence": [
+        {
+          "sourceKind": "distfile-member",
+          "distfile": "pax-utils-1.3.7.tar.xz",
+          "member": "pax-utils-1.3.7/COPYING",
+          "outputPath": "evidence/pax-utils/COPYING",
+          "byteCount": 18011,
+          "sha256": "e6d6a009505e345fe949e1310334fcb0747f28dae2856759de102ab66b722cb4",
+          "evidenceKinds": [
+            "license-text"
+          ],
+          "reviewState": "unreviewed-candidate"
+        }
+      ],
+      "openReviewItems": [
+        "confirm-package-specific-copyright-and-aports-patch-notices"
+      ]
+    },
+    {
+      "sourceOrigin": "zlib",
+      "binaryPackages": [
+        "zlib"
+      ],
+      "declaredLicenseExpressions": [
+        "Zlib"
+      ],
+      "reviewState": "engineering-indexed-legal-review-open",
+      "candidateEvidence": [
+        {
+          "sourceKind": "distfile-member",
+          "distfile": "zlib-1.3.1.tar.gz",
+          "member": "zlib-1.3.1/LICENSE",
+          "outputPath": "evidence/zlib/LICENSE",
+          "byteCount": 1002,
+          "sha256": "845efc77857d485d91fb3e0b884aaa929368c717ae8186b66fe1ed2495753243",
+          "evidenceKinds": [
+            "license-text",
+            "attribution"
+          ],
+          "reviewState": "unreviewed-candidate"
+        }
+      ],
+      "openReviewItems": [
+        "confirm-package-specific-attribution-material"
+      ]
+    }
+  ]
+}

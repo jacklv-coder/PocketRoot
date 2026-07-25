@@ -5,7 +5,7 @@
 A RootFS is an external supply-chain input, not a normal fixture. PocketRoot commits immutable metadata and secure install code, not the payload.
 
 > [!WARNING]
-> The pinned v0.3.3 archive now has a reproducible package inventory, SPDX SBOM, default-configuration evidence, and a source-acquisition manifest covering the complete inventory. License texts, package notices, corresponding-source delivery review, and distribution approval remain open. The URL and commands below support audit and local development; they do not grant redistribution rights.
+> The pinned v0.3.3 archive now has a reproducible package inventory, SPDX SBOM, default-configuration evidence, a source-acquisition manifest covering the complete inventory, and an index of 21 license/NOTICE candidates across all 10 source origins. Package-level review items, a complete NOTICE set, corresponding-source delivery review, and distribution approval remain open. The URL and commands below support audit and local development; they do not grant redistribution rights.
 
 ## Pinned manifest
 
@@ -73,6 +73,21 @@ ruby Scripts/prepare-rootfs-source-bundle.rb \
   --verify /absolute/new/path/outside-the-repository/rootfs-v0.3.3-source-review
 ```
 
+After that source-review directory verifies, extract the 21 pinned
+license/attribution candidates into another directory outside the repository:
+
+```bash
+ruby Scripts/prepare-rootfs-license-review.rb --validate-only
+
+ruby Scripts/prepare-rootfs-license-review.rb \
+  --source-bundle /absolute/new/path/outside-the-repository/rootfs-v0.3.3-source-review \
+  --output /absolute/new/path/outside-the-repository/rootfs-v0.3.3-license-review
+
+ruby Scripts/prepare-rootfs-license-review.rb \
+  --source-bundle /absolute/new/path/outside-the-repository/rootfs-v0.3.3-source-review \
+  --verify /absolute/new/path/outside-the-repository/rootfs-v0.3.3-license-review
+```
+
 The script pins and verifies 10 aports source snapshots and 9 upstream
 distfiles. The canonical aports identity covers entry types, paths,
 regular-file permission bits, and content digests; materialization preserves
@@ -80,10 +95,11 @@ those permission bits. `--verify` rechecks that identity, the directory set,
 and symbolic-link targets. The script does not execute `APKBUILD` or automatically
 add output to the App, Git, or a CI artifact. This closes a reproducible
 engineering acquisition workflow, not legal review. The RootFS archive
-contains no identifiable LICENSE/COPYING/NOTICE files, and the external review
-directory still requires license-text, package copyright/notice, modification,
-build-completeness, source-offer, and legal review before it can serve as
-corresponding-source delivery material.
+contains no identifiable LICENSE/COPYING/NOTICE files. The candidate tool
+rechecks extracted byte counts, SHA-256 digests, the exact path set, and the
+no-link/special-node boundary, but every package-level item in
+`LICENSE-REVIEW.json` remains open. Its output is not a completed NOTICE or
+corresponding-source delivery bundle.
 
 Do not put it in package resources, Demo resources, Git, or Git LFS.
 

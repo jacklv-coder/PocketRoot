@@ -32,9 +32,12 @@ Generated from the exact `v0.3.3` archive with SHA-256
 No file whose path identifies it as LICENSE, COPYING, NOTICE, or a license-directory member was found in the guest template.
 
 Declared identifiers and expressions are recorded in
-`LICENSE-INVENTORY.json`. Standard license texts and package-specific
-copyright/notice material have not yet been collected into a reviewed
-bundle.
+`LICENSE-INVENTORY.json`. `LICENSE-REVIEW.json` pins 21
+candidate license, attribution, declaration, and inline-notice files across
+all 10 source origins. The external review tool
+extracts and verifies those candidates from the pinned source-review bundle.
+Every per-origin review item remains open; this is not a completed or
+legally approved license/NOTICE bundle.
 
 ## Corresponding-source status
 

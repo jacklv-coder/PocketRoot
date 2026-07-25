@@ -35,10 +35,12 @@ origins, an SPDX 2.3 JSON SBOM, declared-license/attribution inventories, and
 the default `apk`, repository, and DNS snapshot. No identifiable
 LICENSE/COPYING/NOTICE file was found in the archive. A checksum-pinned
 aports-snapshot/upstream-distfile manifest covers the inventory, and an
-outside-repository materializer creates reproducible review inputs. Its
-license/NOTICE, modification, build-completeness, source-offer, and legal
-reviews remain open, so the output is not approved corresponding-source
-delivery.
+outside-repository materializer creates reproducible review inputs. A second
+outside-repository tool pins, extracts, and verifies 21 license, attribution,
+declaration, and inline-notice candidates across all 10 source origins.
+Package-level open items, modification, build-completeness, source-offer, and
+legal reviews remain unresolved, so the output is neither a complete NOTICE
+set nor approved corresponding-source delivery.
 
 ## Repository safeguards
 
@@ -46,7 +48,8 @@ The RootFS is not committed or bundled. Upstream source, nested gitlink, and
 hashes are pinned. Experimental products are excluded from the umbrella.
 Composition accepts local input only. CI downloads only for ephemeral
 validation and regenerates the package inventory, SPDX SBOM, source locators,
-source-acquisition manifest, declared-license data, and default configuration under
+source-acquisition manifest, license/NOTICE candidate index, declared-license
+data, and default configuration under
 [`Compliance/RootFS/v0.3.3`](../../Compliance/RootFS/v0.3.3/README.md).
 CI offline-tests checksum verification, path isolation, and safe extraction for
 the external source-review materializer; it does not upload source material.

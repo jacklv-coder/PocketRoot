@@ -26,7 +26,10 @@
   "licenseOrNoticeFilesFoundInGuestTemplate": [
 
   ],
+  "indexedExternalReviewCandidates": 21,
+  "sourceOriginsWithOpenReviewItems": 10,
   "completeLicenseTextBundlePresent": false,
   "completePackageNoticeSetPresent": false,
-  "status": "declared-identifiers-recorded-text-and-notice-collection-open"
+  "legalReviewApproved": false,
+  "status": "candidate-evidence-indexed-external-review-required"
 }
