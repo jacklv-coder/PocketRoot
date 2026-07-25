@@ -38,13 +38,15 @@
     "installedBinaryPackages": 15,
     "sourceOrigins": 10,
     "declaredLicenseExpressions": 7,
-    "licenseOrNoticeFilesInGuestTemplate": 0
+    "licenseOrNoticeFilesInGuestTemplate": 0,
+    "indexedExternalLicenseReviewCandidates": 21
   },
   "engineeringStatus": {
     "completeInstalledPackageInventory": true,
     "machineReadableSPDXSBOM": true,
     "runtimeConfigurationRecorded": true,
     "completeSourceAcquisitionManifest": true,
+    "completeLicenseReviewCandidateIndex": true,
     "completeLicenseAndNoticeBundle": false,
     "correspondingSourceBundleCollected": false,
     "redistributionApproved": false

@@ -98,7 +98,7 @@ This establishes the current Simulator, minimum-Xcode 16, and single-iPhone one-
 | Minimum Xcode 16 native | Passed | Xcode 16.0 / iOS 18.0 SDK completed RootFS install, Simulator/device final links, and the 17-check native smoke |
 | App lifecycle and memory | In progress | Simulator and Jack iPhone have 256 MiB `ru_maxrss` gates; physical process suspend/resume, UIKit foreground/background, post-termination data recovery, and bounded App-delegate memory-warning recovery passed; add real memory-pressure/jetsam evidence |
 | RootFS ENOSPC/power faults | In progress | Peak-space preflight, full ENOSPC, seven persistence barriers, deterministic power-loss cuts, and bounded capacity/ENOSPC cleanup recovery on Jack iPhone are covered; add real storage-pressure/power-cut evidence |
-| License-reviewed RootFS | Blocked | The 15-package inventory, 10 source origins, SPDX SBOM, default-configuration evidence, and checksum-pinned external source-acquisition workflow are complete; add license/NOTICE and corresponding-source delivery review plus authorized approval |
+| License-reviewed RootFS | Blocked | The 15-package inventory, 10 source origins, SPDX SBOM, default-configuration evidence, external source-acquisition workflow, and 21 package-level license/NOTICE candidate records are complete; close open review items, finish corresponding-source delivery review, and obtain authorized approval |
 | App Store 2.5.2 | Blocked | Written guest download/execute policy decision |
 
 ### Next runtime sequence

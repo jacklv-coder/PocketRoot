@@ -8,6 +8,7 @@ require "pathname"
 require "rubygems/package"
 require "uri"
 require "zlib"
+require_relative "rootfs-license-review"
 require_relative "rootfs-source-acquisition"
 
 ARCHIVE_VERSION = "v0.3.3"
@@ -37,6 +38,8 @@ def parse_options
     output: "Compliance/RootFS/v0.3.3",
     source_acquisition:
       "Compliance/RootFS/v0.3.3/SOURCE-ACQUISITION.json",
+    license_review:
+      "Compliance/RootFS/v0.3.3/LICENSE-REVIEW.json",
     check: false
   }
 
@@ -55,6 +58,12 @@ def parse_options
     ) do |path|
       options[:source_acquisition] = path
     end
+    commands.on(
+      "--license-review PATH",
+      "Pinned license-review candidate manifest"
+    ) do |path|
+      options[:license_review] = path
+    end
     commands.on("--check", "Compare generated evidence without writing files") do
       options[:check] = true
     end
@@ -65,6 +74,21 @@ def parse_options
   raise OptionParser::InvalidOption, ARGV.join(" ") unless ARGV.empty?
 
   options
+end
+
+def load_json_document(path, label)
+  document_path = Pathname(path)
+  unless document_path.file?
+    raise ComplianceError, "#{label} is not a regular file: #{path}"
+  end
+
+  contents = document_path.binread
+  {
+    contents: contents,
+    document: JSON.parse(contents)
+  }
+rescue JSON::ParserError => error
+  raise ComplianceError, "#{label} is invalid JSON: #{error.message}"
 end
 
 def verify_archive(path)
@@ -87,13 +111,9 @@ def verify_archive(path)
 end
 
 def verify_source_acquisition(path)
-  manifest_path = Pathname(path)
-  unless manifest_path.file?
-    raise ComplianceError, "Source-acquisition manifest is not a regular file: #{path}"
-  end
-
-  contents = manifest_path.binread
-  manifest = JSON.parse(contents)
+  loaded = load_json_document(path, "Source-acquisition manifest")
+  contents = loaded.fetch(:contents)
+  manifest = loaded.fetch(:document)
   archive = manifest["archive"]
   unless manifest["schemaVersion"] == 1 &&
     archive.is_a?(Hash) &&
@@ -109,8 +129,6 @@ def verify_source_acquisition(path)
     contents: contents,
     document: manifest
   }
-rescue JSON::ParserError => error
-  raise ComplianceError, "Source-acquisition manifest is invalid JSON: #{error.message}"
 end
 
 def license_or_notice_path?(name)
@@ -407,7 +425,7 @@ def runtime_configuration(content, archive_paths, os_release)
   }
 end
 
-def license_inventory(packages, license_notice_paths)
+def license_inventory(packages, license_notice_paths, license_review_entries)
   expressions = Hash.new(0)
   packages.each { |package| expressions[package[:license]] += 1 }
   identifiers = expressions.keys.flat_map do |expression|
@@ -423,13 +441,24 @@ def license_inventory(packages, license_notice_paths)
     "declaredLicenseExpressions" => expressions.sort.to_h,
     "declaredLicenseIdentifiers" => identifiers,
     "licenseOrNoticeFilesFoundInGuestTemplate" => license_notice_paths,
+    "indexedExternalReviewCandidates" =>
+      license_review_entries.sum do |entry|
+        entry.fetch("candidateEvidence").length
+      end,
+    "sourceOriginsWithOpenReviewItems" => license_review_entries.length,
     "completeLicenseTextBundlePresent" => false,
     "completePackageNoticeSetPresent" => false,
-    "status" => "declared-identifiers-recorded-text-and-notice-collection-open"
+    "legalReviewApproved" => false,
+    "status" => "candidate-evidence-indexed-external-review-required"
   }
 end
 
-def notice_markdown(packages, source_entries, license_notice_paths)
+def notice_markdown(
+  packages,
+  source_entries,
+  license_notice_paths,
+  license_review_entries
+)
   package_rows = packages.map do |package|
     "| `#{package[:name]}` | `#{package[:version]}` | " \
       "`#{package[:license]}` | `#{package[:source_origin]}` | " \
@@ -448,6 +477,9 @@ def notice_markdown(packages, source_entries, license_notice_paths)
       "The archive contains these candidate files: " \
         "#{license_notice_paths.map { |path| "`#{path}`" }.join(", ")}."
     end
+  candidate_count = license_review_entries.sum do |entry|
+    entry.fetch("candidateEvidence").length
+  end
 
   <<~MARKDOWN
     # Pinned RootFS attribution inventory
@@ -470,9 +502,12 @@ def notice_markdown(packages, source_entries, license_notice_paths)
     #{found_text}
 
     Declared identifiers and expressions are recorded in
-    `LICENSE-INVENTORY.json`. Standard license texts and package-specific
-    copyright/notice material have not yet been collected into a reviewed
-    bundle.
+    `LICENSE-INVENTORY.json`. `LICENSE-REVIEW.json` pins #{candidate_count}
+    candidate license, attribution, declaration, and inline-notice files across
+    all #{license_review_entries.length} source origins. The external review tool
+    extracts and verifies those candidates from the pinned source-review bundle.
+    Every per-origin review item remains open; this is not a completed or
+    legally approved license/NOTICE bundle.
 
     ## Corresponding-source status
 
@@ -498,7 +533,7 @@ def notice_markdown(packages, source_entries, license_notice_paths)
   MARKDOWN
 end
 
-def evidence(packages, source_entries, inspected)
+def evidence(packages, source_entries, inspected, license_review_entries)
   {
     "schemaVersion" => 1,
     "generatedAt" => GENERATED_AT,
@@ -523,13 +558,18 @@ def evidence(packages, source_entries, inspected)
       "declaredLicenseExpressions" =>
         packages.map { |package| package[:license] }.uniq.length,
       "licenseOrNoticeFilesInGuestTemplate" =>
-        inspected.fetch(:license_notice_paths).length
+        inspected.fetch(:license_notice_paths).length,
+      "indexedExternalLicenseReviewCandidates" =>
+        license_review_entries.sum do |entry|
+          entry.fetch("candidateEvidence").length
+        end
     },
     "engineeringStatus" => {
       "completeInstalledPackageInventory" => true,
       "machineReadableSPDXSBOM" => true,
       "runtimeConfigurationRecorded" => true,
       "completeSourceAcquisitionManifest" => true,
+      "completeLicenseReviewCandidateIndex" => true,
       "completeLicenseAndNoticeBundle" => false,
       "correspondingSourceBundleCollected" => false,
       "redistributionApproved" => false
@@ -537,7 +577,7 @@ def evidence(packages, source_entries, inspected)
   }
 end
 
-def build_outputs(archive, source_acquisition)
+def build_outputs(archive, source_acquisition, license_review)
   inspected = inspect_archive(archive)
   content = inspected.fetch(:content)
   packages = parse_installed_database(content.fetch(:installed_database))
@@ -567,15 +607,34 @@ def build_outputs(archive, source_acquisition)
     raise ComplianceError,
       "Invalid source-acquisition manifest: #{error.message}"
   end
+  begin
+    license_review_entries = RootFSLicenseReview.validate_manifest(
+      license_review.fetch(:document),
+      source_acquisition.fetch(:document),
+      generated_source_inventory,
+      source_acquisition_bytes: source_acquisition.fetch(:contents)
+    )
+  rescue RootFSLicenseReview::ValidationError => error
+    raise ComplianceError,
+      "Invalid license-review manifest: #{error.message}"
+  end
   outputs = {
-    "EVIDENCE.json" => pretty_json(evidence(packages, source_entries, inspected)),
-    "LICENSE-INVENTORY.json" => pretty_json(
-      license_inventory(packages, inspected.fetch(:license_notice_paths))
+    "EVIDENCE.json" => pretty_json(
+      evidence(packages, source_entries, inspected, license_review_entries)
     ),
+    "LICENSE-INVENTORY.json" => pretty_json(
+      license_inventory(
+        packages,
+        inspected.fetch(:license_notice_paths),
+        license_review_entries
+      )
+    ),
+    "LICENSE-REVIEW.json" => license_review.fetch(:contents),
     "NOTICE.md" => notice_markdown(
       packages,
       source_entries,
-      inspected.fetch(:license_notice_paths)
+      inspected.fetch(:license_notice_paths),
+      license_review_entries
     ),
     "PACKAGE-INVENTORY.tsv" => package_inventory_tsv(packages),
     "RUNTIME-CONFIGURATION.json" => pretty_json(
@@ -631,9 +690,13 @@ end
 begin
   options = parse_options
   archive = verify_archive(options.fetch(:archive))
+  license_review = load_json_document(
+    options.fetch(:license_review),
+    "License-review manifest"
+  )
   source_acquisition =
     verify_source_acquisition(options.fetch(:source_acquisition))
-  outputs = build_outputs(archive, source_acquisition)
+  outputs = build_outputs(archive, source_acquisition, license_review)
   output_directory = Pathname(options.fetch(:output))
 
   if options.fetch(:check)
