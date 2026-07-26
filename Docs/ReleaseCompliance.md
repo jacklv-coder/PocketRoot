@@ -77,8 +77,10 @@ aports snapshot/upstream distfile 获取清单和仓库外 materializer，并固
 21/21 个候选均已工程复核，`libc-dev`、`zlib` 的索引项已关闭，另外 8 个 source
 origin 仍有逐包未决项。仓库现已为这 8 个 origin 固定外置候选包：8 份远端
 许可证/attribution 材料、46 份 aports 补充文件和全部既有复核证据；工具可在
-仓库外原子生成并复验，但材料尚未通过工程/法律批准。修改与构建完整性、源码
-提供方式和法律审查仍未完成，不能视为完整 NOTICE 或已批准的对应源码交付。
+仓库外原子生成并复验。固定结果清单把工程复核绑定到精确的 75 文件 payload
+tree；`apk-tools`、`pax-utils` 的候选材料工程项已关闭，另外 6 个 origin 仍需
+补逐包材料。修改与构建完整性、源码提供方式和法律审查仍未完成，不能视为完整
+NOTICE 或已批准的对应源码交付。
 
 ## 当前仓库保护
 
@@ -177,6 +179,8 @@ Alpine `apk` 可以下载、安装和执行新增代码。即使初始 RootFS �
 - [x] 对固定的 21 个 license/NOTICE 候选完成 checksum-bound 工程复核。
 - [x] 为剩余 8 个 source origin 建立 checksum-bound 外置候选包索引与可复验
   materializer；payload 不提交且批准门禁保持关闭。
+- [x] 对外置候选包的 75 个 payload 完成 checksum-bound 工程复核并固定结果；
+  2 个 origin 的候选材料工程项关闭，6 个仍需补逐包材料。
 - [ ] 收集 license text 和 NOTICE。
 - [ ] 建立 copyleft corresponding source bundle。
 - [x] 固定 DNS、repository 和 package-manager 默认配置事实。

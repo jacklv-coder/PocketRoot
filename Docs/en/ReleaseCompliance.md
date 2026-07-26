@@ -43,10 +43,13 @@ A pinned result manifest records engineering review of all 21 candidates.
 still have package-level follow-up. The repository now pins an external
 candidate bundle for those origins: 8 remote license/attribution payloads,
 46 supplemental aports files, and all existing reviewed evidence. The tool can
-atomically materialize and re-verify it outside the repository, but engineering
-and legal approval remain open. Modification, build-completeness, source-offer,
-and legal reviews remain unresolved, so the output is neither a complete
-NOTICE set nor approved corresponding-source delivery.
+atomically materialize and re-verify it outside the repository. A pinned
+results manifest binds engineering review to the exact 75-file payload tree.
+`apk-tools` and `pax-utils` have no remaining candidate-material engineering
+items; six origins still need package-specific material. Modification,
+build-completeness, source-offer, and legal reviews remain unresolved, so the
+output is neither a complete NOTICE set nor approved corresponding-source
+delivery.
 
 ## Repository safeguards
 
@@ -119,6 +122,9 @@ The current code does not provide a complete product-level privacy policy.
 - [x] Index a checksum-bound external candidate bundle and reproducible
   materializer for the eight remaining origins; payloads stay uncommitted and
   approval gates stay closed.
+- [x] Complete checksum-bound engineering review of all 75 external candidate
+  payloads; two origins have no remaining candidate-material engineering items
+  and six still need package-specific material.
 - [ ] Collect license texts and NOTICE files.
 - [ ] Establish a corresponding-source bundle for copyleft components.
 - [x] Record default DNS, repository, and package-manager facts.

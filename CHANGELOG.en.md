@@ -41,6 +41,11 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   origins. It indexes 8 remote license/attribution payloads, 46 aports files,
   and the 21 existing evidence files for complete re-verification without
   committing payloads or opening engineering, legal, or redistribution gates.
+- `LICENSE-NOTICE-REVIEW-RESULTS.json` and a strict external payload-tree
+  verifier. All 75 candidate payloads now have checksum-bound engineering
+  review; `apk-tools` and `pax-utils` have no remaining candidate-material
+  engineering items, six origins still need package-specific material, and
+  legal and redistribution gates remain closed.
 - arm64 Simulator and unsigned-device final-link gates for the full Experimental graph.
 - Repository iOS 18 native smoke covering 17 preparation, boot, guest, 8 MiB sustained binary-output, stdout/stderr overflow, command, cancellation, recovery, shutdown, and 256 MiB Simulator lifecycle peak-memory checks.
 - A repository-external, unapproved RootFS double-build candidate path for the
