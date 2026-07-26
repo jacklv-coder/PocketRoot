@@ -68,6 +68,119 @@ class RootFSSourceBundleTests < Minitest::Test
     assert_includes verify_stdout, "Verified materialized RootFS source-review bundle"
   end
 
+  def test_materializes_from_checksum_verified_download_cache
+    cache = @temporary_directory.join("download-cache")
+    cache.join("downloads/aports").mkpath
+    cache.join("distfiles/demo").mkpath
+    FileUtils.copy_file(
+      @snapshot,
+      cache.join("downloads/aports/demo.tar.gz")
+    )
+    FileUtils.copy_file(
+      @distfile,
+      cache.join("distfiles/demo/demo-source.txt")
+    )
+    @snapshot.delete
+    @distfile.delete
+    output = @temporary_directory.join("cached-output")
+
+    stdout, stderr, status = run_script(
+      "--download-cache",
+      cache.to_s,
+      "--output",
+      output.to_s
+    )
+
+    assert status.success?, "#{stdout}\n#{stderr}"
+    assert_equal "pkgname=demo\n",
+      output.join("aports/demo/APKBUILD").binread
+    assert_equal "demo source\n",
+      output.join("distfiles/demo/demo-source.txt").binread
+    _verify_stdout, verify_stderr, verify_status =
+      run_script("--verify", output.to_s)
+    assert verify_status.success?, verify_stderr
+  end
+
+  def test_rejects_download_cache_digest_mismatch_without_output
+    cache = @temporary_directory.join("download-cache-mismatch")
+    cache.join("downloads/aports").mkpath
+    cache.join("distfiles/demo").mkpath
+    cache.join("downloads/aports/demo.tar.gz").binwrite("wrong\n")
+    FileUtils.copy_file(
+      @distfile,
+      cache.join("distfiles/demo/demo-source.txt")
+    )
+    output = @temporary_directory.join("cache-mismatch-output")
+
+    _stdout, stderr, status = run_script(
+      "--download-cache",
+      cache.to_s,
+      "--output",
+      output.to_s
+    )
+
+    refute status.success?
+    assert_includes stderr, "SHA-512 mismatch"
+    refute output.exist?
+  end
+
+  def test_rejects_symlink_in_download_cache
+    cache = @temporary_directory.join("download-cache-symlink")
+    cache.join("downloads/aports").mkpath
+    cache.join("distfiles/demo").mkpath
+    cache.join("downloads/aports/demo.tar.gz").make_symlink(@snapshot)
+    FileUtils.copy_file(
+      @distfile,
+      cache.join("distfiles/demo/demo-source.txt")
+    )
+    output = @temporary_directory.join("cache-symlink-output")
+
+    _stdout, stderr, status = run_script(
+      "--download-cache",
+      cache.to_s,
+      "--output",
+      output.to_s
+    )
+
+    refute status.success?
+    assert_includes stderr, "must not contain a symlink"
+    refute output.exist?
+  end
+
+  def test_rejects_repository_local_download_cache
+    output = @temporary_directory.join("repository-cache-output")
+
+    _stdout, stderr, status = run_script(
+      "--download-cache",
+      REPOSITORY_ROOT.to_s,
+      "--output",
+      output.to_s
+    )
+
+    refute status.success?
+    assert_includes stderr,
+      "--download-cache must be outside the repository"
+    refute output.exist?
+  end
+
+  def test_rejects_output_nested_in_download_cache
+    cache = @temporary_directory.join("overlapping-cache")
+    cache.mkpath
+    output = cache.join("nested-output")
+
+    _stdout, stderr, status = run_script(
+      "--download-cache",
+      cache.to_s,
+      "--output",
+      output.to_s
+    )
+
+    refute status.success?
+    assert_includes stderr,
+      "--output must not overlap an input directory"
+    refute output.exist?
+  end
+
   def test_materialization_preserves_and_verifies_executable_mode
     write_snapshot(
       @snapshot,

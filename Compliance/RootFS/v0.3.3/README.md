@@ -104,6 +104,28 @@ ruby Scripts/prepare-rootfs-source-bundle.rb \
   --verify /absolute/new/path/outside-the-repository/rootfs-v0.3.3-source-review
 ```
 
+网络不可用时，可把另一份 source-review 目录或同布局的只读目录作为下载缓存：
+
+When the network is unavailable, another source-review directory or a
+read-only directory with the same cache layout can supply the downloads:
+
+```bash
+ruby Scripts/prepare-rootfs-source-bundle.rb \
+  --download-cache /absolute/existing/rootfs-v0.3.3-source-review \
+  --output /absolute/new/path/outside-the-repository/rootfs-v0.3.3-source-review
+```
+
+缓存布局为 `downloads/aports/<source-origin>.tar.gz` 与
+`distfiles/<source-origin>/<filename>`。缓存只替代网络传输；工具仍拒绝符号链接和
+仓库内/重叠路径，限制每个输入大小，核对固定 SHA-512，并重新校验解包后的规范化
+aports tree 后才原子提升输出。
+
+The cache layout is `downloads/aports/<source-origin>.tar.gz` and
+`distfiles/<source-origin>/<filename>`. It replaces network transport only:
+the tool still rejects symlinks and repository-local or overlapping paths,
+bounds every input, verifies pinned SHA-512 digests, and revalidates each
+canonical extracted aports tree before atomically promoting the output.
+
 `--verify` 同时核对所有普通文件摘要、目录集合和符号链接目标。该输出不会被 App、
 Git 或 CI artifact 自动打包或上传。
 

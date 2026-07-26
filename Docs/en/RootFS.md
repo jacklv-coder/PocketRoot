@@ -73,6 +73,22 @@ ruby Scripts/prepare-rootfs-source-bundle.rb \
   --verify /absolute/new/path/outside-the-repository/rootfs-v0.3.3-source-review
 ```
 
+An existing source-review directory, or a read-only external directory with
+the same layout, can rebuild the bundle offline without weakening any pin:
+
+```bash
+ruby Scripts/prepare-rootfs-source-bundle.rb \
+  --download-cache /absolute/existing/rootfs-v0.3.3-source-review \
+  --output /absolute/new/path/outside-the-repository/rootfs-v0.3.3-source-review
+```
+
+The cache must provide `downloads/aports/<source-origin>.tar.gz` and
+`distfiles/<source-origin>/<filename>`. The script rejects symlinks,
+special or missing files, repository-local caches, and input/output overlap;
+bounds each input; verifies SHA-512; and re-extracts every aports snapshot to
+verify its canonical tree identity. A cache is not source approval and does
+not change the receipt's pinned upstream origins.
+
 After that source-review directory verifies, extract the 21 pinned
 license/attribution candidates into another directory outside the repository:
 

@@ -46,6 +46,10 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   review; `apk-tools` and `pax-utils` have no remaining candidate-material
   engineering items, six origins still need package-specific material, and
   legal and redistribution gates remain closed.
+- Strict external download-cache input for the RootFS source-review
+  materializer. A cache replaces network transport only: inputs remain
+  size-bounded and symlink/overlap-rejected, with pinned SHA-512 and canonical
+  extracted-aports-tree verification.
 - arm64 Simulator and unsigned-device final-link gates for the full Experimental graph.
 - Repository iOS 18 native smoke covering 17 preparation, boot, guest, 8 MiB sustained binary-output, stdout/stderr overflow, command, cancellation, recovery, shutdown, and 256 MiB Simulator lifecycle peak-memory checks.
 - A repository-external, unapproved RootFS double-build candidate path for the
