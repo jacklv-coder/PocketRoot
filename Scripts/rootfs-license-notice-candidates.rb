@@ -22,7 +22,7 @@ module RootFSLicenseNoticeCandidates
   ].freeze
   EXPECTED_EXISTING_EVIDENCE_FILES = 21
   EXPECTED_REMOTE_PAYLOAD_FILES = 13
-  EXPECTED_APORTS_FILES = 46
+  EXPECTED_APORTS_FILES = 47
   PAYLOAD_KINDS = %w[package-attribution spdx-license-text].freeze
   TOP_LEVEL_KEYS = %w[
     archive candidateBundleIndexComplete candidatePayloadCommitted

@@ -30,7 +30,7 @@ class RootFSLicenseNoticeCandidatesTests < Minitest::Test
     assert_equal 8, validated.fetch(:sources).length
     assert_equal 13, validated.fetch(:remote_payloads).length
     assert_equal 21, validated.fetch(:existing_evidence_paths).length
-    assert_equal 46, validated.fetch(:aports_paths).length
+    assert_equal 47, validated.fetch(:aports_paths).length
   end
 
   def test_rejects_review_results_digest_drift
@@ -178,6 +178,29 @@ class RootFSLicenseNoticeCandidatesTests < Minitest::Test
         supplemental/ca-certificates/curl-COPYING
       ],
       source.fetch("remoteEvidencePaths")
+    )
+  end
+
+  def test_pins_busybox_configuration_for_bzip2_license_review
+    source = @candidate.fetch("sources").find do |candidate|
+      candidate.fetch("sourceOrigin") == "busybox"
+    end
+
+    assert_includes(
+      source.fetch("supplementalAportsPaths"),
+      "aports/busybox/busyboxconfig"
+    )
+    assert_includes(
+      source.fetch("existingEvidencePaths"),
+      "evidence/busybox/bzip2-LICENSE"
+    )
+    assert_includes(
+      source.fetch("remainingReviewItems"),
+      "confirm-enabled-bzip2-license-and-attribution-coverage"
+    )
+    assert_includes(
+      source.fetch("remainingReviewItems"),
+      "review-other-bundled-third-party-license-and-attribution-coverage"
     )
   end
 

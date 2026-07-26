@@ -4,7 +4,7 @@
     "version": "v0.3.3",
     "sha256": "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"
   },
-  "licenseReviewResultsSha256": "3c7f786d9551d716c2a8b374d8cc63d11a46d67827be2fa0cea73b51b6b92eda",
+  "licenseReviewResultsSha256": "168230d46cf5933a9183c60e572e1a663417f63fe79998540b53887f7cdc2cb8",
   "status": "candidate-bundle-indexed-engineering-review-required",
   "candidateBundleIndexComplete": true,
   "candidatePayloadCommitted": false,
@@ -285,12 +285,14 @@
         "aports/busybox/0033-find-fix-xdev-depth-and-delete.patch",
         "aports/busybox/0034-udhcp-Avoid-leaking-uninitialized-stale-data.patch",
         "aports/busybox/bbsuid.c",
+        "aports/busybox/busyboxconfig",
         "aports/busybox/dad.if-up",
         "aports/busybox/default.script"
       ],
       "remoteEvidencePaths": [],
       "remainingReviewItems": [
-        "review-bundled-third-party-license-and-attribution-coverage",
+        "confirm-enabled-bzip2-license-and-attribution-coverage",
+        "review-other-bundled-third-party-license-and-attribution-coverage",
         "confirm-aports-patch-notices"
       ],
       "candidateState": "collected-engineering-review-required"

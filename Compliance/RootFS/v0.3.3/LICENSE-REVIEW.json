@@ -155,7 +155,8 @@
         }
       ],
       "openReviewItems": [
-        "review-bundled-third-party-license-and-attribution-coverage",
+        "confirm-enabled-bzip2-license-and-attribution-coverage",
+        "review-other-bundled-third-party-license-and-attribution-coverage",
         "confirm-aports-patch-notices"
       ]
     },

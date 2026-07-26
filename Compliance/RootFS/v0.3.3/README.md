@@ -21,9 +21,9 @@ pinned RootFS archive. It does not store the RootFS payload.
 - `LICENSE-REVIEW-RESULTS.json`：对全部 21 个候选的 checksum-bound 工程复核
   结论、coverage 和未决项处置；不表示法律或再分发批准；
 - `LICENSE-NOTICE-CANDIDATES.json`：为剩余 8 个 source origin 固定 13 份远端
-  许可证/attribution 材料、46 份 aports 补充文件及现有 21 份复核证据的外置候选包；
+  许可证/attribution 材料、47 份 aports 补充文件及现有 21 份复核证据的外置候选包；
   payload 不提交，工程、法律和再分发门禁保持关闭；
-- `LICENSE-NOTICE-REVIEW-RESULTS.json`：绑定候选清单与 80 个 payload 文件树的
+- `LICENSE-NOTICE-REVIEW-RESULTS.json`：绑定候选清单与 81 个 payload 文件树的
   工程复核结果；3 个 origin 的候选材料工程项关闭，5 个仍需补逐包材料，法律和
   再分发门禁保持关闭；
 - `RUNTIME-CONFIGURATION.json`：guest、`apk`、repository、world 和 DNS 默认配置；
@@ -40,9 +40,9 @@ manifest, not a committed source archive or redistribution grant.
 candidates. Two source origins have no remaining indexed review items; eight
 still have package-specific open items. `LICENSE-NOTICE-CANDIDATES.json`
 indexes an external candidate bundle for those eight origins: 13 pinned remote
-license/attribution payloads, 46 supplemental aports files, and the existing
+license/attribution payloads, 47 supplemental aports files, and the existing
 21 reviewed evidence files. `LICENSE-NOTICE-REVIEW-RESULTS.json` binds the
-engineering review to the exact 80-file payload tree. Three origins have no
+engineering review to the exact 81-file payload tree. Three origins have no
 remaining candidate-material engineering items; five still require
 package-specific material. Legal and redistribution approval remain open.
 
@@ -71,6 +71,38 @@ reference-only,
 `collect-mit-license-grant-and-copyright-notice` remains open, attribution
 coverage remains partial, and the legal and redistribution gates do not
 change.
+
+固定 aports 提交 `d1b6f274f29076967826e0ecf6ebcaa5d360272f` 的
+`busyboxconfig` 为 31,529 字节，SHA-256
+`18d78e185ff0cccd6ccd09f4f78c5780175d78214e16acd1390e4ee85c74346e`；
+其中精确启用了 `CONFIG_BZIP2=y`、`CONFIG_BZIP2_SMALL=8` 和
+`CONFIG_FEATURE_BZIP2_DECOMPRESS=y`。外置候选树现同时绑定该配置与固定
+BusyBox 1.36.1 源包中的 1,999 字节
+`archival/libarchive/bz/LICENSE`（SHA-256
+`b5a136ed67798e51fe2e0ca0b2a21cb01b904ff0c9f7d563a6292e276607e58f`），
+从而在工程层关闭
+`confirm-enabled-bzip2-license-and-attribution-coverage`。BusyBox 其他已启用
+组件的内联第三方 notice 尚未形成完整集合，因此 license-text 与 attribution
+coverage 均保持 partial，
+`review-other-bundled-third-party-license-and-attribution-coverage` 保持未决，
+法律与再分发门禁不变。
+
+The `busyboxconfig` at pinned aports commit
+`d1b6f274f29076967826e0ecf6ebcaa5d360272f` is 31,529 bytes with SHA-256
+`18d78e185ff0cccd6ccd09f4f78c5780175d78214e16acd1390e4ee85c74346e`.
+It explicitly enables `CONFIG_BZIP2=y`, `CONFIG_BZIP2_SMALL=8`, and
+`CONFIG_FEATURE_BZIP2_DECOMPRESS=y`. The external candidate tree now binds
+that configuration to the 1,999-byte
+`archival/libarchive/bz/LICENSE` in the pinned BusyBox 1.36.1 source archive,
+whose SHA-256 is
+`b5a136ed67798e51fe2e0ca0b2a21cb01b904ff0c9f7d563a6292e276607e58f`.
+This closes
+`confirm-enabled-bzip2-license-and-attribution-coverage` at the engineering
+level. A complete set of inline third-party notices for BusyBox's other
+enabled components is still missing, so license-text and attribution coverage
+remain partial,
+`review-other-bundled-third-party-license-and-attribution-coverage` remains
+open, and the legal and redistribution gates do not change.
 
 `ca-certificates-20230506.tar.bz2` 中的 `mk-ca-bundle.pl`（20,863 字节，
 SHA-256 `9d828d97053868907ce6229d132132f0f26772393405dadd037b6f85a5c5b219`）
@@ -296,7 +328,7 @@ advice, or redistribution approval.
 这些文件不构成完整第三方 LICENSE/NOTICE bundle、经审查的 copyleft
 corresponding-source 交付、法律意见或再分发授权。源码获取清单已完整覆盖固定
 inventory，21 个候选也都有工程复核结果；`libc-dev`、`zlib` 已关闭索引项，另外
-8 个 source origin 的 80 个新候选 payload 已完成 checksum-bound 工程复核；
+8 个 source origin 的 81 个新候选 payload 已完成 checksum-bound 工程复核；
 `apk-tools`、`openssl`、`pax-utils` 的候选材料工程项已关闭，另外 5 个
 origin 仍需补逐包版权/notice 材料。修改说明、构建完整性、源码提供方式、法律
 审查、App Store 2.5.2 产品策略和负责人批准仍是发行阻塞项。
@@ -305,7 +337,7 @@ These files are not a complete third-party LICENSE/NOTICE bundle, reviewed
 copyleft corresponding-source delivery, legal advice, or redistribution
 approval. The acquisition manifest completely covers the pinned inventory and
 all 21 indexed candidates have engineering review results. `libc-dev` and
-`zlib` have no remaining indexed items. All 80 newly indexed payloads have a
+`zlib` have no remaining indexed items. All 81 newly indexed payloads have a
 checksum-bound engineering review; `apk-tools`, `openssl`, and `pax-utils`
 have no remaining candidate-material engineering items, while five origins
 still need package-specific copyright/notice material. Modification, build

@@ -46,8 +46,8 @@ class RootFSLicenseNoticeReviewResultsTests < Minitest::Test
 
     assert_equal 8, validated.fetch(:sources).length
     assert_equal 13, validated.fetch(:remote_payloads).length
-    assert_equal 46, validated.fetch(:aports_paths).length
-    assert_equal 80, @results.fetch("reviewedPayloadFileCount")
+    assert_equal 47, validated.fetch(:aports_paths).length
+    assert_equal 81, @results.fetch("reviewedPayloadFileCount")
     assert_equal 5,
       @results.fetch("sourceOriginsWithRemainingReviewItems")
     assert_equal %w[apk-tools openssl pax-utils],
@@ -99,6 +99,28 @@ class RootFSLicenseNoticeReviewResultsTests < Minitest::Test
     )
     assert_equal(
       ["confirm-certificate-attribution-and-trust-store-requirements"],
+      source.fetch("remainingReviewItems")
+    )
+    assert_equal(
+      "additional-package-material-required",
+      source.fetch("engineeringConclusion")
+    )
+  end
+
+  def test_binds_enabled_busybox_bzip2_to_its_exact_license
+    source = @results.fetch("sources").find do |candidate|
+      candidate.fetch("sourceOrigin") == "busybox"
+    end
+
+    assert_equal "partial", source.fetch("licenseTextCoverage")
+    assert_equal "partial", source.fetch("attributionCoverage")
+    assert_equal 37, source.fetch("reviewedSupplementalAportsCount")
+    assert_includes(
+      source.fetch("resolvedReviewItems"),
+      "confirm-enabled-bzip2-license-and-attribution-coverage"
+    )
+    assert_equal(
+      ["review-other-bundled-third-party-license-and-attribution-coverage"],
       source.fetch("remainingReviewItems")
     )
     assert_equal(
