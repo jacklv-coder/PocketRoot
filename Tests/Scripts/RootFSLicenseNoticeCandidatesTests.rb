@@ -29,7 +29,7 @@ class RootFSLicenseNoticeCandidatesTests < Minitest::Test
 
     assert_equal 8, validated.fetch(:sources).length
     assert_equal 13, validated.fetch(:remote_payloads).length
-    assert_equal 21, validated.fetch(:existing_evidence_paths).length
+    assert_equal 22, validated.fetch(:existing_evidence_paths).length
     assert_equal 47, validated.fetch(:aports_paths).length
   end
 
@@ -201,6 +201,45 @@ class RootFSLicenseNoticeCandidatesTests < Minitest::Test
     assert_includes(
       source.fetch("remainingReviewItems"),
       "review-other-bundled-third-party-license-and-attribution-coverage"
+    )
+  end
+
+  def test_pins_enabled_busybox_ash_math_inline_notices
+    source = @candidate.fetch("sources").find do |candidate|
+      candidate.fetch("sourceOrigin") == "busybox"
+    end
+    review_source = @review.fetch("sources").find do |candidate|
+      candidate.fetch("sourceOrigin") == "busybox"
+    end
+    evidence = review_source.fetch("candidateEvidence").find do |candidate|
+      candidate.fetch("outputPath") == "evidence/busybox/shell-math.c"
+    end
+
+    assert_includes(
+      source.fetch("existingEvidencePaths"),
+      "evidence/busybox/shell-math.c"
+    )
+    assert_includes(
+      source.fetch("supplementalAportsPaths"),
+      "aports/busybox/busyboxconfig"
+    )
+    assert_includes(
+      source.fetch("remainingReviewItems"),
+      "confirm-enabled-ash-math-license-and-attribution-coverage"
+    )
+    assert_includes(
+      source.fetch("remainingReviewItems"),
+      "review-other-bundled-third-party-license-and-attribution-coverage"
+    )
+    assert_equal "busybox-1.36.1/shell/math.c", evidence.fetch("member")
+    assert_equal 26_578, evidence.fetch("byteCount")
+    assert_equal(
+      "8f2d57454d233b67662047cd3411c77ecde7e428ef1f6652d66f177b1d06e2f3",
+      evidence.fetch("sha256")
+    )
+    assert_equal(
+      %w[inline-license-notice attribution],
+      evidence.fetch("evidenceKinds")
     )
   end
 

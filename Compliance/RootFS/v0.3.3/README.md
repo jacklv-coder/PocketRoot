@@ -16,14 +16,14 @@ pinned RootFS archive. It does not store the RootFS payload.
   SHA-256；
 - `LICENSE-INVENTORY.json`：声明的许可证表达式、标识符和 archive 内
   license/notice 文件检查结果；
-- `LICENSE-REVIEW.json`：覆盖 10 个 source origin 的 21 个候选许可证文本、
+- `LICENSE-REVIEW.json`：覆盖 10 个 source origin 的 22 个候选许可证文本、
   attribution、声明与内联 notice 的路径、大小、SHA-256 和逐包未决审查项；
-- `LICENSE-REVIEW-RESULTS.json`：对全部 21 个候选的 checksum-bound 工程复核
+- `LICENSE-REVIEW-RESULTS.json`：对全部 22 个候选的 checksum-bound 工程复核
   结论、coverage 和未决项处置；不表示法律或再分发批准；
 - `LICENSE-NOTICE-CANDIDATES.json`：为剩余 8 个 source origin 固定 13 份远端
-  许可证/attribution 材料、47 份 aports 补充文件及现有 21 份复核证据的外置候选包；
+  许可证/attribution 材料、47 份 aports 补充文件及现有 22 份复核证据的外置候选包；
   payload 不提交，工程、法律和再分发门禁保持关闭；
-- `LICENSE-NOTICE-REVIEW-RESULTS.json`：绑定候选清单与 81 个 payload 文件树的
+- `LICENSE-NOTICE-REVIEW-RESULTS.json`：绑定候选清单与 82 个 payload 文件树的
   工程复核结果；3 个 origin 的候选材料工程项关闭，5 个仍需补逐包材料，法律和
   再分发门禁保持关闭；
 - `RUNTIME-CONFIGURATION.json`：guest、`apk`、repository、world 和 DNS 默认配置；
@@ -34,15 +34,15 @@ pinned RootFS archive. It does not store the RootFS payload.
 `SOURCE-ACQUISITION.json` pins the aports snapshots and upstream distfiles
 needed to assemble an external source-review directory. It is an acquisition
 manifest, not a committed source archive or redistribution grant.
-`LICENSE-REVIEW.json` pins 21 unreviewed candidate evidence files across all
+`LICENSE-REVIEW.json` pins 22 unreviewed candidate evidence files across all
 10 source origins; it is an engineering review index, not legal approval.
-`LICENSE-REVIEW-RESULTS.json` records the engineering review of all 21 pinned
+`LICENSE-REVIEW-RESULTS.json` records the engineering review of all 22 pinned
 candidates. Two source origins have no remaining indexed review items; eight
 still have package-specific open items. `LICENSE-NOTICE-CANDIDATES.json`
 indexes an external candidate bundle for those eight origins: 13 pinned remote
 license/attribution payloads, 47 supplemental aports files, and the existing
-21 reviewed evidence files. `LICENSE-NOTICE-REVIEW-RESULTS.json` binds the
-engineering review to the exact 81-file payload tree. Three origins have no
+22 reviewed evidence files. `LICENSE-NOTICE-REVIEW-RESULTS.json` binds the
+engineering review to the exact 82-file payload tree. Three origins have no
 remaining candidate-material engineering items; five still require
 package-specific material. Legal and redistribution approval remain open.
 
@@ -76,12 +76,18 @@ change.
 `busyboxconfig` 为 31,529 字节，SHA-256
 `18d78e185ff0cccd6ccd09f4f78c5780175d78214e16acd1390e4ee85c74346e`；
 其中精确启用了 `CONFIG_BZIP2=y`、`CONFIG_BZIP2_SMALL=8` 和
-`CONFIG_FEATURE_BZIP2_DECOMPRESS=y`。外置候选树现同时绑定该配置与固定
+`CONFIG_FEATURE_BZIP2_DECOMPRESS=y`，也启用了 `CONFIG_ASH=y`、
+`CONFIG_FEATURE_SH_MATH=y` 和 `CONFIG_FEATURE_SH_MATH_64=y`；BusyBox
+`shell/Kbuild.src` 在该配置下把 `math.o` 链入构建。外置候选树现同时绑定该配置与固定
 BusyBox 1.36.1 源包中的 1,999 字节
 `archival/libarchive/bz/LICENSE`（SHA-256
 `b5a136ed67798e51fe2e0ca0b2a21cb01b904ff0c9f7d563a6292e276607e58f`），
 从而在工程层关闭
-`confirm-enabled-bzip2-license-and-attribution-coverage`。BusyBox 其他已启用
+`confirm-enabled-bzip2-license-and-attribution-coverage`；同时绑定 26,578 字节
+`shell/math.c`（SHA-256
+`8f2d57454d233b67662047cd3411c77ecde7e428ef1f6652d66f177b1d06e2f3`），
+其中保留完整 MIT 与 BSD-3-Clause 版权及许可通知，从而在工程层关闭
+`confirm-enabled-ash-math-license-and-attribution-coverage`。BusyBox 其他已启用
 组件的内联第三方 notice 尚未形成完整集合，因此 license-text 与 attribution
 coverage 均保持 partial，
 `review-other-bundled-third-party-license-and-attribution-coverage` 保持未决，
@@ -90,15 +96,21 @@ coverage 均保持 partial，
 The `busyboxconfig` at pinned aports commit
 `d1b6f274f29076967826e0ecf6ebcaa5d360272f` is 31,529 bytes with SHA-256
 `18d78e185ff0cccd6ccd09f4f78c5780175d78214e16acd1390e4ee85c74346e`.
-It explicitly enables `CONFIG_BZIP2=y`, `CONFIG_BZIP2_SMALL=8`, and
-`CONFIG_FEATURE_BZIP2_DECOMPRESS=y`. The external candidate tree now binds
+It explicitly enables `CONFIG_BZIP2=y`, `CONFIG_BZIP2_SMALL=8`,
+`CONFIG_FEATURE_BZIP2_DECOMPRESS=y`, `CONFIG_ASH=y`,
+`CONFIG_FEATURE_SH_MATH=y`, and `CONFIG_FEATURE_SH_MATH_64=y`; BusyBox
+`shell/Kbuild.src` links `math.o` under that configuration. The external candidate tree now binds
 that configuration to the 1,999-byte
 `archival/libarchive/bz/LICENSE` in the pinned BusyBox 1.36.1 source archive,
 whose SHA-256 is
 `b5a136ed67798e51fe2e0ca0b2a21cb01b904ff0c9f7d563a6292e276607e58f`.
 This closes
 `confirm-enabled-bzip2-license-and-attribution-coverage` at the engineering
-level. A complete set of inline third-party notices for BusyBox's other
+level. It also binds the 26,578-byte `shell/math.c`, whose SHA-256 is
+`8f2d57454d233b67662047cd3411c77ecde7e428ef1f6652d66f177b1d06e2f3`;
+that file retains complete MIT and BSD-3-Clause copyright and license notices,
+closing `confirm-enabled-ash-math-license-and-attribution-coverage` at the
+engineering level. A complete set of inline third-party notices for BusyBox's other
 enabled components is still missing, so license-text and attribution coverage
 remain partial,
 `review-other-bundled-third-party-license-and-attribution-coverage` remains
@@ -277,13 +289,13 @@ ruby Scripts/rootfs-license-review-results.rb
 ```
 
 工具只提取 `LICENSE-REVIEW.json` 固定的候选文件，并再次核对大小、SHA-256、
-路径全集、无符号链接/特殊节点边界。结果清单证明 21 个候选已完成工程复核；
+路径全集、无符号链接/特殊节点边界。结果清单证明 22 个候选已完成工程复核；
 外置输出仍不是可直接随产品发行的 NOTICE bundle。
 
 The tool extracts only candidates pinned by `LICENSE-REVIEW.json`, then
 rechecks byte counts, SHA-256 digests, the exact path set, and the no-symlink/
 special-node boundary. The results manifest proves engineering review of all
-21 candidates; the external output is still not a product-ready NOTICE bundle.
+22 candidates; the external output is still not a product-ready NOTICE bundle.
 
 剩余 8 个 source origin 的材料可继续组装为外置候选包。先校验清单；实际物化
 必须同时提供已经通过 `--verify` 的 source-review 和 license-review 目录，以及
@@ -327,8 +339,8 @@ advice, or redistribution approval.
 
 这些文件不构成完整第三方 LICENSE/NOTICE bundle、经审查的 copyleft
 corresponding-source 交付、法律意见或再分发授权。源码获取清单已完整覆盖固定
-inventory，21 个候选也都有工程复核结果；`libc-dev`、`zlib` 已关闭索引项，另外
-8 个 source origin 的 81 个新候选 payload 已完成 checksum-bound 工程复核；
+inventory，22 个候选也都有工程复核结果；`libc-dev`、`zlib` 已关闭索引项，另外
+8 个 source origin 的 82 个新候选 payload 已完成 checksum-bound 工程复核；
 `apk-tools`、`openssl`、`pax-utils` 的候选材料工程项已关闭，另外 5 个
 origin 仍需补逐包版权/notice 材料。修改说明、构建完整性、源码提供方式、法律
 审查、App Store 2.5.2 产品策略和负责人批准仍是发行阻塞项。
@@ -336,8 +348,8 @@ origin 仍需补逐包版权/notice 材料。修改说明、构建完整性、�
 These files are not a complete third-party LICENSE/NOTICE bundle, reviewed
 copyleft corresponding-source delivery, legal advice, or redistribution
 approval. The acquisition manifest completely covers the pinned inventory and
-all 21 indexed candidates have engineering review results. `libc-dev` and
-`zlib` have no remaining indexed items. All 81 newly indexed payloads have a
+all 22 indexed candidates have engineering review results. `libc-dev` and
+`zlib` have no remaining indexed items. All 82 newly indexed payloads have a
 checksum-bound engineering review; `apk-tools`, `openssl`, and `pax-utils`
 have no remaining candidate-material engineering items, while five origins
 still need package-specific copyright/notice material. Modification, build
