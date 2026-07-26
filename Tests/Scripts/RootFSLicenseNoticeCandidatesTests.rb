@@ -28,7 +28,7 @@ class RootFSLicenseNoticeCandidatesTests < Minitest::Test
     validated = validate
 
     assert_equal 8, validated.fetch(:sources).length
-    assert_equal 10, validated.fetch(:remote_payloads).length
+    assert_equal 11, validated.fetch(:remote_payloads).length
     assert_equal 21, validated.fetch(:existing_evidence_paths).length
     assert_equal 46, validated.fetch(:aports_paths).length
   end
@@ -118,6 +118,30 @@ class RootFSLicenseNoticeCandidatesTests < Minitest::Test
     assert_includes error.message, "remote evidence paths"
   end
 
+  def test_pins_alpine_keys_license_decision_evidence
+    payload = @candidate.fetch("remotePayloads").find do |candidate|
+      candidate["sourceOrigin"] == "alpine-keys"
+    end
+    source = @candidate.fetch("sources").find do |candidate|
+      candidate.fetch("sourceOrigin") == "alpine-keys"
+    end
+
+    assert_equal(
+      ["https://gitlab.alpinelinux.org/alpine/aports/-/commit/" \
+       "7f1f035cf4f7bbea5cf7b65f9bbedc311d735596.patch"],
+      payload.fetch("retrievalURLs")
+    )
+    assert_equal 772, payload.fetch("byteCount")
+    assert_equal(
+      "a939e8baa52febea02d5bcfcc306822827eac3fd979a637c7723c84af3487e3e",
+      payload.fetch("sha256")
+    )
+    assert_equal(
+      ["supplemental/alpine-keys/license-decision.patch"],
+      source.fetch("remoteEvidencePaths")
+    )
+  end
+
   def test_rejects_overlapping_materialized_output_paths
     payloads = @candidate.fetch("remotePayloads")
     payloads.fetch(0)["outputPath"] = "licenses/collision"
@@ -137,7 +161,9 @@ class RootFSLicenseNoticeCandidatesTests < Minitest::Test
   end
 
   def test_rejects_package_payload_path_for_another_origin
-    payload = @candidate.fetch("remotePayloads").fetch(6)
+    payload = @candidate.fetch("remotePayloads").find do |candidate|
+      candidate["sourceOrigin"] == "openssl"
+    end
     payload["outputPath"] = "supplemental/pax-utils/openssl-README.md"
     @candidate.fetch("sources").fetch(6)["remoteEvidencePaths"] =
       [payload.fetch("outputPath")]

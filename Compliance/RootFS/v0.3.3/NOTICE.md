@@ -43,13 +43,13 @@ for `libc-dev`, `zlib`.
 8 source origins still have package-specific open
 items, so this is not a complete or legally approved license/NOTICE bundle.
 `LICENSE-NOTICE-CANDIDATES.json` now pins an external candidate bundle for
-those open origins: 10 remote
+those open origins: 11 remote
 reference/attribution payloads and
 46 supplemental aports
 files, together with all checksum-bound reviewed evidence. The repository
 tool can materialize and re-verify that bundle outside the repository.
 `LICENSE-NOTICE-REVIEW-RESULTS.json` records checksum-bound engineering
-review of all 77 indexed
+review of all 78 indexed
 payload files. 3 origins have no remaining
 candidate-material engineering items; 5 origins
 still require package-specific material. Legal review and redistribution

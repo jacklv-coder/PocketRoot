@@ -20,10 +20,10 @@ pinned RootFS archive. It does not store the RootFS payload.
   attribution、声明与内联 notice 的路径、大小、SHA-256 和逐包未决审查项；
 - `LICENSE-REVIEW-RESULTS.json`：对全部 21 个候选的 checksum-bound 工程复核
   结论、coverage 和未决项处置；不表示法律或再分发批准；
-- `LICENSE-NOTICE-CANDIDATES.json`：为剩余 8 个 source origin 固定 10 份远端
+- `LICENSE-NOTICE-CANDIDATES.json`：为剩余 8 个 source origin 固定 11 份远端
   许可证/attribution 材料、46 份 aports 补充文件及现有 21 份复核证据的外置候选包；
   payload 不提交，工程、法律和再分发门禁保持关闭；
-- `LICENSE-NOTICE-REVIEW-RESULTS.json`：绑定候选清单与 77 个 payload 文件树的
+- `LICENSE-NOTICE-REVIEW-RESULTS.json`：绑定候选清单与 78 个 payload 文件树的
   工程复核结果；3 个 origin 的候选材料工程项关闭，5 个仍需补逐包材料，法律和
   再分发门禁保持关闭；
 - `RUNTIME-CONFIGURATION.json`：guest、`apk`、repository、world 和 DNS 默认配置；
@@ -39,12 +39,34 @@ manifest, not a committed source archive or redistribution grant.
 `LICENSE-REVIEW-RESULTS.json` records the engineering review of all 21 pinned
 candidates. Two source origins have no remaining indexed review items; eight
 still have package-specific open items. `LICENSE-NOTICE-CANDIDATES.json`
-indexes an external candidate bundle for those eight origins: 10 pinned remote
+indexes an external candidate bundle for those eight origins: 11 pinned remote
 license/attribution payloads, 46 supplemental aports files, and the existing
 21 reviewed evidence files. `LICENSE-NOTICE-REVIEW-RESULTS.json` binds the
-engineering review to the exact 77-file payload tree. Three origins have no
+engineering review to the exact 78-file payload tree. Three origins have no
 remaining candidate-material engineering items; five still require
 package-specific material. Legal and redistribution approval remain open.
+
+`alpine-keys` 的 MIT 声明现同时绑定当前固定 aports `APKBUILD` 与上游不可变提交
+`7f1f035cf4f7bbea5cf7b65f9bbedc311d735596`：该提交由包维护者 Natanael
+Copa 将 `license` 从 `GPL` 改为 `MIT`。外置候选包保存这份 772 字节、
+SHA-256 `a939e8baa52febea02d5bcfcc306822827eac3fd979a637c7723c84af3487e3e`
+的原始补丁，并结合固定 SPDX MIT 参考文本完成许可证文本的工程覆盖。固定
+aports tree 的 17 个公钥 payload 仍没有明确的包级版权声明，因此
+`collect-mit-license-grant-and-copyright-notice` 保持未决，attribution coverage
+仍为 partial，法律与再分发门禁不变。
+
+The `alpine-keys` MIT declaration is now bound to both the current pinned
+aports `APKBUILD` and immutable upstream commit
+`7f1f035cf4f7bbea5cf7b65f9bbedc311d735596`, where package maintainer
+Natanael Copa changed `license` from `GPL` to `MIT`. The external candidate
+bundle preserves the raw 772-byte patch with SHA-256
+`a939e8baa52febea02d5bcfcc306822827eac3fd979a637c7723c84af3487e3e`;
+together with the pinned SPDX MIT reference, it completes engineering
+license-text coverage. The 17 public-key payloads in the pinned aports tree
+still have no explicit package-level copyright notice, so
+`collect-mit-license-grant-and-copyright-notice` remains open, attribution
+coverage remains partial, and the legal and redistribution gates do not
+change.
 
 OpenSSL 的工程结论绑定固定 `openssl-3.1.4.tar.gz`：源包根目录没有
 `NOTICE` 文件；固定 RootFS 的 APK database 将 guest 路径
@@ -243,7 +265,7 @@ advice, or redistribution approval.
 这些文件不构成完整第三方 LICENSE/NOTICE bundle、经审查的 copyleft
 corresponding-source 交付、法律意见或再分发授权。源码获取清单已完整覆盖固定
 inventory，21 个候选也都有工程复核结果；`libc-dev`、`zlib` 已关闭索引项，另外
-8 个 source origin 的 77 个新候选 payload 已完成 checksum-bound 工程复核；
+8 个 source origin 的 78 个新候选 payload 已完成 checksum-bound 工程复核；
 `apk-tools`、`openssl`、`pax-utils` 的候选材料工程项已关闭，另外 5 个
 origin 仍需补逐包版权/notice 材料。修改说明、构建完整性、源码提供方式、法律
 审查、App Store 2.5.2 产品策略和负责人批准仍是发行阻塞项。
@@ -252,7 +274,7 @@ These files are not a complete third-party LICENSE/NOTICE bundle, reviewed
 copyleft corresponding-source delivery, legal advice, or redistribution
 approval. The acquisition manifest completely covers the pinned inventory and
 all 21 indexed candidates have engineering review results. `libc-dev` and
-`zlib` have no remaining indexed items. All 77 newly indexed payloads have a
+`zlib` have no remaining indexed items. All 78 newly indexed payloads have a
 checksum-bound engineering review; `apk-tools`, `openssl`, and `pax-utils`
 have no remaining candidate-material engineering items, while five origins
 still need package-specific copyright/notice material. Modification, build
