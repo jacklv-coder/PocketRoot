@@ -45,11 +45,11 @@ items, so this is not a complete or legally approved license/NOTICE bundle.
 `LICENSE-NOTICE-CANDIDATES.json` now pins an external candidate bundle for
 those open origins: 13 remote
 reference/attribution payloads and
-46 supplemental aports
+47 supplemental aports
 files, together with all checksum-bound reviewed evidence. The repository
 tool can materialize and re-verify that bundle outside the repository.
 `LICENSE-NOTICE-REVIEW-RESULTS.json` records checksum-bound engineering
-review of all 80 indexed
+review of all 81 indexed
 payload files. 3 origins have no remaining
 candidate-material engineering items; 5 origins
 still require package-specific material. Legal review and redistribution

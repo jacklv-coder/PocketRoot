@@ -4,7 +4,7 @@
     "version": "v0.3.3",
     "sha256": "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"
   },
-  "licenseReviewManifestSha256": "3d483714a09cb2194e1b4af9aef5dfec2fbcfd44c70d521899398a3893f1908a",
+  "licenseReviewManifestSha256": "f3f7997a06a87064295e91b4c7f9dd37bb71b1ac1cc24d1b77156ca66f9d606e",
   "status": "engineering-reviewed-open-release-gates",
   "engineeringReviewCompleted": true,
   "allCandidateDigestsVerified": true,
@@ -108,7 +108,8 @@
       ],
       "resolvedReviewItems": [],
       "remainingReviewItems": [
-        "review-bundled-third-party-license-and-attribution-coverage",
+        "confirm-enabled-bzip2-license-and-attribution-coverage",
+        "review-other-bundled-third-party-license-and-attribution-coverage",
         "confirm-aports-patch-notices"
       ]
     },

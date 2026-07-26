@@ -42,9 +42,9 @@ A pinned result manifest records engineering review of all 21 candidates.
 `libc-dev` and `zlib` have no remaining indexed items; eight source origins
 still have package-level follow-up. The repository now pins an external
 candidate bundle for those origins: 13 remote license/attribution payloads,
-46 supplemental aports files, and all existing reviewed evidence. The tool can
+47 supplemental aports files, and all existing reviewed evidence. The tool can
 atomically materialize and re-verify it outside the repository. A pinned
-results manifest binds engineering review to the exact 80-file payload tree.
+results manifest binds engineering review to the exact 81-file payload tree.
 `apk-tools`, `openssl`, and `pax-utils` have no remaining candidate-material
 engineering items; five origins still need package-specific material. Modification,
 build-completeness, source-offer, and legal reviews remain unresolved, so the
@@ -122,7 +122,7 @@ The current code does not provide a complete product-level privacy policy.
 - [x] Index a checksum-bound external candidate bundle and reproducible
   materializer for the eight remaining origins; payloads stay uncommitted and
   approval gates stay closed.
-- [x] Complete checksum-bound engineering review of all 80 external candidate
+- [x] Complete checksum-bound engineering review of all 81 external candidate
   payloads; three origins have no remaining candidate-material engineering
   items and five still need package-specific material.
 - [ ] Collect license texts and NOTICE files.
