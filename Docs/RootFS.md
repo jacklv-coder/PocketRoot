@@ -112,6 +112,8 @@ ruby Scripts/prepare-rootfs-source-bundle.rb \
 tree identity。缓存不构成来源批准，也不会改变 receipt 的固定上游来源。
 receipt 会明确标记缓存获取并记录缓存内相对路径，不会伪称访问了某个上游 URL；
 固定上游来源仍保留在 `SOURCE-ACQUISITION.json`。
+receipt schema v2 强制包含该模式。旧 v1 source-review 的传输来源存在歧义，不再
+直接通过 `--verify`；仍可把它传给 `--download-cache`，重新生成可验证的 v2 bundle。
 
 规范化 aports 目录身份覆盖条目类型、路径、普通文件权限位和内容摘要；物化时会保留
 这些权限位，`--verify` 会再次校验。

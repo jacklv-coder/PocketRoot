@@ -584,8 +584,8 @@ def expected_bundle_path_types(sources, identities)
 end
 
 def verify_receipt(receipt, manifest, sources, root, identities)
-  acquisition_mode = receipt.fetch("acquisitionMode", "network")
-  unless receipt["schemaVersion"] == 1 &&
+  acquisition_mode = receipt["acquisitionMode"]
+  unless receipt["schemaVersion"] == 2 &&
     receipt["archive"] == manifest["archive"] &&
     %w[network download-cache].include?(acquisition_mode) &&
     receipt["redistributionApproved"] == false
@@ -981,7 +981,7 @@ def materialize(manifest, sources, output, download_cache: nil)
       notice_text(manifest, sources.length, sources.sum { |entry| entry.fetch("distfiles").length })
     )
     receipt = {
-      "schemaVersion" => 1,
+      "schemaVersion" => 2,
       "archive" => manifest.fetch("archive"),
       "acquisitionMode" =>
         download_cache ? "download-cache" : "network",

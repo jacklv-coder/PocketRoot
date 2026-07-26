@@ -151,6 +151,25 @@ class RootFSSourceBundleTests < Minitest::Test
     refute output.exist?
   end
 
+  def test_verify_rejects_legacy_receipt_without_acquisition_mode
+    output = @temporary_directory.join("legacy-receipt-output")
+    _stdout, stderr, status = run_script("--output", output.to_s)
+    assert status.success?, stderr
+
+    receipt_path = output.join("MATERIALIZATION-RECEIPT.json")
+    receipt = JSON.parse(receipt_path.read)
+    receipt["schemaVersion"] = 1
+    receipt.delete("acquisitionMode")
+    receipt_path.write("#{JSON.pretty_generate(receipt)}\n")
+    refresh_self_authored_integrity(output)
+
+    _verify_stdout, verify_stderr, verify_status =
+      run_script("--verify", output.to_s)
+    refute verify_status.success?
+    assert_includes verify_stderr,
+      "materialization receipt has invalid release metadata"
+  end
+
   def test_rejects_symlink_in_download_cache
     cache = @temporary_directory.join("download-cache-symlink")
     cache.join("downloads/aports").mkpath

@@ -91,6 +91,9 @@ not change the receipt's pinned upstream origins.
 The receipt marks cached acquisition explicitly and records cache-relative
 paths rather than claiming that an upstream URL was contacted; the pinned
 upstream origins remain in `SOURCE-ACQUISITION.json`.
+Receipt schema v2 requires that explicit mode. A legacy v1 source-review
+directory has ambiguous transport provenance and is no longer accepted by
+`--verify`; pass it to `--download-cache` to regenerate a verifiable v2 bundle.
 
 After that source-review directory verifies, extract the 21 pinned
 license/attribution candidates into another directory outside the repository:

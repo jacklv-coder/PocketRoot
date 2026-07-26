@@ -128,6 +128,10 @@ canonical extracted aports tree before atomically promoting the output.
 The receipt marks cached acquisition explicitly and records cache-relative
 paths instead of claiming that an upstream URL was contacted; pinned upstream
 origins remain in `SOURCE-ACQUISITION.json`.
+Receipt schema v2 requires that explicit acquisition mode. A legacy v1
+source-review directory can be passed to `--download-cache` to regenerate a
+verifiable v2 bundle, but it is no longer accepted directly by `--verify`
+because its transport provenance is ambiguous.
 
 `--verify` 同时核对所有普通文件摘要、目录集合和符号链接目标。该输出不会被 App、
 Git 或 CI artifact 自动打包或上传。
