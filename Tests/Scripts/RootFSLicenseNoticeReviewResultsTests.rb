@@ -71,7 +71,7 @@ class RootFSLicenseNoticeReviewResultsTests < Minitest::Test
       candidate.fetch("sourceOrigin") == "alpine-keys"
     end
 
-    assert_equal "complete", source.fetch("licenseTextCoverage")
+    assert_equal "reference-only", source.fetch("licenseTextCoverage")
     assert_equal "partial", source.fetch("attributionCoverage")
     assert_equal 1, source.fetch("reviewedRemoteEvidenceCount")
     assert_empty source.fetch("resolvedReviewItems")

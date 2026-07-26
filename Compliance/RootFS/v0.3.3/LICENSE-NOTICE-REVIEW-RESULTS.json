@@ -44,7 +44,7 @@
         "MIT"
       ],
       "reviewState": "candidate-payloads-engineering-reviewed-legal-review-open",
-      "licenseTextCoverage": "complete",
+      "licenseTextCoverage": "reference-only",
       "attributionCoverage": "partial",
       "reviewedExistingEvidenceCount": 1,
       "reviewedReferenceLicenseCount": 1,

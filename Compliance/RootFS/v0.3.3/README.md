@@ -50,8 +50,10 @@ package-specific material. Legal and redistribution approval remain open.
 `7f1f035cf4f7bbea5cf7b65f9bbedc311d735596`：该提交由包维护者 Natanael
 Copa 将 `license` 从 `GPL` 改为 `MIT`。外置候选包保存这份 772 字节、
 SHA-256 `a939e8baa52febea02d5bcfcc306822827eac3fd979a637c7723c84af3487e3e`
-的原始补丁，并结合固定 SPDX MIT 参考文本完成许可证文本的工程覆盖。固定
-aports tree 的 17 个公钥 payload 仍没有明确的包级版权声明，因此
+的原始补丁，用于增强许可证声明的工程 provenance。该补丁没有提供包本身的
+MIT grant；固定 SPDX MIT 文本也只是参考。固定 aports tree 的 17 个公钥
+payload 仍没有明确的包级版权声明，因此 license-text coverage 保持
+reference-only，
 `collect-mit-license-grant-and-copyright-notice` 保持未决，attribution coverage
 仍为 partial，法律与再分发门禁不变。
 
@@ -60,10 +62,12 @@ aports `APKBUILD` and immutable upstream commit
 `7f1f035cf4f7bbea5cf7b65f9bbedc311d735596`, where package maintainer
 Natanael Copa changed `license` from `GPL` to `MIT`. The external candidate
 bundle preserves the raw 772-byte patch with SHA-256
-`a939e8baa52febea02d5bcfcc306822827eac3fd979a637c7723c84af3487e3e`;
-together with the pinned SPDX MIT reference, it completes engineering
-license-text coverage. The 17 public-key payloads in the pinned aports tree
-still have no explicit package-level copyright notice, so
+`a939e8baa52febea02d5bcfcc306822827eac3fd979a637c7723c84af3487e3e`
+to strengthen engineering provenance for the declaration. The patch does not
+provide the package's own MIT grant, and the pinned SPDX MIT text remains only
+a reference. The 17 public-key payloads in the pinned aports tree still have
+no explicit package-level copyright notice, so license-text coverage remains
+reference-only,
 `collect-mit-license-grant-and-copyright-notice` remains open, attribution
 coverage remains partial, and the legal and redistribution gates do not
 change.
