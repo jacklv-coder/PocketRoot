@@ -38,9 +38,11 @@ aports-snapshot/upstream-distfile manifest covers the inventory, and an
 outside-repository materializer creates reproducible review inputs. A second
 outside-repository tool pins, extracts, and verifies 21 license, attribution,
 declaration, and inline-notice candidates across all 10 source origins.
-Package-level open items, modification, build-completeness, source-offer, and
-legal reviews remain unresolved, so the output is neither a complete NOTICE
-set nor approved corresponding-source delivery.
+A pinned result manifest records engineering review of all 21 candidates.
+`libc-dev` and `zlib` have no remaining indexed items; eight source origins
+still have package-level follow-up. Modification, build-completeness,
+source-offer, and legal reviews remain unresolved, so the output is neither a
+complete NOTICE set nor approved corresponding-source delivery.
 
 ## Repository safeguards
 
@@ -48,8 +50,8 @@ The RootFS is not committed or bundled. Upstream source, nested gitlink, and
 hashes are pinned. Experimental products are excluded from the umbrella.
 Composition accepts local input only. CI downloads only for ephemeral
 validation and regenerates the package inventory, SPDX SBOM, source locators,
-source-acquisition manifest, license/NOTICE candidate index, declared-license
-data, and default configuration under
+source-acquisition manifest, license/NOTICE candidate index and engineering
+review results, declared-license data, and default configuration under
 [`Compliance/RootFS/v0.3.3`](../../Compliance/RootFS/v0.3.3/README.md).
 CI offline-tests checksum verification, path isolation, and safe extraction for
 the external source-review materializer; it does not upload source material.
@@ -108,6 +110,8 @@ The current code does not provide a complete product-level privacy policy.
 
 - [x] Generate a complete inventory from the pinned APK database.
 - [x] Generate a machine-readable SBOM validated against the SPDX 2.3 JSON schema.
+- [x] Complete checksum-bound engineering review of all 21 pinned
+  license/NOTICE candidates.
 - [ ] Collect license texts and NOTICE files.
 - [ ] Establish a corresponding-source bundle for copyleft components.
 - [x] Record default DNS, repository, and package-manager facts.

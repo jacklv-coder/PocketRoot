@@ -5,7 +5,8 @@ Generated from the exact `v0.3.3` archive with SHA-256
 
 > This is reproducible engineering evidence, not a complete legal NOTICE,
 > license bundle, corresponding-source offer, or redistribution approval.
-> Package-specific copyright and notice review remains required.
+> Engineering candidate review is complete. Package-specific open items,
+> legal review, and redistribution approval remain required.
 
 ## Installed packages
 
@@ -36,8 +37,11 @@ Declared identifiers and expressions are recorded in
 candidate license, attribution, declaration, and inline-notice files across
 all 10 source origins. The external review tool
 extracts and verifies those candidates from the pinned source-review bundle.
-Every per-origin review item remains open; this is not a completed or
-legally approved license/NOTICE bundle.
+`LICENSE-REVIEW-RESULTS.json` records the checksum-bound engineering review
+of all 21 candidates. All indexed review items are resolved
+for `libc-dev`, `zlib`.
+8 source origins still have package-specific open
+items, so this is not a complete or legally approved license/NOTICE bundle.
 
 ## Corresponding-source status
 

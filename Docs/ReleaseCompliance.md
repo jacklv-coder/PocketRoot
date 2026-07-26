@@ -73,9 +73,10 @@ machine-readable SBOM。仓库现在从固定 archive 可复现生成 15 个已�
 LICENSE/COPYING/NOTICE 文件。仓库另有与 inventory 一一对应、固定 checksum 的
 aports snapshot/upstream distfile 获取清单和仓库外 materializer，并固定了覆盖
 全部 10 个 source origin 的 21 个 license、attribution、声明与内联 notice 候选。
-第二个仓库外工具从已验证 source-review 目录提取并复核这些候选，但逐包未决项、
-修改与构建完整性、源码提供方式和法律审查仍未完成，不能视为完整 NOTICE 或已批准
-的对应源码交付。
+第二个仓库外工具从已验证 source-review 目录提取这些候选；固定结果清单记录
+21/21 个候选均已工程复核，`libc-dev`、`zlib` 的索引项已关闭，另外 8 个 source
+origin 仍有逐包未决项。修改与构建完整性、源码提供方式和法律审查仍未完成，不能
+视为完整 NOTICE 或已批准的对应源码交付。
 
 ## 当前仓库保护
 
@@ -89,8 +90,8 @@ aports snapshot/upstream distfile 获取清单和仓库外 materializer，并固
 - CI 下载 RootFS 仅用于校验和测试，不把它保存为发行 artifact。
 - CI 从固定 archive 重新生成并比对
   [`Compliance/RootFS/v0.3.3`](../Compliance/RootFS/v0.3.3/README.md) 的包清单、
-  SPDX SBOM、来源 locator、源码获取清单、license/NOTICE 候选索引、许可证声明与
-  默认配置证据。
+  SPDX SBOM、来源 locator、源码获取清单、license/NOTICE 候选索引与工程复核
+  结果、许可证声明和默认配置证据。
 - CI 离线测试仓库外 source-review materializer 的 checksum、路径隔离和安全解包；
   不上传生成的源码材料。
 - README、API 注释和 ADR 明确标注 Experimental 与 shutdown 风险。
@@ -171,6 +172,7 @@ Alpine `apk` 可以下载、安装和执行新增代码。即使初始 RootFS �
 
 - [x] 从固定 APK database 生成完整 package inventory。
 - [x] 生成并通过 SPDX 2.3 JSON schema 校验的 machine-readable SBOM。
+- [x] 对固定的 21 个 license/NOTICE 候选完成 checksum-bound 工程复核。
 - [ ] 收集 license text 和 NOTICE。
 - [ ] 建立 copyleft corresponding source bundle。
 - [x] 固定 DNS、repository 和 package-manager 默认配置事实。

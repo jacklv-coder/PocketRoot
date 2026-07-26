@@ -5,7 +5,7 @@
 RootFS 是 PocketRoot 的外部供应链输入，不是普通测试 fixture。仓库提交的是不可变清单、校验和安全安装代码，不提交、镜像或默认打包 RootFS 二进制。
 
 > [!WARNING]
-> 固定 v0.3.3 归档已有可复现 package inventory、SPDX SBOM、默认配置证据、完整覆盖 inventory 的源码获取清单，以及覆盖 10 个 source origin 的 21 个 license/NOTICE 候选证据索引；逐包审查项、完整 NOTICE、对应源码交付审查与发行批准仍未闭环。以下 URL 与命令用于审计和本地开发，不构成公开再分发授权。应用必须先完成自己的法律与发行审查。
+> 固定 v0.3.3 归档已有可复现 package inventory、SPDX SBOM、默认配置证据、完整覆盖 inventory 的源码获取清单，以及 21 个 license/NOTICE 候选的工程复核结果；8 个 source origin 仍有逐包未决项，完整 NOTICE、对应源码交付审查与发行批准尚未闭环。以下 URL 与命令用于审计和本地开发，不构成公开再分发授权。应用必须先完成自己的法律与发行审查。
 
 ## 1. 固定清单
 
@@ -114,14 +114,17 @@ ruby Scripts/prepare-rootfs-license-review.rb \
 ruby Scripts/prepare-rootfs-license-review.rb \
   --source-bundle /absolute/new/path/outside-the-repository/rootfs-v0.3.3-source-review \
   --verify /absolute/new/path/outside-the-repository/rootfs-v0.3.3-license-review
+
+ruby Scripts/rootfs-license-review-results.rb
 ```
 
 脚本固定并校验 10 个 aports source snapshot 和 9 个 upstream distfile，不执行
 `APKBUILD`；`--verify` 会复核普通文件摘要、目录集合和符号链接目标。脚本不向 App、
 Git 或 CI artifact 自动添加输出。这完成的是可复现的工程获取流程。archive 内没有
 随附可识别的 LICENSE/COPYING/NOTICE 文件。候选工具会核对提取文件的大小、
-SHA-256、精确路径集合与无链接/特殊节点边界，但 `LICENSE-REVIEW.json` 的逐包
-未决项仍需负责人关闭；输出不能直接视为完整 NOTICE 或对应源码交付材料。
+SHA-256、精确路径集合与无链接/特殊节点边界。固定结果清单记录 21/21 个候选均已
+工程复核，其中 `libc-dev`、`zlib` 的索引项已关闭，另外 8 个 source origin 仍有
+未决项；输出不能直接视为完整 NOTICE 或对应源码交付材料。
 
 不要把归档放入 `Sources/PocketRootResources/Resources`、Demo resources 或 Git LFS。合规完成前，`PocketRootBundledRootFSProvider` 的资源查找预期返回 `nil`。
 

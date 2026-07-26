@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-07-25T00:00:00Z",
+  "generatedAt": "2026-07-26T00:00:00Z",
   "generator": "Scripts/generate-rootfs-compliance.rb",
   "archive": {
     "version": "v0.3.3",
@@ -39,7 +39,9 @@
     "sourceOrigins": 10,
     "declaredLicenseExpressions": 7,
     "licenseOrNoticeFilesInGuestTemplate": 0,
-    "indexedExternalLicenseReviewCandidates": 21
+    "indexedExternalLicenseReviewCandidates": 21,
+    "engineeringReviewedLicenseCandidates": 21,
+    "sourceOriginsWithRemainingLicenseReviewItems": 8
   },
   "engineeringStatus": {
     "completeInstalledPackageInventory": true,
@@ -47,6 +49,7 @@
     "runtimeConfigurationRecorded": true,
     "completeSourceAcquisitionManifest": true,
     "completeLicenseReviewCandidateIndex": true,
+    "licenseCandidateEngineeringReviewCompleted": true,
     "completeLicenseAndNoticeBundle": false,
     "correspondingSourceBundleCollected": false,
     "redistributionApproved": false
