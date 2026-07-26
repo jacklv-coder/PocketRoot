@@ -33,6 +33,10 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
 - 加入 checksum-bound `LICENSE-REVIEW-RESULTS.json` 和严格验证器；21/21 个固定
   RootFS license/NOTICE 候选已完成工程复核，8 个 source origin 仍有包级未决项，
   法律与再分发门禁保持关闭。
+- 为剩余 8 个 RootFS source origin 加入 checksum-bound
+  `LICENSE-NOTICE-CANDIDATES.json`、严格验证器和仓库外原子 materializer；索引
+  8 份远端许可证/attribution 材料、46 份 aports 文件与 21 份既有证据，支持完整
+  复验，但不提交 payload，也不解除工程、法律或再分发门禁。
 - 加入完整 Experimental graph 的 arm64 Simulator 与 unsigned device final-link gate。
 - 加入 repository-owned iOS 18 native smoke App 和 runner，覆盖 17 项 prepare、boot、guest、8 MiB 持续二进制输出、stdout/stderr 超限、command、取消、recovery、shutdown 与 256 MiB Simulator 生命周期峰值内存门禁。
 - native smoke 新增仓库外、未授权 RootFS 双构建候选入口：校验候选 provenance、

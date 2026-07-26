@@ -36,6 +36,11 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   pinned RootFS license/NOTICE candidates have engineering review results;
   eight source origins retain package-level open items, and legal and
   redistribution gates remain closed.
+- A checksum-bound `LICENSE-NOTICE-CANDIDATES.json`, strict validator, and
+  outside-repository atomic materializer for the eight remaining RootFS source
+  origins. It indexes 8 remote license/attribution payloads, 46 aports files,
+  and the 21 existing evidence files for complete re-verification without
+  committing payloads or opening engineering, legal, or redistribution gates.
 - arm64 Simulator and unsigned-device final-link gates for the full Experimental graph.
 - Repository iOS 18 native smoke covering 17 preparation, boot, guest, 8 MiB sustained binary-output, stdout/stderr overflow, command, cancellation, recovery, shutdown, and 256 MiB Simulator lifecycle peak-memory checks.
 - A repository-external, unapproved RootFS double-build candidate path for the

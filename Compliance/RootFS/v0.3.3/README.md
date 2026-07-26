@@ -20,6 +20,9 @@ pinned RootFS archive. It does not store the RootFS payload.
   attribution、声明与内联 notice 的路径、大小、SHA-256 和逐包未决审查项；
 - `LICENSE-REVIEW-RESULTS.json`：对全部 21 个候选的 checksum-bound 工程复核
   结论、coverage 和未决项处置；不表示法律或再分发批准；
+- `LICENSE-NOTICE-CANDIDATES.json`：为剩余 8 个 source origin 固定 8 份远端
+  许可证/attribution 材料、46 份 aports 补充文件及现有 21 份复核证据的外置候选包；
+  payload 不提交，工程、法律和再分发门禁保持关闭；
 - `RUNTIME-CONFIGURATION.json`：guest、`apk`、repository、world 和 DNS 默认配置；
 - `NOTICE.md`：可复现 attribution inventory 与尚未完成事项；
 - `EVIDENCE.json`：输入成员摘要、数量和明确的工程/发行状态；
@@ -32,7 +35,11 @@ manifest, not a committed source archive or redistribution grant.
 10 source origins; it is an engineering review index, not legal approval.
 `LICENSE-REVIEW-RESULTS.json` records the engineering review of all 21 pinned
 candidates. Two source origins have no remaining indexed review items; eight
-still have package-specific open items.
+still have package-specific open items. `LICENSE-NOTICE-CANDIDATES.json`
+indexes an external candidate bundle for those eight origins: 8 pinned remote
+license/attribution payloads, 46 supplemental aports files, and the existing
+21 reviewed evidence files. It neither commits those payloads nor approves
+engineering, legal, or redistribution gates.
 
 ## 重新生成 / Regenerate
 
@@ -128,12 +135,46 @@ rechecks byte counts, SHA-256 digests, the exact path set, and the no-symlink/
 special-node boundary. The results manifest proves engineering review of all
 21 candidates; the external output is still not a product-ready NOTICE bundle.
 
+剩余 8 个 source origin 的材料可继续组装为外置候选包。先校验清单；实际物化
+必须同时提供已经通过 `--verify` 的 source-review 和 license-review 目录，以及
+一个尚不存在的仓库外输出路径：
+
+The remaining eight origins can be assembled into an external candidate
+bundle. Validate the manifest first. Materialization requires source-review
+and license-review directories that already pass `--verify`, plus a new output
+path outside the repository:
+
+```bash
+ruby Scripts/rootfs-license-notice-candidates.rb
+ruby Scripts/prepare-rootfs-license-notice-bundle.rb --validate-only
+
+ruby Scripts/prepare-rootfs-license-notice-bundle.rb \
+  --source-bundle /absolute/rootfs-v0.3.3-source-review \
+  --license-review /absolute/rootfs-v0.3.3-license-review \
+  --output /absolute/new/rootfs-v0.3.3-license-notice-candidates
+
+ruby Scripts/prepare-rootfs-license-notice-bundle.rb \
+  --source-bundle /absolute/rootfs-v0.3.3-source-review \
+  --license-review /absolute/rootfs-v0.3.3-license-review \
+  --verify /absolute/rootfs-v0.3.3-license-notice-candidates
+```
+
+远端材料由固定 URL、字节数和 SHA-256 约束；可选 `--download-cache` 只读取以
+`cacheKey` 命名的本地普通文件并再次校验。输出包含候选 NOTICE、receipt 和
+`SHA256SUMS`，但仍是工程审查输入，不是产品 NOTICE、法律意见或再分发批准。
+
+Remote payloads are pinned by URL, byte count, and SHA-256. An optional
+`--download-cache` reads only local regular files named by each `cacheKey` and
+revalidates them. The output includes a candidate NOTICE, receipt, and
+`SHA256SUMS`; it remains engineering-review input, not a product NOTICE, legal
+advice, or redistribution approval.
+
 ## 未解除的门禁 / Open gates
 
 这些文件不构成完整第三方 LICENSE/NOTICE bundle、经审查的 copyleft
 corresponding-source 交付、法律意见或再分发授权。源码获取清单已完整覆盖固定
 inventory，21 个候选也都有工程复核结果；`libc-dev`、`zlib` 已关闭索引项，另外
-8 个 source origin 仍需补齐许可证正文或包级版权/notice。修改说明、构建完整性、
+8 个 source origin 的新候选材料仍需工程/法律复核和包级版权/notice 确认。修改说明、构建完整性、
 源码提供方式、App Store 2.5.2 产品策略和负责人批准仍是发行阻塞项。
 
 These files are not a complete third-party LICENSE/NOTICE bundle, reviewed
@@ -141,6 +182,7 @@ copyleft corresponding-source delivery, legal advice, or redistribution
 approval. The acquisition manifest completely covers the pinned inventory and
 all 21 indexed candidates have engineering review results. `libc-dev` and
 `zlib` have no remaining indexed items; eight source origins still need
-license-text or package-specific notice follow-up. Modification, build
+engineering/legal review of the newly indexed candidates and package-specific
+notice follow-up. Modification, build
 completeness, source-offer mechanics, legal review, App Store 2.5.2 product
 policy, and authorized approval remain distribution blockers.

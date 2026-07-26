@@ -39,21 +39,29 @@ jobs:
           ruby -c Scripts/prepare-rootfs-smoke-manifest.rb
           ruby -c Scripts/rootfs-license-review.rb
           ruby -c Scripts/rootfs-license-review-results.rb
+          ruby -c Scripts/rootfs-license-notice-candidates.rb
           ruby -c Scripts/prepare-rootfs-license-review.rb
+          ruby -c Scripts/prepare-rootfs-license-notice-bundle.rb
           ruby -c Scripts/rootfs-source-acquisition.rb
           ruby -c Scripts/prepare-rootfs-source-bundle.rb
           bash -n Tests/Scripts/RuntimeSmokeScriptTests.sh
           bash -n Tests/Scripts/RootFSCandidateSmokeManifestTests.sh
           ruby -c Tests/Scripts/RootFSLicenseReviewTests.rb
           ruby -c Tests/Scripts/RootFSLicenseReviewResultsTests.rb
+          ruby -c Tests/Scripts/RootFSLicenseNoticeCandidatesTests.rb
+          ruby -c Tests/Scripts/RootFSLicenseNoticeBundleTests.rb
           ruby -c Tests/Scripts/RootFSSourceBundleTests.rb
           bash Tests/Scripts/RuntimeSmokeScriptTests.sh
           bash Tests/Scripts/RootFSCandidateSmokeManifestTests.sh
           ruby Tests/Scripts/RootFSLicenseReviewTests.rb
           ruby Tests/Scripts/RootFSLicenseReviewResultsTests.rb
+          ruby Tests/Scripts/RootFSLicenseNoticeCandidatesTests.rb
+          ruby Tests/Scripts/RootFSLicenseNoticeBundleTests.rb
           ruby Tests/Scripts/RootFSSourceBundleTests.rb
           ruby Scripts/prepare-rootfs-license-review.rb --validate-only
           ruby Scripts/rootfs-license-review-results.rb
+          ruby Scripts/rootfs-license-notice-candidates.rb
+          ruby Scripts/prepare-rootfs-license-notice-bundle.rb --validate-only
           ruby Scripts/prepare-rootfs-source-bundle.rb --validate-only
 
       - name: Report Apple toolchain
