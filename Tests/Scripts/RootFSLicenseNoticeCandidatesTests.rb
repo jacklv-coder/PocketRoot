@@ -28,7 +28,7 @@ class RootFSLicenseNoticeCandidatesTests < Minitest::Test
     validated = validate
 
     assert_equal 8, validated.fetch(:sources).length
-    assert_equal 8, validated.fetch(:remote_payloads).length
+    assert_equal 10, validated.fetch(:remote_payloads).length
     assert_equal 21, validated.fetch(:existing_evidence_paths).length
     assert_equal 46, validated.fetch(:aports_paths).length
   end

@@ -108,6 +108,28 @@
     },
     {
       "kind": "package-attribution",
+      "sourceOrigin": "openssl",
+      "retrievalURLs": [
+        "https://raw.githubusercontent.com/openssl/openssl/01d5e2318405362b4de5e670c90d9b40a351d053/apps/CA.pl.in"
+      ],
+      "cacheKey": "openssl-3.1.4-CA.pl.in",
+      "outputPath": "supplemental/openssl/CA.pl.in",
+      "byteCount": 8041,
+      "sha256": "eac0e1059a78f7eb5b17ac90fbc3de5f1345c54dd890674aa36c9b4788b0c92a"
+    },
+    {
+      "kind": "package-attribution",
+      "sourceOrigin": "openssl",
+      "retrievalURLs": [
+        "https://raw.githubusercontent.com/openssl/openssl/01d5e2318405362b4de5e670c90d9b40a351d053/apps/tsget.in"
+      ],
+      "cacheKey": "openssl-3.1.4-tsget.in",
+      "outputPath": "supplemental/openssl/tsget.in",
+      "byteCount": 6778,
+      "sha256": "36239180730dd8fd7a3c448981a7e71bd5f7a93576865949d865fabee4fc2188"
+    },
+    {
+      "kind": "package-attribution",
       "sourceOrigin": "pax-utils",
       "retrievalURLs": [
         "https://raw.githubusercontent.com/gentoo/pax-utils/d49fa503588cb9a89eda7eb7141b65507fa126ce/README.md"
@@ -309,7 +331,9 @@
         "aports/openssl/man-section.patch"
       ],
       "remoteEvidencePaths": [
-        "supplemental/openssl/README.md"
+        "supplemental/openssl/README.md",
+        "supplemental/openssl/CA.pl.in",
+        "supplemental/openssl/tsget.in"
       ],
       "remainingReviewItems": [
         "confirm-required-apache-notice-and-attribution-material"

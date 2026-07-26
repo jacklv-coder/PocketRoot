@@ -20,11 +20,11 @@ pinned RootFS archive. It does not store the RootFS payload.
   attribution、声明与内联 notice 的路径、大小、SHA-256 和逐包未决审查项；
 - `LICENSE-REVIEW-RESULTS.json`：对全部 21 个候选的 checksum-bound 工程复核
   结论、coverage 和未决项处置；不表示法律或再分发批准；
-- `LICENSE-NOTICE-CANDIDATES.json`：为剩余 8 个 source origin 固定 8 份远端
+- `LICENSE-NOTICE-CANDIDATES.json`：为剩余 8 个 source origin 固定 10 份远端
   许可证/attribution 材料、46 份 aports 补充文件及现有 21 份复核证据的外置候选包；
   payload 不提交，工程、法律和再分发门禁保持关闭；
-- `LICENSE-NOTICE-REVIEW-RESULTS.json`：绑定候选清单与 75 个 payload 文件树的
-  工程复核结果；2 个 origin 的候选材料工程项关闭，6 个仍需补逐包材料，法律和
+- `LICENSE-NOTICE-REVIEW-RESULTS.json`：绑定候选清单与 77 个 payload 文件树的
+  工程复核结果；3 个 origin 的候选材料工程项关闭，5 个仍需补逐包材料，法律和
   再分发门禁保持关闭；
 - `RUNTIME-CONFIGURATION.json`：guest、`apk`、repository、world 和 DNS 默认配置；
 - `NOTICE.md`：可复现 attribution inventory 与尚未完成事项；
@@ -39,12 +39,43 @@ manifest, not a committed source archive or redistribution grant.
 `LICENSE-REVIEW-RESULTS.json` records the engineering review of all 21 pinned
 candidates. Two source origins have no remaining indexed review items; eight
 still have package-specific open items. `LICENSE-NOTICE-CANDIDATES.json`
-indexes an external candidate bundle for those eight origins: 8 pinned remote
+indexes an external candidate bundle for those eight origins: 10 pinned remote
 license/attribution payloads, 46 supplemental aports files, and the existing
 21 reviewed evidence files. `LICENSE-NOTICE-REVIEW-RESULTS.json` binds the
-engineering review to the exact 75-file payload tree. Two origins have no
-remaining candidate-material engineering items; six still require
+engineering review to the exact 77-file payload tree. Three origins have no
+remaining candidate-material engineering items; five still require
 package-specific material. Legal and redistribution approval remain open.
+
+OpenSSL 的工程结论绑定固定 `openssl-3.1.4.tar.gz`：源包根目录没有
+`NOTICE` 文件；固定 RootFS 的 APK database 将 guest 路径
+`/etc/ssl/misc/CA.pl` 与 `/etc/ssl/misc/tsget.pl` 归属到 inventory 中的
+`libcrypto3`。归档内 canonical guest-template 文件分别为 8,062 字节、
+SHA-256 `35a85ebe05ac4ee42a0efe544c02ad2c70bf374c4dcd8bf5aaf403b7c1b6cdd8`
+和 6,746 字节、SHA-256
+`1c303a261c93d09a04dbb5b4167e93553607a8d06e968bd1cf06325933c147bc`。
+候选包中的 `LICENSE.txt`、`AUTHORS.md`、`README.md`、`CA.pl.in` 和
+`tsget.in` 与固定源包字节一致；两个源码模板的 license/attribution 头部与上述
+生成后的安装文件一致，覆盖 OpenSSL Project、OpenTSA Project 及 Eric A.
+Young/Tim J. Hudson 版权归属。因此
+`confirm-required-apache-notice-and-attribution-material` 已在工程层关闭；
+这不表示法律审查或再分发批准。
+
+The OpenSSL engineering conclusion is bound to the pinned
+`openssl-3.1.4.tar.gz`: its source root contains no `NOTICE` file. The pinned
+RootFS APK database assigns guest paths `/etc/ssl/misc/CA.pl` and
+`/etc/ssl/misc/tsget.pl` to the inventoried `libcrypto3` package. Their
+canonical guest-template files are 8,062 bytes with SHA-256
+`35a85ebe05ac4ee42a0efe544c02ad2c70bf374c4dcd8bf5aaf403b7c1b6cdd8`
+and 6,746 bytes with SHA-256
+`1c303a261c93d09a04dbb5b4167e93553607a8d06e968bd1cf06325933c147bc`,
+respectively. The candidate `LICENSE.txt`, `AUTHORS.md`, `README.md`,
+`CA.pl.in`, and `tsget.in` are byte-identical to the pinned source; the two
+source-template license/attribution headers match the generated installed
+files and cover the OpenSSL Project, OpenTSA Project, and Eric A. Young/Tim J.
+Hudson copyright attributions. The
+`confirm-required-apache-notice-and-attribution-material` item is therefore
+closed at the engineering level only; this is not legal review or
+redistribution approval.
 
 ## 重新生成 / Regenerate
 
@@ -212,18 +243,18 @@ advice, or redistribution approval.
 这些文件不构成完整第三方 LICENSE/NOTICE bundle、经审查的 copyleft
 corresponding-source 交付、法律意见或再分发授权。源码获取清单已完整覆盖固定
 inventory，21 个候选也都有工程复核结果；`libc-dev`、`zlib` 已关闭索引项，另外
-8 个 source origin 的 75 个新候选 payload 已完成 checksum-bound 工程复核；
-`apk-tools`、`pax-utils` 的候选材料工程项已关闭，另外 6 个 origin 仍需补逐包
-版权/notice 材料。修改说明、构建完整性、源码提供方式、法律审查、App Store
-2.5.2 产品策略和负责人批准仍是发行阻塞项。
+8 个 source origin 的 77 个新候选 payload 已完成 checksum-bound 工程复核；
+`apk-tools`、`openssl`、`pax-utils` 的候选材料工程项已关闭，另外 5 个
+origin 仍需补逐包版权/notice 材料。修改说明、构建完整性、源码提供方式、法律
+审查、App Store 2.5.2 产品策略和负责人批准仍是发行阻塞项。
 
 These files are not a complete third-party LICENSE/NOTICE bundle, reviewed
 copyleft corresponding-source delivery, legal advice, or redistribution
 approval. The acquisition manifest completely covers the pinned inventory and
 all 21 indexed candidates have engineering review results. `libc-dev` and
-`zlib` have no remaining indexed items. All 75 newly indexed payloads have a
-checksum-bound engineering review; `apk-tools` and `pax-utils` have no
-remaining candidate-material engineering items, while six origins still need
-package-specific copyright/notice material. Modification, build completeness,
-source-offer mechanics, legal review, App Store 2.5.2 product policy, and
-authorized approval remain distribution blockers.
+`zlib` have no remaining indexed items. All 77 newly indexed payloads have a
+checksum-bound engineering review; `apk-tools`, `openssl`, and `pax-utils`
+have no remaining candidate-material engineering items, while five origins
+still need package-specific copyright/notice material. Modification, build
+completeness, source-offer mechanics, legal review, App Store 2.5.2 product
+policy, and authorized approval remain distribution blockers.
