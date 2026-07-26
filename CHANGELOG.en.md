@@ -32,17 +32,17 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   declared-license/attribution inventories, and default `apk`, repository, and
   DNS configuration; complete LICENSE/NOTICE and corresponding-source bundles
   remain distribution blockers.
-- A checksum-bound `LICENSE-REVIEW-RESULTS.json` and strict validator. All 23
+- A checksum-bound `LICENSE-REVIEW-RESULTS.json` and strict validator. All 24
   pinned RootFS license/NOTICE candidates have engineering review results;
   eight source origins retain package-level open items, and legal and
   redistribution gates remain closed.
 - A checksum-bound `LICENSE-NOTICE-CANDIDATES.json`, strict validator, and
   outside-repository atomic materializer for the eight remaining RootFS source
   origins. It indexes 13 remote license/attribution payloads, 47 aports files,
-  and the 23 existing evidence files for complete re-verification without
+  and the 24 existing evidence files for complete re-verification without
   committing payloads or opening engineering, legal, or redistribution gates.
 - `LICENSE-NOTICE-REVIEW-RESULTS.json` and a strict external payload-tree
-  verifier. All 83 candidate payloads now have checksum-bound engineering
+  verifier. All 84 candidate payloads now have checksum-bound engineering
   review. The pinned upstream `alpine-keys` GPL-to-MIT license-decision commit
   is included while its package-level copyright notice remains open. The
   `ca-certificates` generator is byte-identical to curl commit `3fdc4bdb`, and
@@ -50,8 +50,9 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   open. The pinned BusyBox configuration now binds enabled bzip2 support to
   its exact source license, confirms that enabled ash arithmetic links
   `shell/math.c`, which retains complete MIT and BSD-3-Clause notices, and
-  confirms that the installed `env` applet links `coreutils/env.c`, which
-  retains its complete BSD notice; other inline third-party notices stay open;
+  confirms that the installed `env` and `echo` applets link
+  `coreutils/env.c` and `coreutils/echo.c`, respectively, with complete BSD
+  notices; other inline third-party notices stay open;
   `apk-tools`, `openssl`, and `pax-utils` have no remaining
   candidate-material engineering items, five origins still need
   package-specific material, and

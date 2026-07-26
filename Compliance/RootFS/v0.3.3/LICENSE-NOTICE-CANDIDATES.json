@@ -4,7 +4,7 @@
     "version": "v0.3.3",
     "sha256": "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"
   },
-  "licenseReviewResultsSha256": "1c714f4b65e01a1a35cbfa58a8b964e511c67187e00a010d7036439f6c013d43",
+  "licenseReviewResultsSha256": "c6a98e9cd36e12758a41ac6ff57fa437eefb2742449cd58843024b2fd507bfbd",
   "status": "candidate-bundle-indexed-engineering-review-required",
   "candidateBundleIndexComplete": true,
   "candidatePayloadCommitted": false,
@@ -247,7 +247,8 @@
         "evidence/busybox/LICENSE",
         "evidence/busybox/bzip2-LICENSE",
         "evidence/busybox/shell-math.c",
-        "evidence/busybox/coreutils-env.c"
+        "evidence/busybox/coreutils-env.c",
+        "evidence/busybox/coreutils-echo.c"
       ],
       "referenceLicensePaths": [
         "licenses/GPL-2.0.txt"
@@ -296,6 +297,7 @@
         "confirm-enabled-bzip2-license-and-attribution-coverage",
         "confirm-enabled-ash-math-license-and-attribution-coverage",
         "confirm-enabled-env-license-and-attribution-coverage",
+        "confirm-enabled-echo-license-and-attribution-coverage",
         "review-other-bundled-third-party-license-and-attribution-coverage",
         "confirm-aports-patch-notices"
       ],
