@@ -72,12 +72,12 @@ machine-readable SBOM。仓库现在从固定 archive 可复现生成 15 个已�
 `apk`、repository、DNS 默认配置快照。archive 内没有发现可识别的
 LICENSE/COPYING/NOTICE 文件。仓库另有与 inventory 一一对应、固定 checksum 的
 aports snapshot/upstream distfile 获取清单和仓库外 materializer，并固定了覆盖
-全部 10 个 source origin 的 24 个 license、attribution、声明与内联 notice 候选。
+全部 10 个 source origin 的 25 个 license、attribution、声明与内联 notice 候选。
 第二个仓库外工具从已验证 source-review 目录提取这些候选；固定结果清单记录
-24/24 个候选均已工程复核，`libc-dev`、`zlib` 的索引项已关闭，另外 8 个 source
+25/25 个候选均已工程复核，`libc-dev`、`zlib` 的索引项已关闭，另外 8 个 source
 origin 仍有逐包未决项。仓库现已为这 8 个 origin 固定外置候选包：13 份远端
 许可证/attribution 材料、47 份 aports 补充文件和全部既有复核证据；工具可在
-仓库外原子生成并复验。固定结果清单把工程复核绑定到精确的 84 文件 payload
+仓库外原子生成并复验。固定结果清单把工程复核绑定到精确的 85 文件 payload
 tree；`apk-tools`、`openssl`、`pax-utils` 的候选材料工程项已关闭，另外 5 个
 origin 仍需补逐包材料。修改与构建完整性、源码提供方式和法律审查仍未完成，
 不能视为完整 NOTICE 或已批准的对应源码交付。
@@ -176,10 +176,10 @@ Alpine `apk` 可以下载、安装和执行新增代码。即使初始 RootFS �
 
 - [x] 从固定 APK database 生成完整 package inventory。
 - [x] 生成并通过 SPDX 2.3 JSON schema 校验的 machine-readable SBOM。
-- [x] 对固定的 24 个 license/NOTICE 候选完成 checksum-bound 工程复核。
+- [x] 对固定的 25 个 license/NOTICE 候选完成 checksum-bound 工程复核。
 - [x] 为剩余 8 个 source origin 建立 checksum-bound 外置候选包索引与可复验
   materializer；payload 不提交且批准门禁保持关闭。
-- [x] 对外置候选包的 84 个 payload 完成 checksum-bound 工程复核并固定结果；
+- [x] 对外置候选包的 85 个 payload 完成 checksum-bound 工程复核并固定结果；
   3 个 origin 的候选材料工程项关闭，5 个仍需补逐包材料。
 - [ ] 收集 license text 和 NOTICE。
 - [ ] 建立 copyleft corresponding source bundle。

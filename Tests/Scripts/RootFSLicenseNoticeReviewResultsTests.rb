@@ -47,7 +47,7 @@ class RootFSLicenseNoticeReviewResultsTests < Minitest::Test
     assert_equal 8, validated.fetch(:sources).length
     assert_equal 13, validated.fetch(:remote_payloads).length
     assert_equal 47, validated.fetch(:aports_paths).length
-    assert_equal 84, @results.fetch("reviewedPayloadFileCount")
+    assert_equal 85, @results.fetch("reviewedPayloadFileCount")
     assert_equal 5,
       @results.fetch("sourceOriginsWithRemainingReviewItems")
     assert_equal %w[apk-tools openssl pax-utils],
@@ -136,7 +136,7 @@ class RootFSLicenseNoticeReviewResultsTests < Minitest::Test
 
     assert_equal "partial", source.fetch("licenseTextCoverage")
     assert_equal "partial", source.fetch("attributionCoverage")
-    assert_equal 6, source.fetch("reviewedExistingEvidenceCount")
+    assert_equal 7, source.fetch("reviewedExistingEvidenceCount")
     assert_includes(
       source.fetch("resolvedReviewItems"),
       "confirm-enabled-ash-math-license-and-attribution-coverage"
@@ -158,7 +158,7 @@ class RootFSLicenseNoticeReviewResultsTests < Minitest::Test
 
     assert_equal "partial", source.fetch("licenseTextCoverage")
     assert_equal "partial", source.fetch("attributionCoverage")
-    assert_equal 6, source.fetch("reviewedExistingEvidenceCount")
+    assert_equal 7, source.fetch("reviewedExistingEvidenceCount")
     assert_includes(
       source.fetch("resolvedReviewItems"),
       "confirm-enabled-env-license-and-attribution-coverage"
@@ -180,10 +180,32 @@ class RootFSLicenseNoticeReviewResultsTests < Minitest::Test
 
     assert_equal "partial", source.fetch("licenseTextCoverage")
     assert_equal "partial", source.fetch("attributionCoverage")
-    assert_equal 6, source.fetch("reviewedExistingEvidenceCount")
+    assert_equal 7, source.fetch("reviewedExistingEvidenceCount")
     assert_includes(
       source.fetch("resolvedReviewItems"),
       "confirm-enabled-echo-license-and-attribution-coverage"
+    )
+    assert_equal(
+      ["review-other-bundled-third-party-license-and-attribution-coverage"],
+      source.fetch("remainingReviewItems")
+    )
+    assert_equal(
+      "additional-package-material-required",
+      source.fetch("engineeringConclusion")
+    )
+  end
+
+  def test_binds_enabled_busybox_logger_to_inline_notice
+    source = @results.fetch("sources").find do |candidate|
+      candidate.fetch("sourceOrigin") == "busybox"
+    end
+
+    assert_equal "partial", source.fetch("licenseTextCoverage")
+    assert_equal "partial", source.fetch("attributionCoverage")
+    assert_equal 7, source.fetch("reviewedExistingEvidenceCount")
+    assert_includes(
+      source.fetch("resolvedReviewItems"),
+      "confirm-enabled-logger-license-and-attribution-coverage"
     )
     assert_equal(
       ["review-other-bundled-third-party-license-and-attribution-coverage"],
