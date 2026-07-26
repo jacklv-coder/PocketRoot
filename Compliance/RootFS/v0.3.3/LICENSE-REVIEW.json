@@ -217,6 +217,19 @@
             "attribution"
           ],
           "reviewState": "unreviewed-candidate"
+        },
+        {
+          "sourceKind": "distfile-member",
+          "distfile": "busybox-1.36.1.tar.bz2",
+          "member": "busybox-1.36.1/networking/ping.c",
+          "outputPath": "evidence/busybox/networking-ping.c",
+          "byteCount": 31080,
+          "sha256": "f5500d03eb8c681589cd99a861ce57bec208bfdded726b5529c61967e738a205",
+          "evidenceKinds": [
+            "inline-license-notice",
+            "attribution"
+          ],
+          "reviewState": "unreviewed-candidate"
         }
       ],
       "openReviewItems": [
@@ -226,6 +239,7 @@
         "confirm-enabled-echo-license-and-attribution-coverage",
         "confirm-enabled-logger-license-and-attribution-coverage",
         "confirm-enabled-cal-license-and-attribution-coverage",
+        "confirm-enabled-ping-and-ping6-license-and-attribution-coverage",
         "review-other-bundled-third-party-license-and-attribution-coverage",
         "confirm-aports-patch-notices"
       ]

@@ -29,7 +29,7 @@ class RootFSLicenseNoticeCandidatesTests < Minitest::Test
 
     assert_equal 8, validated.fetch(:sources).length
     assert_equal 13, validated.fetch(:remote_payloads).length
-    assert_equal 26, validated.fetch(:existing_evidence_paths).length
+    assert_equal 27, validated.fetch(:existing_evidence_paths).length
     assert_equal 47, validated.fetch(:aports_paths).length
   end
 
@@ -391,6 +391,49 @@ class RootFSLicenseNoticeCandidatesTests < Minitest::Test
     assert_equal 10_951, evidence.fetch("byteCount")
     assert_equal(
       "39798fa68229dcb25817d906ac1990cc147fd84065918a1404b56263d7a6e311",
+      evidence.fetch("sha256")
+    )
+    assert_equal(
+      %w[inline-license-notice attribution],
+      evidence.fetch("evidenceKinds")
+    )
+  end
+
+  def test_pins_enabled_busybox_ping_and_ping6_inline_notice
+    source = @candidate.fetch("sources").find do |candidate|
+      candidate.fetch("sourceOrigin") == "busybox"
+    end
+    review_source = @review.fetch("sources").find do |candidate|
+      candidate.fetch("sourceOrigin") == "busybox"
+    end
+    evidence = review_source.fetch("candidateEvidence").find do |candidate|
+      candidate.fetch("outputPath") == "evidence/busybox/networking-ping.c"
+    end
+
+    assert_includes(
+      source.fetch("existingEvidencePaths"),
+      "evidence/busybox/networking-ping.c"
+    )
+    assert_includes(
+      source.fetch("supplementalAportsPaths"),
+      "aports/busybox/busyboxconfig"
+    )
+    assert_includes(
+      source.fetch("supplementalAportsPaths"),
+      "aports/busybox/0016-ping-make-ping-work-without-root-privileges.patch"
+    )
+    assert_includes(
+      source.fetch("remainingReviewItems"),
+      "confirm-enabled-ping-and-ping6-license-and-attribution-coverage"
+    )
+    assert_includes(
+      source.fetch("remainingReviewItems"),
+      "review-other-bundled-third-party-license-and-attribution-coverage"
+    )
+    assert_equal "busybox-1.36.1/networking/ping.c", evidence.fetch("member")
+    assert_equal 31_080, evidence.fetch("byteCount")
+    assert_equal(
+      "f5500d03eb8c681589cd99a861ce57bec208bfdded726b5529c61967e738a205",
       evidence.fetch("sha256")
     )
     assert_equal(

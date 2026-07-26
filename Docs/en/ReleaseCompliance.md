@@ -36,15 +36,15 @@ the default `apk`, repository, and DNS snapshot. No identifiable
 LICENSE/COPYING/NOTICE file was found in the archive. A checksum-pinned
 aports-snapshot/upstream-distfile manifest covers the inventory, and an
 outside-repository materializer creates reproducible review inputs. A second
-outside-repository tool pins, extracts, and verifies 26 license, attribution,
+outside-repository tool pins, extracts, and verifies 27 license, attribution,
 declaration, and inline-notice candidates across all 10 source origins.
-A pinned result manifest records engineering review of all 26 candidates.
+A pinned result manifest records engineering review of all 27 candidates.
 `libc-dev` and `zlib` have no remaining indexed items; eight source origins
 still have package-level follow-up. The repository now pins an external
 candidate bundle for those origins: 13 remote license/attribution payloads,
 47 supplemental aports files, and all existing reviewed evidence. The tool can
 atomically materialize and re-verify it outside the repository. A pinned
-results manifest binds engineering review to the exact 86-file payload tree.
+results manifest binds engineering review to the exact 87-file payload tree.
 `apk-tools`, `openssl`, and `pax-utils` have no remaining candidate-material
 engineering items; five origins still need package-specific material. Modification,
 build-completeness, source-offer, and legal reviews remain unresolved, so the
@@ -117,12 +117,12 @@ The current code does not provide a complete product-level privacy policy.
 
 - [x] Generate a complete inventory from the pinned APK database.
 - [x] Generate a machine-readable SBOM validated against the SPDX 2.3 JSON schema.
-- [x] Complete checksum-bound engineering review of all 26 pinned
+- [x] Complete checksum-bound engineering review of all 27 pinned
   license/NOTICE candidates.
 - [x] Index a checksum-bound external candidate bundle and reproducible
   materializer for the eight remaining origins; payloads stay uncommitted and
   approval gates stay closed.
-- [x] Complete checksum-bound engineering review of all 86 external candidate
+- [x] Complete checksum-bound engineering review of all 87 external candidate
   payloads; three origins have no remaining candidate-material engineering
   items and five still need package-specific material.
 - [ ] Collect license texts and NOTICE files.

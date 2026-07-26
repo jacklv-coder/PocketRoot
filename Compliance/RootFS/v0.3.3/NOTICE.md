@@ -33,12 +33,12 @@ Generated from the exact `v0.3.3` archive with SHA-256
 No file whose path identifies it as LICENSE, COPYING, NOTICE, or a license-directory member was found in the guest template.
 
 Declared identifiers and expressions are recorded in
-`LICENSE-INVENTORY.json`. `LICENSE-REVIEW.json` pins 26
+`LICENSE-INVENTORY.json`. `LICENSE-REVIEW.json` pins 27
 candidate license, attribution, declaration, and inline-notice files across
 all 10 source origins. The external review tool
 extracts and verifies those candidates from the pinned source-review bundle.
 `LICENSE-REVIEW-RESULTS.json` records the checksum-bound engineering review
-of all 26 candidates. All indexed review items are resolved
+of all 27 candidates. All indexed review items are resolved
 for `libc-dev`, `zlib`.
 8 source origins still have package-specific open
 items, so this is not a complete or legally approved license/NOTICE bundle.
@@ -49,7 +49,7 @@ reference/attribution payloads and
 files, together with all checksum-bound reviewed evidence. The repository
 tool can materialize and re-verify that bundle outside the repository.
 `LICENSE-NOTICE-REVIEW-RESULTS.json` records checksum-bound engineering
-review of all 86 indexed
+review of all 87 indexed
 payload files. 3 origins have no remaining
 candidate-material engineering items; 5 origins
 still require package-specific material. Legal review and redistribution
