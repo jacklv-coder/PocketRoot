@@ -38,6 +38,12 @@ def parse_options
     commands.on("--output DIR", "New absolute directory outside the repository") do |path|
       options[:output] = path
     end
+    commands.on(
+      "--download-cache DIR",
+      "Optional external cache with downloads/aports and distfiles payloads"
+    ) do |path|
+      options[:download_cache] = path
+    end
     commands.on("--validate-only", "Validate manifest without downloading") do
       options[:validate_only] = true
     end
@@ -56,6 +62,10 @@ def parse_options
   unless selected_modes == 1
     raise OptionParser::InvalidOption,
       "select exactly one of --validate-only, --output, or --verify"
+  end
+  if options[:download_cache] && !options[:output]
+    raise OptionParser::InvalidOption,
+      "--download-cache requires --output"
   end
 
   options
@@ -101,7 +111,20 @@ def require_bundle_path(root, relative, label, type:)
   path
 end
 
-def validate_output(path)
+def resolve_external_directory(path, label)
+  directory = Pathname(path)
+  raise SourceBundleError, "#{label} must be absolute" unless directory.absolute?
+  raise SourceBundleError, "#{label} must not be a symlink" if directory.symlink?
+  raise SourceBundleError, "#{label} is not a directory" unless directory.directory?
+
+  resolved = directory.realpath
+  if within_path?(resolved, repository_root)
+    raise SourceBundleError, "#{label} must be outside the repository"
+  end
+  resolved
+end
+
+def validate_output(path, inputs = [])
   output = Pathname(path)
   raise SourceBundleError, "--output must be absolute" unless output.absolute?
   raise SourceBundleError, "--output already exists: #{output}" if output.exist? || output.symlink?
@@ -113,8 +136,95 @@ def validate_output(path)
   if within_path?(resolved_output, repository_root)
     raise SourceBundleError, "--output must be outside the repository"
   end
+  inputs.each do |input|
+    if within_path?(resolved_output, input) || within_path?(input, resolved_output)
+      raise SourceBundleError,
+        "--output must not overlap an input directory"
+    end
+  end
 
   resolved_output
+end
+
+def copy_cached_download(
+  cache,
+  relative,
+  destination,
+  expected_sha512,
+  maximum_bytes
+)
+  source = require_bundle_path(
+    cache,
+    relative,
+    "download cache payload #{relative}",
+    type: :file
+  )
+  if source.size > maximum_bytes
+    raise SourceBundleError,
+      "download cache payload #{relative} exceeds #{maximum_bytes} bytes"
+  end
+
+  destination.dirname.mkpath
+  destination.delete if destination.exist?
+  digest = Digest::SHA512.new
+  source_lstat = source.lstat
+  flags = File::RDONLY
+  flags |= File::NOFOLLOW if File.const_defined?(:NOFOLLOW)
+  File.open(source, flags) do |input|
+    input_stat = input.stat
+    unless input_stat.file? &&
+      input_stat.dev == source_lstat.dev &&
+      input_stat.ino == source_lstat.ino
+      raise SourceBundleError,
+        "download cache payload changed while opening: #{relative}"
+    end
+    File.open(destination, "wb") do |output|
+      while (chunk = input.read(64 * 1_024))
+        if output.pos + chunk.bytesize > maximum_bytes
+          raise SourceBundleError,
+            "download cache payload #{relative} exceeds #{maximum_bytes} bytes"
+        end
+        digest.update(chunk)
+        output.write(chunk)
+      end
+    end
+  end
+  unless digest.hexdigest == expected_sha512
+    raise SourceBundleError,
+      "download cache payload #{relative} SHA-512 mismatch"
+  end
+rescue StandardError
+  destination.delete if destination.exist?
+  raise
+end
+
+def acquire(
+  urls,
+  destination,
+  expected_sha512,
+  maximum_bytes,
+  cache: nil,
+  cache_relative: nil
+)
+  if cache
+    copy_cached_download(
+      cache,
+      cache_relative,
+      destination,
+      expected_sha512,
+      maximum_bytes
+    )
+    return {
+      "acquisitionMode" => "download-cache",
+      "cachePath" => cache_relative
+    }
+  end
+
+  {
+    "acquisitionMode" => "network",
+    "selectedURL" =>
+      download(urls, destination, expected_sha512, maximum_bytes)
+  }
 end
 
 def download(urls, destination, expected_sha512, maximum_bytes)
@@ -474,8 +584,10 @@ def expected_bundle_path_types(sources, identities)
 end
 
 def verify_receipt(receipt, manifest, sources, root, identities)
-  unless receipt["schemaVersion"] == 1 &&
+  acquisition_mode = receipt["acquisitionMode"]
+  unless receipt["schemaVersion"] == 2 &&
     receipt["archive"] == manifest["archive"] &&
+    %w[network download-cache].include?(acquisition_mode) &&
     receipt["redistributionApproved"] == false
     raise SourceBundleError, "materialization receipt has invalid release metadata"
   end
@@ -488,10 +600,20 @@ def verify_receipt(receipt, manifest, sources, root, identities)
     origin = source.fetch("sourceOrigin")
     snapshot = source.fetch("aportsSnapshot")
     recorded = receipt_sources[index]
+    snapshot_acquisition_valid =
+      recorded.is_a?(Hash) &&
+        if acquisition_mode == "download-cache"
+          !recorded.key?("aportsSnapshotURL") &&
+            recorded["aportsCachePath"] ==
+              "downloads/aports/#{origin}.tar.gz"
+        else
+          !recorded.key?("aportsCachePath") &&
+            recorded["aportsSnapshotURL"] == snapshot["url"]
+        end
     unless recorded.is_a?(Hash) &&
       recorded["sourceOrigin"] == origin &&
       recorded["aportsCommit"] == source["aportsCommit"] &&
-      recorded["aportsSnapshotURL"] == snapshot["url"] &&
+      snapshot_acquisition_valid &&
       recorded["aportsCanonicalTreeFormat"] ==
         manifest["aportsCanonicalTreeFormat"] &&
       recorded["aportsCanonicalTreeSha256"] ==
@@ -522,10 +644,23 @@ def verify_receipt(receipt, manifest, sources, root, identities)
     end
     expected_distfiles.each_with_index do |distfile, offset|
       distfile_record = recorded_distfiles[offset]
+      expected_cache_path =
+        "distfiles/#{origin}/#{distfile.fetch("filename")}"
+      distfile_acquisition_valid =
+        distfile_record.is_a?(Hash) &&
+          if acquisition_mode == "download-cache"
+            !distfile_record.key?("selectedURL") &&
+              distfile_record["cachePath"] == expected_cache_path
+          else
+            !distfile_record.key?("cachePath") &&
+              distfile["retrievalURLs"].include?(
+                distfile_record["selectedURL"]
+              )
+          end
       unless distfile_record.is_a?(Hash) &&
         distfile_record["filename"] == distfile["filename"] &&
         distfile_record["sha512"] == distfile["sha512"] &&
-        distfile["retrievalURLs"].include?(distfile_record["selectedURL"])
+        distfile_acquisition_valid
         raise SourceBundleError,
           "materialization receipt has invalid distfile record for " \
           "#{origin}/#{distfile["filename"]}"
@@ -755,7 +890,7 @@ def notice_text(manifest, source_count, distfile_count)
   MARKDOWN
 end
 
-def materialize(manifest, sources, output)
+def materialize(manifest, sources, output, download_cache: nil)
   staging = output.parent.join(".#{output.basename}.tmp-#{Process.pid}-#{SecureRandom.hex(6)}")
   raise SourceBundleError, "staging path already exists: #{staging}" if staging.exist?
 
@@ -766,11 +901,13 @@ def materialize(manifest, sources, output)
       origin = entry.fetch("sourceOrigin")
       snapshot = entry.fetch("aportsSnapshot")
       snapshot_archive = staging.join("downloads", "aports", "#{origin}.tar.gz")
-      snapshot_url = download(
+      snapshot_acquisition = acquire(
         [snapshot.fetch("url")],
         snapshot_archive,
         snapshot.fetch("sha512"),
-        MAX_SNAPSHOT_DOWNLOAD_BYTES
+        MAX_SNAPSHOT_DOWNLOAD_BYTES,
+        cache: download_cache,
+        cache_relative: "downloads/aports/#{origin}.tar.gz"
       )
       snapshot_symlinks = extract_and_verify_snapshot(
         snapshot_archive,
@@ -795,22 +932,27 @@ def materialize(manifest, sources, output)
 
       receipt_distfiles = entry.fetch("distfiles").map do |distfile|
         destination = staging.join("distfiles", origin, distfile.fetch("filename"))
-        selected_url = download(
+        distfile_acquisition = acquire(
           distfile.fetch("retrievalURLs"),
           destination,
           distfile.fetch("sha512"),
-          MAX_DISTFILE_DOWNLOAD_BYTES
+          MAX_DISTFILE_DOWNLOAD_BYTES,
+          cache: download_cache,
+          cache_relative:
+            "distfiles/#{origin}/#{distfile.fetch("filename")}"
         )
         {
           "filename" => distfile.fetch("filename"),
-          "selectedURL" => selected_url,
           "sha512" => distfile.fetch("sha512")
-        }
+        }.merge(
+          distfile_acquisition["acquisitionMode"] == "download-cache" ?
+            {"cachePath" => distfile_acquisition.fetch("cachePath")} :
+            {"selectedURL" => distfile_acquisition.fetch("selectedURL")}
+        )
       end
-      receipt_sources << {
+      receipt_source = {
         "sourceOrigin" => origin,
         "aportsCommit" => entry.fetch("aportsCommit"),
-        "aportsSnapshotURL" => snapshot_url,
         "aportsCanonicalTreeFormat" =>
           manifest.fetch("aportsCanonicalTreeFormat"),
         "aportsCanonicalTreeSha256" => snapshot.fetch("canonicalTreeSha256"),
@@ -822,6 +964,14 @@ def materialize(manifest, sources, output)
         end,
         "distfiles" => receipt_distfiles
       }
+      if snapshot_acquisition["acquisitionMode"] == "download-cache"
+        receipt_source["aportsCachePath"] =
+          snapshot_acquisition.fetch("cachePath")
+      else
+        receipt_source["aportsSnapshotURL"] =
+          snapshot_acquisition.fetch("selectedURL")
+      end
+      receipt_sources << receipt_source
     end
 
     staging.join("SOURCE-ACQUISITION.json").binwrite(
@@ -831,8 +981,10 @@ def materialize(manifest, sources, output)
       notice_text(manifest, sources.length, sources.sum { |entry| entry.fetch("distfiles").length })
     )
     receipt = {
-      "schemaVersion" => 1,
+      "schemaVersion" => 2,
       "archive" => manifest.fetch("archive"),
+      "acquisitionMode" =>
+        download_cache ? "download-cache" : "network",
       "redistributionApproved" => false,
       "sources" => receipt_sources
     }
@@ -879,8 +1031,23 @@ begin
   if options.fetch(:validate_only)
     puts "RootFS source acquisition manifest is valid (#{sources.length} source origins)."
   else
-    output = validate_output(options.fetch(:output))
-    materialize(manifest, sources, output)
+    download_cache =
+      if options[:download_cache]
+        resolve_external_directory(
+          options.fetch(:download_cache),
+          "--download-cache"
+        )
+      end
+    output = validate_output(
+      options.fetch(:output),
+      [download_cache].compact
+    )
+    materialize(
+      manifest,
+      sources,
+      output,
+      download_cache: download_cache
+    )
     puts "Materialized verified RootFS source-review bundle at #{output}."
   end
 rescue SourceBundleError, OptionParser::ParseError, SystemCallError,

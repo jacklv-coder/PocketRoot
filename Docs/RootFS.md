@@ -98,6 +98,23 @@ ruby Scripts/prepare-rootfs-source-bundle.rb \
   --verify /absolute/new/path/outside-the-repository/rootfs-v0.3.3-source-review
 ```
 
+已有 source-review 或同布局的仓库外只读缓存可用于离线重建，不降低任何固定校验：
+
+```bash
+ruby Scripts/prepare-rootfs-source-bundle.rb \
+  --download-cache /absolute/existing/rootfs-v0.3.3-source-review \
+  --output /absolute/new/path/outside-the-repository/rootfs-v0.3.3-source-review
+```
+
+缓存必须提供 `downloads/aports/<source-origin>.tar.gz` 和
+`distfiles/<source-origin>/<filename>`。脚本拒绝 symlink、特殊/缺失文件、仓库内
+缓存及输入/输出重叠，逐项限制大小并核对 SHA-512；aports 仍会重新解包并校验规范化
+tree identity。缓存不构成来源批准，也不会改变 receipt 的固定上游来源。
+receipt 会明确标记缓存获取并记录缓存内相对路径，不会伪称访问了某个上游 URL；
+固定上游来源仍保留在 `SOURCE-ACQUISITION.json`。
+receipt schema v2 强制包含该模式。旧 v1 source-review 的传输来源存在歧义，不再
+直接通过 `--verify`；仍可把它传给 `--download-cache`，重新生成可验证的 v2 bundle。
+
 规范化 aports 目录身份覆盖条目类型、路径、普通文件权限位和内容摘要；物化时会保留
 这些权限位，`--verify` 会再次校验。
 
