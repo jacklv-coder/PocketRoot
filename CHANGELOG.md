@@ -30,20 +30,21 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
   10 个 source origin、SPDX 2.3 JSON SBOM、许可证声明/attribution inventory
   和 `apk`、repository、DNS 默认配置快照；完整 LICENSE/NOTICE 与对应源码 bundle
   仍保持发行阻塞。
-- 加入 checksum-bound `LICENSE-REVIEW-RESULTS.json` 和严格验证器；22/22 个固定
+- 加入 checksum-bound `LICENSE-REVIEW-RESULTS.json` 和严格验证器；23/23 个固定
   RootFS license/NOTICE 候选已完成工程复核，8 个 source origin 仍有包级未决项，
   法律与再分发门禁保持关闭。
 - 为剩余 8 个 RootFS source origin 加入 checksum-bound
   `LICENSE-NOTICE-CANDIDATES.json`、严格验证器和仓库外原子 materializer；索引
-  13 份远端许可证/attribution 材料、47 份 aports 文件与 22 份既有证据，支持完整
+  13 份远端许可证/attribution 材料、47 份 aports 文件与 23 份既有证据，支持完整
   复验，但不提交 payload，也不解除工程、法律或再分发门禁。
 - 加入 `LICENSE-NOTICE-REVIEW-RESULTS.json` 和严格外置 payload-tree 复验器；
-  82/82 个候选 payload 已完成 checksum-bound 工程复核；新增固定
+  83/83 个候选 payload 已完成 checksum-bound 工程复核；新增固定
   `alpine-keys` GPL→MIT 上游许可判定提交，但仍保留包级版权声明缺口；
   `ca-certificates` 生成脚本与 curl 提交 `3fdc4bdb` 字节一致并固定该精确
   revision 的 curl 授权文本，trust-store 审查仍保持未决；
-  BusyBox 固定配置确认 bzip2 与源包内精确授权绑定，并确认启用的 ash 算术模块
-  链入保留完整 MIT 与 BSD-3-Clause notices 的 `shell/math.c`；其他内联第三方
+  BusyBox 固定配置确认 bzip2 与源包内精确授权绑定，确认启用的 ash 算术模块
+  链入保留完整 MIT 与 BSD-3-Clause notices 的 `shell/math.c`，并确认已安装的
+  `env` applet 链入保留完整 BSD notice 的 `coreutils/env.c`；其他内联第三方
   notices 继续保持未决；
   `apk-tools`、`openssl`、`pax-utils` 的候选材料工程项关闭，另外 5 个 origin
   仍需补逐包材料，法律和再分发门禁保持关闭。
