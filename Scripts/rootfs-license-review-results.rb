@@ -7,6 +7,7 @@ require_relative "rootfs-license-review"
 require_relative "rootfs-source-acquisition"
 
 module RootFSLicenseReviewResults
+  DEFAULT_MANIFEST_DIRECTORY = Pathname("Compliance/RootFS/v0.3.3")
   ARCHIVE_VERSION = "v0.3.3"
   ARCHIVE_SHA256 =
     "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"
@@ -54,6 +55,56 @@ module RootFSLicenseReviewResults
     value
   end
 
+  def require_bytes_backed_document(document, bytes, label)
+    parsed = JSON.parse(bytes)
+    unless document.eql?(parsed)
+      raise ValidationError, "#{label} object does not match supplied bytes"
+    end
+
+    parsed
+  rescue JSON::ParserError => error
+    raise ValidationError, "#{label} bytes are invalid JSON: #{error.message}"
+  end
+
+  def resolve_manifest_paths(arguments)
+    unless arguments.length <= 4
+      raise ValidationError,
+        "usage: rootfs-license-review-results.rb " \
+        "[RESULTS REVIEW [SOURCE_ACQUISITION [SOURCE_INVENTORY]]]"
+    end
+
+    results_path =
+      arguments.fetch(
+        0,
+        DEFAULT_MANIFEST_DIRECTORY.join("LICENSE-REVIEW-RESULTS.json").to_s
+      )
+    review_path =
+      arguments.fetch(
+        1,
+        DEFAULT_MANIFEST_DIRECTORY.join("LICENSE-REVIEW.json").to_s
+      )
+    source_acquisition_path =
+      arguments.fetch(
+        2,
+        Pathname(review_path).dirname.join("SOURCE-ACQUISITION.json").to_s
+      )
+    source_inventory_path =
+      arguments.fetch(
+        3,
+        Pathname(source_acquisition_path)
+          .dirname
+          .join("SOURCE-INVENTORY.json")
+          .to_s
+      )
+
+    [
+      results_path,
+      review_path,
+      source_acquisition_path,
+      source_inventory_path
+    ]
+  end
+
   def validate_candidate_results(results, candidates, origin)
     unless results.is_a?(Array) && results.length == candidates.length
       raise ValidationError,
@@ -84,6 +135,16 @@ module RootFSLicenseReviewResults
   )
     require_hash(manifest, "license review results")
     require_hash(license_review, "license review manifest")
+    require_bytes_backed_document(
+      license_review,
+      license_review_bytes,
+      "license review manifest"
+    )
+    require_bytes_backed_document(
+      source_acquisition,
+      source_acquisition_bytes,
+      "source acquisition manifest"
+    )
     unless manifest["schemaVersion"] == 1 &&
       manifest["archive"] == {
         "version" => ARCHIVE_VERSION,
@@ -210,14 +271,11 @@ end
 
 if $PROGRAM_NAME == __FILE__
   begin
-    results_path =
-      ARGV.fetch(0, "Compliance/RootFS/v0.3.3/LICENSE-REVIEW-RESULTS.json")
-    review_path =
-      ARGV.fetch(1, "Compliance/RootFS/v0.3.3/LICENSE-REVIEW.json")
-    source_acquisition_path =
-      ARGV.fetch(2, "Compliance/RootFS/v0.3.3/SOURCE-ACQUISITION.json")
-    source_inventory_path =
-      ARGV.fetch(3, "Compliance/RootFS/v0.3.3/SOURCE-INVENTORY.json")
+    results_path,
+      review_path,
+      source_acquisition_path,
+      source_inventory_path =
+      RootFSLicenseReviewResults.resolve_manifest_paths(ARGV)
     review_bytes = Pathname(review_path).binread
     source_acquisition_bytes = Pathname(source_acquisition_path).binread
     source_acquisition =

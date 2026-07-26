@@ -1,9 +1,12 @@
 #!/usr/bin/env ruby
 
 require "digest"
+require "fileutils"
 require "json"
 require "minitest/autorun"
+require "open3"
 require "pathname"
+require "tmpdir"
 require_relative "../../Scripts/rootfs-license-review-results"
 
 class RootFSLicenseReviewResultsTests < Minitest::Test
@@ -20,6 +23,8 @@ class RootFSLicenseReviewResultsTests < Minitest::Test
     REPOSITORY_ROOT.join(
       "Compliance/RootFS/v0.3.3/LICENSE-REVIEW-RESULTS.json"
     )
+  SCRIPT_PATH =
+    REPOSITORY_ROOT.join("Scripts/rootfs-license-review-results.rb")
 
   def setup
     @review_bytes = REVIEW_PATH.binread
@@ -145,6 +150,67 @@ class RootFSLicenseReviewResultsTests < Minitest::Test
 
     assert_includes error.message, "invalid manifest"
     assert_includes error.message, "pinned RootFS archive"
+  end
+
+  def test_rejects_license_review_object_not_backed_by_supplied_bytes
+    @review["status"] = "changed"
+
+    error = assert_raises(
+      RootFSLicenseReviewResults::ValidationError
+    ) { validate }
+
+    assert_includes error.message,
+      "license review manifest object does not match supplied bytes"
+  end
+
+  def test_rejects_source_acquisition_object_not_backed_by_supplied_bytes
+    @source_acquisition.fetch("sources").first
+      .fetch("aportsSnapshot")["sha512"] = "0" * 128
+
+    error = assert_raises(
+      RootFSLicenseReviewResults::ValidationError
+    ) { validate }
+
+    assert_includes error.message,
+      "source acquisition manifest object does not match supplied bytes"
+  end
+
+  def test_rejects_numeric_type_mismatch_between_object_and_bytes
+    @source_acquisition.fetch("sources").first
+      .fetch("aportsSnapshot")["regularFileCount"] = 16.0
+
+    error = assert_raises(
+      RootFSLicenseReviewResults::ValidationError
+    ) { validate }
+
+    assert_includes error.message,
+      "source acquisition manifest object does not match supplied bytes"
+  end
+
+  def test_two_argument_cli_uses_manifests_next_to_custom_review
+    Dir.mktmpdir("rootfs-license-review-results") do |directory|
+      bundle = Pathname(directory)
+      [
+        REVIEW_PATH,
+        SOURCE_ACQUISITION_PATH,
+        SOURCE_INVENTORY_PATH,
+        RESULTS_PATH
+      ].each do |source|
+        FileUtils.cp(source, bundle.join(source.basename))
+      end
+
+      stdout, stderr, status = Open3.capture3(
+        RbConfig.ruby,
+        SCRIPT_PATH.to_s,
+        bundle.join(RESULTS_PATH.basename).to_s,
+        bundle.join(REVIEW_PATH.basename).to_s,
+        chdir: REPOSITORY_ROOT.to_s
+      )
+
+      assert status.success?, stderr
+      assert_includes stdout,
+        "RootFS license review results are valid (10 source origins)."
+    end
   end
 
   def test_rejects_summary_count_drift
