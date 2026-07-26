@@ -8,6 +8,7 @@ require "pathname"
 require "rubygems/package"
 require "uri"
 require "zlib"
+require_relative "rootfs-license-notice-candidates"
 require_relative "rootfs-license-review"
 require_relative "rootfs-license-review-results"
 require_relative "rootfs-source-acquisition"
@@ -43,6 +44,8 @@ def parse_options
       "Compliance/RootFS/v0.3.3/LICENSE-REVIEW.json",
     license_review_results:
       "Compliance/RootFS/v0.3.3/LICENSE-REVIEW-RESULTS.json",
+    license_notice_candidates:
+      "Compliance/RootFS/v0.3.3/LICENSE-NOTICE-CANDIDATES.json",
     check: false
   }
 
@@ -72,6 +75,12 @@ def parse_options
       "Pinned engineering review results"
     ) do |path|
       options[:license_review_results] = path
+    end
+    commands.on(
+      "--license-notice-candidates PATH",
+      "Pinned external license/NOTICE candidate manifest"
+    ) do |path|
+      options[:license_notice_candidates] = path
     end
     commands.on("--check", "Compare generated evidence without writing files") do
       options[:check] = true
@@ -438,7 +447,8 @@ def license_inventory(
   packages,
   license_notice_paths,
   license_review_entries,
-  license_review_result_entries
+  license_review_result_entries,
+  license_notice_candidates
 )
   expressions = Hash.new(0)
   packages.each { |package| expressions[package[:license]] += 1 }
@@ -471,6 +481,14 @@ def license_inventory(
       license_review_result_entries.count do |entry|
         !entry.fetch("remainingReviewItems").empty?
       end,
+    "indexedOpenSourceOrigins" =>
+      license_notice_candidates.fetch(:sources).length,
+    "pinnedRemoteReferencePayloads" =>
+      license_notice_candidates.fetch(:remote_payloads).length,
+    "supplementalAportsFiles" =>
+      license_notice_candidates.fetch(:aports_paths).length,
+    "candidateBundleIndexComplete" => true,
+    "candidatePayloadCommitted" => false,
     "engineeringReviewCompleted" => true,
     "completeLicenseTextBundlePresent" => false,
     "completePackageNoticeSetPresent" => false,
@@ -484,7 +502,8 @@ def notice_markdown(
   source_entries,
   license_notice_paths,
   license_review_entries,
-  license_review_result_entries
+  license_review_result_entries,
+  license_notice_candidates
 )
   package_rows = packages.map do |package|
     "| `#{package[:name]}` | `#{package[:version]}` | " \
@@ -545,6 +564,13 @@ def notice_markdown(
     for #{resolved_origins.map { |entry| "`#{entry.fetch("sourceOrigin")}`" }.join(", ")}.
     #{remaining_origins.length} source origins still have package-specific open
     items, so this is not a complete or legally approved license/NOTICE bundle.
+    `LICENSE-NOTICE-CANDIDATES.json` now pins an external candidate bundle for
+    those open origins: #{license_notice_candidates.fetch(:remote_payloads).length}
+    remote reference/attribution payloads and
+    #{license_notice_candidates.fetch(:aports_paths).length} supplemental aports
+    files, together with all checksum-bound reviewed evidence. The repository
+    tool can materialize and re-verify that bundle outside the repository.
+    These collected candidates still require engineering and legal review.
 
     ## Corresponding-source status
 
@@ -575,7 +601,8 @@ def evidence(
   source_entries,
   inspected,
   license_review_entries,
-  license_review_result_entries
+  license_review_result_entries,
+  license_notice_candidates
 )
   {
     "schemaVersion" => 1,
@@ -613,7 +640,13 @@ def evidence(
       "sourceOriginsWithRemainingLicenseReviewItems" =>
         license_review_result_entries.count do |entry|
           !entry.fetch("remainingReviewItems").empty?
-        end
+        end,
+      "indexedLicenseNoticeCandidateOrigins" =>
+        license_notice_candidates.fetch(:sources).length,
+      "pinnedRemoteLicenseNoticePayloads" =>
+        license_notice_candidates.fetch(:remote_payloads).length,
+      "supplementalAportsCandidateFiles" =>
+        license_notice_candidates.fetch(:aports_paths).length
     },
     "engineeringStatus" => {
       "completeInstalledPackageInventory" => true,
@@ -622,6 +655,9 @@ def evidence(
       "completeSourceAcquisitionManifest" => true,
       "completeLicenseReviewCandidateIndex" => true,
       "licenseCandidateEngineeringReviewCompleted" => true,
+      "completeLicenseNoticeCandidateBundleIndex" => true,
+      "licenseNoticeCandidatePayloadCommitted" => false,
+      "licenseNoticeCandidateEngineeringReviewApproved" => false,
       "completeLicenseAndNoticeBundle" => false,
       "correspondingSourceBundleCollected" => false,
       "redistributionApproved" => false
@@ -633,7 +669,8 @@ def build_outputs(
   archive,
   source_acquisition,
   license_review,
-  license_review_results
+  license_review_results,
+  license_notice_candidates
 )
   inspected = inspect_archive(archive)
   content = inspected.fetch(:content)
@@ -689,6 +726,22 @@ def build_outputs(
     raise ComplianceError,
       "Invalid license-review results: #{error.message}"
   end
+  begin
+    validated_license_notice_candidates =
+      RootFSLicenseNoticeCandidates.validate_manifest(
+        license_notice_candidates.fetch(:document),
+        license_review_results.fetch(:document),
+        license_review: license_review.fetch(:document),
+        source_acquisition: source_acquisition.fetch(:document),
+        source_inventory: generated_source_inventory,
+        results_bytes: license_review_results.fetch(:contents),
+        license_review_bytes: license_review.fetch(:contents),
+        source_acquisition_bytes: source_acquisition.fetch(:contents)
+      )
+  rescue RootFSLicenseNoticeCandidates::ValidationError => error
+    raise ComplianceError,
+      "Invalid license/NOTICE candidate manifest: #{error.message}"
+  end
   outputs = {
     "EVIDENCE.json" => pretty_json(
       evidence(
@@ -696,7 +749,8 @@ def build_outputs(
         source_entries,
         inspected,
         license_review_entries,
-        license_review_result_entries
+        license_review_result_entries,
+        validated_license_notice_candidates
       )
     ),
     "LICENSE-INVENTORY.json" => pretty_json(
@@ -704,9 +758,12 @@ def build_outputs(
         packages,
         inspected.fetch(:license_notice_paths),
         license_review_entries,
-        license_review_result_entries
+        license_review_result_entries,
+        validated_license_notice_candidates
       )
     ),
+    "LICENSE-NOTICE-CANDIDATES.json" =>
+      license_notice_candidates.fetch(:contents),
     "LICENSE-REVIEW.json" => license_review.fetch(:contents),
     "LICENSE-REVIEW-RESULTS.json" =>
       license_review_results.fetch(:contents),
@@ -715,7 +772,8 @@ def build_outputs(
       source_entries,
       inspected.fetch(:license_notice_paths),
       license_review_entries,
-      license_review_result_entries
+      license_review_result_entries,
+      validated_license_notice_candidates
     ),
     "PACKAGE-INVENTORY.tsv" => package_inventory_tsv(packages),
     "RUNTIME-CONFIGURATION.json" => pretty_json(
@@ -779,13 +837,18 @@ begin
     options.fetch(:license_review_results),
     "License-review results"
   )
+  license_notice_candidates = load_json_document(
+    options.fetch(:license_notice_candidates),
+    "License/NOTICE candidate manifest"
+  )
   source_acquisition =
     verify_source_acquisition(options.fetch(:source_acquisition))
   outputs = build_outputs(
     archive,
     source_acquisition,
     license_review,
-    license_review_results
+    license_review_results,
+    license_notice_candidates
   )
   output_directory = Pathname(options.fetch(:output))
 

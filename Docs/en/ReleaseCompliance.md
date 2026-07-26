@@ -40,9 +40,13 @@ outside-repository tool pins, extracts, and verifies 21 license, attribution,
 declaration, and inline-notice candidates across all 10 source origins.
 A pinned result manifest records engineering review of all 21 candidates.
 `libc-dev` and `zlib` have no remaining indexed items; eight source origins
-still have package-level follow-up. Modification, build-completeness,
-source-offer, and legal reviews remain unresolved, so the output is neither a
-complete NOTICE set nor approved corresponding-source delivery.
+still have package-level follow-up. The repository now pins an external
+candidate bundle for those origins: 8 remote license/attribution payloads,
+46 supplemental aports files, and all existing reviewed evidence. The tool can
+atomically materialize and re-verify it outside the repository, but engineering
+and legal approval remain open. Modification, build-completeness, source-offer,
+and legal reviews remain unresolved, so the output is neither a complete
+NOTICE set nor approved corresponding-source delivery.
 
 ## Repository safeguards
 
@@ -112,6 +116,9 @@ The current code does not provide a complete product-level privacy policy.
 - [x] Generate a machine-readable SBOM validated against the SPDX 2.3 JSON schema.
 - [x] Complete checksum-bound engineering review of all 21 pinned
   license/NOTICE candidates.
+- [x] Index a checksum-bound external candidate bundle and reproducible
+  materializer for the eight remaining origins; payloads stay uncommitted and
+  approval gates stay closed.
 - [ ] Collect license texts and NOTICE files.
 - [ ] Establish a corresponding-source bundle for copyleft components.
 - [x] Record default DNS, repository, and package-manager facts.

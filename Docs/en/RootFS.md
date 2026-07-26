@@ -5,7 +5,7 @@
 A RootFS is an external supply-chain input, not a normal fixture. PocketRoot commits immutable metadata and secure install code, not the payload.
 
 > [!WARNING]
-> The pinned v0.3.3 archive now has a reproducible package inventory, SPDX SBOM, default-configuration evidence, a source-acquisition manifest covering the complete inventory, and engineering-review results for all 21 license/NOTICE candidates. Eight source origins still have package-level open items; the complete NOTICE set, corresponding-source delivery review, and distribution approval remain open. The URL and commands below support audit and local development; they do not grant redistribution rights.
+> The pinned v0.3.3 archive now has a reproducible package inventory, SPDX SBOM, default-configuration evidence, a source-acquisition manifest covering the complete inventory, and engineering-review results for all 21 license/NOTICE candidates. A reproducible external candidate-bundle index now covers the eight source origins with remaining items, but engineering/legal review of those candidate payloads, the complete NOTICE set, corresponding-source delivery review, and distribution approval remain open. The URL and commands below support audit and local development; they do not grant redistribution rights.
 
 ## Pinned manifest
 
@@ -103,6 +103,30 @@ no-link/special-node boundary. The pinned results record engineering review of
 all 21 candidates: `libc-dev` and `zlib` have no remaining indexed items, while
 eight source origins still require follow-up. The output is not a completed
 NOTICE or corresponding-source delivery bundle.
+
+The external LICENSE/NOTICE candidate manifest for those eight origins also
+pins 8 remote license/attribution payloads and 46 supplemental aports files.
+Validate it independently, or materialize and re-verify it using both external
+directories verified above:
+
+```bash
+ruby Scripts/rootfs-license-notice-candidates.rb
+ruby Scripts/prepare-rootfs-license-notice-bundle.rb --validate-only
+
+ruby Scripts/prepare-rootfs-license-notice-bundle.rb \
+  --source-bundle /absolute/new/path/outside-the-repository/rootfs-v0.3.3-source-review \
+  --license-review /absolute/new/path/outside-the-repository/rootfs-v0.3.3-license-review \
+  --output /absolute/new/path/outside-the-repository/rootfs-v0.3.3-license-notice-candidates
+
+ruby Scripts/prepare-rootfs-license-notice-bundle.rb \
+  --source-bundle /absolute/new/path/outside-the-repository/rootfs-v0.3.3-source-review \
+  --license-review /absolute/new/path/outside-the-repository/rootfs-v0.3.3-license-review \
+  --verify /absolute/new/path/outside-the-repository/rootfs-v0.3.3-license-notice-candidates
+```
+
+The tool enforces HTTPS, redirect and response-size bounds, pinned byte counts
+and SHA-256 digests, and atomic output creation. Its candidate NOTICE and
+receipt remain engineering-review inputs, not distribution approval.
 
 Do not put it in package resources, Demo resources, Git, or Git LFS.
 
