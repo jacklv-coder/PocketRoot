@@ -39,7 +39,7 @@ class RootFSLicenseReviewResultsTests < Minitest::Test
     sources = validate
 
     assert_equal 10, sources.length
-    assert_equal 22,
+    assert_equal 23,
       sources.sum { |entry| entry.fetch("candidateResults").length }
     assert_equal 8,
       sources.count { |entry| !entry.fetch("remainingReviewItems").empty? }
