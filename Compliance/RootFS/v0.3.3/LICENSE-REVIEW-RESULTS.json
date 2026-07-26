@@ -4,11 +4,11 @@
     "version": "v0.3.3",
     "sha256": "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"
   },
-  "licenseReviewManifestSha256": "1edf1106bdcd2cded016b1bb584baacfa7f92bd66ccda17844e80d93f02026b2",
+  "licenseReviewManifestSha256": "bf2502a04fbfba77547b0728d8ca0a2b3665b4e7539ad32aa1df3e919b7f3eff",
   "status": "engineering-reviewed-open-release-gates",
   "engineeringReviewCompleted": true,
   "allCandidateDigestsVerified": true,
-  "reviewedCandidateCount": 26,
+  "reviewedCandidateCount": 27,
   "sourceOriginsWithRemainingReviewItems": 8,
   "completeLicenseTextBundlePresent": false,
   "completePackageNoticeSetPresent": false,
@@ -129,6 +129,11 @@
           "outputPath": "evidence/busybox/util-linux-cal.c",
           "sha256": "39798fa68229dcb25817d906ac1990cc147fd84065918a1404b56263d7a6e311",
           "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/networking-ping.c",
+          "sha256": "f5500d03eb8c681589cd99a861ce57bec208bfdded726b5529c61967e738a205",
+          "conclusion": "inline-license-and-attribution-notice"
         }
       ],
       "resolvedReviewItems": [],
@@ -139,6 +144,7 @@
         "confirm-enabled-echo-license-and-attribution-coverage",
         "confirm-enabled-logger-license-and-attribution-coverage",
         "confirm-enabled-cal-license-and-attribution-coverage",
+        "confirm-enabled-ping-and-ping6-license-and-attribution-coverage",
         "review-other-bundled-third-party-license-and-attribution-coverage",
         "confirm-aports-patch-notices"
       ]

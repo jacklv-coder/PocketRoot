@@ -4,7 +4,7 @@
     "version": "v0.3.3",
     "sha256": "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"
   },
-  "licenseReviewResultsSha256": "2b27048cd9f39dedd2f03f2e5eb9b644aaea315629dc117878aaa770dc79c2a2",
+  "licenseReviewResultsSha256": "584bd14ea70fae4fcc39f87fe4b1205518673daf9b46bff8ac1afa58c463d19b",
   "status": "candidate-bundle-indexed-engineering-review-required",
   "candidateBundleIndexComplete": true,
   "candidatePayloadCommitted": false,
@@ -250,7 +250,8 @@
         "evidence/busybox/coreutils-env.c",
         "evidence/busybox/coreutils-echo.c",
         "evidence/busybox/sysklogd-logger.c",
-        "evidence/busybox/util-linux-cal.c"
+        "evidence/busybox/util-linux-cal.c",
+        "evidence/busybox/networking-ping.c"
       ],
       "referenceLicensePaths": [
         "licenses/GPL-2.0.txt"
@@ -302,6 +303,7 @@
         "confirm-enabled-echo-license-and-attribution-coverage",
         "confirm-enabled-logger-license-and-attribution-coverage",
         "confirm-enabled-cal-license-and-attribution-coverage",
+        "confirm-enabled-ping-and-ping6-license-and-attribution-coverage",
         "review-other-bundled-third-party-license-and-attribution-coverage",
         "confirm-aports-patch-notices"
       ],

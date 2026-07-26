@@ -32,17 +32,17 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   declared-license/attribution inventories, and default `apk`, repository, and
   DNS configuration; complete LICENSE/NOTICE and corresponding-source bundles
   remain distribution blockers.
-- A checksum-bound `LICENSE-REVIEW-RESULTS.json` and strict validator. All 26
+- A checksum-bound `LICENSE-REVIEW-RESULTS.json` and strict validator. All 27
   pinned RootFS license/NOTICE candidates have engineering review results;
   eight source origins retain package-level open items, and legal and
   redistribution gates remain closed.
 - A checksum-bound `LICENSE-NOTICE-CANDIDATES.json`, strict validator, and
   outside-repository atomic materializer for the eight remaining RootFS source
   origins. It indexes 13 remote license/attribution payloads, 47 aports files,
-  and the 26 existing evidence files for complete re-verification without
+  and the 27 existing evidence files for complete re-verification without
   committing payloads or opening engineering, legal, or redistribution gates.
 - `LICENSE-NOTICE-REVIEW-RESULTS.json` and a strict external payload-tree
-  verifier. All 86 candidate payloads now have checksum-bound engineering
+  verifier. All 87 candidate payloads now have checksum-bound engineering
   review. The pinned upstream `alpine-keys` GPL-to-MIT license-decision commit
   is included while its package-level copyright notice remains open. The
   `ca-certificates` generator is byte-identical to curl commit `3fdc4bdb`, and
@@ -52,8 +52,8 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   `shell/math.c`, which retains complete MIT and BSD-3-Clause notices, and
   confirms that the installed `env`, `echo`, `logger`, and `cal` applets link
   `coreutils/env.c`, `coreutils/echo.c`, `sysklogd/logger.c`, and
-  `util-linux/cal.c`,
-  respectively, with complete BSD notices; other inline third-party notices
+  `util-linux/cal.c`, respectively, while `ping` and `ping6` share
+  `networking/ping.c`; each retains complete BSD notices. Other inline notices
   stay open;
   `apk-tools`, `openssl`, and `pax-utils` have no remaining
   candidate-material engineering items, five origins still need

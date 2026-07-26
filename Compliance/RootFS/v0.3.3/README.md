@@ -16,14 +16,14 @@ pinned RootFS archive. It does not store the RootFS payload.
   SHA-256；
 - `LICENSE-INVENTORY.json`：声明的许可证表达式、标识符和 archive 内
   license/notice 文件检查结果；
-- `LICENSE-REVIEW.json`：覆盖 10 个 source origin 的 26 个候选许可证文本、
+- `LICENSE-REVIEW.json`：覆盖 10 个 source origin 的 27 个候选许可证文本、
   attribution、声明与内联 notice 的路径、大小、SHA-256 和逐包未决审查项；
-- `LICENSE-REVIEW-RESULTS.json`：对全部 26 个候选的 checksum-bound 工程复核
+- `LICENSE-REVIEW-RESULTS.json`：对全部 27 个候选的 checksum-bound 工程复核
   结论、coverage 和未决项处置；不表示法律或再分发批准；
 - `LICENSE-NOTICE-CANDIDATES.json`：为剩余 8 个 source origin 固定 13 份远端
-  许可证/attribution 材料、47 份 aports 补充文件及现有 26 份复核证据的外置候选包；
+  许可证/attribution 材料、47 份 aports 补充文件及现有 27 份复核证据的外置候选包；
   payload 不提交，工程、法律和再分发门禁保持关闭；
-- `LICENSE-NOTICE-REVIEW-RESULTS.json`：绑定候选清单与 86 个 payload 文件树的
+- `LICENSE-NOTICE-REVIEW-RESULTS.json`：绑定候选清单与 87 个 payload 文件树的
   工程复核结果；3 个 origin 的候选材料工程项关闭，5 个仍需补逐包材料，法律和
   再分发门禁保持关闭；
 - `RUNTIME-CONFIGURATION.json`：guest、`apk`、repository、world 和 DNS 默认配置；
@@ -34,15 +34,15 @@ pinned RootFS archive. It does not store the RootFS payload.
 `SOURCE-ACQUISITION.json` pins the aports snapshots and upstream distfiles
 needed to assemble an external source-review directory. It is an acquisition
 manifest, not a committed source archive or redistribution grant.
-`LICENSE-REVIEW.json` pins 26 unreviewed candidate evidence files across all
+`LICENSE-REVIEW.json` pins 27 unreviewed candidate evidence files across all
 10 source origins; it is an engineering review index, not legal approval.
-`LICENSE-REVIEW-RESULTS.json` records the engineering review of all 26 pinned
+`LICENSE-REVIEW-RESULTS.json` records the engineering review of all 27 pinned
 candidates. Two source origins have no remaining indexed review items; eight
 still have package-specific open items. `LICENSE-NOTICE-CANDIDATES.json`
 indexes an external candidate bundle for those eight origins: 13 pinned remote
 license/attribution payloads, 47 supplemental aports files, and the existing
-26 reviewed evidence files. `LICENSE-NOTICE-REVIEW-RESULTS.json` binds the
-engineering review to the exact 86-file payload tree. Three origins have no
+27 reviewed evidence files. `LICENSE-NOTICE-REVIEW-RESULTS.json` binds the
+engineering review to the exact 87-file payload tree. Three origins have no
 remaining candidate-material engineering items; five still require
 package-specific material. Legal and redistribution approval remain open.
 
@@ -79,12 +79,15 @@ change.
 `CONFIG_FEATURE_BZIP2_DECOMPRESS=y`，也启用了 `CONFIG_ASH=y`、
 `CONFIG_FEATURE_SH_MATH=y`、`CONFIG_FEATURE_SH_MATH_64=y` 和
 `CONFIG_ENV=y`、`CONFIG_ECHO=y`、`CONFIG_FEATURE_FANCY_ECHO=y`、
-`CONFIG_LOGGER=y` 和 `CONFIG_CAL=y`；BusyBox
+`CONFIG_LOGGER=y`、`CONFIG_CAL=y`、`CONFIG_PING=y`、`CONFIG_PING6=y` 和
+`CONFIG_FEATURE_FANCY_PING=y`；BusyBox
 `shell/Kbuild.src` 在该配置下把 `math.o` 链入构建，`coreutils/env.c` 与
 `coreutils/echo.c` 则分别通过 `lib-$(CONFIG_ENV) += env.o` 和
 `lib-$(CONFIG_ECHO) += echo.o` 链入，`sysklogd/logger.c` 通过
 `lib-$(CONFIG_LOGGER) += syslogd_and_logger.o` 链入，`util-linux/cal.c`
-通过 `lib-$(CONFIG_CAL) += cal.o` 链入。外置候选树现同时绑定该
+通过 `lib-$(CONFIG_CAL) += cal.o` 链入，`networking/ping.c` 则同时通过
+`lib-$(CONFIG_PING) += ping.o` 与 `lib-$(CONFIG_PING6) += ping.o`
+链入。外置候选树现同时绑定该
 配置与固定 BusyBox
 1.36.1 源包中的 1,999 字节
 `archival/libarchive/bz/LICENSE`（SHA-256
@@ -114,7 +117,16 @@ RootFS 中 `/usr/bin/logger` 的目标为 `/bin/busybox`，因此在工程层关
 `39798fa68229dcb25817d906ac1990cc147fd84065918a1404b56263d7a6e311`），
 其中保留完整 Berkeley BSD-3-Clause 版权及许可通知。固定 RootFS 中
 `/usr/bin/cal` 的目标为 `/bin/busybox`，因此在工程层关闭
-`confirm-enabled-cal-license-and-attribution-coverage`。BusyBox 其他已启用
+`confirm-enabled-cal-license-and-attribution-coverage`；同时绑定 31,080 字节
+`networking/ping.c`（SHA-256
+`f5500d03eb8c681589cd99a861ce57bec208bfdded726b5529c61967e738a205`），
+其中保留 Berkeley 版权、再分发条件与免责声明，并明确记录 advertising clause
+已依据 1999 年许可变更移除。固定 aports 的
+`0016-ping-make-ping-work-without-root-privileges.patch` 也已包含在同一外置
+payload 树中；它只修改 socket/runtime 代码，不触及文件头或文件尾的许可通知。
+固定 RootFS 主树与 guest 模板树中的 `/bin/ping`
+和 `/bin/ping6` 均指向 `/bin/busybox`，因此在工程层关闭
+`confirm-enabled-ping-and-ping6-license-and-attribution-coverage`。BusyBox 其他已启用
 组件的内联第三方 notice 尚未形成完整集合，因此 license-text 与 attribution
 coverage 均保持 partial，
 `review-other-bundled-third-party-license-and-attribution-coverage` 保持未决，
@@ -126,14 +138,17 @@ The `busyboxconfig` at pinned aports commit
 It explicitly enables `CONFIG_BZIP2=y`, `CONFIG_BZIP2_SMALL=8`,
 `CONFIG_FEATURE_BZIP2_DECOMPRESS=y`, `CONFIG_ASH=y`,
 `CONFIG_FEATURE_SH_MATH=y`, `CONFIG_FEATURE_SH_MATH_64=y`, `CONFIG_ENV=y`,
-`CONFIG_ECHO=y`, `CONFIG_FEATURE_FANCY_ECHO=y`, `CONFIG_LOGGER=y`, and
-`CONFIG_CAL=y`; BusyBox
+`CONFIG_ECHO=y`, `CONFIG_FEATURE_FANCY_ECHO=y`, `CONFIG_LOGGER=y`,
+`CONFIG_CAL=y`, `CONFIG_PING=y`, `CONFIG_PING6=y`, and
+`CONFIG_FEATURE_FANCY_PING=y`; BusyBox
 `shell/Kbuild.src` links `math.o` under that configuration, while
 `coreutils/env.c` and `coreutils/echo.c` are linked by
 `lib-$(CONFIG_ENV) += env.o` and `lib-$(CONFIG_ECHO) += echo.o`,
 respectively, `sysklogd/logger.c` is linked through
 `lib-$(CONFIG_LOGGER) += syslogd_and_logger.o`, and `util-linux/cal.c` is
-linked through `lib-$(CONFIG_CAL) += cal.o`. The external candidate tree
+linked through `lib-$(CONFIG_CAL) += cal.o`; `networking/ping.c` is linked
+through both `lib-$(CONFIG_PING) += ping.o` and
+`lib-$(CONFIG_PING6) += ping.o`. The external candidate tree
 now binds that configuration to the
 1,999-byte
 `archival/libarchive/bz/LICENSE` in the pinned BusyBox 1.36.1 source archive,
@@ -167,6 +182,17 @@ level. It also binds the 10,951-byte `util-linux/cal.c`, whose SHA-256 is
 the file retains its complete Berkeley BSD-3-Clause copyright and license
 notice. The pinned RootFS maps `/usr/bin/cal` to `/bin/busybox`, closing
 `confirm-enabled-cal-license-and-attribution-coverage` at the engineering
+level. It also binds the 31,080-byte `networking/ping.c`, whose SHA-256 is
+`f5500d03eb8c681589cd99a861ce57bec208bfdded726b5529c61967e738a205`;
+the file retains Berkeley copyright, redistribution conditions, and
+disclaimer while explicitly recording removal of the advertising clause
+under the 1999 licensing change. The pinned aports
+`0016-ping-make-ping-work-without-root-privileges.patch` is also included in
+the same external payload tree; it changes socket/runtime code without
+touching the header or trailing license notice. Both the main and
+guest-template RootFS trees
+map `/bin/ping` and `/bin/ping6` to `/bin/busybox`, closing
+`confirm-enabled-ping-and-ping6-license-and-attribution-coverage` at the engineering
 level. A complete set of inline third-party notices for BusyBox's other
 enabled components is still missing, so license-text and attribution coverage
 remain partial,
@@ -346,13 +372,13 @@ ruby Scripts/rootfs-license-review-results.rb
 ```
 
 工具只提取 `LICENSE-REVIEW.json` 固定的候选文件，并再次核对大小、SHA-256、
-路径全集、无符号链接/特殊节点边界。结果清单证明 26 个候选已完成工程复核；
+路径全集、无符号链接/特殊节点边界。结果清单证明 27 个候选已完成工程复核；
 外置输出仍不是可直接随产品发行的 NOTICE bundle。
 
 The tool extracts only candidates pinned by `LICENSE-REVIEW.json`, then
 rechecks byte counts, SHA-256 digests, the exact path set, and the no-symlink/
 special-node boundary. The results manifest proves engineering review of all
-26 candidates; the external output is still not a product-ready NOTICE bundle.
+27 candidates; the external output is still not a product-ready NOTICE bundle.
 
 剩余 8 个 source origin 的材料可继续组装为外置候选包。先校验清单；实际物化
 必须同时提供已经通过 `--verify` 的 source-review 和 license-review 目录，以及
@@ -396,8 +422,8 @@ advice, or redistribution approval.
 
 这些文件不构成完整第三方 LICENSE/NOTICE bundle、经审查的 copyleft
 corresponding-source 交付、法律意见或再分发授权。源码获取清单已完整覆盖固定
-inventory，26 个候选也都有工程复核结果；`libc-dev`、`zlib` 已关闭索引项，另外
-8 个 source origin 的 86 个新候选 payload 已完成 checksum-bound 工程复核；
+inventory，27 个候选也都有工程复核结果；`libc-dev`、`zlib` 已关闭索引项，另外
+8 个 source origin 的 87 个新候选 payload 已完成 checksum-bound 工程复核；
 `apk-tools`、`openssl`、`pax-utils` 的候选材料工程项已关闭，另外 5 个
 origin 仍需补逐包版权/notice 材料。修改说明、构建完整性、源码提供方式、法律
 审查、App Store 2.5.2 产品策略和负责人批准仍是发行阻塞项。
@@ -405,8 +431,8 @@ origin 仍需补逐包版权/notice 材料。修改说明、构建完整性、�
 These files are not a complete third-party LICENSE/NOTICE bundle, reviewed
 copyleft corresponding-source delivery, legal advice, or redistribution
 approval. The acquisition manifest completely covers the pinned inventory and
-all 26 indexed candidates have engineering review results. `libc-dev` and
-`zlib` have no remaining indexed items. All 86 newly indexed payloads have a
+all 27 indexed candidates have engineering review results. `libc-dev` and
+`zlib` have no remaining indexed items. All 87 newly indexed payloads have a
 checksum-bound engineering review; `apk-tools`, `openssl`, and `pax-utils`
 have no remaining candidate-material engineering items, while five origins
 still need package-specific copyright/notice material. Modification, build

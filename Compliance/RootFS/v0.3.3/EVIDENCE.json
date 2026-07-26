@@ -39,13 +39,13 @@
     "sourceOrigins": 10,
     "declaredLicenseExpressions": 7,
     "licenseOrNoticeFilesInGuestTemplate": 0,
-    "indexedExternalLicenseReviewCandidates": 26,
-    "engineeringReviewedLicenseCandidates": 26,
+    "indexedExternalLicenseReviewCandidates": 27,
+    "engineeringReviewedLicenseCandidates": 27,
     "sourceOriginsWithRemainingLicenseReviewItems": 8,
     "indexedLicenseNoticeCandidateOrigins": 8,
     "pinnedRemoteLicenseNoticePayloads": 13,
     "supplementalAportsCandidateFiles": 47,
-    "engineeringReviewedLicenseNoticeCandidatePayloads": 86,
+    "engineeringReviewedLicenseNoticeCandidatePayloads": 87,
     "sourceOriginsWithRemainingCandidatePayloadReviewItems": 5
   },
   "engineeringStatus": {
