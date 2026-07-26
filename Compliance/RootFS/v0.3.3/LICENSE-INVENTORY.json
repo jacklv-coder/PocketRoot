@@ -26,14 +26,14 @@
   "licenseOrNoticeFilesFoundInGuestTemplate": [
 
   ],
-  "indexedExternalReviewCandidates": 21,
-  "engineeringReviewedCandidates": 21,
+  "indexedExternalReviewCandidates": 22,
+  "engineeringReviewedCandidates": 22,
   "sourceOriginsWithOpenReviewItems": 10,
   "sourceOriginsWithRemainingReviewItems": 8,
   "indexedOpenSourceOrigins": 8,
   "pinnedRemoteReferencePayloads": 13,
   "supplementalAportsFiles": 47,
-  "engineeringReviewedCandidatePayloads": 81,
+  "engineeringReviewedCandidatePayloads": 82,
   "sourceOriginsWithRemainingCandidatePayloadReviewItems": 5,
   "candidateBundleIndexComplete": true,
   "candidatePayloadCommitted": false,

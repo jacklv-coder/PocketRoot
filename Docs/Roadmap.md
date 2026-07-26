@@ -103,7 +103,7 @@
 | 最低 Xcode 16 原生兼容 | 已通过 | Xcode 16.0 / iOS 18.0 SDK 完成 RootFS install、Simulator/device final-link 和 17 项 native smoke |
 | App lifecycle 与内存 | 进行中 | Simulator 与 Jack iPhone 均有 256 MiB `ru_maxrss` 门禁；真机 process suspend/resume、UIKit foreground/background、强制终止后数据恢复和有界 App delegate memory-warning 回调恢复已通过；补真实 memory pressure/jetsam |
 | RootFS ENOSPC/掉电 | 进行中 | 峰值空间预检、全 ENOSPC、七点持久化屏障、确定性掉电切点和 Jack iPhone 受限容量/ENOSPC 清理恢复已覆盖；补真实 storage pressure/强制断电 |
-| License-reviewed RootFS | 阻塞 | 15 包 inventory、10 source origin、SPDX SBOM、默认配置证据、外置源码获取流程、21/21 初始候选和 81/81 外置 payload 工程复核已完成；3 个 origin 的候选材料工程项关闭，5 个仍需补逐包材料，之后完成法律复核、对应源码交付审查与负责人批准 |
+| License-reviewed RootFS | 阻塞 | 15 包 inventory、10 source origin、SPDX SBOM、默认配置证据、外置源码获取流程、22/22 初始候选和 82/82 外置 payload 工程复核已完成；3 个 origin 的候选材料工程项关闭，5 个仍需补逐包材料，之后完成法律复核、对应源码交付审查与负责人批准 |
 | App Store 2.5.2 | 阻塞 | guest download/execute policy 有书面结论 |
 
 ### 后续 runtime 执行顺序
