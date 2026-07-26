@@ -29,7 +29,7 @@ class RootFSLicenseNoticeCandidatesTests < Minitest::Test
 
     assert_equal 8, validated.fetch(:sources).length
     assert_equal 13, validated.fetch(:remote_payloads).length
-    assert_equal 27, validated.fetch(:existing_evidence_paths).length
+    assert_equal 28, validated.fetch(:existing_evidence_paths).length
     assert_equal 47, validated.fetch(:aports_paths).length
   end
 
@@ -434,6 +434,49 @@ class RootFSLicenseNoticeCandidatesTests < Minitest::Test
     assert_equal 31_080, evidence.fetch("byteCount")
     assert_equal(
       "f5500d03eb8c681589cd99a861ce57bec208bfdded726b5529c61967e738a205",
+      evidence.fetch("sha256")
+    )
+    assert_equal(
+      %w[inline-license-notice attribution],
+      evidence.fetch("evidenceKinds")
+    )
+  end
+
+  def test_pins_enabled_busybox_traceroute_and_traceroute6_inline_notice
+    source = @candidate.fetch("sources").find do |candidate|
+      candidate.fetch("sourceOrigin") == "busybox"
+    end
+    review_source = @review.fetch("sources").find do |candidate|
+      candidate.fetch("sourceOrigin") == "busybox"
+    end
+    evidence = review_source.fetch("candidateEvidence").find do |candidate|
+      candidate.fetch("outputPath") ==
+        "evidence/busybox/networking-traceroute.c"
+    end
+
+    assert_includes(
+      source.fetch("existingEvidencePaths"),
+      "evidence/busybox/networking-traceroute.c"
+    )
+    assert_includes(
+      source.fetch("supplementalAportsPaths"),
+      "aports/busybox/busyboxconfig"
+    )
+    assert_includes(
+      source.fetch("remainingReviewItems"),
+      "confirm-enabled-traceroute-and-traceroute6-license-and-attribution-coverage"
+    )
+    assert_includes(
+      source.fetch("remainingReviewItems"),
+      "review-other-bundled-third-party-license-and-attribution-coverage"
+    )
+    assert_equal(
+      "busybox-1.36.1/networking/traceroute.c",
+      evidence.fetch("member")
+    )
+    assert_equal 40_524, evidence.fetch("byteCount")
+    assert_equal(
+      "c75965e8ad6670e92ed1c4c116141a51cb78d77e3e47286e4527514bf8b1c229",
       evidence.fetch("sha256")
     )
     assert_equal(

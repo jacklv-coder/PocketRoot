@@ -20,7 +20,7 @@ module RootFSLicenseNoticeCandidates
     alpine-baselayout alpine-keys apk-tools busybox ca-certificates musl
     openssl pax-utils
   ].freeze
-  EXPECTED_EXISTING_EVIDENCE_FILES = 27
+  EXPECTED_EXISTING_EVIDENCE_FILES = 28
   EXPECTED_REMOTE_PAYLOAD_FILES = 13
   EXPECTED_APORTS_FILES = 47
   PAYLOAD_KINDS = %w[package-attribution spdx-license-text].freeze
