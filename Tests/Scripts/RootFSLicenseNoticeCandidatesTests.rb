@@ -28,7 +28,7 @@ class RootFSLicenseNoticeCandidatesTests < Minitest::Test
     validated = validate
 
     assert_equal 8, validated.fetch(:sources).length
-    assert_equal 11, validated.fetch(:remote_payloads).length
+    assert_equal 13, validated.fetch(:remote_payloads).length
     assert_equal 21, validated.fetch(:existing_evidence_paths).length
     assert_equal 46, validated.fetch(:aports_paths).length
   end
@@ -138,6 +138,45 @@ class RootFSLicenseNoticeCandidatesTests < Minitest::Test
     )
     assert_equal(
       ["supplemental/alpine-keys/license-decision.patch"],
+      source.fetch("remoteEvidencePaths")
+    )
+  end
+
+  def test_pins_exact_curl_license_for_ca_bundle_generator
+    payloads = @candidate.fetch("remotePayloads").select do |candidate|
+      candidate["sourceOrigin"] == "ca-certificates"
+    end
+    source = @candidate.fetch("sources").find do |candidate|
+      candidate.fetch("sourceOrigin") == "ca-certificates"
+    end
+    reviewed_script = @review.fetch("sources")
+      .find { |candidate| candidate.fetch("sourceOrigin") == "ca-certificates" }
+      .fetch("candidateEvidence")
+      .find { |evidence| evidence.fetch("outputPath").end_with?("mk-ca-bundle.pl") }
+
+    assert_equal 2, payloads.length
+    assert_equal(
+      [
+        "https://raw.githubusercontent.com/curl/curl/" \
+        "3fdc4bdb5b00835a1d04cf160cd61fe7f8feb477/lib/mk-ca-bundle.pl",
+        "https://raw.githubusercontent.com/curl/curl/" \
+        "3fdc4bdb5b00835a1d04cf160cd61fe7f8feb477/COPYING"
+      ],
+      payloads.flat_map { |payload| payload.fetch("retrievalURLs") }
+    )
+    assert_equal [20_863, 1_088],
+      payloads.map { |payload| payload.fetch("byteCount") }
+    assert_equal reviewed_script.fetch("sha256"),
+      payloads.first.fetch("sha256")
+    assert_equal(
+      "db3c4a3b3695a0f317a0c5176acd2f656d18abc45b3ee78e50935a78eb1e132e",
+      payloads.last.fetch("sha256")
+    )
+    assert_equal(
+      %w[
+        supplemental/ca-certificates/curl-mk-ca-bundle.pl
+        supplemental/ca-certificates/curl-COPYING
+      ],
       source.fetch("remoteEvidencePaths")
     )
   end

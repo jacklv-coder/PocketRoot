@@ -108,6 +108,28 @@
     },
     {
       "kind": "package-attribution",
+      "sourceOrigin": "ca-certificates",
+      "retrievalURLs": [
+        "https://raw.githubusercontent.com/curl/curl/3fdc4bdb5b00835a1d04cf160cd61fe7f8feb477/lib/mk-ca-bundle.pl"
+      ],
+      "cacheKey": "ca-certificates-curl-3fdc4bdb-mk-ca-bundle.pl",
+      "outputPath": "supplemental/ca-certificates/curl-mk-ca-bundle.pl",
+      "byteCount": 20863,
+      "sha256": "9d828d97053868907ce6229d132132f0f26772393405dadd037b6f85a5c5b219"
+    },
+    {
+      "kind": "package-attribution",
+      "sourceOrigin": "ca-certificates",
+      "retrievalURLs": [
+        "https://raw.githubusercontent.com/curl/curl/3fdc4bdb5b00835a1d04cf160cd61fe7f8feb477/COPYING"
+      ],
+      "cacheKey": "ca-certificates-curl-3fdc4bdb-COPYING",
+      "outputPath": "supplemental/ca-certificates/curl-COPYING",
+      "byteCount": 1088,
+      "sha256": "db3c4a3b3695a0f317a0c5176acd2f656d18abc45b3ee78e50935a78eb1e132e"
+    },
+    {
+      "kind": "package-attribution",
       "sourceOrigin": "openssl",
       "retrievalURLs": [
         "https://raw.githubusercontent.com/openssl/openssl/01d5e2318405362b4de5e670c90d9b40a351d053/README.md"
@@ -287,7 +309,10 @@
         "licenses/MPL-2.0.txt"
       ],
       "supplementalAportsPaths": [],
-      "remoteEvidencePaths": [],
+      "remoteEvidencePaths": [
+        "supplemental/ca-certificates/curl-mk-ca-bundle.pl",
+        "supplemental/ca-certificates/curl-COPYING"
+      ],
       "remainingReviewItems": [
         "collect-complete-mpl-2.0-license-text",
         "confirm-certificate-attribution-and-trust-store-requirements",

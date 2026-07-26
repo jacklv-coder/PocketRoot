@@ -20,10 +20,10 @@ pinned RootFS archive. It does not store the RootFS payload.
   attribution、声明与内联 notice 的路径、大小、SHA-256 和逐包未决审查项；
 - `LICENSE-REVIEW-RESULTS.json`：对全部 21 个候选的 checksum-bound 工程复核
   结论、coverage 和未决项处置；不表示法律或再分发批准；
-- `LICENSE-NOTICE-CANDIDATES.json`：为剩余 8 个 source origin 固定 11 份远端
+- `LICENSE-NOTICE-CANDIDATES.json`：为剩余 8 个 source origin 固定 13 份远端
   许可证/attribution 材料、46 份 aports 补充文件及现有 21 份复核证据的外置候选包；
   payload 不提交，工程、法律和再分发门禁保持关闭；
-- `LICENSE-NOTICE-REVIEW-RESULTS.json`：绑定候选清单与 78 个 payload 文件树的
+- `LICENSE-NOTICE-REVIEW-RESULTS.json`：绑定候选清单与 80 个 payload 文件树的
   工程复核结果；3 个 origin 的候选材料工程项关闭，5 个仍需补逐包材料，法律和
   再分发门禁保持关闭；
 - `RUNTIME-CONFIGURATION.json`：guest、`apk`、repository、world 和 DNS 默认配置；
@@ -39,10 +39,10 @@ manifest, not a committed source archive or redistribution grant.
 `LICENSE-REVIEW-RESULTS.json` records the engineering review of all 21 pinned
 candidates. Two source origins have no remaining indexed review items; eight
 still have package-specific open items. `LICENSE-NOTICE-CANDIDATES.json`
-indexes an external candidate bundle for those eight origins: 11 pinned remote
+indexes an external candidate bundle for those eight origins: 13 pinned remote
 license/attribution payloads, 46 supplemental aports files, and the existing
 21 reviewed evidence files. `LICENSE-NOTICE-REVIEW-RESULTS.json` binds the
-engineering review to the exact 78-file payload tree. Three origins have no
+engineering review to the exact 80-file payload tree. Three origins have no
 remaining candidate-material engineering items; five still require
 package-specific material. Legal and redistribution approval remain open.
 
@@ -71,6 +71,33 @@ reference-only,
 `collect-mit-license-grant-and-copyright-notice` remains open, attribution
 coverage remains partial, and the legal and redistribution gates do not
 change.
+
+`ca-certificates-20230506.tar.bz2` 中的 `mk-ca-bundle.pl`（20,863 字节，
+SHA-256 `9d828d97053868907ce6229d132132f0f26772393405dadd037b6f85a5c5b219`）
+与 curl 提交 `3fdc4bdb5b00835a1d04cf160cd61fe7f8feb477` 的
+`lib/mk-ca-bundle.pl` 字节一致。外置候选包同时固定该脚本和同一提交的
+1,088 字节 `COPYING`；后者 SHA-256 为
+`db3c4a3b3695a0f317a0c5176acd2f656d18abc45b3ee78e50935a78eb1e132e`，
+补齐脚本头部所引用的精确 curl 授权，而不是把通用 SPDX MIT 文本当作替代。
+因此 `confirm-mit-script-notices-relevant-to-shipped-bundle` 的既有工程结论有了
+精确 provenance；`confirm-certificate-attribution-and-trust-store-requirements`
+仍未决，attribution coverage 仍为 partial，法律与再分发门禁不变。
+
+The `mk-ca-bundle.pl` in `ca-certificates-20230506.tar.bz2` is 20,863 bytes
+with SHA-256
+`9d828d97053868907ce6229d132132f0f26772393405dadd037b6f85a5c5b219`
+and is byte-identical to `lib/mk-ca-bundle.pl` at curl commit
+`3fdc4bdb5b00835a1d04cf160cd61fe7f8feb477`. The external candidate bundle
+pins both that script and the 1,088-byte `COPYING` from the same commit; the
+license has SHA-256
+`db3c4a3b3695a0f317a0c5176acd2f656d18abc45b3ee78e50935a78eb1e132e`.
+This supplies the exact curl grant referenced by the script header instead
+of treating a generic SPDX MIT text as a substitute. The existing engineering
+disposition of
+`confirm-mit-script-notices-relevant-to-shipped-bundle` is therefore bound to
+exact provenance. `confirm-certificate-attribution-and-trust-store-requirements`
+remains open, attribution coverage remains partial, and the legal and
+redistribution gates do not change.
 
 OpenSSL 的工程结论绑定固定 `openssl-3.1.4.tar.gz`：源包根目录没有
 `NOTICE` 文件；固定 RootFS 的 APK database 将 guest 路径
@@ -269,7 +296,7 @@ advice, or redistribution approval.
 这些文件不构成完整第三方 LICENSE/NOTICE bundle、经审查的 copyleft
 corresponding-source 交付、法律意见或再分发授权。源码获取清单已完整覆盖固定
 inventory，21 个候选也都有工程复核结果；`libc-dev`、`zlib` 已关闭索引项，另外
-8 个 source origin 的 78 个新候选 payload 已完成 checksum-bound 工程复核；
+8 个 source origin 的 80 个新候选 payload 已完成 checksum-bound 工程复核；
 `apk-tools`、`openssl`、`pax-utils` 的候选材料工程项已关闭，另外 5 个
 origin 仍需补逐包版权/notice 材料。修改说明、构建完整性、源码提供方式、法律
 审查、App Store 2.5.2 产品策略和负责人批准仍是发行阻塞项。
@@ -278,7 +305,7 @@ These files are not a complete third-party LICENSE/NOTICE bundle, reviewed
 copyleft corresponding-source delivery, legal advice, or redistribution
 approval. The acquisition manifest completely covers the pinned inventory and
 all 21 indexed candidates have engineering review results. `libc-dev` and
-`zlib` have no remaining indexed items. All 78 newly indexed payloads have a
+`zlib` have no remaining indexed items. All 80 newly indexed payloads have a
 checksum-bound engineering review; `apk-tools`, `openssl`, and `pax-utils`
 have no remaining candidate-material engineering items, while five origins
 still need package-specific copyright/notice material. Modification, build

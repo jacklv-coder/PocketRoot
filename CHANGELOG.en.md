@@ -38,13 +38,16 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   redistribution gates remain closed.
 - A checksum-bound `LICENSE-NOTICE-CANDIDATES.json`, strict validator, and
   outside-repository atomic materializer for the eight remaining RootFS source
-  origins. It indexes 11 remote license/attribution payloads, 46 aports files,
+  origins. It indexes 13 remote license/attribution payloads, 46 aports files,
   and the 21 existing evidence files for complete re-verification without
   committing payloads or opening engineering, legal, or redistribution gates.
 - `LICENSE-NOTICE-REVIEW-RESULTS.json` and a strict external payload-tree
-  verifier. All 78 candidate payloads now have checksum-bound engineering
+  verifier. All 80 candidate payloads now have checksum-bound engineering
   review. The pinned upstream `alpine-keys` GPL-to-MIT license-decision commit
-  is included while its package-level copyright notice remains open;
+  is included while its package-level copyright notice remains open. The
+  `ca-certificates` generator is byte-identical to curl commit `3fdc4bdb`, and
+  that exact revision's curl license is pinned while trust-store review stays
+  open;
   `apk-tools`, `openssl`, and `pax-utils` have no remaining
   candidate-material engineering items, five origins still need
   package-specific material, and
