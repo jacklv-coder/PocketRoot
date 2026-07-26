@@ -18,6 +18,8 @@ pinned RootFS archive. It does not store the RootFS payload.
   license/notice 文件检查结果；
 - `LICENSE-REVIEW.json`：覆盖 10 个 source origin 的 21 个候选许可证文本、
   attribution、声明与内联 notice 的路径、大小、SHA-256 和逐包未决审查项；
+- `LICENSE-REVIEW-RESULTS.json`：对全部 21 个候选的 checksum-bound 工程复核
+  结论、coverage 和未决项处置；不表示法律或再分发批准；
 - `RUNTIME-CONFIGURATION.json`：guest、`apk`、repository、world 和 DNS 默认配置；
 - `NOTICE.md`：可复现 attribution inventory 与尚未完成事项；
 - `EVIDENCE.json`：输入成员摘要、数量和明确的工程/发行状态；
@@ -28,6 +30,9 @@ needed to assemble an external source-review directory. It is an acquisition
 manifest, not a committed source archive or redistribution grant.
 `LICENSE-REVIEW.json` pins 21 unreviewed candidate evidence files across all
 10 source origins; it is an engineering review index, not legal approval.
+`LICENSE-REVIEW-RESULTS.json` records the engineering review of all 21 pinned
+candidates. Two source origins have no remaining indexed review items; eight
+still have package-specific open items.
 
 ## 重新生成 / Regenerate
 
@@ -110,30 +115,32 @@ ruby Scripts/prepare-rootfs-license-review.rb \
 ruby Scripts/prepare-rootfs-license-review.rb \
   --source-bundle /absolute/rootfs-v0.3.3-source-review \
   --verify /absolute/rootfs-v0.3.3-license-review
+
+ruby Scripts/rootfs-license-review-results.rb
 ```
 
 工具只提取 `LICENSE-REVIEW.json` 固定的候选文件，并再次核对大小、SHA-256、
-路径全集、无符号链接/特殊节点边界。输出仍是未审查候选材料，不是可直接随产品
-发行的 NOTICE bundle。
+路径全集、无符号链接/特殊节点边界。结果清单证明 21 个候选已完成工程复核；
+外置输出仍不是可直接随产品发行的 NOTICE bundle。
 
 The tool extracts only candidates pinned by `LICENSE-REVIEW.json`, then
 rechecks byte counts, SHA-256 digests, the exact path set, and the no-symlink/
-special-node boundary. Its output remains unreviewed candidate material, not
-a product-ready NOTICE bundle.
+special-node boundary. The results manifest proves engineering review of all
+21 candidates; the external output is still not a product-ready NOTICE bundle.
 
 ## 未解除的门禁 / Open gates
 
 这些文件不构成完整第三方 LICENSE/NOTICE bundle、经审查的 copyleft
 corresponding-source 交付、法律意见或再分发授权。源码获取清单已完整覆盖固定
-inventory，候选审查清单也覆盖全部 10 个 source origin，但其中逐包
-`openReviewItems` 尚未关闭；仍需核对许可证文本、包级版权/notice、修改说明、构建
-完整性与源码提供方式。App Store 2.5.2 产品策略和负责人批准仍是发行阻塞项。
+inventory，21 个候选也都有工程复核结果；`libc-dev`、`zlib` 已关闭索引项，另外
+8 个 source origin 仍需补齐许可证正文或包级版权/notice。修改说明、构建完整性、
+源码提供方式、App Store 2.5.2 产品策略和负责人批准仍是发行阻塞项。
 
 These files are not a complete third-party LICENSE/NOTICE bundle, reviewed
 copyleft corresponding-source delivery, legal advice, or redistribution
 approval. The acquisition manifest completely covers the pinned inventory and
-the candidate index covers all 10 source origins, but every package-level
-`openReviewItems` entry remains unresolved. License texts, package-specific
-copyright/notices, modifications, build completeness, and source-offer
-mechanics still require review. The App Store 2.5.2 product policy and
-authorized approval also remain distribution blockers.
+all 21 indexed candidates have engineering review results. `libc-dev` and
+`zlib` have no remaining indexed items; eight source origins still need
+license-text or package-specific notice follow-up. Modification, build
+completeness, source-offer mechanics, legal review, App Store 2.5.2 product
+policy, and authorized approval remain distribution blockers.

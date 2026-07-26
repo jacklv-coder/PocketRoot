@@ -5,7 +5,7 @@
 A RootFS is an external supply-chain input, not a normal fixture. PocketRoot commits immutable metadata and secure install code, not the payload.
 
 > [!WARNING]
-> The pinned v0.3.3 archive now has a reproducible package inventory, SPDX SBOM, default-configuration evidence, a source-acquisition manifest covering the complete inventory, and an index of 21 license/NOTICE candidates across all 10 source origins. Package-level review items, a complete NOTICE set, corresponding-source delivery review, and distribution approval remain open. The URL and commands below support audit and local development; they do not grant redistribution rights.
+> The pinned v0.3.3 archive now has a reproducible package inventory, SPDX SBOM, default-configuration evidence, a source-acquisition manifest covering the complete inventory, and engineering-review results for all 21 license/NOTICE candidates. Eight source origins still have package-level open items; the complete NOTICE set, corresponding-source delivery review, and distribution approval remain open. The URL and commands below support audit and local development; they do not grant redistribution rights.
 
 ## Pinned manifest
 
@@ -86,6 +86,8 @@ ruby Scripts/prepare-rootfs-license-review.rb \
 ruby Scripts/prepare-rootfs-license-review.rb \
   --source-bundle /absolute/new/path/outside-the-repository/rootfs-v0.3.3-source-review \
   --verify /absolute/new/path/outside-the-repository/rootfs-v0.3.3-license-review
+
+ruby Scripts/rootfs-license-review-results.rb
 ```
 
 The script pins and verifies 10 aports source snapshots and 9 upstream
@@ -97,9 +99,10 @@ add output to the App, Git, or a CI artifact. This closes a reproducible
 engineering acquisition workflow, not legal review. The RootFS archive
 contains no identifiable LICENSE/COPYING/NOTICE files. The candidate tool
 rechecks extracted byte counts, SHA-256 digests, the exact path set, and the
-no-link/special-node boundary, but every package-level item in
-`LICENSE-REVIEW.json` remains open. Its output is not a completed NOTICE or
-corresponding-source delivery bundle.
+no-link/special-node boundary. The pinned results record engineering review of
+all 21 candidates: `libc-dev` and `zlib` have no remaining indexed items, while
+eight source origins still require follow-up. The output is not a completed
+NOTICE or corresponding-source delivery bundle.
 
 Do not put it in package resources, Demo resources, Git, or Git LFS.
 

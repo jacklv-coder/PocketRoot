@@ -27,9 +27,11 @@
 
   ],
   "indexedExternalReviewCandidates": 21,
-  "sourceOriginsWithOpenReviewItems": 10,
+  "engineeringReviewedCandidates": 21,
+  "sourceOriginsWithOpenReviewItems": 8,
+  "engineeringReviewCompleted": true,
   "completeLicenseTextBundlePresent": false,
   "completePackageNoticeSetPresent": false,
   "legalReviewApproved": false,
-  "status": "candidate-evidence-indexed-external-review-required"
+  "status": "engineering-reviewed-open-release-gates"
 }
