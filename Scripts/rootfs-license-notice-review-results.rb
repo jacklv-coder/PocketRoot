@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 require "digest"
+require "find"
 require "json"
 require "optparse"
 require "pathname"
@@ -333,20 +334,25 @@ module RootFSLicenseNoticeReviewResults
     root = root.realpath
     payloads = expected_payloads(validated_candidates)
     actual_paths = []
-    %w[evidence licenses supplemental].each do |directory|
+    payload_directories = %w[evidence licenses supplemental]
+    root.find do |entry|
+      next if entry == root
+
+      relative = entry.relative_path_from(root).to_s
+      stat = entry.lstat
+      if stat.symlink? || (!stat.directory? && !stat.file?)
+        raise ValidationError,
+          "reviewed bundle contains a link or special node: #{relative}"
+      end
+      if stat.file? && payload_directories.include?(relative.split("/", 2).first)
+        actual_paths << relative
+      end
+    end
+    payload_directories.each do |directory|
       subtree = root.join(directory)
-      raise ValidationError, "reviewed bundle is missing #{directory}/" unless subtree.directory?
-
-      subtree.find do |entry|
-        next if entry == subtree
-
-        relative = entry.relative_path_from(root).to_s
-        stat = entry.lstat
-        if stat.symlink? || (!stat.directory? && !stat.file?)
-          raise ValidationError,
-            "reviewed bundle contains a link or special node: #{relative}"
-        end
-        actual_paths << relative if stat.file?
+      unless subtree.directory? && !subtree.symlink?
+        raise ValidationError,
+          "reviewed bundle is missing #{directory}/"
       end
     end
     unless actual_paths.sort == payloads.keys.sort

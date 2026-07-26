@@ -212,6 +212,43 @@ class RootFSLicenseNoticeReviewResultsTests < Minitest::Test
     end
   end
 
+  def test_rejects_symlink_outside_reviewed_payload_tree
+    Dir.mktmpdir("rootfs-notice-reviewed-bundle") do |directory|
+      root = Pathname(directory)
+      root.join("evidence/origin").mkpath
+      root.join("licenses").mkpath
+      root.join("supplemental/aports/origin").mkpath
+      evidence = "reviewed evidence\n"
+      license = "reviewed license\n"
+      patch = "reviewed patch\n"
+      root.join("evidence/origin/LICENSE").binwrite(evidence)
+      root.join("licenses/License.txt").binwrite(license)
+      root.join("supplemental/aports/origin/fix.patch").binwrite(patch)
+      root.join("BUNDLE-RECEIPT.json")
+        .make_symlink(root.join("evidence/origin/LICENSE"))
+
+      error = assert_raises(
+        RootFSLicenseNoticeReviewResults::ValidationError
+      ) do
+        RootFSLicenseNoticeReviewResults.verify_reviewed_bundle(
+          root,
+          reviewed_bundle_fixture(evidence, license),
+          reviewed_tree_sha256(
+            root,
+            %w[
+              evidence/origin/LICENSE
+              licenses/License.txt
+              supplemental/aports/origin/fix.patch
+            ]
+          )
+        )
+      end
+
+      assert_includes error.message, "link or special node"
+      assert_includes error.message, "BUNDLE-RECEIPT.json"
+    end
+  end
+
   def test_custom_results_path_uses_adjacent_manifests
     Dir.mktmpdir("rootfs-notice-review-results") do |directory|
       root = Pathname(directory)
