@@ -5,7 +5,7 @@
 A RootFS is an external supply-chain input, not a normal fixture. PocketRoot commits immutable metadata and secure install code, not the payload.
 
 > [!WARNING]
-> The pinned v0.3.3 archive now has a reproducible package inventory, SPDX SBOM, default-configuration evidence, a source-acquisition manifest covering the complete inventory, and checksum-bound engineering review of all 23 initial candidates and all 83 external LICENSE/NOTICE payloads. Three origins have no remaining candidate-material engineering items; five still need package-specific material. The complete NOTICE set, legal review, corresponding-source delivery review, and distribution approval remain open. The URL and commands below support audit and local development; they do not grant redistribution rights.
+> The pinned v0.3.3 archive now has a reproducible package inventory, SPDX SBOM, default-configuration evidence, a source-acquisition manifest covering the complete inventory, and checksum-bound engineering review of all 24 initial candidates and all 84 external LICENSE/NOTICE payloads. Three origins have no remaining candidate-material engineering items; five still need package-specific material. The complete NOTICE set, legal review, corresponding-source delivery review, and distribution approval remain open. The URL and commands below support audit and local development; they do not grant redistribution rights.
 
 ## Pinned manifest
 
@@ -95,7 +95,7 @@ Receipt schema v2 requires that explicit mode. A legacy v1 source-review
 directory has ambiguous transport provenance and is no longer accepted by
 `--verify`; pass it to `--download-cache` to regenerate a verifiable v2 bundle.
 
-After that source-review directory verifies, extract the 23 pinned
+After that source-review directory verifies, extract the 24 pinned
 license/attribution candidates into another directory outside the repository:
 
 ```bash
@@ -122,7 +122,7 @@ engineering acquisition workflow, not legal review. The RootFS archive
 contains no identifiable LICENSE/COPYING/NOTICE files. The candidate tool
 rechecks extracted byte counts, SHA-256 digests, the exact path set, and the
 no-link/special-node boundary. The pinned results record engineering review of
-all 23 candidates: `libc-dev` and `zlib` have no remaining indexed items, while
+all 24 candidates: `libc-dev` and `zlib` have no remaining indexed items, while
 eight source origins still require follow-up. The output is not a completed
 NOTICE or corresponding-source delivery bundle.
 
@@ -152,7 +152,7 @@ ruby Scripts/rootfs-license-notice-review-results.rb \
 
 The tool enforces HTTPS, redirect and response-size bounds, pinned byte counts
 and SHA-256 digests, and atomic output creation. The results bind engineering
-review to the exact 83-file payload tree; the verifier rejects path drift,
+review to the exact 84-file payload tree; the verifier rejects path drift,
 links, special nodes, known-digest drift, and tree-digest drift. `apk-tools`,
 `openssl`, and `pax-utils` have no remaining candidate-material engineering
 items; five origins still need package-specific material. The candidate NOTICE

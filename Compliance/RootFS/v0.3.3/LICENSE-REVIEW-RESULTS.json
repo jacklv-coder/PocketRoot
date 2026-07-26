@@ -4,11 +4,11 @@
     "version": "v0.3.3",
     "sha256": "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"
   },
-  "licenseReviewManifestSha256": "63feb98198ef530764dcff4f890b3d423ab28bdec0ac9d193df8fe11a7983673",
+  "licenseReviewManifestSha256": "62630d0db3c725b0e858e02273da509f012eeba5095b003d65859b4f0840f1e2",
   "status": "engineering-reviewed-open-release-gates",
   "engineeringReviewCompleted": true,
   "allCandidateDigestsVerified": true,
-  "reviewedCandidateCount": 23,
+  "reviewedCandidateCount": 24,
   "sourceOriginsWithRemainingReviewItems": 8,
   "completeLicenseTextBundlePresent": false,
   "completePackageNoticeSetPresent": false,
@@ -114,6 +114,11 @@
           "outputPath": "evidence/busybox/coreutils-env.c",
           "sha256": "730d258bcbeeef301fc00611d0e325958f3f378576af54c524f9be662b0ac757",
           "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/coreutils-echo.c",
+          "sha256": "fcdd9f96dc44bc1b813d478725911054948da20e4d929282b35722c28924577c",
+          "conclusion": "inline-license-and-attribution-notice"
         }
       ],
       "resolvedReviewItems": [],
@@ -121,6 +126,7 @@
         "confirm-enabled-bzip2-license-and-attribution-coverage",
         "confirm-enabled-ash-math-license-and-attribution-coverage",
         "confirm-enabled-env-license-and-attribution-coverage",
+        "confirm-enabled-echo-license-and-attribution-coverage",
         "review-other-bundled-third-party-license-and-attribution-coverage",
         "confirm-aports-patch-notices"
       ]

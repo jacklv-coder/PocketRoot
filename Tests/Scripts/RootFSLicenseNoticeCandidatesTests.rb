@@ -29,7 +29,7 @@ class RootFSLicenseNoticeCandidatesTests < Minitest::Test
 
     assert_equal 8, validated.fetch(:sources).length
     assert_equal 13, validated.fetch(:remote_payloads).length
-    assert_equal 23, validated.fetch(:existing_evidence_paths).length
+    assert_equal 24, validated.fetch(:existing_evidence_paths).length
     assert_equal 47, validated.fetch(:aports_paths).length
   end
 
@@ -274,6 +274,45 @@ class RootFSLicenseNoticeCandidatesTests < Minitest::Test
     assert_equal 4_753, evidence.fetch("byteCount")
     assert_equal(
       "730d258bcbeeef301fc00611d0e325958f3f378576af54c524f9be662b0ac757",
+      evidence.fetch("sha256")
+    )
+    assert_equal(
+      %w[inline-license-notice attribution],
+      evidence.fetch("evidenceKinds")
+    )
+  end
+
+  def test_pins_enabled_busybox_echo_inline_notice
+    source = @candidate.fetch("sources").find do |candidate|
+      candidate.fetch("sourceOrigin") == "busybox"
+    end
+    review_source = @review.fetch("sources").find do |candidate|
+      candidate.fetch("sourceOrigin") == "busybox"
+    end
+    evidence = review_source.fetch("candidateEvidence").find do |candidate|
+      candidate.fetch("outputPath") == "evidence/busybox/coreutils-echo.c"
+    end
+
+    assert_includes(
+      source.fetch("existingEvidencePaths"),
+      "evidence/busybox/coreutils-echo.c"
+    )
+    assert_includes(
+      source.fetch("supplementalAportsPaths"),
+      "aports/busybox/busyboxconfig"
+    )
+    assert_includes(
+      source.fetch("remainingReviewItems"),
+      "confirm-enabled-echo-license-and-attribution-coverage"
+    )
+    assert_includes(
+      source.fetch("remainingReviewItems"),
+      "review-other-bundled-third-party-license-and-attribution-coverage"
+    )
+    assert_equal "busybox-1.36.1/coreutils/echo.c", evidence.fetch("member")
+    assert_equal 9_960, evidence.fetch("byteCount")
+    assert_equal(
+      "fcdd9f96dc44bc1b813d478725911054948da20e4d929282b35722c28924577c",
       evidence.fetch("sha256")
     )
     assert_equal(

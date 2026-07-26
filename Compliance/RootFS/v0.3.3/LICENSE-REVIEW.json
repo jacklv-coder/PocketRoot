@@ -178,12 +178,26 @@
             "attribution"
           ],
           "reviewState": "unreviewed-candidate"
+        },
+        {
+          "sourceKind": "distfile-member",
+          "distfile": "busybox-1.36.1.tar.bz2",
+          "member": "busybox-1.36.1/coreutils/echo.c",
+          "outputPath": "evidence/busybox/coreutils-echo.c",
+          "byteCount": 9960,
+          "sha256": "fcdd9f96dc44bc1b813d478725911054948da20e4d929282b35722c28924577c",
+          "evidenceKinds": [
+            "inline-license-notice",
+            "attribution"
+          ],
+          "reviewState": "unreviewed-candidate"
         }
       ],
       "openReviewItems": [
         "confirm-enabled-bzip2-license-and-attribution-coverage",
         "confirm-enabled-ash-math-license-and-attribution-coverage",
         "confirm-enabled-env-license-and-attribution-coverage",
+        "confirm-enabled-echo-license-and-attribution-coverage",
         "review-other-bundled-third-party-license-and-attribution-coverage",
         "confirm-aports-patch-notices"
       ]
