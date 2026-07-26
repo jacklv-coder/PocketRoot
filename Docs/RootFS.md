@@ -5,7 +5,7 @@
 RootFS 是 PocketRoot 的外部供应链输入，不是普通测试 fixture。仓库提交的是不可变清单、校验和安全安装代码，不提交、镜像或默认打包 RootFS 二进制。
 
 > [!WARNING]
-> 固定 v0.3.3 归档已有可复现 package inventory、SPDX SBOM、默认配置证据、完整覆盖 inventory 的源码获取清单，以及 21 个初始候选和 78 个外置 LICENSE/NOTICE payload 的 checksum-bound 工程复核结果；3 个 origin 的候选材料工程项已关闭，5 个仍需补逐包材料。完整 NOTICE、法律复核、对应源码交付审查与发行批准尚未闭环。以下 URL 与命令用于审计和本地开发，不构成公开再分发授权。应用必须先完成自己的法律与发行审查。
+> 固定 v0.3.3 归档已有可复现 package inventory、SPDX SBOM、默认配置证据、完整覆盖 inventory 的源码获取清单，以及 21 个初始候选和 80 个外置 LICENSE/NOTICE payload 的 checksum-bound 工程复核结果；3 个 origin 的候选材料工程项已关闭，5 个仍需补逐包材料。完整 NOTICE、法律复核、对应源码交付审查与发行批准尚未闭环。以下 URL 与命令用于审计和本地开发，不构成公开再分发授权。应用必须先完成自己的法律与发行审查。
 
 ## 1. 固定清单
 
@@ -143,7 +143,7 @@ SHA-256、精确路径集合与无链接/特殊节点边界。固定结果清单
 工程复核，其中 `libc-dev`、`zlib` 的索引项已关闭，另外 8 个 source origin 仍有
 未决项；输出不能直接视为完整 NOTICE 或对应源码交付材料。
 
-剩余 8 个 origin 的外置 LICENSE/NOTICE 候选包清单还固定了 11 份远端许可证/
+剩余 8 个 origin 的外置 LICENSE/NOTICE 候选包清单还固定了 13 份远端许可证/
 attribution 材料与 46 份 aports 补充文件。清单可独立校验；实际物化和复验必须
 同时提供上面已经验证的两个仓库外目录：
 
@@ -167,7 +167,7 @@ ruby Scripts/rootfs-license-notice-review-results.rb \
 ```
 
 工具对远端材料强制 HTTPS、重定向次数、响应大小、固定字节数与 SHA-256，并原子
-创建输出。结果清单把工程复核绑定到精确的 78 文件 payload tree；复验器拒绝路径
+创建输出。结果清单把工程复核绑定到精确的 80 文件 payload tree；复验器拒绝路径
 漂移、符号链接、特殊节点、已知摘要漂移和 tree digest 漂移。`apk-tools`、
 `openssl` 与 `pax-utils` 的候选材料工程项已关闭，另外 5 个 origin 仍需补逐包
 材料；候选 NOTICE 和 receipt 不代表法律审查或发行批准。

@@ -43,9 +43,9 @@
     "engineeringReviewedLicenseCandidates": 21,
     "sourceOriginsWithRemainingLicenseReviewItems": 8,
     "indexedLicenseNoticeCandidateOrigins": 8,
-    "pinnedRemoteLicenseNoticePayloads": 11,
+    "pinnedRemoteLicenseNoticePayloads": 13,
     "supplementalAportsCandidateFiles": 46,
-    "engineeringReviewedLicenseNoticeCandidatePayloads": 78,
+    "engineeringReviewedLicenseNoticeCandidatePayloads": 80,
     "sourceOriginsWithRemainingCandidatePayloadReviewItems": 5
   },
   "engineeringStatus": {

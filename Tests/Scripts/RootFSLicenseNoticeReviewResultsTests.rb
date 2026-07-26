@@ -45,9 +45,9 @@ class RootFSLicenseNoticeReviewResultsTests < Minitest::Test
     validated = validate
 
     assert_equal 8, validated.fetch(:sources).length
-    assert_equal 11, validated.fetch(:remote_payloads).length
+    assert_equal 13, validated.fetch(:remote_payloads).length
     assert_equal 46, validated.fetch(:aports_paths).length
-    assert_equal 78, @results.fetch("reviewedPayloadFileCount")
+    assert_equal 80, @results.fetch("reviewedPayloadFileCount")
     assert_equal 5,
       @results.fetch("sourceOriginsWithRemainingReviewItems")
     assert_equal %w[apk-tools openssl pax-utils],
@@ -77,6 +77,28 @@ class RootFSLicenseNoticeReviewResultsTests < Minitest::Test
     assert_empty source.fetch("resolvedReviewItems")
     assert_equal(
       ["collect-mit-license-grant-and-copyright-notice"],
+      source.fetch("remainingReviewItems")
+    )
+    assert_equal(
+      "additional-package-material-required",
+      source.fetch("engineeringConclusion")
+    )
+  end
+
+  def test_binds_ca_bundle_generator_to_exact_curl_license
+    source = @results.fetch("sources").find do |candidate|
+      candidate.fetch("sourceOrigin") == "ca-certificates"
+    end
+
+    assert_equal "complete", source.fetch("licenseTextCoverage")
+    assert_equal "partial", source.fetch("attributionCoverage")
+    assert_equal 2, source.fetch("reviewedRemoteEvidenceCount")
+    assert_includes(
+      source.fetch("resolvedReviewItems"),
+      "confirm-mit-script-notices-relevant-to-shipped-bundle"
+    )
+    assert_equal(
+      ["confirm-certificate-attribution-and-trust-store-requirements"],
       source.fetch("remainingReviewItems")
     )
     assert_equal(
