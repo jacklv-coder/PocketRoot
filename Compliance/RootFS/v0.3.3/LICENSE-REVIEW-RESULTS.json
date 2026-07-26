@@ -4,11 +4,11 @@
     "version": "v0.3.3",
     "sha256": "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"
   },
-  "licenseReviewManifestSha256": "d8b59030ed31a354749c4de5242f471b52d99add953a2d3cde6823aeb4a7fd46",
+  "licenseReviewManifestSha256": "1edf1106bdcd2cded016b1bb584baacfa7f92bd66ccda17844e80d93f02026b2",
   "status": "engineering-reviewed-open-release-gates",
   "engineeringReviewCompleted": true,
   "allCandidateDigestsVerified": true,
-  "reviewedCandidateCount": 25,
+  "reviewedCandidateCount": 26,
   "sourceOriginsWithRemainingReviewItems": 8,
   "completeLicenseTextBundlePresent": false,
   "completePackageNoticeSetPresent": false,
@@ -124,6 +124,11 @@
           "outputPath": "evidence/busybox/sysklogd-logger.c",
           "sha256": "77d22f4c54824cd8bc8ede513693d9f4eb6977302908daac3797f3ee4573e611",
           "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/util-linux-cal.c",
+          "sha256": "39798fa68229dcb25817d906ac1990cc147fd84065918a1404b56263d7a6e311",
+          "conclusion": "inline-license-and-attribution-notice"
         }
       ],
       "resolvedReviewItems": [],
@@ -133,6 +138,7 @@
         "confirm-enabled-env-license-and-attribution-coverage",
         "confirm-enabled-echo-license-and-attribution-coverage",
         "confirm-enabled-logger-license-and-attribution-coverage",
+        "confirm-enabled-cal-license-and-attribution-coverage",
         "review-other-bundled-third-party-license-and-attribution-coverage",
         "confirm-aports-patch-notices"
       ]

@@ -204,6 +204,19 @@
             "attribution"
           ],
           "reviewState": "unreviewed-candidate"
+        },
+        {
+          "sourceKind": "distfile-member",
+          "distfile": "busybox-1.36.1.tar.bz2",
+          "member": "busybox-1.36.1/util-linux/cal.c",
+          "outputPath": "evidence/busybox/util-linux-cal.c",
+          "byteCount": 10951,
+          "sha256": "39798fa68229dcb25817d906ac1990cc147fd84065918a1404b56263d7a6e311",
+          "evidenceKinds": [
+            "inline-license-notice",
+            "attribution"
+          ],
+          "reviewState": "unreviewed-candidate"
         }
       ],
       "openReviewItems": [
@@ -212,6 +225,7 @@
         "confirm-enabled-env-license-and-attribution-coverage",
         "confirm-enabled-echo-license-and-attribution-coverage",
         "confirm-enabled-logger-license-and-attribution-coverage",
+        "confirm-enabled-cal-license-and-attribution-coverage",
         "review-other-bundled-third-party-license-and-attribution-coverage",
         "confirm-aports-patch-notices"
       ]
