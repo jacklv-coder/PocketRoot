@@ -44,7 +44,9 @@
     "sourceOriginsWithRemainingLicenseReviewItems": 8,
     "indexedLicenseNoticeCandidateOrigins": 8,
     "pinnedRemoteLicenseNoticePayloads": 8,
-    "supplementalAportsCandidateFiles": 46
+    "supplementalAportsCandidateFiles": 46,
+    "engineeringReviewedLicenseNoticeCandidatePayloads": 75,
+    "sourceOriginsWithRemainingCandidatePayloadReviewItems": 6
   },
   "engineeringStatus": {
     "completeInstalledPackageInventory": true,
@@ -55,7 +57,7 @@
     "licenseCandidateEngineeringReviewCompleted": true,
     "completeLicenseNoticeCandidateBundleIndex": true,
     "licenseNoticeCandidatePayloadCommitted": false,
-    "licenseNoticeCandidateEngineeringReviewApproved": false,
+    "licenseNoticeCandidateEngineeringReviewCompleted": true,
     "completeLicenseAndNoticeBundle": false,
     "correspondingSourceBundleCollected": false,
     "redistributionApproved": false

@@ -33,6 +33,8 @@
   "indexedOpenSourceOrigins": 8,
   "pinnedRemoteReferencePayloads": 8,
   "supplementalAportsFiles": 46,
+  "engineeringReviewedCandidatePayloads": 75,
+  "sourceOriginsWithRemainingCandidatePayloadReviewItems": 6,
   "candidateBundleIndexComplete": true,
   "candidatePayloadCommitted": false,
   "engineeringReviewCompleted": true,

@@ -23,6 +23,9 @@ pinned RootFS archive. It does not store the RootFS payload.
 - `LICENSE-NOTICE-CANDIDATES.json`：为剩余 8 个 source origin 固定 8 份远端
   许可证/attribution 材料、46 份 aports 补充文件及现有 21 份复核证据的外置候选包；
   payload 不提交，工程、法律和再分发门禁保持关闭；
+- `LICENSE-NOTICE-REVIEW-RESULTS.json`：绑定候选清单与 75 个 payload 文件树的
+  工程复核结果；2 个 origin 的候选材料工程项关闭，6 个仍需补逐包材料，法律和
+  再分发门禁保持关闭；
 - `RUNTIME-CONFIGURATION.json`：guest、`apk`、repository、world 和 DNS 默认配置；
 - `NOTICE.md`：可复现 attribution inventory 与尚未完成事项；
 - `EVIDENCE.json`：输入成员摘要、数量和明确的工程/发行状态；
@@ -38,8 +41,10 @@ candidates. Two source origins have no remaining indexed review items; eight
 still have package-specific open items. `LICENSE-NOTICE-CANDIDATES.json`
 indexes an external candidate bundle for those eight origins: 8 pinned remote
 license/attribution payloads, 46 supplemental aports files, and the existing
-21 reviewed evidence files. It neither commits those payloads nor approves
-engineering, legal, or redistribution gates.
+21 reviewed evidence files. `LICENSE-NOTICE-REVIEW-RESULTS.json` binds the
+engineering review to the exact 75-file payload tree. Two origins have no
+remaining candidate-material engineering items; six still require
+package-specific material. Legal and redistribution approval remain open.
 
 ## 重新生成 / Regenerate
 
@@ -146,6 +151,7 @@ path outside the repository:
 
 ```bash
 ruby Scripts/rootfs-license-notice-candidates.rb
+ruby Scripts/rootfs-license-notice-review-results.rb
 ruby Scripts/prepare-rootfs-license-notice-bundle.rb --validate-only
 
 ruby Scripts/prepare-rootfs-license-notice-bundle.rb \
@@ -157,6 +163,9 @@ ruby Scripts/prepare-rootfs-license-notice-bundle.rb \
   --source-bundle /absolute/rootfs-v0.3.3-source-review \
   --license-review /absolute/rootfs-v0.3.3-license-review \
   --verify /absolute/rootfs-v0.3.3-license-notice-candidates
+
+ruby Scripts/rootfs-license-notice-review-results.rb \
+  --bundle /absolute/rootfs-v0.3.3-license-notice-candidates
 ```
 
 远端材料由固定 URL、字节数和 SHA-256 约束；可选 `--download-cache` 只读取以
@@ -174,15 +183,18 @@ advice, or redistribution approval.
 这些文件不构成完整第三方 LICENSE/NOTICE bundle、经审查的 copyleft
 corresponding-source 交付、法律意见或再分发授权。源码获取清单已完整覆盖固定
 inventory，21 个候选也都有工程复核结果；`libc-dev`、`zlib` 已关闭索引项，另外
-8 个 source origin 的新候选材料仍需工程/法律复核和包级版权/notice 确认。修改说明、构建完整性、
-源码提供方式、App Store 2.5.2 产品策略和负责人批准仍是发行阻塞项。
+8 个 source origin 的 75 个新候选 payload 已完成 checksum-bound 工程复核；
+`apk-tools`、`pax-utils` 的候选材料工程项已关闭，另外 6 个 origin 仍需补逐包
+版权/notice 材料。修改说明、构建完整性、源码提供方式、法律审查、App Store
+2.5.2 产品策略和负责人批准仍是发行阻塞项。
 
 These files are not a complete third-party LICENSE/NOTICE bundle, reviewed
 copyleft corresponding-source delivery, legal advice, or redistribution
 approval. The acquisition manifest completely covers the pinned inventory and
 all 21 indexed candidates have engineering review results. `libc-dev` and
-`zlib` have no remaining indexed items; eight source origins still need
-engineering/legal review of the newly indexed candidates and package-specific
-notice follow-up. Modification, build
-completeness, source-offer mechanics, legal review, App Store 2.5.2 product
-policy, and authorized approval remain distribution blockers.
+`zlib` have no remaining indexed items. All 75 newly indexed payloads have a
+checksum-bound engineering review; `apk-tools` and `pax-utils` have no
+remaining candidate-material engineering items, while six origins still need
+package-specific copyright/notice material. Modification, build completeness,
+source-offer mechanics, legal review, App Store 2.5.2 product policy, and
+authorized approval remain distribution blockers.

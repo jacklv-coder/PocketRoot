@@ -5,7 +5,7 @@
 A RootFS is an external supply-chain input, not a normal fixture. PocketRoot commits immutable metadata and secure install code, not the payload.
 
 > [!WARNING]
-> The pinned v0.3.3 archive now has a reproducible package inventory, SPDX SBOM, default-configuration evidence, a source-acquisition manifest covering the complete inventory, and engineering-review results for all 21 license/NOTICE candidates. A reproducible external candidate-bundle index now covers the eight source origins with remaining items, but engineering/legal review of those candidate payloads, the complete NOTICE set, corresponding-source delivery review, and distribution approval remain open. The URL and commands below support audit and local development; they do not grant redistribution rights.
+> The pinned v0.3.3 archive now has a reproducible package inventory, SPDX SBOM, default-configuration evidence, a source-acquisition manifest covering the complete inventory, and checksum-bound engineering review of all 21 initial candidates and all 75 external LICENSE/NOTICE payloads. Two origins have no remaining candidate-material engineering items; six still need package-specific material. The complete NOTICE set, legal review, corresponding-source delivery review, and distribution approval remain open. The URL and commands below support audit and local development; they do not grant redistribution rights.
 
 ## Pinned manifest
 
@@ -111,6 +111,7 @@ directories verified above:
 
 ```bash
 ruby Scripts/rootfs-license-notice-candidates.rb
+ruby Scripts/rootfs-license-notice-review-results.rb
 ruby Scripts/prepare-rootfs-license-notice-bundle.rb --validate-only
 
 ruby Scripts/prepare-rootfs-license-notice-bundle.rb \
@@ -122,11 +123,18 @@ ruby Scripts/prepare-rootfs-license-notice-bundle.rb \
   --source-bundle /absolute/new/path/outside-the-repository/rootfs-v0.3.3-source-review \
   --license-review /absolute/new/path/outside-the-repository/rootfs-v0.3.3-license-review \
   --verify /absolute/new/path/outside-the-repository/rootfs-v0.3.3-license-notice-candidates
+
+ruby Scripts/rootfs-license-notice-review-results.rb \
+  --bundle /absolute/new/path/outside-the-repository/rootfs-v0.3.3-license-notice-candidates
 ```
 
 The tool enforces HTTPS, redirect and response-size bounds, pinned byte counts
-and SHA-256 digests, and atomic output creation. Its candidate NOTICE and
-receipt remain engineering-review inputs, not distribution approval.
+and SHA-256 digests, and atomic output creation. The results bind engineering
+review to the exact 75-file payload tree; the verifier rejects path drift,
+links, special nodes, known-digest drift, and tree-digest drift. `apk-tools`
+and `pax-utils` have no remaining candidate-material engineering items; six
+origins still need package-specific material. The candidate NOTICE and receipt
+do not represent legal review or distribution approval.
 
 Do not put it in package resources, Demo resources, Git, or Git LFS.
 
