@@ -69,6 +69,48 @@ class RootFSLicenseNoticeBundleTests < Minitest::Test
     end
   end
 
+  def test_retries_next_url_after_http_connection_exception
+    contents = "fallback license\n"
+    response = Net::HTTPOK.new("1.1", "200", "OK")
+    response["content-length"] = contents.bytesize.to_s
+    response.define_singleton_method(:read_body) do |&block|
+      block.call(contents)
+    end
+    http = Object.new
+    http.define_singleton_method(:request) do |_request, &block|
+      block.call(response)
+      response
+    end
+    forbidden = Net::HTTPForbidden.new("1.1", "403", "Forbidden")
+    connection_error =
+      Net::HTTPClientException.new("proxy rejected CONNECT", forbidden)
+    starts = 0
+    original = Net::HTTP.method(:start)
+    Net::HTTP.singleton_class.send(:define_method, :start) do |*_args, **_options, &block|
+      starts += 1
+      raise connection_error if starts == 1
+
+      block.call(http)
+    end
+    payload = remote_payload(contents)
+    payload["retrievalURLs"] = [
+      "https://first.invalid/license.txt",
+      "https://second.invalid/license.txt"
+    ]
+
+    actual =
+      RootFSLicenseNoticeBundle.fetch_remote_payload(
+        payload,
+        nil,
+        false
+      )
+
+    assert_equal contents, actual
+    assert_equal 2, starts
+  ensure
+    Net::HTTP.singleton_class.send(:define_method, :start, original) if original
+  end
+
   def test_materialize_and_verify_rejects_path_drift
     Dir.mktmpdir("rootfs-notice-output") do |directory|
       parent = Pathname(directory)

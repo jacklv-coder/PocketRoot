@@ -407,8 +407,8 @@ module RootFSLicenseNoticeBundle
       raise BundleError,
         "remote payload request failed with HTTP #{result.fetch(1)}: #{url}"
     end
-  rescue ArgumentError, URI::InvalidURIError, SocketError, SystemCallError,
-    Timeout::Error, OpenSSL::SSL::SSLError => error
+  rescue ArgumentError, URI::InvalidURIError, Net::ProtocolError, SocketError,
+    SystemCallError, Timeout::Error, OpenSSL::SSL::SSLError => error
     raise BundleError, "remote payload request failed for #{url}: #{error.message}"
   end
 
