@@ -4,7 +4,7 @@
     "version": "v0.3.3",
     "sha256": "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"
   },
-  "licenseReviewResultsSha256": "ca500b65598b1f7126282a943b7238b0f9ac676bb61e1bbed062f99021583377",
+  "licenseReviewResultsSha256": "2b27048cd9f39dedd2f03f2e5eb9b644aaea315629dc117878aaa770dc79c2a2",
   "status": "candidate-bundle-indexed-engineering-review-required",
   "candidateBundleIndexComplete": true,
   "candidatePayloadCommitted": false,
@@ -249,7 +249,8 @@
         "evidence/busybox/shell-math.c",
         "evidence/busybox/coreutils-env.c",
         "evidence/busybox/coreutils-echo.c",
-        "evidence/busybox/sysklogd-logger.c"
+        "evidence/busybox/sysklogd-logger.c",
+        "evidence/busybox/util-linux-cal.c"
       ],
       "referenceLicensePaths": [
         "licenses/GPL-2.0.txt"
@@ -300,6 +301,7 @@
         "confirm-enabled-env-license-and-attribution-coverage",
         "confirm-enabled-echo-license-and-attribution-coverage",
         "confirm-enabled-logger-license-and-attribution-coverage",
+        "confirm-enabled-cal-license-and-attribution-coverage",
         "review-other-bundled-third-party-license-and-attribution-coverage",
         "confirm-aports-patch-notices"
       ],
