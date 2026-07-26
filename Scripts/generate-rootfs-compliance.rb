@@ -464,6 +464,10 @@ def license_inventory(
         entry.fetch("candidateResults").length
       end,
     "sourceOriginsWithOpenReviewItems" =>
+      license_review_entries.count do |entry|
+        !entry.fetch("openReviewItems").empty?
+      end,
+    "sourceOriginsWithRemainingReviewItems" =>
       license_review_result_entries.count do |entry|
         !entry.fetch("remainingReviewItems").empty?
       end,
@@ -676,7 +680,10 @@ def build_outputs(
       RootFSLicenseReviewResults.validate_manifest(
         license_review_results.fetch(:document),
         license_review.fetch(:document),
-        license_review_bytes: license_review.fetch(:contents)
+        source_acquisition: source_acquisition.fetch(:document),
+        source_inventory: generated_source_inventory,
+        license_review_bytes: license_review.fetch(:contents),
+        source_acquisition_bytes: source_acquisition.fetch(:contents)
       )
   rescue RootFSLicenseReviewResults::ValidationError => error
     raise ComplianceError,

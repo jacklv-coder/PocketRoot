@@ -3,6 +3,8 @@
 require "digest"
 require "json"
 require "pathname"
+require_relative "rootfs-license-review"
+require_relative "rootfs-source-acquisition"
 
 module RootFSLicenseReviewResults
   ARCHIVE_VERSION = "v0.3.3"
@@ -71,7 +73,15 @@ module RootFSLicenseReviewResults
     end
   end
 
-  def validate_manifest(manifest, license_review, license_review_bytes:)
+  def validate_manifest(
+    manifest,
+    license_review,
+    source_acquisition:,
+    source_inventory:,
+    license_review_bytes:,
+    source_acquisition_bytes:,
+    allow_file_urls: false
+  )
     require_hash(manifest, "license review results")
     require_hash(license_review, "license review manifest")
     unless manifest["schemaVersion"] == 1 &&
@@ -86,6 +96,23 @@ module RootFSLicenseReviewResults
       Digest::SHA256.hexdigest(license_review_bytes)
       raise ValidationError,
         "license review results do not match LICENSE-REVIEW.json bytes"
+    end
+    begin
+      RootFSSourceAcquisition.validate_manifest(
+        source_acquisition,
+        source_inventory,
+        allow_file_urls: allow_file_urls
+      )
+      RootFSLicenseReview.validate_manifest(
+        license_review,
+        source_acquisition,
+        source_inventory,
+        source_acquisition_bytes: source_acquisition_bytes
+      )
+    rescue RootFSSourceAcquisition::ValidationError,
+      RootFSLicenseReview::ValidationError => error
+      raise ValidationError,
+        "license review results reference an invalid manifest: #{error.message}"
     end
     unless manifest["status"] == STATUS &&
       manifest["engineeringReviewCompleted"] == true &&
@@ -187,14 +214,35 @@ if $PROGRAM_NAME == __FILE__
       ARGV.fetch(0, "Compliance/RootFS/v0.3.3/LICENSE-REVIEW-RESULTS.json")
     review_path =
       ARGV.fetch(1, "Compliance/RootFS/v0.3.3/LICENSE-REVIEW.json")
+    source_acquisition_path =
+      ARGV.fetch(2, "Compliance/RootFS/v0.3.3/SOURCE-ACQUISITION.json")
+    source_inventory_path =
+      ARGV.fetch(3, "Compliance/RootFS/v0.3.3/SOURCE-INVENTORY.json")
     review_bytes = Pathname(review_path).binread
+    source_acquisition_bytes = Pathname(source_acquisition_path).binread
+    source_acquisition =
+      RootFSLicenseReviewResults.load_json(
+        source_acquisition_path,
+        "source acquisition manifest"
+      )
+    allow_file_urls =
+      ENV["POCKETROOT_TEST_ALLOW_FILE_URLS"] == "1" &&
+      source_acquisition["testFixture"] == true
     sources = RootFSLicenseReviewResults.validate_manifest(
       RootFSLicenseReviewResults.load_json(
         results_path,
         "license review results"
       ),
       JSON.parse(review_bytes),
-      license_review_bytes: review_bytes
+      source_acquisition: source_acquisition,
+      source_inventory:
+        RootFSLicenseReviewResults.load_json(
+          source_inventory_path,
+          "source inventory"
+        ),
+      license_review_bytes: review_bytes,
+      source_acquisition_bytes: source_acquisition_bytes,
+      allow_file_urls: allow_file_urls
     )
     puts "RootFS license review results are valid " \
       "(#{sources.length} source origins)."

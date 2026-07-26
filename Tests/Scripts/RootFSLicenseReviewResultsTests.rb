@@ -10,6 +10,12 @@ class RootFSLicenseReviewResultsTests < Minitest::Test
   REPOSITORY_ROOT = Pathname(__dir__).join("../..").realpath
   REVIEW_PATH =
     REPOSITORY_ROOT.join("Compliance/RootFS/v0.3.3/LICENSE-REVIEW.json")
+  SOURCE_ACQUISITION_PATH =
+    REPOSITORY_ROOT.join(
+      "Compliance/RootFS/v0.3.3/SOURCE-ACQUISITION.json"
+    )
+  SOURCE_INVENTORY_PATH =
+    REPOSITORY_ROOT.join("Compliance/RootFS/v0.3.3/SOURCE-INVENTORY.json")
   RESULTS_PATH =
     REPOSITORY_ROOT.join(
       "Compliance/RootFS/v0.3.3/LICENSE-REVIEW-RESULTS.json"
@@ -18,6 +24,9 @@ class RootFSLicenseReviewResultsTests < Minitest::Test
   def setup
     @review_bytes = REVIEW_PATH.binread
     @review = JSON.parse(@review_bytes)
+    @source_acquisition_bytes = SOURCE_ACQUISITION_PATH.binread
+    @source_acquisition = JSON.parse(@source_acquisition_bytes)
+    @source_inventory = JSON.parse(SOURCE_INVENTORY_PATH.binread)
     @results = JSON.parse(RESULTS_PATH.binread)
   end
 
@@ -87,12 +96,55 @@ class RootFSLicenseReviewResultsTests < Minitest::Test
       RootFSLicenseReviewResults.validate_manifest(
         @results,
         @review,
-        license_review_bytes: changed_review_bytes
+        source_acquisition: @source_acquisition,
+        source_inventory: @source_inventory,
+        license_review_bytes: changed_review_bytes,
+        source_acquisition_bytes: @source_acquisition_bytes
       )
     end
 
     assert_includes error.message,
       "do not match LICENSE-REVIEW.json bytes"
+  end
+
+  def test_rejects_invalid_candidate_manifest_with_matching_binding
+    @review.fetch("sources").first
+      .fetch("candidateEvidence").first["sha256"] = "not-a-sha256"
+    @review_bytes = "#{JSON.pretty_generate(@review)}\n"
+    @results["licenseReviewManifestSha256"] =
+      Digest::SHA256.hexdigest(@review_bytes)
+
+    error = assert_raises(
+      RootFSLicenseReviewResults::ValidationError
+    ) { validate }
+
+    assert_includes error.message, "invalid manifest"
+    assert_includes error.message, "invalid sha256"
+  end
+
+  def test_reports_malformed_candidate_manifest_as_validation_error
+    @review.fetch("sources").first.delete("openReviewItems")
+    @review_bytes = "#{JSON.pretty_generate(@review)}\n"
+    @results["licenseReviewManifestSha256"] =
+      Digest::SHA256.hexdigest(@review_bytes)
+
+    error = assert_raises(
+      RootFSLicenseReviewResults::ValidationError
+    ) { validate }
+
+    assert_includes error.message, "invalid manifest"
+    assert_includes error.message, "openReviewItems"
+  end
+
+  def test_rejects_invalid_source_inventory
+    @source_inventory.fetch("archive")["sha256"] = "0" * 64
+
+    error = assert_raises(
+      RootFSLicenseReviewResults::ValidationError
+    ) { validate }
+
+    assert_includes error.message, "invalid manifest"
+    assert_includes error.message, "pinned RootFS archive"
   end
 
   def test_rejects_summary_count_drift
@@ -124,7 +176,10 @@ class RootFSLicenseReviewResultsTests < Minitest::Test
     RootFSLicenseReviewResults.validate_manifest(
       @results,
       @review,
-      license_review_bytes: @review_bytes
+      source_acquisition: @source_acquisition,
+      source_inventory: @source_inventory,
+      license_review_bytes: @review_bytes,
+      source_acquisition_bytes: @source_acquisition_bytes
     )
   end
 end
