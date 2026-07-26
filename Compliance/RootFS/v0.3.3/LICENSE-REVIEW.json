@@ -230,6 +230,19 @@
             "attribution"
           ],
           "reviewState": "unreviewed-candidate"
+        },
+        {
+          "sourceKind": "distfile-member",
+          "distfile": "busybox-1.36.1.tar.bz2",
+          "member": "busybox-1.36.1/networking/traceroute.c",
+          "outputPath": "evidence/busybox/networking-traceroute.c",
+          "byteCount": 40524,
+          "sha256": "c75965e8ad6670e92ed1c4c116141a51cb78d77e3e47286e4527514bf8b1c229",
+          "evidenceKinds": [
+            "inline-license-notice",
+            "attribution"
+          ],
+          "reviewState": "unreviewed-candidate"
         }
       ],
       "openReviewItems": [
@@ -240,6 +253,7 @@
         "confirm-enabled-logger-license-and-attribution-coverage",
         "confirm-enabled-cal-license-and-attribution-coverage",
         "confirm-enabled-ping-and-ping6-license-and-attribution-coverage",
+        "confirm-enabled-traceroute-and-traceroute6-license-and-attribution-coverage",
         "review-other-bundled-third-party-license-and-attribution-coverage",
         "confirm-aports-patch-notices"
       ]
