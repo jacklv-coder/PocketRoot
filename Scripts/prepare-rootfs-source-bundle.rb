@@ -214,10 +214,17 @@ def acquire(
       expected_sha512,
       maximum_bytes
     )
-    return urls.first
+    return {
+      "acquisitionMode" => "download-cache",
+      "cachePath" => cache_relative
+    }
   end
 
-  download(urls, destination, expected_sha512, maximum_bytes)
+  {
+    "acquisitionMode" => "network",
+    "selectedURL" =>
+      download(urls, destination, expected_sha512, maximum_bytes)
+  }
 end
 
 def download(urls, destination, expected_sha512, maximum_bytes)
@@ -577,8 +584,10 @@ def expected_bundle_path_types(sources, identities)
 end
 
 def verify_receipt(receipt, manifest, sources, root, identities)
+  acquisition_mode = receipt.fetch("acquisitionMode", "network")
   unless receipt["schemaVersion"] == 1 &&
     receipt["archive"] == manifest["archive"] &&
+    %w[network download-cache].include?(acquisition_mode) &&
     receipt["redistributionApproved"] == false
     raise SourceBundleError, "materialization receipt has invalid release metadata"
   end
@@ -591,10 +600,20 @@ def verify_receipt(receipt, manifest, sources, root, identities)
     origin = source.fetch("sourceOrigin")
     snapshot = source.fetch("aportsSnapshot")
     recorded = receipt_sources[index]
+    snapshot_acquisition_valid =
+      recorded.is_a?(Hash) &&
+        if acquisition_mode == "download-cache"
+          !recorded.key?("aportsSnapshotURL") &&
+            recorded["aportsCachePath"] ==
+              "downloads/aports/#{origin}.tar.gz"
+        else
+          !recorded.key?("aportsCachePath") &&
+            recorded["aportsSnapshotURL"] == snapshot["url"]
+        end
     unless recorded.is_a?(Hash) &&
       recorded["sourceOrigin"] == origin &&
       recorded["aportsCommit"] == source["aportsCommit"] &&
-      recorded["aportsSnapshotURL"] == snapshot["url"] &&
+      snapshot_acquisition_valid &&
       recorded["aportsCanonicalTreeFormat"] ==
         manifest["aportsCanonicalTreeFormat"] &&
       recorded["aportsCanonicalTreeSha256"] ==
@@ -625,10 +644,23 @@ def verify_receipt(receipt, manifest, sources, root, identities)
     end
     expected_distfiles.each_with_index do |distfile, offset|
       distfile_record = recorded_distfiles[offset]
+      expected_cache_path =
+        "distfiles/#{origin}/#{distfile.fetch("filename")}"
+      distfile_acquisition_valid =
+        distfile_record.is_a?(Hash) &&
+          if acquisition_mode == "download-cache"
+            !distfile_record.key?("selectedURL") &&
+              distfile_record["cachePath"] == expected_cache_path
+          else
+            !distfile_record.key?("cachePath") &&
+              distfile["retrievalURLs"].include?(
+                distfile_record["selectedURL"]
+              )
+          end
       unless distfile_record.is_a?(Hash) &&
         distfile_record["filename"] == distfile["filename"] &&
         distfile_record["sha512"] == distfile["sha512"] &&
-        distfile["retrievalURLs"].include?(distfile_record["selectedURL"])
+        distfile_acquisition_valid
         raise SourceBundleError,
           "materialization receipt has invalid distfile record for " \
           "#{origin}/#{distfile["filename"]}"
@@ -869,7 +901,7 @@ def materialize(manifest, sources, output, download_cache: nil)
       origin = entry.fetch("sourceOrigin")
       snapshot = entry.fetch("aportsSnapshot")
       snapshot_archive = staging.join("downloads", "aports", "#{origin}.tar.gz")
-      snapshot_url = acquire(
+      snapshot_acquisition = acquire(
         [snapshot.fetch("url")],
         snapshot_archive,
         snapshot.fetch("sha512"),
@@ -900,7 +932,7 @@ def materialize(manifest, sources, output, download_cache: nil)
 
       receipt_distfiles = entry.fetch("distfiles").map do |distfile|
         destination = staging.join("distfiles", origin, distfile.fetch("filename"))
-        selected_url = acquire(
+        distfile_acquisition = acquire(
           distfile.fetch("retrievalURLs"),
           destination,
           distfile.fetch("sha512"),
@@ -911,14 +943,16 @@ def materialize(manifest, sources, output, download_cache: nil)
         )
         {
           "filename" => distfile.fetch("filename"),
-          "selectedURL" => selected_url,
           "sha512" => distfile.fetch("sha512")
-        }
+        }.merge(
+          distfile_acquisition["acquisitionMode"] == "download-cache" ?
+            {"cachePath" => distfile_acquisition.fetch("cachePath")} :
+            {"selectedURL" => distfile_acquisition.fetch("selectedURL")}
+        )
       end
-      receipt_sources << {
+      receipt_source = {
         "sourceOrigin" => origin,
         "aportsCommit" => entry.fetch("aportsCommit"),
-        "aportsSnapshotURL" => snapshot_url,
         "aportsCanonicalTreeFormat" =>
           manifest.fetch("aportsCanonicalTreeFormat"),
         "aportsCanonicalTreeSha256" => snapshot.fetch("canonicalTreeSha256"),
@@ -930,6 +964,14 @@ def materialize(manifest, sources, output, download_cache: nil)
         end,
         "distfiles" => receipt_distfiles
       }
+      if snapshot_acquisition["acquisitionMode"] == "download-cache"
+        receipt_source["aportsCachePath"] =
+          snapshot_acquisition.fetch("cachePath")
+      else
+        receipt_source["aportsSnapshotURL"] =
+          snapshot_acquisition.fetch("selectedURL")
+      end
+      receipt_sources << receipt_source
     end
 
     staging.join("SOURCE-ACQUISITION.json").binwrite(
@@ -941,6 +983,8 @@ def materialize(manifest, sources, output, download_cache: nil)
     receipt = {
       "schemaVersion" => 1,
       "archive" => manifest.fetch("archive"),
+      "acquisitionMode" =>
+        download_cache ? "download-cache" : "network",
       "redistributionApproved" => false,
       "sources" => receipt_sources
     }

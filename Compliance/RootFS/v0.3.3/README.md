@@ -125,6 +125,9 @@ The cache layout is `downloads/aports/<source-origin>.tar.gz` and
 the tool still rejects symlinks and repository-local or overlapping paths,
 bounds every input, verifies pinned SHA-512 digests, and revalidates each
 canonical extracted aports tree before atomically promoting the output.
+The receipt marks cached acquisition explicitly and records cache-relative
+paths instead of claiming that an upstream URL was contacted; pinned upstream
+origins remain in `SOURCE-ACQUISITION.json`.
 
 `--verify` 同时核对所有普通文件摘要、目录集合和符号链接目标。该输出不会被 App、
 Git 或 CI artifact 自动打包或上传。

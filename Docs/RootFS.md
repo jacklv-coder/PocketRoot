@@ -110,6 +110,8 @@ ruby Scripts/prepare-rootfs-source-bundle.rb \
 `distfiles/<source-origin>/<filename>`。脚本拒绝 symlink、特殊/缺失文件、仓库内
 缓存及输入/输出重叠，逐项限制大小并核对 SHA-512；aports 仍会重新解包并校验规范化
 tree identity。缓存不构成来源批准，也不会改变 receipt 的固定上游来源。
+receipt 会明确标记缓存获取并记录缓存内相对路径，不会伪称访问了某个上游 URL；
+固定上游来源仍保留在 `SOURCE-ACQUISITION.json`。
 
 规范化 aports 目录身份覆盖条目类型、路径、普通文件权限位和内容摘要；物化时会保留
 这些权限位，`--verify` 会再次校验。

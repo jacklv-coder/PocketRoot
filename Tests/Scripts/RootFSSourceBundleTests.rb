@@ -96,9 +96,36 @@ class RootFSSourceBundleTests < Minitest::Test
       output.join("aports/demo/APKBUILD").binread
     assert_equal "demo source\n",
       output.join("distfiles/demo/demo-source.txt").binread
+    receipt = JSON.parse(
+      output.join("MATERIALIZATION-RECEIPT.json").read
+    )
+    assert_equal "download-cache", receipt.fetch("acquisitionMode")
+    source_receipt = receipt.fetch("sources").first
+    assert_equal "downloads/aports/demo.tar.gz",
+      source_receipt.fetch("aportsCachePath")
+    refute source_receipt.key?("aportsSnapshotURL")
+    distfile_receipt = source_receipt.fetch("distfiles").first
+    assert_equal "distfiles/demo/demo-source.txt",
+      distfile_receipt.fetch("cachePath")
+    refute distfile_receipt.key?("selectedURL")
     _verify_stdout, verify_stderr, verify_status =
       run_script("--verify", output.to_s)
     assert verify_status.success?, verify_stderr
+
+    distfile_receipt["selectedURL"] =
+      JSON.parse(@manifest_path.read)
+        .fetch("sources").first
+        .fetch("distfiles").first
+        .fetch("retrievalURLs").first
+    output.join("MATERIALIZATION-RECEIPT.json").write(
+      "#{JSON.pretty_generate(receipt)}\n"
+    )
+    refresh_self_authored_integrity(output)
+    _tampered_stdout, tampered_stderr, tampered_status =
+      run_script("--verify", output.to_s)
+    refute tampered_status.success?
+    assert_includes tampered_stderr,
+      "materialization receipt has invalid distfile record"
   end
 
   def test_rejects_download_cache_digest_mismatch_without_output

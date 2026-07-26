@@ -88,6 +88,9 @@ special or missing files, repository-local caches, and input/output overlap;
 bounds each input; verifies SHA-512; and re-extracts every aports snapshot to
 verify its canonical tree identity. A cache is not source approval and does
 not change the receipt's pinned upstream origins.
+The receipt marks cached acquisition explicitly and records cache-relative
+paths rather than claiming that an upstream URL was contacted; the pinned
+upstream origins remain in `SOURCE-ACQUISITION.json`.
 
 After that source-review directory verifies, extract the 21 pinned
 license/attribution candidates into another directory outside the repository:
