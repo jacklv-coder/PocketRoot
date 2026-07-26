@@ -35,12 +35,12 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
   法律与再分发门禁保持关闭。
 - 为剩余 8 个 RootFS source origin 加入 checksum-bound
   `LICENSE-NOTICE-CANDIDATES.json`、严格验证器和仓库外原子 materializer；索引
-  8 份远端许可证/attribution 材料、46 份 aports 文件与 21 份既有证据，支持完整
+  10 份远端许可证/attribution 材料、46 份 aports 文件与 21 份既有证据，支持完整
   复验，但不提交 payload，也不解除工程、法律或再分发门禁。
 - 加入 `LICENSE-NOTICE-REVIEW-RESULTS.json` 和严格外置 payload-tree 复验器；
-  75/75 个候选 payload 已完成 checksum-bound 工程复核，`apk-tools`、
-  `pax-utils` 的候选材料工程项关闭，另外 6 个 origin 仍需补逐包材料，法律和
-  再分发门禁保持关闭。
+  77/77 个候选 payload 已完成 checksum-bound 工程复核，`apk-tools`、
+  `openssl`、`pax-utils` 的候选材料工程项关闭，另外 5 个 origin 仍需补逐包
+  材料，法律和再分发门禁保持关闭。
 - RootFS source-review materializer 新增严格仓库外下载缓存输入；缓存只替代网络
   传输，仍逐项限制大小、拒绝 symlink/重叠路径、核对固定 SHA-512，并重新验证
   解包后的 canonical aports tree；v2 receipt 会明确区分网络与缓存获取，不伪造

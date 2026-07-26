@@ -4,7 +4,7 @@
     "version": "v0.3.3",
     "sha256": "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"
   },
-  "candidateManifestSha256": "55e13487c9c0b0ad0160e91c440120b6faa1ef75b0cf467676c67834ca1083cb",
+  "candidateManifestSha256": "82eb3905dd0314cbced81075d78cf6940833d8908feac87a9d0c4a49f30e1e44",
   "status": "candidate-payloads-engineering-reviewed-open-release-gates",
   "engineeringReviewCompleted": true,
   "allIndexedCandidatePayloadsReviewed": true,
@@ -13,10 +13,10 @@
   "legalReviewApproved": false,
   "redistributionApproved": false,
   "candidatePayloadTreeFormat": "sha256-path-lines-v1",
-  "candidatePayloadTreeSha256": "a54935ff29aa4f9784a74f26733bd915f8e6750e8487138af3f17a9389b93d30",
-  "reviewedPayloadFileCount": 75,
+  "candidatePayloadTreeSha256": "c79e6ac9edad292582e0fca75871a240463870e9384b8048ad674007f23b9aaf",
+  "reviewedPayloadFileCount": 77,
   "reviewedClosedOriginEvidenceCount": 4,
-  "sourceOriginsWithRemainingReviewItems": 6,
+  "sourceOriginsWithRemainingReviewItems": 5,
   "sources": [
     {
       "sourceOrigin": "alpine-baselayout",
@@ -141,16 +141,16 @@
       ],
       "reviewState": "candidate-payloads-engineering-reviewed-legal-review-open",
       "licenseTextCoverage": "complete",
-      "attributionCoverage": "partial",
+      "attributionCoverage": "complete",
       "reviewedExistingEvidenceCount": 2,
       "reviewedReferenceLicenseCount": 1,
       "reviewedSupplementalAportsCount": 5,
-      "reviewedRemoteEvidenceCount": 1,
-      "resolvedReviewItems": [],
-      "remainingReviewItems": [
+      "reviewedRemoteEvidenceCount": 3,
+      "resolvedReviewItems": [
         "confirm-required-apache-notice-and-attribution-material"
       ],
-      "engineeringConclusion": "additional-package-material-required"
+      "remainingReviewItems": [],
+      "engineeringConclusion": "candidate-material-complete-engineering-only"
     },
     {
       "sourceOrigin": "pax-utils",

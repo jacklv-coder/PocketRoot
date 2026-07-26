@@ -21,7 +21,7 @@ module RootFSLicenseNoticeCandidates
     openssl pax-utils
   ].freeze
   EXPECTED_EXISTING_EVIDENCE_FILES = 21
-  EXPECTED_REMOTE_PAYLOAD_FILES = 8
+  EXPECTED_REMOTE_PAYLOAD_FILES = 10
   EXPECTED_APORTS_FILES = 46
   PAYLOAD_KINDS = %w[package-attribution spdx-license-text].freeze
   TOP_LEVEL_KEYS = %w[

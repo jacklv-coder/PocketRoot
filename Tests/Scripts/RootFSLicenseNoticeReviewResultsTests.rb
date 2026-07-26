@@ -45,12 +45,12 @@ class RootFSLicenseNoticeReviewResultsTests < Minitest::Test
     validated = validate
 
     assert_equal 8, validated.fetch(:sources).length
-    assert_equal 8, validated.fetch(:remote_payloads).length
+    assert_equal 10, validated.fetch(:remote_payloads).length
     assert_equal 46, validated.fetch(:aports_paths).length
-    assert_equal 75, @results.fetch("reviewedPayloadFileCount")
-    assert_equal 6,
+    assert_equal 77, @results.fetch("reviewedPayloadFileCount")
+    assert_equal 5,
       @results.fetch("sourceOriginsWithRemainingReviewItems")
-    assert_equal %w[apk-tools pax-utils],
+    assert_equal %w[apk-tools openssl pax-utils],
       @results.fetch("sources")
         .select { |source| source.fetch("remainingReviewItems").empty? }
         .map { |source| source.fetch("sourceOrigin") }
@@ -98,7 +98,7 @@ class RootFSLicenseNoticeReviewResultsTests < Minitest::Test
   end
 
   def test_rejects_payload_count_drift
-    @results["reviewedPayloadFileCount"] = 74
+    @results["reviewedPayloadFileCount"] = 76
 
     error = assert_raises(
       RootFSLicenseNoticeReviewResults::ValidationError
