@@ -4,7 +4,7 @@
     "version": "v0.3.3",
     "sha256": "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"
   },
-  "candidateManifestSha256": "82eb3905dd0314cbced81075d78cf6940833d8908feac87a9d0c4a49f30e1e44",
+  "candidateManifestSha256": "65b61668f3535149c949ed45e166934d9d0353d73835dc2d39ee9ba31be751b2",
   "status": "candidate-payloads-engineering-reviewed-open-release-gates",
   "engineeringReviewCompleted": true,
   "allIndexedCandidatePayloadsReviewed": true,
@@ -13,8 +13,8 @@
   "legalReviewApproved": false,
   "redistributionApproved": false,
   "candidatePayloadTreeFormat": "sha256-path-lines-v1",
-  "candidatePayloadTreeSha256": "c79e6ac9edad292582e0fca75871a240463870e9384b8048ad674007f23b9aaf",
-  "reviewedPayloadFileCount": 77,
+  "candidatePayloadTreeSha256": "1291b4df5e9a7b4375afbf31de492d832b3ca693bf390a1c2619652ee0739418",
+  "reviewedPayloadFileCount": 78,
   "reviewedClosedOriginEvidenceCount": 4,
   "sourceOriginsWithRemainingReviewItems": 5,
   "sources": [
@@ -49,7 +49,7 @@
       "reviewedExistingEvidenceCount": 1,
       "reviewedReferenceLicenseCount": 1,
       "reviewedSupplementalAportsCount": 0,
-      "reviewedRemoteEvidenceCount": 0,
+      "reviewedRemoteEvidenceCount": 1,
       "resolvedReviewItems": [],
       "remainingReviewItems": [
         "collect-mit-license-grant-and-copyright-notice"

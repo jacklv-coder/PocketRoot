@@ -45,9 +45,9 @@ class RootFSLicenseNoticeReviewResultsTests < Minitest::Test
     validated = validate
 
     assert_equal 8, validated.fetch(:sources).length
-    assert_equal 10, validated.fetch(:remote_payloads).length
+    assert_equal 11, validated.fetch(:remote_payloads).length
     assert_equal 46, validated.fetch(:aports_paths).length
-    assert_equal 77, @results.fetch("reviewedPayloadFileCount")
+    assert_equal 78, @results.fetch("reviewedPayloadFileCount")
     assert_equal 5,
       @results.fetch("sourceOriginsWithRemainingReviewItems")
     assert_equal %w[apk-tools openssl pax-utils],
@@ -64,6 +64,25 @@ class RootFSLicenseNoticeReviewResultsTests < Minitest::Test
     ) { validate }
 
     assert_includes error.message, "open release gates"
+  end
+
+  def test_keeps_alpine_keys_copyright_notice_gate_open
+    source = @results.fetch("sources").find do |candidate|
+      candidate.fetch("sourceOrigin") == "alpine-keys"
+    end
+
+    assert_equal "reference-only", source.fetch("licenseTextCoverage")
+    assert_equal "partial", source.fetch("attributionCoverage")
+    assert_equal 1, source.fetch("reviewedRemoteEvidenceCount")
+    assert_empty source.fetch("resolvedReviewItems")
+    assert_equal(
+      ["collect-mit-license-grant-and-copyright-notice"],
+      source.fetch("remainingReviewItems")
+    )
+    assert_equal(
+      "additional-package-material-required",
+      source.fetch("engineeringConclusion")
+    )
   end
 
   def test_rejects_candidate_manifest_digest_drift
@@ -98,7 +117,7 @@ class RootFSLicenseNoticeReviewResultsTests < Minitest::Test
   end
 
   def test_rejects_payload_count_drift
-    @results["reviewedPayloadFileCount"] = 76
+    @results["reviewedPayloadFileCount"] = 77
 
     error = assert_raises(
       RootFSLicenseNoticeReviewResults::ValidationError

@@ -97,6 +97,17 @@
     },
     {
       "kind": "package-attribution",
+      "sourceOrigin": "alpine-keys",
+      "retrievalURLs": [
+        "https://gitlab.alpinelinux.org/alpine/aports/-/commit/7f1f035cf4f7bbea5cf7b65f9bbedc311d735596.patch"
+      ],
+      "cacheKey": "alpine-keys-7f1f035-license-decision.patch",
+      "outputPath": "supplemental/alpine-keys/license-decision.patch",
+      "byteCount": 772,
+      "sha256": "a939e8baa52febea02d5bcfcc306822827eac3fd979a637c7723c84af3487e3e"
+    },
+    {
+      "kind": "package-attribution",
       "sourceOrigin": "openssl",
       "retrievalURLs": [
         "https://raw.githubusercontent.com/openssl/openssl/01d5e2318405362b4de5e670c90d9b40a351d053/README.md"
@@ -174,7 +185,9 @@
         "licenses/MIT-reference.txt"
       ],
       "supplementalAportsPaths": [],
-      "remoteEvidencePaths": [],
+      "remoteEvidencePaths": [
+        "supplemental/alpine-keys/license-decision.patch"
+      ],
       "remainingReviewItems": [
         "collect-mit-license-grant-and-copyright-notice"
       ],
