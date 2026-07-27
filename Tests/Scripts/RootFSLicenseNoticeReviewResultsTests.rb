@@ -48,12 +48,37 @@ class RootFSLicenseNoticeReviewResultsTests < Minitest::Test
     assert_equal 13, validated.fetch(:remote_payloads).length
     assert_equal 47, validated.fetch(:aports_paths).length
     assert_equal 138, @results.fetch("reviewedPayloadFileCount")
-    assert_equal 4,
+    assert_equal 1,
       @results.fetch("sourceOriginsWithRemainingReviewItems")
-    assert_equal %w[apk-tools busybox openssl pax-utils],
+    assert_equal(
+      %w[
+        alpine-baselayout apk-tools busybox ca-certificates musl openssl
+        pax-utils
+      ],
       @results.fetch("sources")
         .select { |source| source.fetch("remainingReviewItems").empty? }
         .map { |source| source.fetch("sourceOrigin") }
+    )
+  end
+
+  def test_closes_alpine_baselayout_package_attribution_item
+    source = @results.fetch("sources").find do |candidate|
+      candidate.fetch("sourceOrigin") == "alpine-baselayout"
+    end
+
+    assert_equal "complete", source.fetch("licenseTextCoverage")
+    assert_equal "complete", source.fetch("attributionCoverage")
+    assert_equal 1, source.fetch("reviewedExistingEvidenceCount")
+    assert_equal 1, source.fetch("reviewedRemoteEvidenceCount")
+    assert_includes(
+      source.fetch("resolvedReviewItems"),
+      "identify-package-specific-copyright-and-notice"
+    )
+    assert_empty source.fetch("remainingReviewItems")
+    assert_equal(
+      "candidate-material-complete-engineering-only",
+      source.fetch("engineeringConclusion")
+    )
   end
 
   def test_rejects_legal_or_redistribution_approval
@@ -85,24 +110,46 @@ class RootFSLicenseNoticeReviewResultsTests < Minitest::Test
     )
   end
 
-  def test_binds_ca_bundle_generator_to_exact_curl_license
+  def test_closes_ca_bundle_trust_store_attribution_item
     source = @results.fetch("sources").find do |candidate|
       candidate.fetch("sourceOrigin") == "ca-certificates"
     end
 
     assert_equal "complete", source.fetch("licenseTextCoverage")
-    assert_equal "partial", source.fetch("attributionCoverage")
+    assert_equal "complete", source.fetch("attributionCoverage")
     assert_equal 2, source.fetch("reviewedRemoteEvidenceCount")
     assert_includes(
       source.fetch("resolvedReviewItems"),
       "confirm-mit-script-notices-relevant-to-shipped-bundle"
     )
-    assert_equal(
-      ["confirm-certificate-attribution-and-trust-store-requirements"],
-      source.fetch("remainingReviewItems")
+    assert_includes(
+      source.fetch("resolvedReviewItems"),
+      "confirm-certificate-attribution-and-trust-store-requirements"
     )
+    assert_empty source.fetch("remainingReviewItems")
     assert_equal(
-      "additional-package-material-required",
+      "candidate-material-complete-engineering-only",
+      source.fetch("engineeringConclusion")
+    )
+  end
+
+  def test_closes_musl_third_party_and_helper_notice_item
+    source = @results.fetch("sources").find do |candidate|
+      candidate.fetch("sourceOrigin") == "musl"
+    end
+
+    assert_equal "complete", source.fetch("licenseTextCoverage")
+    assert_equal "complete", source.fetch("attributionCoverage")
+    assert_equal 5, source.fetch("reviewedExistingEvidenceCount")
+    assert_equal 3, source.fetch("reviewedReferenceLicenseCount")
+    assert_equal 3, source.fetch("reviewedSupplementalAportsCount")
+    assert_includes(
+      source.fetch("resolvedReviewItems"),
+      "confirm-third-party-musl-files-and-aports-helper-notice-coverage"
+    )
+    assert_empty source.fetch("remainingReviewItems")
+    assert_equal(
+      "candidate-material-complete-engineering-only",
       source.fetch("engineeringConclusion")
     )
   end
@@ -346,7 +393,10 @@ class RootFSLicenseNoticeReviewResultsTests < Minitest::Test
   end
 
   def test_rejects_incomplete_review_item_disposition
-    @results.fetch("sources").first.fetch("remainingReviewItems").clear
+    source = @results.fetch("sources").find do |candidate|
+      candidate.fetch("sourceOrigin") == "alpine-keys"
+    end
+    source.fetch("remainingReviewItems").clear
 
     error = assert_raises(
       RootFSLicenseNoticeReviewResults::ValidationError
@@ -356,7 +406,10 @@ class RootFSLicenseNoticeReviewResultsTests < Minitest::Test
   end
 
   def test_rejects_conclusion_that_does_not_match_open_items
-    @results.fetch("sources").first["engineeringConclusion"] =
+    source = @results.fetch("sources").find do |candidate|
+      candidate.fetch("sourceOrigin") == "alpine-keys"
+    end
+    source["engineeringConclusion"] =
       "candidate-material-complete-engineering-only"
 
     error = assert_raises(

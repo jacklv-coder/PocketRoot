@@ -5,7 +5,7 @@
 A RootFS is an external supply-chain input, not a normal fixture. PocketRoot commits immutable metadata and secure install code, not the payload.
 
 > [!WARNING]
-> The pinned v0.3.3 archive now has a reproducible package inventory, SPDX SBOM, default-configuration evidence, a source-acquisition manifest covering the complete inventory, and checksum-bound engineering review of all 78 initial candidates and all 138 external LICENSE/NOTICE payloads. The BusyBox build-closure review is closed; four origins have no remaining candidate-material engineering items and four still need package-specific material. The complete NOTICE set, legal review, corresponding-source delivery review, and distribution approval remain open. The URL and commands below support audit and local development; they do not grant redistribution rights.
+> The pinned v0.3.3 archive now has a reproducible package inventory, SPDX SBOM, default-configuration evidence, a source-acquisition manifest covering the complete inventory, and checksum-bound engineering review of all 78 initial candidates and all 138 external LICENSE/NOTICE payloads. Seven origins have no remaining candidate-material engineering items; only `alpine-keys`, whose upstream package lacks an MIT grant and copyright notice, remains open. The complete NOTICE set, legal review, corresponding-source delivery review, and distribution approval remain open. The URL and commands below support audit and local development; they do not grant redistribution rights.
 
 ## Pinned manifest
 
@@ -162,11 +162,12 @@ ruby Scripts/rootfs-license-notice-review-results.rb \
 The tool enforces HTTPS, redirect and response-size bounds, pinned byte counts
 and SHA-256 digests, and atomic output creation. The results bind engineering
 review to the exact 138-file payload tree; the verifier rejects path drift,
-links, special nodes, known-digest drift, and tree-digest drift. `apk-tools`,
-`busybox`, `openssl`, and `pax-utils` have no remaining candidate-material
-engineering items; four origins still need package-specific material. The
-candidate NOTICE and receipt do not represent legal review or distribution
-approval.
+links, special nodes, known-digest drift, and tree-digest drift.
+`alpine-baselayout`, `apk-tools`, `busybox`, `ca-certificates`, `musl`,
+`openssl`, and `pax-utils` have no remaining candidate-material engineering
+items. `alpine-keys` still lacks an upstream MIT grant and copyright notice.
+The candidate NOTICE and receipt do not represent legal review or
+distribution approval.
 
 Do not put it in package resources, Demo resources, Git, or Git LFS.
 

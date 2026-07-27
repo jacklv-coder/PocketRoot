@@ -78,8 +78,8 @@ aports snapshot/upstream distfile 获取清单和仓库外 materializer，并固
 origin 仍有逐包未决项。仓库现已为这 8 个 origin 固定外置候选包：13 份远端
 许可证/attribution 材料、47 份 aports 补充文件和全部既有复核证据；工具可在
 仓库外原子生成并复验。固定结果清单把工程复核绑定到精确的 138 文件 payload
-tree；`apk-tools`、`busybox`、`openssl`、`pax-utils` 的候选材料工程项已关闭，另外 4 个
-origin 仍需补逐包材料。修改与构建完整性、源码提供方式和法律审查仍未完成，
+tree；除缺少上游 MIT grant/版权声明的 `alpine-keys` 外，其余 7 个 origin 的
+候选材料工程项均已关闭。修改与构建完整性、源码提供方式和法律审查仍未完成，
 不能视为完整 NOTICE 或已批准的对应源码交付。
 
 ## 当前仓库保护
@@ -180,7 +180,8 @@ Alpine `apk` 可以下载、安装和执行新增代码。即使初始 RootFS �
 - [x] 为剩余 8 个 source origin 建立 checksum-bound 外置候选包索引与可复验
   materializer；payload 不提交且批准门禁保持关闭。
 - [x] 对外置候选包的 138 个 payload 完成 checksum-bound 工程复核并固定结果；
-  BusyBox 构建闭包审查已收口，4 个 origin 的候选材料工程项关闭，4 个仍需补逐包材料。
+  7 个 origin 的候选材料工程项已关闭，只有 `alpine-keys` 因缺少上游 MIT
+  grant/版权声明仍未决。
 - [ ] 收集 license text 和 NOTICE。
 - [ ] 建立 copyleft corresponding source bundle。
 - [x] 固定 DNS、repository 和 package-manager 默认配置事实。

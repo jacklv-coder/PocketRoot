@@ -46,7 +46,7 @@
     "pinnedRemoteLicenseNoticePayloads": 13,
     "supplementalAportsCandidateFiles": 47,
     "engineeringReviewedLicenseNoticeCandidatePayloads": 138,
-    "sourceOriginsWithRemainingCandidatePayloadReviewItems": 4
+    "sourceOriginsWithRemainingCandidatePayloadReviewItems": 1
   },
   "engineeringStatus": {
     "completeInstalledPackageInventory": true,
