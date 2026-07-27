@@ -321,6 +321,45 @@
             "attribution"
           ],
           "reviewState": "unreviewed-candidate"
+        },
+        {
+          "sourceKind": "distfile-member",
+          "distfile": "busybox-1.36.1.tar.bz2",
+          "member": "busybox-1.36.1/coreutils/cut.c",
+          "outputPath": "evidence/busybox/coreutils-cut.c",
+          "byteCount": 9783,
+          "sha256": "bfae86e174a6c51c7fbfee90fd8a5e2901286940378e576e141690bfa55dcc1a",
+          "evidenceKinds": [
+            "license-declaration",
+            "attribution"
+          ],
+          "reviewState": "unreviewed-candidate"
+        },
+        {
+          "sourceKind": "distfile-member",
+          "distfile": "busybox-1.36.1.tar.bz2",
+          "member": "busybox-1.36.1/coreutils/sort.c",
+          "outputPath": "evidence/busybox/coreutils-sort.c",
+          "byteCount": 18817,
+          "sha256": "cb92adb0e734b63ae5312a157a9a735cab44bbda4cfd01c52d556be22eca5ff0",
+          "evidenceKinds": [
+            "license-declaration",
+            "attribution"
+          ],
+          "reviewState": "unreviewed-candidate"
+        },
+        {
+          "sourceKind": "distfile-member",
+          "distfile": "busybox-1.36.1.tar.bz2",
+          "member": "busybox-1.36.1/coreutils/uniq.c",
+          "outputPath": "evidence/busybox/coreutils-uniq.c",
+          "byteCount": 3681,
+          "sha256": "09c15b3e70e0b5ac2e65b42b1e556f9b25199b846b2ac75dc730d18650d14f7d",
+          "evidenceKinds": [
+            "license-declaration",
+            "attribution"
+          ],
+          "reviewState": "unreviewed-candidate"
         }
       ],
       "openReviewItems": [
@@ -334,6 +373,7 @@
         "confirm-enabled-traceroute-and-traceroute6-license-and-attribution-coverage",
         "confirm-enabled-od-hexdump-and-hd-license-and-attribution-coverage",
         "confirm-enabled-expand-unexpand-and-fold-license-and-attribution-coverage",
+        "confirm-enabled-cut-sort-and-uniq-license-and-attribution-coverage",
         "review-other-bundled-third-party-license-and-attribution-coverage",
         "confirm-aports-patch-notices"
       ]

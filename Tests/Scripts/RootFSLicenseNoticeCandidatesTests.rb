@@ -29,7 +29,7 @@ class RootFSLicenseNoticeCandidatesTests < Minitest::Test
 
     assert_equal 8, validated.fetch(:sources).length
     assert_equal 13, validated.fetch(:remote_payloads).length
-    assert_equal 34, validated.fetch(:existing_evidence_paths).length
+    assert_equal 37, validated.fetch(:existing_evidence_paths).length
     assert_equal 47, validated.fetch(:aports_paths).length
   end
 
@@ -585,6 +585,59 @@ class RootFSLicenseNoticeCandidatesTests < Minitest::Test
     assert_includes(
       source.fetch("remainingReviewItems"),
       "confirm-enabled-expand-unexpand-and-fold-license-and-attribution-coverage"
+    )
+    assert_includes(
+      source.fetch("remainingReviewItems"),
+      "review-other-bundled-third-party-license-and-attribution-coverage"
+    )
+  end
+
+  def test_pins_enabled_busybox_cut_sort_and_uniq_notices
+    source = @candidate.fetch("sources").find do |candidate|
+      candidate.fetch("sourceOrigin") == "busybox"
+    end
+    review_source = @review.fetch("sources").find do |candidate|
+      candidate.fetch("sourceOrigin") == "busybox"
+    end
+    expected = {
+      "evidence/busybox/coreutils-cut.c" => {
+        member: "busybox-1.36.1/coreutils/cut.c",
+        bytes: 9_783,
+        sha256: "bfae86e174a6c51c7fbfee90fd8a5e2901286940378e576e141690bfa55dcc1a"
+      },
+      "evidence/busybox/coreutils-sort.c" => {
+        member: "busybox-1.36.1/coreutils/sort.c",
+        bytes: 18_817,
+        sha256: "cb92adb0e734b63ae5312a157a9a735cab44bbda4cfd01c52d556be22eca5ff0"
+      },
+      "evidence/busybox/coreutils-uniq.c" => {
+        member: "busybox-1.36.1/coreutils/uniq.c",
+        bytes: 3_681,
+        sha256: "09c15b3e70e0b5ac2e65b42b1e556f9b25199b846b2ac75dc730d18650d14f7d"
+      }
+    }
+
+    expected.each do |output_path, values|
+      evidence = review_source.fetch("candidateEvidence").find do |candidate|
+        candidate.fetch("outputPath") == output_path
+      end
+
+      assert_includes source.fetch("existingEvidencePaths"), output_path
+      assert_equal values.fetch(:member), evidence.fetch("member")
+      assert_equal values.fetch(:bytes), evidence.fetch("byteCount")
+      assert_equal values.fetch(:sha256), evidence.fetch("sha256")
+      assert_equal(
+        %w[license-declaration attribution],
+        evidence.fetch("evidenceKinds")
+      )
+    end
+    assert_includes(
+      source.fetch("supplementalAportsPaths"),
+      "aports/busybox/busyboxconfig"
+    )
+    assert_includes(
+      source.fetch("remainingReviewItems"),
+      "confirm-enabled-cut-sort-and-uniq-license-and-attribution-coverage"
     )
     assert_includes(
       source.fetch("remainingReviewItems"),

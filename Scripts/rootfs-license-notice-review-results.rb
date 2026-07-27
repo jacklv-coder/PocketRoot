@@ -22,7 +22,7 @@ module RootFSLicenseNoticeReviewResults
   COVERAGE = %w[complete partial reference-only].freeze
   SHA256_PATTERN = /\A[0-9a-f]{64}\z/
   CANDIDATE_PAYLOAD_TREE_FORMAT = "sha256-path-lines-v1"
-  EXPECTED_REVIEWED_PAYLOAD_FILES = 94
+  EXPECTED_REVIEWED_PAYLOAD_FILES = 97
   MAX_REVIEWED_PAYLOAD_BYTES = 8 * 1_024 * 1_024
   TOP_LEVEL_KEYS = %w[
     allIndexedCandidatePayloadsReviewed archive candidateManifestSha256

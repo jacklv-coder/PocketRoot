@@ -32,17 +32,17 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   declared-license/attribution inventories, and default `apk`, repository, and
   DNS configuration; complete LICENSE/NOTICE and corresponding-source bundles
   remain distribution blockers.
-- A checksum-bound `LICENSE-REVIEW-RESULTS.json` and strict validator. All 34
+- A checksum-bound `LICENSE-REVIEW-RESULTS.json` and strict validator. All 37
   pinned RootFS license/NOTICE candidates have engineering review results;
   eight source origins retain package-level open items, and legal and
   redistribution gates remain closed.
 - A checksum-bound `LICENSE-NOTICE-CANDIDATES.json`, strict validator, and
   outside-repository atomic materializer for the eight remaining RootFS source
   origins. It indexes 13 remote license/attribution payloads, 47 aports files,
-  and the 34 existing evidence files for complete re-verification without
+  and the 37 existing evidence files for complete re-verification without
   committing payloads or opening engineering, legal, or redistribution gates.
 - `LICENSE-NOTICE-REVIEW-RESULTS.json` and a strict external payload-tree
-  verifier. All 94 candidate payloads now have checksum-bound engineering
+  verifier. All 97 candidate payloads now have checksum-bound engineering
   review. The pinned upstream `alpine-keys` GPL-to-MIT license-decision commit
   is included while its package-level copyright notice remains open. The
   `ca-certificates` generator is byte-identical to curl commit `3fdc4bdb`, and
@@ -61,6 +61,8 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   BSD terms, FSF attribution, and GPL declarations. `expand` and `unexpand`
   share `coreutils/expand.c`, while `fold` links `coreutils/fold.c`; both
   sources retain FSF copyright, GPLv2-or-later declarations, and BusyBox port
+  attribution. `cut`, `sort`, and `uniq` link their corresponding `coreutils`
+  sources, each retaining its GPLv2-or-later declaration and original
   attribution. Other inline notices stay open;
   `apk-tools`, `openssl`, and `pax-utils` have no remaining
   candidate-material engineering items, five origins still need
