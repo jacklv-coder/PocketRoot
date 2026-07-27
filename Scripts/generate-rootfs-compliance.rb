@@ -8,6 +8,7 @@ require "pathname"
 require "rubygems/package"
 require "uri"
 require "zlib"
+require_relative "rootfs-corresponding-source-review-results"
 require_relative "rootfs-license-notice-candidates"
 require_relative "rootfs-license-notice-review-results"
 require_relative "rootfs-license-review"
@@ -41,6 +42,8 @@ def parse_options
     output: "Compliance/RootFS/v0.3.3",
     source_acquisition:
       "Compliance/RootFS/v0.3.3/SOURCE-ACQUISITION.json",
+    corresponding_source_review_results:
+      "Compliance/RootFS/v0.3.3/CORRESPONDING-SOURCE-REVIEW-RESULTS.json",
     license_review:
       "Compliance/RootFS/v0.3.3/LICENSE-REVIEW.json",
     license_review_results:
@@ -66,6 +69,12 @@ def parse_options
       "Pinned source-acquisition manifest"
     ) do |path|
       options[:source_acquisition] = path
+    end
+    commands.on(
+      "--corresponding-source-review-results PATH",
+      "Pinned corresponding-source candidate engineering review results"
+    ) do |path|
+      options[:corresponding_source_review_results] = path
     end
     commands.on(
       "--license-review PATH",
@@ -317,7 +326,7 @@ def source_inventory(packages)
       "containsDeclaredCopyleft" =>
         binaries.any? { |package| copyleft_license?(package[:license]) },
       "correspondingSourceStatus" =>
-        "verified-acquisition-recorded-external-bundle-required"
+        "candidate-material-engineering-reviewed-external-bundle-required"
     }
   end.sort_by { |source| source.fetch("sourceOrigin") }
 end
@@ -516,6 +525,7 @@ end
 def notice_markdown(
   packages,
   source_entries,
+  corresponding_source_review_results,
   license_notice_paths,
   license_review_entries,
   license_review_result_entries,
@@ -615,15 +625,22 @@ def notice_markdown(
     Exact Alpine aports recipe locators are recorded for all
     #{source_entries.length} source origins in `SOURCE-INVENTORY.json`.
     `SOURCE-ACQUISITION.json` pins each aports snapshot and upstream distfile
-    with cryptographic checksums. The repository script can materialize those
-    inputs into a new external review directory.
+    with cryptographic checksums.
+    `CORRESPONDING-SOURCE-REVIEW-RESULTS.json` records checksum-bound
+    engineering review of all #{corresponding_source_review_results.fetch("reviewedSourceOriginCount")} origins,
+    #{corresponding_source_review_results.fetch("reviewedCanonicalAportsEntryCount")} canonical aports entries, and
+    #{corresponding_source_review_results.fetch("reviewedDistfileCount")} upstream distfiles. The repository script can
+    materialize those inputs, the generated source inventory, and the pinned
+    review results into a new external corresponding-source candidate directory
+    and re-verify its full typed tree.
     Source origins with declared copyleft terms are
     #{copyleft_sources.join(", ")}.
 
     No source archive is committed or shipped by this repository. A materialized
     directory still requires package-specific license/NOTICE, modification,
-    build-completeness, offer-mechanics, and legal review before it can be
-    treated as corresponding-source delivery material.
+    rebuild-environment and toolchain review, offer mechanics, legal review,
+    and delivery approval before it can be treated as an approved
+    corresponding-source distribution.
 
     ## Runtime configuration status
 
@@ -638,6 +655,7 @@ def evidence(
   packages,
   source_entries,
   inspected,
+  corresponding_source_review_results,
   license_review_entries,
   license_review_result_entries,
   license_notice_candidates,
@@ -666,6 +684,16 @@ def evidence(
       "sourceOrigins" => source_entries.length,
       "declaredLicenseExpressions" =>
         packages.map { |package| package[:license] }.uniq.length,
+      "engineeringReviewedCorrespondingSourceOrigins" =>
+        corresponding_source_review_results.fetch(
+          "reviewedSourceOriginCount"
+        ),
+      "engineeringReviewedCanonicalAportsEntries" =>
+        corresponding_source_review_results.fetch(
+          "reviewedCanonicalAportsEntryCount"
+        ),
+      "engineeringReviewedUpstreamDistfiles" =>
+        corresponding_source_review_results.fetch("reviewedDistfileCount"),
       "licenseOrNoticeFilesInGuestTemplate" =>
         inspected.fetch(:license_notice_paths).length,
       "indexedExternalLicenseReviewCandidates" =>
@@ -698,6 +726,11 @@ def evidence(
       "machineReadableSPDXSBOM" => true,
       "runtimeConfigurationRecorded" => true,
       "completeSourceAcquisitionManifest" => true,
+      "correspondingSourceCandidateMaterialEngineeringReviewCompleted" =>
+        true,
+      "correspondingSourceCandidateBundleMaterializerReady" => true,
+      "correspondingSourceRebuildEnvironmentVerified" => false,
+      "correspondingSourceDeliveryApproved" => false,
       "completeLicenseReviewCandidateIndex" => true,
       "licenseCandidateEngineeringReviewCompleted" => true,
       "completeLicenseNoticeCandidateBundleIndex" => true,
@@ -713,6 +746,7 @@ end
 def build_outputs(
   archive,
   source_acquisition,
+  corresponding_source_review_results,
   license_review,
   license_review_results,
   license_notice_candidates,
@@ -732,11 +766,19 @@ def build_outputs(
 
   source_entries = source_inventory(packages)
   generated_source_inventory = {
+    "schemaVersion" => 1,
     "archive" => {
       "version" => ARCHIVE_VERSION,
       "sha256" => ARCHIVE_SHA256
     },
-    "sourceOrigins" => source_entries
+    "sourceOrigins" => source_entries,
+    "completeCorrespondingSourceBundlePresent" => false,
+    "correspondingSourceCandidateEngineeringReviewCompleted" => true,
+    "candidateBundleMaterializerReady" => true,
+    "rebuildEnvironmentVerified" => false,
+    "correspondingSourceDeliveryApproved" => false,
+    "status" =>
+      "candidate-material-engineering-reviewed-external-bundle-required"
   }
   begin
     RootFSSourceAcquisition.validate_manifest(
@@ -746,6 +788,17 @@ def build_outputs(
   rescue RootFSSourceAcquisition::ValidationError => error
     raise ComplianceError,
       "Invalid source-acquisition manifest: #{error.message}"
+  end
+  begin
+    RootFSCorrespondingSourceReviewResults.validate_manifest(
+      corresponding_source_review_results.fetch(:document),
+      source_acquisition.fetch(:document),
+      generated_source_inventory,
+      source_acquisition_bytes: source_acquisition.fetch(:contents)
+    )
+  rescue RootFSCorrespondingSourceReviewResults::ValidationError => error
+    raise ComplianceError,
+      "Invalid corresponding-source review results: #{error.message}"
   end
   begin
     license_review_entries = RootFSLicenseReview.validate_manifest(
@@ -813,12 +866,15 @@ def build_outputs(
         packages,
         source_entries,
         inspected,
+        corresponding_source_review_results.fetch(:document),
         license_review_entries,
         license_review_result_entries,
         validated_license_notice_candidates,
         validated_license_notice_review_results
       )
     ),
+    "CORRESPONDING-SOURCE-REVIEW-RESULTS.json" =>
+      corresponding_source_review_results.fetch(:contents),
     "LICENSE-INVENTORY.json" => pretty_json(
       license_inventory(
         packages,
@@ -839,6 +895,7 @@ def build_outputs(
     "NOTICE.md" => notice_markdown(
       packages,
       source_entries,
+      corresponding_source_review_results.fetch(:document),
       inspected.fetch(:license_notice_paths),
       license_review_entries,
       license_review_result_entries,
@@ -851,18 +908,7 @@ def build_outputs(
     ),
     "SBOM.spdx.json" => pretty_json(sbom(packages)),
     "SOURCE-ACQUISITION.json" => source_acquisition.fetch(:contents),
-    "SOURCE-INVENTORY.json" => pretty_json(
-      {
-        "schemaVersion" => 1,
-        "archive" => {
-          "version" => ARCHIVE_VERSION,
-          "sha256" => ARCHIVE_SHA256
-        },
-        "sourceOrigins" => source_entries,
-        "completeCorrespondingSourceBundlePresent" => false,
-        "status" => "verified-acquisition-recorded-external-bundle-required"
-      }
-    )
+    "SOURCE-INVENTORY.json" => pretty_json(generated_source_inventory)
   }
 
   checksum_lines = outputs.sort.map do |filename, contents|
@@ -899,6 +945,10 @@ end
 begin
   options = parse_options
   archive = verify_archive(options.fetch(:archive))
+  corresponding_source_review_results = load_json_document(
+    options.fetch(:corresponding_source_review_results),
+    "Corresponding-source review results"
+  )
   license_review = load_json_document(
     options.fetch(:license_review),
     "License-review manifest"
@@ -920,6 +970,7 @@ begin
   outputs = build_outputs(
     archive,
     source_acquisition,
+    corresponding_source_review_results,
     license_review,
     license_review_results,
     license_notice_candidates,

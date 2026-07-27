@@ -14,6 +14,9 @@ pinned RootFS archive. It does not store the RootFS payload.
 - `SOURCE-ACQUISITION.json`：与 inventory 一一对应的 aports snapshot、upstream
   distfile URL 和 SHA-512，以及覆盖条目类型、路径、普通文件权限位与内容的规范化目录
   SHA-256；
+- `CORRESPONDING-SOURCE-REVIEW-RESULTS.json`：绑定全部 10 个 source origin、
+  130 个规范化 aports 条目和 9 个 upstream distfile 的对应源码候选材料工程
+  复核；重建环境、法律、源码提供、交付与再分发批准保持关闭；
 - `LICENSE-INVENTORY.json`：声明的许可证表达式、标识符和 archive 内
   license/notice 文件检查结果；
 - `LICENSE-REVIEW.json`：覆盖 10 个 source origin 的 78 个候选许可证文本、
@@ -32,8 +35,11 @@ pinned RootFS archive. It does not store the RootFS payload.
 - `SHA256SUMS`：上述生成文件的 SHA-256。
 
 `SOURCE-ACQUISITION.json` pins the aports snapshots and upstream distfiles
-needed to assemble an external source-review directory. It is an acquisition
-manifest, not a committed source archive or redistribution grant.
+needed to assemble an external corresponding-source candidate directory.
+`CORRESPONDING-SOURCE-REVIEW-RESULTS.json` binds engineering review of all 10
+source origins, 130 canonical aports entries, and nine upstream distfiles.
+These are acquisition and candidate-review records, not a committed source
+archive, source offer, delivery approval, or redistribution grant.
 `LICENSE-REVIEW.json` pins 78 unreviewed candidate evidence files across all
 10 source origins; it is an engineering review index, not legal approval.
 `LICENSE-REVIEW-RESULTS.json` records the engineering review of all 78 pinned
@@ -560,41 +566,41 @@ the repository-owned validator and the integrity-locked `ajv@8.20.0`
 dependency tree. Node.js/npm are host CI tools for that validation only; they
 are not installed in the App or RootFS.
 
-只校验源码获取清单与固定 package/source inventory 是否一致：
+只校验源码获取清单、对应源码审查结果与固定 package/source inventory 是否一致：
 
-Validate the source-acquisition manifest against the pinned package/source
-inventory without downloading:
+Validate the source-acquisition manifest and corresponding-source review
+results against the pinned package/source inventory without downloading:
 
 ```bash
 ruby Scripts/prepare-rootfs-source-bundle.rb --validate-only
 ```
 
-如审查人员需要本地材料，可生成到一个尚不存在、位于仓库外的绝对路径。脚本会依次
+如审查人员需要本地对应源码候选材料，可生成到一个尚不存在、位于仓库外的绝对路径。脚本会依次
 校验 aports archive SHA-512、解包后的规范化目录 SHA-256（包括普通文件权限位）
 和所有 upstream distfile SHA-512，并以临时目录完成后原子提升：
 
-To prepare local review material, choose a new absolute directory outside the
-repository. The script verifies each aports archive and canonical extracted
-tree—including regular-file permission bits—plus every upstream distfile
-before atomically promoting the result:
+To prepare local corresponding-source candidate material, choose a new
+absolute directory outside the repository. The script verifies each aports
+archive and canonical extracted tree—including regular-file permission
+bits—plus every upstream distfile before atomically promoting the result:
 
 ```bash
 ruby Scripts/prepare-rootfs-source-bundle.rb \
-  --output /absolute/new/path/outside-the-repository/rootfs-v0.3.3-source-review
+  --output /absolute/new/path/outside-the-repository/rootfs-v0.3.3-corresponding-source-candidate
 
 ruby Scripts/prepare-rootfs-source-bundle.rb \
-  --verify /absolute/new/path/outside-the-repository/rootfs-v0.3.3-source-review
+  --verify /absolute/new/path/outside-the-repository/rootfs-v0.3.3-corresponding-source-candidate
 ```
 
-网络不可用时，可把另一份 source-review 目录或同布局的只读目录作为下载缓存：
+网络不可用时，可把另一份候选目录或同布局的只读目录作为下载缓存：
 
-When the network is unavailable, another source-review directory or a
+When the network is unavailable, another candidate directory or a
 read-only directory with the same cache layout can supply the downloads:
 
 ```bash
 ruby Scripts/prepare-rootfs-source-bundle.rb \
-  --download-cache /absolute/existing/rootfs-v0.3.3-source-review \
-  --output /absolute/new/path/outside-the-repository/rootfs-v0.3.3-source-review
+  --download-cache /absolute/existing/rootfs-v0.3.3-corresponding-source-candidate \
+  --output /absolute/new/path/outside-the-repository/rootfs-v0.3.3-corresponding-source-candidate
 ```
 
 缓存布局为 `downloads/aports/<source-origin>.tar.gz` 与
@@ -610,10 +616,11 @@ canonical extracted aports tree before atomically promoting the output.
 The receipt marks cached acquisition explicitly and records cache-relative
 paths instead of claiming that an upstream URL was contacted; pinned upstream
 origins remain in `SOURCE-ACQUISITION.json`.
-Receipt schema v2 requires that explicit acquisition mode. A legacy v1
-source-review directory can be passed to `--download-cache` to regenerate a
-verifiable v2 bundle, but it is no longer accepted directly by `--verify`
-because its transport provenance is ambiguous.
+Receipt schema v3 requires that explicit acquisition mode and binds
+`SOURCE-INVENTORY.json`, `CORRESPONDING-SOURCE-REVIEW-RESULTS.json`, candidate
+material status, and every still-closed gate. Legacy v1/v2 source-review
+directories can be passed to `--download-cache`, but they are no longer
+accepted directly by `--verify`; regenerate a v3 candidate bundle.
 
 `--verify` 同时核对所有普通文件摘要、目录集合和符号链接目标。该输出不会被 App、
 Git 或 CI artifact 自动打包或上传。
@@ -622,21 +629,21 @@ Git 或 CI artifact 自动打包或上传。
 link targets. The output is never automatically bundled into the App,
 committed to Git, or uploaded as a CI artifact.
 
-在已有外置 source-review 目录的基础上，可校验逐包候选清单，或提取到另一个
+在已有外置对应源码候选目录的基础上，可校验逐包候选清单，或提取到另一个
 尚不存在的仓库外目录：
 
-Given that external source-review directory, validate the package-level
+Given that external corresponding-source candidate directory, validate the package-level
 candidate index or extract it into another new directory outside the repository:
 
 ```bash
 ruby Scripts/prepare-rootfs-license-review.rb --validate-only
 
 ruby Scripts/prepare-rootfs-license-review.rb \
-  --source-bundle /absolute/rootfs-v0.3.3-source-review \
+  --source-bundle /absolute/rootfs-v0.3.3-corresponding-source-candidate \
   --output /absolute/new/rootfs-v0.3.3-license-review
 
 ruby Scripts/prepare-rootfs-license-review.rb \
-  --source-bundle /absolute/rootfs-v0.3.3-source-review \
+  --source-bundle /absolute/rootfs-v0.3.3-corresponding-source-candidate \
   --verify /absolute/rootfs-v0.3.3-license-review
 
 ruby Scripts/rootfs-license-review-results.rb
@@ -652,13 +659,13 @@ special-node boundary. The results manifest proves engineering review of all
 78 candidates; the external output is still not a product-ready NOTICE bundle.
 
 剩余 8 个 source origin 的材料可继续组装为外置候选包。先校验清单；实际物化
-必须同时提供已经通过 `--verify` 的 source-review 和 license-review 目录，以及
+必须同时提供已经通过 `--verify` 的对应源码候选和 license-review 目录，以及
 一个尚不存在的仓库外输出路径：
 
 The remaining eight origins can be assembled into an external candidate
-bundle. Validate the manifest first. Materialization requires source-review
-and license-review directories that already pass `--verify`, plus a new output
-path outside the repository:
+bundle. Validate the manifest first. Materialization requires
+corresponding-source candidate and license-review directories that already
+pass `--verify`, plus a new output path outside the repository:
 
 ```bash
 ruby Scripts/rootfs-license-notice-candidates.rb
@@ -666,12 +673,12 @@ ruby Scripts/rootfs-license-notice-review-results.rb
 ruby Scripts/prepare-rootfs-license-notice-bundle.rb --validate-only
 
 ruby Scripts/prepare-rootfs-license-notice-bundle.rb \
-  --source-bundle /absolute/rootfs-v0.3.3-source-review \
+  --source-bundle /absolute/rootfs-v0.3.3-corresponding-source-candidate \
   --license-review /absolute/rootfs-v0.3.3-license-review \
   --output /absolute/new/rootfs-v0.3.3-license-notice-candidates
 
 ruby Scripts/prepare-rootfs-license-notice-bundle.rb \
-  --source-bundle /absolute/rootfs-v0.3.3-source-review \
+  --source-bundle /absolute/rootfs-v0.3.3-corresponding-source-candidate \
   --license-review /absolute/rootfs-v0.3.3-license-review \
   --verify /absolute/rootfs-v0.3.3-license-notice-candidates
 
@@ -691,23 +698,26 @@ advice, or redistribution approval.
 
 ## 未解除的门禁 / Open gates
 
-这些文件不构成完整第三方 LICENSE/NOTICE bundle、经审查的 copyleft
+这些文件不构成完整第三方 LICENSE/NOTICE bundle、经批准的 copyleft
 corresponding-source 交付、法律意见或再分发授权。源码获取清单已完整覆盖固定
-inventory，78 个候选也都有工程复核结果；`libc-dev`、`zlib` 已关闭索引项，另外
+inventory，10/10 origin 的对应源码候选材料工程复核已完成；78 个许可证候选也都有
+工程复核结果；`libc-dev`、`zlib` 已关闭索引项，另外
 8 个 source origin 的 138 个新候选 payload 已完成 checksum-bound 工程复核；
 `alpine-baselayout`、`apk-tools`、`busybox`、`ca-certificates`、`musl`、
 `openssl`、`pax-utils` 的候选材料工程项已关闭；只有 `alpine-keys` 因上游
-MIT grant/版权声明缺失仍未决。修改说明、构建完整性、源码提供方式、法律审查、
-App Store 2.5.2 产品策略和负责人批准仍是发行阻塞项。
+MIT grant/版权声明缺失仍未决。修改说明、重建环境/toolchain、源码提供方式、
+对应源码交付批准、法律审查、App Store 2.5.2 产品策略和负责人批准仍是发行阻塞项。
 
-These files are not a complete third-party LICENSE/NOTICE bundle, reviewed
+These files are not a complete third-party LICENSE/NOTICE bundle, approved
 copyleft corresponding-source delivery, legal advice, or redistribution
-approval. The acquisition manifest completely covers the pinned inventory and
-all 78 indexed candidates have engineering review results. `libc-dev` and
+approval. The acquisition manifest completely covers the pinned inventory,
+and candidate source material for all 10 origins has engineering review. All
+78 indexed license candidates also have engineering review results. `libc-dev` and
 `zlib` have no remaining indexed items. All 138 newly indexed payloads have a
 checksum-bound engineering review. `alpine-baselayout`, `apk-tools`, `busybox`,
 `ca-certificates`, `musl`, `openssl`, and `pax-utils` have no remaining
 candidate-material engineering items; only `alpine-keys` remains open because
-its upstream MIT grant and copyright notice are missing. Modification, build
-completeness, source-offer mechanics, legal review, App Store 2.5.2 product
+its upstream MIT grant and copyright notice are missing. Modification
+disclosure, rebuild environment/toolchain, source-offer mechanics,
+corresponding-source delivery approval, legal review, App Store 2.5.2 product
 policy, and authorized approval remain distribution blockers.
