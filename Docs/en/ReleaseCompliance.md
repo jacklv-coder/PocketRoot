@@ -143,6 +143,11 @@ The current code does not provide a complete product-level privacy policy.
   materialization and verification flow covering all 10 source origins, 130
   canonical aports entries, and nine upstream distfiles; candidate-material
   engineering review is complete and payloads remain uncommitted.
+- [x] Establish a unified external delivery-candidate materializer that
+  re-verifies the source and LICENSE/NOTICE candidates, recursively exports
+  pinned builder/submodule Git objects, binds the Alpine input and modification
+  disclosure, and emits a receipt, typed tree, and checksums without committing
+  output or opening any authorization gate.
 - [ ] Approve the rebuild environment/toolchain, modification disclosure,
   source-offer mechanics, legal review, and corresponding-source delivery.
 - [x] Record default DNS, repository, and package-manager facts.

@@ -105,6 +105,9 @@ class RootFSRebuildDeliveryEvidenceTests < Minitest::Test
     assert_equal 5, coverage.fetch("deliveryUnitCount")
     assert_equal true, coverage.fetch("candidateSourceMaterialIndexComplete")
     assert_equal true, coverage.fetch("modificationDisclosureIndexed")
+    assert_equal "Scripts/prepare-rootfs-delivery-candidate.rb",
+      coverage.fetch("deliveryCandidateMaterializer")
+    assert_equal true, coverage.fetch("deliveryCandidateMaterializerReady")
     assert_equal false,
       coverage.fetch("materializedCorrespondingSourceBundlePresent")
     assert_equal false, coverage.fetch("completeLicenseAndNoticeBundlePresent")

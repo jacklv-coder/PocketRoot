@@ -107,6 +107,8 @@
     "candidateSourceMaterialIndexComplete": true,
     "modificationDisclosureIndexed": true,
     "successorRebuildEvidenceIndexed": true,
+    "deliveryCandidateMaterializer": "Scripts/prepare-rootfs-delivery-candidate.rb",
+    "deliveryCandidateMaterializerReady": true,
     "materializedCorrespondingSourceBundlePresent": false,
     "completeLicenseAndNoticeBundlePresent": false,
     "sourceOfferPrepared": false,
@@ -114,5 +116,5 @@
     "legalReviewApproved": false,
     "redistributionApproved": false
   },
-  "status": "complete-engineering-inventory-materialization-and-approval-open"
+  "status": "complete-engineering-inventory-materializer-ready-approval-open"
 }

@@ -163,7 +163,7 @@ print("stderr:", result.stderr)
 - 展开大小：`18,838,016` 字节
 - SHA-256：`be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4`
 
-固定 URL 只是清单元数据，不代表库会自动下载。仓库已从固定归档生成 RootFS 包清单与 SPDX SBOM，完成全部 10 个 source origin（130 个规范化 aports 条目、9 个上游 distfile）的对应源码候选材料工程复核，并完成 78 个初始候选及 138 个外置 LICENSE/NOTICE payload 的 checksum-bound 工程复核；除缺少上游 MIT grant/版权声明的 `alpine-keys` 外，其余 7 个许可证候选 origin 的工程项均已关闭。历史 builder 源码已定位，但固定发布归档的精确环境/重建未验证；schema-v4 后继候选已在同 host 两次独立调用、共四次构建中复现，5 单元源码交付 inventory 也已建立，但不替换当前 pin。完整 NOTICE、材料化源码 bundle/source offer、交付批准、法律复核和完整发行物 SBOM 未完成前，不得把该 RootFS 加入 Package、App bundle 或公开发行物。
+固定 URL 只是清单元数据，不代表库会自动下载。仓库已从固定归档生成 RootFS 包清单与 SPDX SBOM，完成全部 10 个 source origin（130 个规范化 aports 条目、9 个上游 distfile）的对应源码候选材料工程复核，并完成 78 个初始候选及 138 个外置 LICENSE/NOTICE payload 的 checksum-bound 工程复核；除缺少上游 MIT grant/版权声明的 `alpine-keys` 外，其余 7 个许可证候选 origin 的工程项均已关闭。历史 builder 源码已定位，但固定发布归档的精确环境/重建未验证；schema-v4 后继候选已在同 host 两次独立调用、共四次构建中复现，5 单元源码交付 inventory 与统一仓库外候选 materializer 也已建立，但不替换当前 pin。完整 NOTICE/source offer、交付批准、法律复核和完整发行物 SBOM 未完成前，不得把该 RootFS 加入 Package、App bundle 或公开发行物。
 
 ## 验证命令
 

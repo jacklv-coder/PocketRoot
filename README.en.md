@@ -165,10 +165,10 @@ review of all 78 initial and 138 external LICENSE/NOTICE payloads. The
 historical builder source is identified, but the pinned release archive's
 exact environment and rebuild remain unverified. A schema-v4 successor is
 byte-reproducible across two same-host invocations and four total builds, and
-a five-unit source-delivery inventory is recorded, but neither replaces the
-pin. Do not add the payload to a Package/App bundle before the complete
-NOTICE, materialized source bundle and offer, legal and delivery approval, and
-complete release-SBOM review.
+a five-unit source-delivery inventory plus a unified external candidate
+materializer is recorded, but neither replaces the pin. Do not add the payload
+to a Package/App bundle before the complete NOTICE/source offer, legal and
+delivery approval, and complete release-SBOM review.
 
 ## Validation
 

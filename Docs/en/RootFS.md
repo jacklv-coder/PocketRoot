@@ -77,8 +77,10 @@ or permission to replace, commit, or publish a RootFS.
 `SOURCE-DELIVERY-INVENTORY.json` indexes five delivery units covering the
 historical and successor builders, pinned Alpine input, corresponding-source
 material, and modification disclosure. A complete inventory is not a
-materialized or approved delivery: the source bundle, complete LICENSE/NOTICE,
-source offer, legal review, and redistribution approval remain open.
+materialized or approved delivery. A unified external candidate materializer
+is now available, but checked-in evidence does not claim that a particular
+candidate has been materialized. Complete LICENSE/NOTICE, source offer, legal
+review, and redistribution approval remain open.
 
 Validate the source manifest and
 `CORRESPONDING-SOURCE-REVIEW-RESULTS.json`, or materialize an external
@@ -183,6 +185,45 @@ ruby Scripts/prepare-rootfs-license-notice-bundle.rb \
 ruby Scripts/rootfs-license-notice-review-results.rb \
   --bundle /absolute/new/path/outside-the-repository/rootfs-v0.3.3-license-notice-candidates
 ```
+
+After both candidate directories pass their independent verifiers, assemble
+them with the pinned builder checkouts, Alpine input, and modification
+disclosure into one external delivery candidate. Each builder must be at the
+exact revision with every recursive gitlink initialized and matching. The tool
+generates commit-addressed deterministic tar files directly from tracked Git
+objects; it does not copy `.git` or untracked files. Shared submodules are
+stored once, and tar storage prevents case-insensitive hosts from overwriting
+Linux paths that differ only by case:
+
+```bash
+ruby Scripts/prepare-rootfs-delivery-candidate.rb --validate-only
+
+ruby Scripts/prepare-rootfs-delivery-candidate.rb \
+  --historical-builder /absolute/path/ish-arm64-pkg-v0.3.3 \
+  --successor-builder /absolute/path/ish-arm64-pkg-successor \
+  --alpine-minirootfs /absolute/path/alpine-minirootfs-3.19.1-aarch64.tar.gz \
+  --source-bundle /absolute/path/rootfs-v0.3.3-corresponding-source-candidate \
+  --license-notice-bundle /absolute/path/rootfs-v0.3.3-license-notice-candidates \
+  --license-review-bundle /absolute/path/rootfs-v0.3.3-license-review \
+  --output /absolute/new/path/rootfs-v0.3.3-delivery-candidate
+
+ruby Scripts/prepare-rootfs-delivery-candidate.rb \
+  --verify /absolute/new/path/rootfs-v0.3.3-delivery-candidate
+```
+
+The unified candidate contains recursive source tar files for both builders,
+the pinned Alpine minirootfs, corresponding-source candidate, license-review
+evidence, LICENSE/NOTICE candidate, modification disclosure, input evidence, a
+receipt, typed tree, and `SHA256SUMS`. Independent `--verify` reruns both
+lower-level bundle verifiers from the candidate itself, but first requires
+all nine bundled evidence files to match the current checkout's committed
+canonical evidence byte for byte; `--verify` does not accept alternate
+evidence paths. It then checks Git objects and the complete
+path/type/mode/digest tree. Materialization and verification require
+`sourceOfferPrepared=false`, `legalReviewApproved=false`,
+`redistributionApproved=false`, and `distributionAuthorized=false`. The
+directory is not a public artifact, source offer, or authorization to ship a
+RootFS.
 
 The tool enforces HTTPS, redirect and response-size bounds, pinned byte counts
 and SHA-256 digests, and atomic output creation. The results bind engineering
