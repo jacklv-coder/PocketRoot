@@ -63,6 +63,7 @@
     "successorBuildEnvironmentCaptured": true,
     "successorSameHostCrossInvocationReproducibilityVerified": true,
     "completeSourceDeliveryInventory": true,
+    "sourceDeliveryCandidateMaterializerReady": true,
     "sourceDeliveryMaterialized": false,
     "correspondingSourceDeliveryApproved": false,
     "completeLicenseReviewCandidateIndex": true,

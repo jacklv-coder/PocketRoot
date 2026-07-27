@@ -99,8 +99,9 @@ receipt 中，RootFS 内容保持一致。这只验证同一 host 上的后继 r
 
 `SOURCE-DELIVERY-INVENTORY.json` 把历史与后继 builder、固定 Alpine 输入、
 对应源码材料和修改披露列成 5 个交付单元。该清单完整不等于材料已经生成或可以
-交付；source bundle、完整 LICENSE/NOTICE、source offer、法律审查和再分发批准
-仍保持关闭。
+交付；仓库现在有统一的仓库外候选 materializer，但 checked-in 状态不声称某个
+候选包已经材料化。完整 LICENSE/NOTICE、source offer、法律审查和再分发批准仍
+保持关闭。
 
 源码清单与 `CORRESPONDING-SOURCE-REVIEW-RESULTS.json` 可独立校验，也可在
 仓库外生成对应源码候选目录：
@@ -191,6 +192,38 @@ ruby Scripts/prepare-rootfs-license-notice-bundle.rb \
 ruby Scripts/rootfs-license-notice-review-results.rb \
   --bundle /absolute/new/path/outside-the-repository/rootfs-v0.3.3-license-notice-candidates
 ```
+
+两个候选目录通过独立 verifier 后，可与固定 builder checkout、Alpine 输入和
+修改披露组装为一个仓库外交付候选目录。builder 必须位于精确 revision，所有递归
+gitlink 必须已初始化且匹配；工具只从 Git object 生成按 commit 内容寻址的
+deterministic tar，不复制 `.git` 或未跟踪文件。共享 submodule 只保存一次，tar
+也避免大小写不敏感 host 覆盖 Linux 中仅大小写不同的路径：
+
+```bash
+ruby Scripts/prepare-rootfs-delivery-candidate.rb --validate-only
+
+ruby Scripts/prepare-rootfs-delivery-candidate.rb \
+  --historical-builder /absolute/path/ish-arm64-pkg-v0.3.3 \
+  --successor-builder /absolute/path/ish-arm64-pkg-successor \
+  --alpine-minirootfs /absolute/path/alpine-minirootfs-3.19.1-aarch64.tar.gz \
+  --source-bundle /absolute/path/rootfs-v0.3.3-corresponding-source-candidate \
+  --license-notice-bundle /absolute/path/rootfs-v0.3.3-license-notice-candidates \
+  --license-review-bundle /absolute/path/rootfs-v0.3.3-license-review \
+  --output /absolute/new/path/rootfs-v0.3.3-delivery-candidate
+
+ruby Scripts/prepare-rootfs-delivery-candidate.rb \
+  --verify /absolute/new/path/rootfs-v0.3.3-delivery-candidate
+```
+
+统一候选包含两套 builder 的递归源码 tar、固定 Alpine minirootfs、对应源码、
+license-review evidence 与 LICENSE/NOTICE 候选、修改说明、输入证据、receipt、
+typed tree 和 `SHA256SUMS`。独立 `--verify` 会从候选内部重新执行两个下层 bundle
+verifier，并先要求候选中的 9 份 evidence 与当前 checkout 已提交的 canonical
+evidence 逐字节一致；`--verify` 不接受替代 evidence 路径。随后再检查 Git
+object、完整路径/类型/模式和摘要。生成和复验均强制
+`sourceOfferPrepared=false`、`legalReviewApproved=false`、
+`redistributionApproved=false` 与 `distributionAuthorized=false`。该目录不能
+作为公开 artifact、源码提供承诺或可发布 RootFS 的授权依据。
 
 工具对远端材料强制 HTTPS、重定向次数、响应大小、固定字节数与 SHA-256，并原子
 创建输出。结果清单把工程复核绑定到精确的 138 文件 payload tree；复验器拒绝路径

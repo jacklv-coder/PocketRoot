@@ -79,6 +79,14 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
   调用、共四次构建中的同 host 字节级复现，以及历史/后继 builder、Alpine 输入、
   10-origin 源码材料和修改披露组成的 5 单元交付清单。材料化、source offer、法律、
   交付和再分发门禁保持关闭。
+- 加入统一仓库外 RootFS 交付候选 materializer 与独立 verifier：先复验对应源码和
+  LICENSE/NOTICE 候选，再从固定 Git object 为历史/后继 builder 及已初始化
+  submodule 生成按 commit 内容寻址的 deterministic tar；共享依赖只保存一次，
+  大小写不同的 Linux 路径不会在 host 上覆盖。工具绑定 Alpine 输入、对应源码、
+  license-review evidence、LICENSE/NOTICE 候选、修改披露与合规证据，并原子生成
+  receipt、typed tree 和 `SHA256SUMS`；独立复验会从候选内部重跑两条下层
+  verifier。不复制 `.git`/未跟踪文件、不提交输出，source offer、法律、交付、再分发与
+  `distributionAuthorized` 门禁保持关闭。
 - 加入完整 Experimental graph 的 arm64 Simulator 与 unsigned device final-link gate。
 - 加入 repository-owned iOS 18 native smoke App 和 runner，覆盖 17 项 prepare、boot、guest、8 MiB 持续二进制输出、stdout/stderr 超限、command、取消、recovery、shutdown 与 256 MiB Simulator 生命周期峰值内存门禁。
 - native smoke 新增仓库外、未授权 RootFS 双构建候选入口：校验候选 provenance、

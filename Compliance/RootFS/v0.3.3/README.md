@@ -23,7 +23,8 @@ pinned RootFS archive. It does not store the RootFS payload.
   host tool/environment receipt；
 - `SOURCE-DELIVERY-INVENTORY.json`：把历史/后继 builder、固定 Alpine 输入、
   10 个 origin 的源码材料与 RootFS 修改披露列成 5 个交付单元；inventory
-  已完整，但材料化 bundle、源码提供、法律、交付与再分发批准仍关闭；
+  与统一仓库外候选 materializer 已完整，但 checked-in 证据不声称实际候选已经
+  材料化，源码提供、法律、交付与再分发批准仍关闭；
 - `LICENSE-INVENTORY.json`：声明的许可证表达式、标识符和 archive 内
   license/notice 文件检查结果；
 - `LICENSE-REVIEW.json`：覆盖 10 个 source origin 的 78 个候选许可证文本、
@@ -67,7 +68,9 @@ builds, even though the captured host-tool bytes differed. This is same-host
 successor reproducibility evidence, not proof for the pinned release archive,
 cross-host reproducibility, or permission to replace or distribute it.
 `SOURCE-DELIVERY-INVENTORY.json` indexes five required delivery units; none is
-committed as an approved materialized source delivery.
+committed as an approved materialized source delivery. The unified external
+candidate materializer is ready, but its output remains unapproved and
+uncommitted.
 
 固定 `alpine-baselayout` aports snapshot 的 16 个 canonical entries 已逐项
 检查：15 个普通文件，以及 1 个指向 `alpine-baselayout.post-install` 的
@@ -701,6 +704,42 @@ ruby Scripts/prepare-rootfs-license-notice-bundle.rb \
 ruby Scripts/rootfs-license-notice-review-results.rb \
   --bundle /absolute/rootfs-v0.3.3-license-notice-candidates
 ```
+
+统一交付候选工具会先调用上述独立 verifier，再从固定 Git object 为历史/后继
+builder 与全部已初始化 submodule 生成按 commit 内容寻址的 deterministic tar；
+共享 submodule 只保存一次，大小写不同的 Linux 路径不会在 host 文件系统上覆盖。
+工具再加入固定 Alpine 输入、对应源码、license-review evidence、LICENSE/NOTICE
+候选、修改披露和合规证据，并生成 receipt、typed tree 与 `SHA256SUMS`：
+
+```bash
+ruby Scripts/prepare-rootfs-delivery-candidate.rb --validate-only
+
+ruby Scripts/prepare-rootfs-delivery-candidate.rb \
+  --historical-builder /absolute/ish-arm64-pkg-v0.3.3 \
+  --successor-builder /absolute/ish-arm64-pkg-successor \
+  --alpine-minirootfs /absolute/alpine-minirootfs-3.19.1-aarch64.tar.gz \
+  --source-bundle /absolute/rootfs-v0.3.3-corresponding-source-candidate \
+  --license-notice-bundle /absolute/rootfs-v0.3.3-license-notice-candidates \
+  --license-review-bundle /absolute/rootfs-v0.3.3-license-review \
+  --output /absolute/new/rootfs-v0.3.3-delivery-candidate
+
+ruby Scripts/prepare-rootfs-delivery-candidate.rb \
+  --verify /absolute/new/rootfs-v0.3.3-delivery-candidate
+```
+
+The unified delivery-candidate tool first invokes the independent verifiers,
+then generates commit-addressed deterministic tar files for the historical
+and successor builders and every initialized submodule from pinned Git
+objects. Shared submodules are stored once, and case-distinct Linux paths
+never collide on the host filesystem. It adds the pinned Alpine input,
+corresponding-source candidate, license-review evidence, LICENSE/NOTICE
+candidate, modification disclosure, compliance evidence, a receipt, typed
+tree, and `SHA256SUMS`. Independent verification reruns both lower-level
+bundle verifiers from the candidate itself, requires all bundled evidence to
+match this checkout's committed canonical evidence byte for byte, and rejects
+alternate evidence paths. Its receipt keeps source-offer, legal, delivery,
+redistribution, and distribution authorization false. The output is not a
+public artifact or permission to ship the RootFS.
 
 远端材料由固定 URL、字节数和 SHA-256 约束；可选 `--download-cache` 只读取以
 `cacheKey` 命名的本地普通文件并再次校验。输出包含候选 NOTICE、receipt 和

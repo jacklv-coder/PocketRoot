@@ -100,6 +100,19 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   Alpine input, all ten origins' source material, and modification disclosure,
   while materialization, source-offer, legal, delivery, and redistribution
   gates remain closed.
+- A unified external RootFS delivery-candidate materializer and independent
+  verifier. It first revalidates the corresponding-source and LICENSE/NOTICE
+  candidates, then emits commit-addressed deterministic tar files for the
+  historical and successor builders plus initialized submodules from pinned
+  Git objects. Shared dependencies are stored once, and case-distinct Linux
+  paths cannot collide on the host. It binds the Alpine input,
+  corresponding-source candidate, license-review evidence, LICENSE/NOTICE
+  candidate, modification disclosure, and compliance evidence, then
+  atomically emits a receipt, typed tree, and `SHA256SUMS`. Independent
+  verification reruns both lower-level verifiers from the candidate itself.
+  It copies neither `.git` nor untracked files, commits no output, and keeps
+  source-offer, legal, delivery, redistribution, and `distributionAuthorized`
+  gates closed.
 - arm64 Simulator and unsigned-device final-link gates for the full Experimental graph.
 - Repository iOS 18 native smoke covering 17 preparation, boot, guest, 8 MiB sustained binary-output, stdout/stderr overflow, command, cancellation, recovery, shutdown, and 256 MiB Simulator lifecycle peak-memory checks.
 - A repository-external, unapproved RootFS double-build candidate path for the

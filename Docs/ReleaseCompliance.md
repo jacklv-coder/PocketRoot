@@ -194,6 +194,9 @@ Alpine `apk` 可以下载、安装和执行新增代码。即使初始 RootFS �
 - [x] 建立覆盖 10/10 source origin、130 个规范化 aports 条目和 9 个上游
   distfile 的 checksum-bound 外置 corresponding-source 候选 bundle 生成与复验
   链路；候选材料工程审查完成，payload 不提交。
+- [x] 建立统一仓库外交付候选 materializer：复验源码与 LICENSE/NOTICE 候选，
+  从固定 Git object 递归导出 builder/submodule，绑定 Alpine 输入和修改披露，
+  生成 receipt、typed tree 与摘要；不提交输出且所有授权门禁保持关闭。
 - [ ] 完成重建环境/toolchain、修改披露、源码提供机制、法律与 corresponding-source
   交付批准。
 - [x] 固定 DNS、repository 和 package-manager 默认配置事实。

@@ -482,6 +482,9 @@ module RootFSRebuildDeliveryEvidence
         "candidateSourceMaterialIndexComplete" => true,
         "modificationDisclosureIndexed" => true,
         "successorRebuildEvidenceIndexed" => true,
+        "deliveryCandidateMaterializer" =>
+          "Scripts/prepare-rootfs-delivery-candidate.rb",
+        "deliveryCandidateMaterializerReady" => true,
         "materializedCorrespondingSourceBundlePresent" => false,
         "completeLicenseAndNoticeBundlePresent" => false,
         "sourceOfferPrepared" => false,
@@ -490,7 +493,7 @@ module RootFSRebuildDeliveryEvidence
         "redistributionApproved" => false
       },
       "status" =>
-        "complete-engineering-inventory-materialization-and-approval-open"
+        "complete-engineering-inventory-materializer-ready-approval-open"
     }
 
     {

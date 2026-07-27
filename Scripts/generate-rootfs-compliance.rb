@@ -768,6 +768,10 @@ def evidence(
         source_delivery_inventory.fetch("coverage").fetch(
           "candidateSourceMaterialIndexComplete"
         ),
+      "sourceDeliveryCandidateMaterializerReady" =>
+        source_delivery_inventory.fetch("coverage").fetch(
+          "deliveryCandidateMaterializerReady"
+        ),
       "sourceDeliveryMaterialized" => false,
       "correspondingSourceDeliveryApproved" => false,
       "completeLicenseReviewCandidateIndex" => true,
