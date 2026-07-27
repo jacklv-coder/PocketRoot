@@ -47,7 +47,9 @@ remaining candidate-material engineering items; only `alpine-keys` remains
 open because the upstream package lacks an MIT grant and copyright notice.
 Legal and redistribution approval remain open.
 
-固定 `alpine-baselayout` aports snapshot 的 16 个普通文件已逐项检查。8,053 字节
+固定 `alpine-baselayout` aports snapshot 的 16 个 canonical entries 已逐项
+检查：15 个普通文件，以及 1 个指向 `alpine-baselayout.post-install` 的
+`alpine-baselayout.post-upgrade` 符号链接。8,053 字节
 `APKBUILD`（SHA-256
 `80af34ff14881421241beca05d78b9b85fabfcf77899f078036283a961fd4870`）
 保存包的 `GPL-2.0-only` 声明、贡献者和维护者；快照中其余 Alpine 配置与安装脚本
@@ -61,8 +63,10 @@ attribution，因此在候选材料工程层关闭
 `identify-package-specific-copyright-and-notice`。这不判定 GPL 对产品分发的
 法律要求，也不解除法律、对应源码或发行门禁。
 
-All 16 regular files in the pinned `alpine-baselayout` aports snapshot were
-inspected. The 8,053-byte `APKBUILD` with SHA-256
+All 16 canonical entries in the pinned `alpine-baselayout` aports snapshot
+were inspected: 15 regular files and the `alpine-baselayout.post-upgrade`
+symlink to `alpine-baselayout.post-install`. The 8,053-byte `APKBUILD` with
+SHA-256
 `80af34ff14881421241beca05d78b9b85fabfcf77899f078036283a961fd4870`
 preserves the package's `GPL-2.0-only` declaration, contributor, and
 maintainer; the remaining Alpine configuration and install scripts contain no
