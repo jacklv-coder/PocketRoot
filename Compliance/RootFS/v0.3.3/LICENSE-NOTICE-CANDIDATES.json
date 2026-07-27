@@ -4,7 +4,7 @@
     "version": "v0.3.3",
     "sha256": "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"
   },
-  "licenseReviewResultsSha256": "e3ad43e944b822f46cfe74a6769b5bd70ea774d2010bb4b3be85d567e63f590e",
+  "licenseReviewResultsSha256": "631538681cc635632ac0dc953cab8d2bb142b91dfdbf51fd2ad0edd33d8d5eaa",
   "status": "candidate-bundle-indexed-engineering-review-required",
   "candidateBundleIndexComplete": true,
   "candidatePayloadCommitted": false,
@@ -256,7 +256,9 @@
         "evidence/busybox/coreutils-od.c",
         "evidence/busybox/coreutils-od_bloaty.c",
         "evidence/busybox/util-linux-hexdump.c",
-        "evidence/busybox/libbb-dump.c"
+        "evidence/busybox/libbb-dump.c",
+        "evidence/busybox/coreutils-expand.c",
+        "evidence/busybox/coreutils-fold.c"
       ],
       "referenceLicensePaths": [
         "licenses/GPL-2.0.txt"
@@ -311,6 +313,7 @@
         "confirm-enabled-ping-and-ping6-license-and-attribution-coverage",
         "confirm-enabled-traceroute-and-traceroute6-license-and-attribution-coverage",
         "confirm-enabled-od-hexdump-and-hd-license-and-attribution-coverage",
+        "confirm-enabled-expand-unexpand-and-fold-license-and-attribution-coverage",
         "review-other-bundled-third-party-license-and-attribution-coverage",
         "confirm-aports-patch-notices"
       ],

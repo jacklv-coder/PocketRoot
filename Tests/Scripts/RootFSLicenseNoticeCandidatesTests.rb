@@ -29,7 +29,7 @@ class RootFSLicenseNoticeCandidatesTests < Minitest::Test
 
     assert_equal 8, validated.fetch(:sources).length
     assert_equal 13, validated.fetch(:remote_payloads).length
-    assert_equal 32, validated.fetch(:existing_evidence_paths).length
+    assert_equal 34, validated.fetch(:existing_evidence_paths).length
     assert_equal 47, validated.fetch(:aports_paths).length
   end
 
@@ -537,6 +537,54 @@ class RootFSLicenseNoticeCandidatesTests < Minitest::Test
     assert_includes(
       source.fetch("remainingReviewItems"),
       "confirm-enabled-od-hexdump-and-hd-license-and-attribution-coverage"
+    )
+    assert_includes(
+      source.fetch("remainingReviewItems"),
+      "review-other-bundled-third-party-license-and-attribution-coverage"
+    )
+  end
+
+  def test_pins_enabled_busybox_expand_unexpand_and_fold_notices
+    source = @candidate.fetch("sources").find do |candidate|
+      candidate.fetch("sourceOrigin") == "busybox"
+    end
+    review_source = @review.fetch("sources").find do |candidate|
+      candidate.fetch("sourceOrigin") == "busybox"
+    end
+    expected = {
+      "evidence/busybox/coreutils-expand.c" => {
+        member: "busybox-1.36.1/coreutils/expand.c",
+        bytes: 6_393,
+        sha256: "66296875f04016bba0721d4fa80393317ffca014e4b4722ed8e7e7fb1c882802"
+      },
+      "evidence/busybox/coreutils-fold.c" => {
+        member: "busybox-1.36.1/coreutils/fold.c",
+        bytes: 5_018,
+        sha256: "db291cf01ee9a90244607c88a5d88ddf7d2600237eca6f2d7a6894815928cdef"
+      }
+    }
+
+    expected.each do |output_path, values|
+      evidence = review_source.fetch("candidateEvidence").find do |candidate|
+        candidate.fetch("outputPath") == output_path
+      end
+
+      assert_includes source.fetch("existingEvidencePaths"), output_path
+      assert_equal values.fetch(:member), evidence.fetch("member")
+      assert_equal values.fetch(:bytes), evidence.fetch("byteCount")
+      assert_equal values.fetch(:sha256), evidence.fetch("sha256")
+      assert_equal(
+        %w[license-declaration attribution],
+        evidence.fetch("evidenceKinds")
+      )
+    end
+    assert_includes(
+      source.fetch("supplementalAportsPaths"),
+      "aports/busybox/busyboxconfig"
+    )
+    assert_includes(
+      source.fetch("remainingReviewItems"),
+      "confirm-enabled-expand-unexpand-and-fold-license-and-attribution-coverage"
     )
     assert_includes(
       source.fetch("remainingReviewItems"),
