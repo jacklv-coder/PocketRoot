@@ -101,7 +101,7 @@ PTY support is deferred because native session pointer ownership and high-level 
 
 ## Distribution constraints
 
-The package and iSH sources carry GPL terms; the RootFS contains GPL, Apache, MPL, MIT, BSD, and Zlib families. The repository now generates a package inventory and SPDX SBOM from the pinned release asset, while complete license/NOTICE and corresponding-source delivery material and a complete release-composition SBOM remain absent. Alpine `apk` also creates an independent App Store Guideline 2.5.2 question.
+The package and iSH sources carry GPL terms; the RootFS contains GPL, Apache, MPL, MIT, BSD, and Zlib families. The repository now generates a package inventory and SPDX SBOM from the pinned release asset, plus an SPDX SBOM for the maximal Experimental engineering composition; the latter does not scan a final App archive. Complete license/NOTICE and corresponding-source delivery material and a complete final-artifact SBOM remain absent. Alpine `apk` also creates an independent App Store Guideline 2.5.2 question.
 
 Distribution remains blocked. See [release and compliance](../ReleaseCompliance.md).
 

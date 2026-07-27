@@ -442,7 +442,8 @@ RootFS。这只是兼容性证据，不授权 RootFS 分发，也不改变正式
 4. 运行 `swift test`；
 5. 下载精确 v0.3.3 archive；
 6. 先检查字节数和 SHA-256；
-7. 运行真实资产 filtered test；
+7. 运行真实资产 filtered test，重现 RootFS 和最大实验工程组合合规证据，并用固定
+   官方 SPDX 2.3 schema 校验两份 SBOM；
 8. 下载固定 XcodeGen 版本并校验 SHA-256；
 9. 生成 Xcode 工程；
 10. 构建默认 Demo；
@@ -467,6 +468,7 @@ smoke。CI 的 Simulator 结果不证明签名真机或发行可用。
 | terminal placeholder | terminal tests + Demo build |
 | PTY/SwiftTerm（未来） | unit + final-link + Simulator + signed iPhone/iPad lifecycle |
 | 文档 | `./Scripts/check-docs.sh` |
+| 发行组成或合规证据 | 生成器测试 + `--check` + 固定 SPDX schema 校验 |
 | 上游 revision/RootFS | 全部测试 + 供应链与合规重审 |
 
 ## 10. 真机门禁

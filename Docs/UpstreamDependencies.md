@@ -5,7 +5,7 @@
 本文是 PocketRoot 实验性 runtime 的不可变 revision、nested gitlink、制品 URL、大小和
 SHA-256 的唯一事实源。branch、moving tag、未验证 release alias 和本地缓存都不是有效 pin。
 
-审核日期：2026-07-24
+审核日期：2026-07-27
 
 ## 1. IshEmbed Swift Package
 
@@ -124,6 +124,8 @@ PocketRoot 仍保持 Experimental。尚未闭环的门禁：
 - sustained workload、峰值内存与 jetsam；
 - RootFS 已生成 package inventory、SPDX SBOM、source locator 和默认配置证据，
   但完整 license/NOTICE 与对应源码 bundle 仍未完成；
+- 最大实验工程组合 inventory/SPDX SBOM 已绑定本清单中的 ABI.6 assets、iSH
+  gitlink、supervisor musl source 和外部 RootFS；尚无最终 App archive 扫描；
 - App Store Review Guideline 2.5.2 结论。
 
 ## 6. 依赖更新流程

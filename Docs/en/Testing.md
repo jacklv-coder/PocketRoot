@@ -354,6 +354,8 @@ revision; that action still checks out the commit SHA selected by the workflow
 event (the push SHA or PR merge SHA). On a macOS runner CI then runs
 `./Scripts/check-docs.sh`, reports toolchains, runs package tests, downloads and
 independently verifies the exact RootFS, runs its first-materialization test,
+regenerates the RootFS and maximal Experimental engineering-composition
+evidence, validates both SBOMs against the pinned official SPDX 2.3 schema,
 obtains pinned XcodeGen with checksum validation, generates the project, builds
 the Demo, and final-links arm64 Simulator and unsigned-device runtime Apps.
 
@@ -374,6 +376,7 @@ Simulator evidence does not prove signed-device or distribution readiness.
 | project.yml/Demo | Regenerate + Demo build |
 | smoke | Shell syntax + Simulator smoke + signed-device smoke when available |
 | docs | Documentation check |
+| release composition/compliance evidence | Generator tests + `--check` + pinned SPDX schema validation |
 | upstream/RootFS update | Full suite + supply-chain/compliance reaudit |
 
 ## Evidence language

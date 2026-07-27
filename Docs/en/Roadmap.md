@@ -19,14 +19,18 @@ Status:
 4. Published and pinned IshEmbed `v0.4.0-abi.6`, completing the unified
    control-path deadline, one-shot Swift Task cancellation, native exit
    confirmation, and post-cancellation recovery.
-5. Current: RootFS capacity preflight, the full write/promotion ENOSPC matrix,
+5. Completed a maximal Experimental engineering-composition inventory/SPDX
+   SBOM covering the default Demo, all Swift products, ABI.6
+   IshEmbed/XCFramework, iSH, supervisor musl source, and the external
+   RootFS's 15 packages; the final release-artifact scan gate remains closed.
+6. Current: RootFS capacity preflight, the full write/promotion ENOSPC matrix,
    explicit file/directory persistence, deterministic power-loss cut points,
    the 8 MiB sustained binary-output baseline, physical forced-relaunch
    persistence, bounded physical storage-failure recovery, and bounded physical
    memory-warning recovery are complete; continue real storage-pressure/
    power-cut, jetsam, and peak-memory hardening.
-6. Native Agent Loop/App composition is paused by product decision and does not block independent runtime validation.
-7. Complete signed iPad smoke when hardware is available; that gate does not block the first six items.
+7. Native Agent Loop/App composition is paused by product decision and does not block independent runtime validation.
+8. Complete signed iPad smoke when hardware is available; that gate does not block the first seven items.
 
 ## Milestone 1: Project foundation
 
@@ -98,6 +102,7 @@ This establishes the current Simulator, minimum-Xcode 16, and single-iPhone one-
 | Minimum Xcode 16 native | Passed | Xcode 16.0 / iOS 18.0 SDK completed RootFS install, Simulator/device final links, and the 17-check native smoke |
 | App lifecycle and memory | In progress | Simulator and Jack iPhone have 256 MiB `ru_maxrss` gates; physical process suspend/resume, UIKit foreground/background, post-termination data recovery, and bounded App-delegate memory-warning recovery passed; add real memory-pressure/jetsam evidence |
 | RootFS ENOSPC/power faults | In progress | Peak-space preflight, full ENOSPC, seven persistence barriers, deterministic power-loss cuts, and bounded capacity/ENOSPC cleanup recovery on Jack iPhone are covered; add real storage-pressure/power-cut evidence |
+| Maximal Experimental engineering composition inventory/SBOM | Passed | Keep SwiftPM/Xcode targets, ABI.6 dependency/source, the external RootFS's 15 packages, and checksums reproducible; never describe it as a final release-archive scan or distribution authorization |
 | License-reviewed RootFS | Blocked | The 15-package/10-origin evidence, corresponding-source candidate material for all 10 origins, all 78 initial candidates, and all 138 external LICENSE/NOTICE payloads have checksum-bound engineering review. The historical builder is identified; a schema-v4 successor is reproducible across same-host invocations, with a five-unit delivery inventory and unified external candidate materializer. Only the `alpine-keys` MIT grant/copyright notice remains open, followed by a pinned-release exact-rebuild conclusion, complete NOTICE/source offer, legal review, delivery approval, and authorized release |
 | App Store 2.5.2 | Blocked | Written guest download/execute policy decision |
 
@@ -175,7 +180,10 @@ Status: **Not started / gated**.
 
 Engineering includes lifecycle recovery, RootFS migration/data policy, performance/memory/battery, long workloads, storage/jetsam, reproducible dependency builds, security/sandbox, localization/accessibility, and telemetry/privacy.
 
-Compliance includes PocketRoot license, upstream LICENSE/NOTICE, corresponding source, SBOM, provenance, App Store 2.5.2, privacy manifest, release notes, and known limits.
+Compliance includes PocketRoot license, upstream LICENSE/NOTICE, corresponding
+source, the already-generated maximal engineering-composition SBOM, a final
+built-and-scanned release-artifact SBOM, provenance, App Store 2.5.2, privacy
+manifest, release notes, and known limits.
 
 A Beta or Distribution Candidate can be defined only after every distribution blocker has an approved disposition.
 

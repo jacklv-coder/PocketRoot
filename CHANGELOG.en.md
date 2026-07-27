@@ -32,6 +32,13 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   declared-license/attribution inventories, and default `apk`, repository, and
   DNS configuration; complete LICENSE/NOTICE and corresponding-source bundles
   remain distribution blockers.
+- A reproducible maximal Experimental engineering-composition inventory and
+  SPDX 2.3 JSON SBOM that distinguishes the default Demo, native-runtime smoke,
+  and all Swift products, and binds ABI.6 IshEmbed/XCFramework, iSH, supervisor
+  musl source, the external RootFS, and its 15 packages. CI compares generated
+  output and validates the SBOM against the pinned official schema. This
+  evidence does not scan a final archive; the complete release-artifact SBOM
+  and distribution-authorization gates remain closed.
 - A checksum-bound `LICENSE-REVIEW-RESULTS.json` and strict validator. All 78
   pinned RootFS license/NOTICE candidates have engineering review results;
   eight source origins retain package-level open items, and legal and
