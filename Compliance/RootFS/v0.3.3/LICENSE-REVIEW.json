@@ -243,6 +243,58 @@
             "attribution"
           ],
           "reviewState": "unreviewed-candidate"
+        },
+        {
+          "sourceKind": "distfile-member",
+          "distfile": "busybox-1.36.1.tar.bz2",
+          "member": "busybox-1.36.1/coreutils/od.c",
+          "outputPath": "evidence/busybox/coreutils-od.c",
+          "byteCount": 6634,
+          "sha256": "8536f85598a87c49db70a583d9c40004719e64b4939e1d58bcbe30e1e8c5417a",
+          "evidenceKinds": [
+            "inline-license-notice",
+            "attribution"
+          ],
+          "reviewState": "unreviewed-candidate"
+        },
+        {
+          "sourceKind": "distfile-member",
+          "distfile": "busybox-1.36.1.tar.bz2",
+          "member": "busybox-1.36.1/coreutils/od_bloaty.c",
+          "outputPath": "evidence/busybox/coreutils-od_bloaty.c",
+          "byteCount": 37473,
+          "sha256": "eb4ae669c359554eac9dcbac2f7625fb5413b34a76ded366a1ec13e47a729b62",
+          "evidenceKinds": [
+            "license-declaration",
+            "attribution"
+          ],
+          "reviewState": "unreviewed-candidate"
+        },
+        {
+          "sourceKind": "distfile-member",
+          "distfile": "busybox-1.36.1.tar.bz2",
+          "member": "busybox-1.36.1/util-linux/hexdump.c",
+          "outputPath": "evidence/busybox/util-linux-hexdump.c",
+          "byteCount": 4392,
+          "sha256": "97e49fc1c02560fd65443a7eafbcfbeab44267f3146e0efa1738ae902d69de84",
+          "evidenceKinds": [
+            "license-declaration",
+            "attribution"
+          ],
+          "reviewState": "unreviewed-candidate"
+        },
+        {
+          "sourceKind": "distfile-member",
+          "distfile": "busybox-1.36.1.tar.bz2",
+          "member": "busybox-1.36.1/libbb/dump.c",
+          "outputPath": "evidence/busybox/libbb-dump.c",
+          "byteCount": 22017,
+          "sha256": "a1c705a48bd6eb43b4cb9cfb74d61f47f8500b601ebd9d3502906093f7c8ddfe",
+          "evidenceKinds": [
+            "inline-license-notice",
+            "attribution"
+          ],
+          "reviewState": "unreviewed-candidate"
         }
       ],
       "openReviewItems": [
@@ -254,6 +306,7 @@
         "confirm-enabled-cal-license-and-attribution-coverage",
         "confirm-enabled-ping-and-ping6-license-and-attribution-coverage",
         "confirm-enabled-traceroute-and-traceroute6-license-and-attribution-coverage",
+        "confirm-enabled-od-hexdump-and-hd-license-and-attribution-coverage",
         "review-other-bundled-third-party-license-and-attribution-coverage",
         "confirm-aports-patch-notices"
       ]

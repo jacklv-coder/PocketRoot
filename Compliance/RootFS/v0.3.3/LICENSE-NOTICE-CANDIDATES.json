@@ -4,7 +4,7 @@
     "version": "v0.3.3",
     "sha256": "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"
   },
-  "licenseReviewResultsSha256": "3429e1b5bc26cdad403ba93b41b3dcab2f5f2f35237ed1facea4cb08e53add35",
+  "licenseReviewResultsSha256": "e3ad43e944b822f46cfe74a6769b5bd70ea774d2010bb4b3be85d567e63f590e",
   "status": "candidate-bundle-indexed-engineering-review-required",
   "candidateBundleIndexComplete": true,
   "candidatePayloadCommitted": false,
@@ -252,7 +252,11 @@
         "evidence/busybox/sysklogd-logger.c",
         "evidence/busybox/util-linux-cal.c",
         "evidence/busybox/networking-ping.c",
-        "evidence/busybox/networking-traceroute.c"
+        "evidence/busybox/networking-traceroute.c",
+        "evidence/busybox/coreutils-od.c",
+        "evidence/busybox/coreutils-od_bloaty.c",
+        "evidence/busybox/util-linux-hexdump.c",
+        "evidence/busybox/libbb-dump.c"
       ],
       "referenceLicensePaths": [
         "licenses/GPL-2.0.txt"
@@ -306,6 +310,7 @@
         "confirm-enabled-cal-license-and-attribution-coverage",
         "confirm-enabled-ping-and-ping6-license-and-attribution-coverage",
         "confirm-enabled-traceroute-and-traceroute6-license-and-attribution-coverage",
+        "confirm-enabled-od-hexdump-and-hd-license-and-attribution-coverage",
         "review-other-bundled-third-party-license-and-attribution-coverage",
         "confirm-aports-patch-notices"
       ],

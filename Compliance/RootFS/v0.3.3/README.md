@@ -16,14 +16,14 @@ pinned RootFS archive. It does not store the RootFS payload.
   SHA-256；
 - `LICENSE-INVENTORY.json`：声明的许可证表达式、标识符和 archive 内
   license/notice 文件检查结果；
-- `LICENSE-REVIEW.json`：覆盖 10 个 source origin 的 28 个候选许可证文本、
+- `LICENSE-REVIEW.json`：覆盖 10 个 source origin 的 32 个候选许可证文本、
   attribution、声明与内联 notice 的路径、大小、SHA-256 和逐包未决审查项；
-- `LICENSE-REVIEW-RESULTS.json`：对全部 28 个候选的 checksum-bound 工程复核
+- `LICENSE-REVIEW-RESULTS.json`：对全部 32 个候选的 checksum-bound 工程复核
   结论、coverage 和未决项处置；不表示法律或再分发批准；
 - `LICENSE-NOTICE-CANDIDATES.json`：为剩余 8 个 source origin 固定 13 份远端
-  许可证/attribution 材料、47 份 aports 补充文件及现有 28 份复核证据的外置候选包；
+  许可证/attribution 材料、47 份 aports 补充文件及现有 32 份复核证据的外置候选包；
   payload 不提交，工程、法律和再分发门禁保持关闭；
-- `LICENSE-NOTICE-REVIEW-RESULTS.json`：绑定候选清单与 88 个 payload 文件树的
+- `LICENSE-NOTICE-REVIEW-RESULTS.json`：绑定候选清单与 92 个 payload 文件树的
   工程复核结果；3 个 origin 的候选材料工程项关闭，5 个仍需补逐包材料，法律和
   再分发门禁保持关闭；
 - `RUNTIME-CONFIGURATION.json`：guest、`apk`、repository、world 和 DNS 默认配置；
@@ -34,15 +34,15 @@ pinned RootFS archive. It does not store the RootFS payload.
 `SOURCE-ACQUISITION.json` pins the aports snapshots and upstream distfiles
 needed to assemble an external source-review directory. It is an acquisition
 manifest, not a committed source archive or redistribution grant.
-`LICENSE-REVIEW.json` pins 28 unreviewed candidate evidence files across all
+`LICENSE-REVIEW.json` pins 32 unreviewed candidate evidence files across all
 10 source origins; it is an engineering review index, not legal approval.
-`LICENSE-REVIEW-RESULTS.json` records the engineering review of all 28 pinned
+`LICENSE-REVIEW-RESULTS.json` records the engineering review of all 32 pinned
 candidates. Two source origins have no remaining indexed review items; eight
 still have package-specific open items. `LICENSE-NOTICE-CANDIDATES.json`
 indexes an external candidate bundle for those eight origins: 13 pinned remote
 license/attribution payloads, 47 supplemental aports files, and the existing
-28 reviewed evidence files. `LICENSE-NOTICE-REVIEW-RESULTS.json` binds the
-engineering review to the exact 88-file payload tree. Three origins have no
+32 reviewed evidence files. `LICENSE-NOTICE-REVIEW-RESULTS.json` binds the
+engineering review to the exact 92-file payload tree. Three origins have no
 remaining candidate-material engineering items; five still require
 package-specific material. Legal and redistribution approval remain open.
 
@@ -82,7 +82,8 @@ change.
 `CONFIG_LOGGER=y`、`CONFIG_CAL=y`、`CONFIG_PING=y`、`CONFIG_PING6=y`、
 `CONFIG_FEATURE_FANCY_PING=y`、`CONFIG_TRACEROUTE=y`、
 `CONFIG_TRACEROUTE6=y`、`CONFIG_FEATURE_TRACEROUTE_VERBOSE=y` 和
-`CONFIG_FEATURE_TRACEROUTE_USE_ICMP=y`；BusyBox
+`CONFIG_FEATURE_TRACEROUTE_USE_ICMP=y`，以及 `CONFIG_DESKTOP=y`、
+`CONFIG_OD=y`、`CONFIG_HEXDUMP=y` 和 `CONFIG_HD=y`；BusyBox
 `shell/Kbuild.src` 在该配置下把 `math.o` 链入构建，`coreutils/env.c` 与
 `coreutils/echo.c` 则分别通过 `lib-$(CONFIG_ENV) += env.o` 和
 `lib-$(CONFIG_ECHO) += echo.o` 链入，`sysklogd/logger.c` 通过
@@ -92,7 +93,11 @@ change.
 链入，`networking/traceroute.c` 同时通过
 `lib-$(CONFIG_TRACEROUTE) += traceroute.o` 与
 `lib-$(CONFIG_TRACEROUTE6) += traceroute.o`
-链入。外置候选树现同时绑定该
+链入；`coreutils/od.c` 通过 `lib-$(CONFIG_OD) += od.o` 链入，并在
+`ENABLE_DESKTOP` 分支直接包含 `coreutils/od_bloaty.c`；
+`util-linux/hexdump.c` 通过 `CONFIG_HEXDUMP` 与 `CONFIG_HD` 两条规则链入，
+并调用由 `libbb/Kbuild.src` 的 `lib-y += dump.o` 提供的 `libbb/dump.c`。
+外置候选树现同时绑定该
 配置与固定 BusyBox
 1.36.1 源包中的 1,999 字节
 `archival/libarchive/bz/LICENSE`（SHA-256
@@ -141,6 +146,23 @@ payload 树中；它只修改 socket/runtime 代码，不触及文件头或文�
 工程层关闭
 `confirm-enabled-traceroute-and-traceroute6-license-and-attribution-coverage`。
 这只是证据完备性结论，不判断 advertising 条款与产品发行方案的法律兼容性。
+同时绑定 6,634 字节 `coreutils/od.c`（SHA-256
+`8536f85598a87c49db70a583d9c40004719e64b4939e1d58bcbe30e1e8c5417a`）、
+37,473 字节 `coreutils/od_bloaty.c`（SHA-256
+`eb4ae669c359554eac9dcbac2f7625fb5413b34a76ded366a1ec13e47a729b62`）、
+4,392 字节 `util-linux/hexdump.c`（SHA-256
+`97e49fc1c02560fd65443a7eafbcfbeab44267f3146e0efa1738ae902d69de84`）和
+22,017 字节 `libbb/dump.c`（SHA-256
+`a1c705a48bd6eb43b4cb9cfb74d61f47f8500b601ebd9d3502906093f7c8ddfe`）。
+`od.c` 与 `dump.c` 保留完整 Regents BSD-3-Clause 条款，
+`od_bloaty.c` 保留 FSF 版权、GPLv2-or-later 声明与免责声明，
+`hexdump.c` 保留 Regents attribution 和 GPLv2-or-later 声明。固定 aports
+补丁集没有修改这四个文件；固定 RootFS 主树与 guest 模板树中的
+`/usr/bin/od`、`/usr/bin/hexdump` 和 `/usr/bin/hd` 均指向
+`/bin/busybox`，因此在工程层关闭
+`confirm-enabled-od-hexdump-and-hd-license-and-attribution-coverage`。
+这只确认精确源码与 notice 证据完整，不判断 GPL 版本选择、组合或发行方案的
+法律兼容性。
 BusyBox 其他已启用
 组件的内联第三方 notice 尚未形成完整集合，因此 license-text 与 attribution
 coverage 均保持 partial，
@@ -157,7 +179,8 @@ It explicitly enables `CONFIG_BZIP2=y`, `CONFIG_BZIP2_SMALL=8`,
 `CONFIG_CAL=y`, `CONFIG_PING=y`, `CONFIG_PING6=y`,
 `CONFIG_FEATURE_FANCY_PING=y`, `CONFIG_TRACEROUTE=y`,
 `CONFIG_TRACEROUTE6=y`, `CONFIG_FEATURE_TRACEROUTE_VERBOSE=y`, and
-`CONFIG_FEATURE_TRACEROUTE_USE_ICMP=y`; BusyBox
+`CONFIG_FEATURE_TRACEROUTE_USE_ICMP=y`, plus `CONFIG_DESKTOP=y`,
+`CONFIG_OD=y`, `CONFIG_HEXDUMP=y`, and `CONFIG_HD=y`; BusyBox
 `shell/Kbuild.src` links `math.o` under that configuration, while
 `coreutils/env.c` and `coreutils/echo.c` are linked by
 `lib-$(CONFIG_ENV) += env.o` and `lib-$(CONFIG_ECHO) += echo.o`,
@@ -167,7 +190,11 @@ linked through `lib-$(CONFIG_CAL) += cal.o`; `networking/ping.c` is linked
 through both `lib-$(CONFIG_PING) += ping.o` and
 `lib-$(CONFIG_PING6) += ping.o`; `networking/traceroute.c` is linked through
 both `lib-$(CONFIG_TRACEROUTE) += traceroute.o` and
-`lib-$(CONFIG_TRACEROUTE6) += traceroute.o`. The external candidate tree
+`lib-$(CONFIG_TRACEROUTE6) += traceroute.o`; `coreutils/od.c` is linked by
+`lib-$(CONFIG_OD) += od.o` and directly includes `coreutils/od_bloaty.c` under
+`ENABLE_DESKTOP`; `util-linux/hexdump.c` is linked by both `CONFIG_HEXDUMP`
+and `CONFIG_HD` and calls the `libbb/dump.c` implementation supplied by
+`lib-y += dump.o` in `libbb/Kbuild.src`. The external candidate tree
 now binds that configuration to the
 1,999-byte
 `archival/libarchive/bz/LICENSE` in the pinned BusyBox 1.36.1 source archive,
@@ -223,7 +250,24 @@ RootFS trees map `/usr/bin/traceroute` and `/usr/bin/traceroute6` to
 `confirm-enabled-traceroute-and-traceroute6-license-and-attribution-coverage`
 at the engineering level. This is an evidence-completeness conclusion, not a
 legal compatibility determination for the advertising condition or product
-distribution plan. A complete set of inline third-party notices for BusyBox's other
+distribution plan. It also binds the 6,634-byte `coreutils/od.c` with SHA-256
+`8536f85598a87c49db70a583d9c40004719e64b4939e1d58bcbe30e1e8c5417a`,
+the 37,473-byte `coreutils/od_bloaty.c` with SHA-256
+`eb4ae669c359554eac9dcbac2f7625fb5413b34a76ded366a1ec13e47a729b62`,
+the 4,392-byte `util-linux/hexdump.c` with SHA-256
+`97e49fc1c02560fd65443a7eafbcfbeab44267f3146e0efa1738ae902d69de84`,
+and the 22,017-byte `libbb/dump.c` with SHA-256
+`a1c705a48bd6eb43b4cb9cfb74d61f47f8500b601ebd9d3502906093f7c8ddfe`.
+`od.c` and `dump.c` retain complete Regents BSD-3-Clause terms;
+`od_bloaty.c` retains the FSF copyright, GPLv2-or-later declaration, and
+disclaimer; `hexdump.c` retains the Regents attribution and GPLv2-or-later
+declaration. The pinned aports patch set does not modify these four files, and
+both the main and guest-template RootFS trees map `/usr/bin/od`,
+`/usr/bin/hexdump`, and `/usr/bin/hd` to `/bin/busybox`, closing
+`confirm-enabled-od-hexdump-and-hd-license-and-attribution-coverage` at the
+engineering level. This confirms exact source and notice evidence only; it
+does not determine the legal compatibility of GPL version selection,
+combination, or the distribution plan. A complete set of inline third-party notices for BusyBox's other
 enabled components is still missing, so license-text and attribution coverage
 remain partial,
 `review-other-bundled-third-party-license-and-attribution-coverage` remains
@@ -402,13 +446,13 @@ ruby Scripts/rootfs-license-review-results.rb
 ```
 
 工具只提取 `LICENSE-REVIEW.json` 固定的候选文件，并再次核对大小、SHA-256、
-路径全集、无符号链接/特殊节点边界。结果清单证明 28 个候选已完成工程复核；
+路径全集、无符号链接/特殊节点边界。结果清单证明 32 个候选已完成工程复核；
 外置输出仍不是可直接随产品发行的 NOTICE bundle。
 
 The tool extracts only candidates pinned by `LICENSE-REVIEW.json`, then
 rechecks byte counts, SHA-256 digests, the exact path set, and the no-symlink/
 special-node boundary. The results manifest proves engineering review of all
-28 candidates; the external output is still not a product-ready NOTICE bundle.
+32 candidates; the external output is still not a product-ready NOTICE bundle.
 
 剩余 8 个 source origin 的材料可继续组装为外置候选包。先校验清单；实际物化
 必须同时提供已经通过 `--verify` 的 source-review 和 license-review 目录，以及
@@ -452,8 +496,8 @@ advice, or redistribution approval.
 
 这些文件不构成完整第三方 LICENSE/NOTICE bundle、经审查的 copyleft
 corresponding-source 交付、法律意见或再分发授权。源码获取清单已完整覆盖固定
-inventory，28 个候选也都有工程复核结果；`libc-dev`、`zlib` 已关闭索引项，另外
-8 个 source origin 的 88 个新候选 payload 已完成 checksum-bound 工程复核；
+inventory，32 个候选也都有工程复核结果；`libc-dev`、`zlib` 已关闭索引项，另外
+8 个 source origin 的 92 个新候选 payload 已完成 checksum-bound 工程复核；
 `apk-tools`、`openssl`、`pax-utils` 的候选材料工程项已关闭，另外 5 个
 origin 仍需补逐包版权/notice 材料。修改说明、构建完整性、源码提供方式、法律
 审查、App Store 2.5.2 产品策略和负责人批准仍是发行阻塞项。
@@ -461,8 +505,8 @@ origin 仍需补逐包版权/notice 材料。修改说明、构建完整性、�
 These files are not a complete third-party LICENSE/NOTICE bundle, reviewed
 copyleft corresponding-source delivery, legal advice, or redistribution
 approval. The acquisition manifest completely covers the pinned inventory and
-all 28 indexed candidates have engineering review results. `libc-dev` and
-`zlib` have no remaining indexed items. All 88 newly indexed payloads have a
+all 32 indexed candidates have engineering review results. `libc-dev` and
+`zlib` have no remaining indexed items. All 92 newly indexed payloads have a
 checksum-bound engineering review; `apk-tools`, `openssl`, and `pax-utils`
 have no remaining candidate-material engineering items, while five origins
 still need package-specific copyright/notice material. Modification, build
