@@ -39,7 +39,7 @@ class RootFSLicenseReviewResultsTests < Minitest::Test
     sources = validate
 
     assert_equal 10, sources.length
-    assert_equal 37,
+    assert_equal 78,
       sources.sum { |entry| entry.fetch("candidateResults").length }
     assert_equal 8,
       sources.count { |entry| !entry.fetch("remainingReviewItems").empty? }
@@ -47,6 +47,46 @@ class RootFSLicenseReviewResultsTests < Minitest::Test
       sources
         .select { |entry| entry.fetch("remainingReviewItems").empty? }
         .map { |entry| entry.fetch("sourceOrigin") }
+  end
+
+  def test_reviews_remaining_busybox_build_closure_candidates
+    sources = validate
+    result = sources.find do |entry|
+      entry.fetch("sourceOrigin") == "busybox"
+    end
+    review = @review.fetch("sources").find do |entry|
+      entry.fetch("sourceOrigin") == "busybox"
+    end
+    candidate_results = result.fetch("candidateResults").select do |candidate|
+      candidate.fetch("outputPath").start_with?(
+        "evidence/busybox/build-closure-"
+      )
+    end
+    candidate_evidence = review.fetch("candidateEvidence").select do |candidate|
+      candidate.fetch("outputPath").start_with?(
+        "evidence/busybox/build-closure-"
+      )
+    end
+
+    assert_equal 41, candidate_results.length
+    assert_equal(
+      candidate_evidence.map do |candidate|
+        [candidate.fetch("outputPath"), candidate.fetch("sha256")]
+      end,
+      candidate_results.map do |candidate|
+        [candidate.fetch("outputPath"), candidate.fetch("sha256")]
+      end
+    )
+    assert(
+      candidate_results.all? do |candidate|
+        candidate.fetch("conclusion") ==
+          "inline-license-and-attribution-notice"
+      end
+    )
+    assert_includes(
+      result.fetch("remainingReviewItems"),
+      "review-other-bundled-third-party-license-and-attribution-coverage"
+    )
   end
 
   def test_rejects_legal_or_redistribution_approval

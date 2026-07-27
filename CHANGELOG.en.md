@@ -32,17 +32,17 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   declared-license/attribution inventories, and default `apk`, repository, and
   DNS configuration; complete LICENSE/NOTICE and corresponding-source bundles
   remain distribution blockers.
-- A checksum-bound `LICENSE-REVIEW-RESULTS.json` and strict validator. All 37
+- A checksum-bound `LICENSE-REVIEW-RESULTS.json` and strict validator. All 78
   pinned RootFS license/NOTICE candidates have engineering review results;
   eight source origins retain package-level open items, and legal and
   redistribution gates remain closed.
 - A checksum-bound `LICENSE-NOTICE-CANDIDATES.json`, strict validator, and
   outside-repository atomic materializer for the eight remaining RootFS source
   origins. It indexes 13 remote license/attribution payloads, 47 aports files,
-  and the 37 existing evidence files for complete re-verification without
+  and the 78 existing evidence files for complete re-verification without
   committing payloads or opening engineering, legal, or redistribution gates.
 - `LICENSE-NOTICE-REVIEW-RESULTS.json` and a strict external payload-tree
-  verifier. All 97 candidate payloads now have checksum-bound engineering
+  verifier. All 138 candidate payloads now have checksum-bound engineering
   review. The pinned upstream `alpine-keys` GPL-to-MIT license-decision commit
   is included while its package-level copyright notice remains open. The
   `ca-certificates` generator is byte-identical to curl commit `3fdc4bdb`, and
@@ -63,11 +63,14 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   sources retain FSF copyright, GPLv2-or-later declarations, and BusyBox port
   attribution. `cut`, `sort`, and `uniq` link their corresponding `coreutils`
   sources, each retaining its GPLv2-or-later declaration and original
-  attribution. Other inline notices stay open;
-  `apk-tools`, `openssl`, and `pax-utils` have no remaining
-  candidate-material engineering items, five origins still need
-  package-specific material, and
-  legal and redistribution gates remain closed.
+  attribution. The remaining BusyBox review applies the 33 pinned aports
+  patches and configuration to derive 487 compilation units and a 562-file
+  include closure, then pins the 41 files retaining independent third-party
+  terms or provenance. BusyBox evidence increases to 60 files and its broad
+  engineering item closes. `apk-tools`, `busybox`, `openssl`, and `pax-utils`
+  have no remaining candidate-material engineering items, four origins still
+  need package-specific material, and legal and redistribution gates remain
+  closed.
 - Strict external download-cache input for the RootFS source-review
   materializer. A cache replaces network transport only: inputs remain
   size-bounded and symlink/overlap-rejected, with pinned SHA-512 and canonical

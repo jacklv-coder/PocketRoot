@@ -29,7 +29,7 @@ class RootFSLicenseNoticeCandidatesTests < Minitest::Test
 
     assert_equal 8, validated.fetch(:sources).length
     assert_equal 13, validated.fetch(:remote_payloads).length
-    assert_equal 37, validated.fetch(:existing_evidence_paths).length
+    assert_equal 78, validated.fetch(:existing_evidence_paths).length
     assert_equal 47, validated.fetch(:aports_paths).length
   end
 
@@ -639,6 +639,86 @@ class RootFSLicenseNoticeCandidatesTests < Minitest::Test
       source.fetch("remainingReviewItems"),
       "confirm-enabled-cut-sort-and-uniq-license-and-attribution-coverage"
     )
+    assert_includes(
+      source.fetch("remainingReviewItems"),
+      "review-other-bundled-third-party-license-and-attribution-coverage"
+    )
+  end
+
+  def test_pins_remaining_busybox_build_closure_notices
+    source = @candidate.fetch("sources").find do |candidate|
+      candidate.fetch("sourceOrigin") == "busybox"
+    end
+    review_source = @review.fetch("sources").find do |candidate|
+      candidate.fetch("sourceOrigin") == "busybox"
+    end
+    relative_paths = %w[
+      archival/bbunzip.c
+      archival/libarchive/decompress_gunzip.c
+      archival/libarchive/liblzo.h
+      archival/libarchive/lzo1x_1.c
+      archival/libarchive/lzo1x_1o.c
+      archival/libarchive/lzo1x_c.c
+      archival/libarchive/lzo1x_d.c
+      archival/libarchive/unxz/xz.h
+      archival/libarchive/unxz/xz_config.h
+      archival/libarchive/unxz/xz_dec_bcj.c
+      archival/libarchive/unxz/xz_dec_lzma2.c
+      archival/libarchive/unxz/xz_dec_stream.c
+      archival/libarchive/unxz/xz_lzma2.h
+      archival/libarchive/unxz/xz_private.h
+      archival/libarchive/unxz/xz_stream.h
+      archival/lzop.c
+      coreutils/dos2unix.c
+      coreutils/sync.c
+      coreutils/test.c
+      coreutils/tr.c
+      include/liblzo_interface.h
+      libbb/change_identity.c
+      libbb/correct_password.c
+      libbb/hash_md5_sha.c
+      libbb/procps.c
+      libbb/progress.c
+      libbb/pw_encrypt_des.c
+      libbb/pw_encrypt_sha.c
+      libbb/run_shell.c
+      libbb/setup_environment.c
+      libbb/vfork_daemon_rexec.c
+      libpwdgrp/uidgid_get.c
+      loginutils/add-remove-shell.c
+      miscutils/bbconfig.c
+      networking/nc_bloaty.c
+      procps/pmap.c
+      shell/ash.c
+      shell/shell_common.c
+      shell/shell_common.h
+      util-linux/fdisk_osf.c
+      util-linux/setsid.c
+    ]
+    evidence = review_source.fetch("candidateEvidence").select do |candidate|
+      candidate.fetch("outputPath").start_with?(
+        "evidence/busybox/build-closure-"
+      )
+    end
+
+    assert_equal 41, evidence.length
+    assert_equal(
+      relative_paths.map { |path| "busybox-1.36.1/#{path}" },
+      evidence.map { |candidate| candidate.fetch("member") }
+    )
+    evidence.zip(relative_paths).each do |candidate, relative_path|
+      expected_output =
+        "evidence/busybox/build-closure-#{relative_path.tr("/", "-")}"
+
+      assert_equal expected_output, candidate.fetch("outputPath")
+      assert_operator candidate.fetch("byteCount"), :>, 0
+      assert_match(/\A[0-9a-f]{64}\z/, candidate.fetch("sha256"))
+      assert_equal(
+        %w[inline-license-notice attribution],
+        candidate.fetch("evidenceKinds")
+      )
+      assert_includes source.fetch("existingEvidencePaths"), expected_output
+    end
     assert_includes(
       source.fetch("remainingReviewItems"),
       "review-other-bundled-third-party-license-and-attribution-coverage"

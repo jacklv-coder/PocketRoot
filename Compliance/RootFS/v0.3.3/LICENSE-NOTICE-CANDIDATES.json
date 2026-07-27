@@ -4,7 +4,7 @@
     "version": "v0.3.3",
     "sha256": "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"
   },
-  "licenseReviewResultsSha256": "fe473ffd86d0d1ca7b1ad2594373311b8cc6181ee36865089780e1cf885fc0de",
+  "licenseReviewResultsSha256": "810f047bd36867c3a34318fef8535dcb87cc263f6a59df88b1abee56472e35ce",
   "status": "candidate-bundle-indexed-engineering-review-required",
   "candidateBundleIndexComplete": true,
   "candidatePayloadCommitted": false,
@@ -185,7 +185,9 @@
       "referenceLicensePaths": [
         "licenses/GPL-2.0.txt"
       ],
-      "supplementalAportsPaths": [],
+      "supplementalAportsPaths": [
+
+      ],
       "remoteEvidencePaths": [
         "supplemental/alpine-baselayout/netbase-6.4-copyright"
       ],
@@ -206,7 +208,9 @@
       "referenceLicensePaths": [
         "licenses/MIT-reference.txt"
       ],
-      "supplementalAportsPaths": [],
+      "supplementalAportsPaths": [
+
+      ],
       "remoteEvidencePaths": [
         "supplemental/alpine-keys/license-decision.patch"
       ],
@@ -231,7 +235,9 @@
         "aports/apk-tools/fix-recursive-solve-1.patch",
         "aports/apk-tools/fix-recursive-solve-2.patch"
       ],
-      "remoteEvidencePaths": [],
+      "remoteEvidencePaths": [
+
+      ],
       "remainingReviewItems": [
         "confirm-package-specific-attribution-and-aports-patch-notices"
       ],
@@ -261,7 +267,48 @@
         "evidence/busybox/coreutils-fold.c",
         "evidence/busybox/coreutils-cut.c",
         "evidence/busybox/coreutils-sort.c",
-        "evidence/busybox/coreutils-uniq.c"
+        "evidence/busybox/coreutils-uniq.c",
+        "evidence/busybox/build-closure-archival-bbunzip.c",
+        "evidence/busybox/build-closure-archival-libarchive-decompress_gunzip.c",
+        "evidence/busybox/build-closure-archival-libarchive-liblzo.h",
+        "evidence/busybox/build-closure-archival-libarchive-lzo1x_1.c",
+        "evidence/busybox/build-closure-archival-libarchive-lzo1x_1o.c",
+        "evidence/busybox/build-closure-archival-libarchive-lzo1x_c.c",
+        "evidence/busybox/build-closure-archival-libarchive-lzo1x_d.c",
+        "evidence/busybox/build-closure-archival-libarchive-unxz-xz.h",
+        "evidence/busybox/build-closure-archival-libarchive-unxz-xz_config.h",
+        "evidence/busybox/build-closure-archival-libarchive-unxz-xz_dec_bcj.c",
+        "evidence/busybox/build-closure-archival-libarchive-unxz-xz_dec_lzma2.c",
+        "evidence/busybox/build-closure-archival-libarchive-unxz-xz_dec_stream.c",
+        "evidence/busybox/build-closure-archival-libarchive-unxz-xz_lzma2.h",
+        "evidence/busybox/build-closure-archival-libarchive-unxz-xz_private.h",
+        "evidence/busybox/build-closure-archival-libarchive-unxz-xz_stream.h",
+        "evidence/busybox/build-closure-archival-lzop.c",
+        "evidence/busybox/build-closure-coreutils-dos2unix.c",
+        "evidence/busybox/build-closure-coreutils-sync.c",
+        "evidence/busybox/build-closure-coreutils-test.c",
+        "evidence/busybox/build-closure-coreutils-tr.c",
+        "evidence/busybox/build-closure-include-liblzo_interface.h",
+        "evidence/busybox/build-closure-libbb-change_identity.c",
+        "evidence/busybox/build-closure-libbb-correct_password.c",
+        "evidence/busybox/build-closure-libbb-hash_md5_sha.c",
+        "evidence/busybox/build-closure-libbb-procps.c",
+        "evidence/busybox/build-closure-libbb-progress.c",
+        "evidence/busybox/build-closure-libbb-pw_encrypt_des.c",
+        "evidence/busybox/build-closure-libbb-pw_encrypt_sha.c",
+        "evidence/busybox/build-closure-libbb-run_shell.c",
+        "evidence/busybox/build-closure-libbb-setup_environment.c",
+        "evidence/busybox/build-closure-libbb-vfork_daemon_rexec.c",
+        "evidence/busybox/build-closure-libpwdgrp-uidgid_get.c",
+        "evidence/busybox/build-closure-loginutils-add-remove-shell.c",
+        "evidence/busybox/build-closure-miscutils-bbconfig.c",
+        "evidence/busybox/build-closure-networking-nc_bloaty.c",
+        "evidence/busybox/build-closure-procps-pmap.c",
+        "evidence/busybox/build-closure-shell-ash.c",
+        "evidence/busybox/build-closure-shell-shell_common.c",
+        "evidence/busybox/build-closure-shell-shell_common.h",
+        "evidence/busybox/build-closure-util-linux-fdisk_osf.c",
+        "evidence/busybox/build-closure-util-linux-setsid.c"
       ],
       "referenceLicensePaths": [
         "licenses/GPL-2.0.txt"
@@ -305,7 +352,9 @@
         "aports/busybox/dad.if-up",
         "aports/busybox/default.script"
       ],
-      "remoteEvidencePaths": [],
+      "remoteEvidencePaths": [
+
+      ],
       "remainingReviewItems": [
         "confirm-enabled-bzip2-license-and-attribution-coverage",
         "confirm-enabled-ash-math-license-and-attribution-coverage",
@@ -336,7 +385,9 @@
         "licenses/MIT-reference.txt",
         "licenses/MPL-2.0.txt"
       ],
-      "supplementalAportsPaths": [],
+      "supplementalAportsPaths": [
+
+      ],
       "remoteEvidencePaths": [
         "supplemental/ca-certificates/curl-mk-ca-bundle.pl",
         "supplemental/ca-certificates/curl-COPYING"
@@ -371,7 +422,9 @@
         "aports/musl/handle-aux-at_base.patch",
         "aports/musl/remove-dns-63-records-limit.patch"
       ],
-      "remoteEvidencePaths": [],
+      "remoteEvidencePaths": [
+
+      ],
       "remainingReviewItems": [
         "confirm-third-party-musl-files-and-aports-helper-notice-coverage"
       ],
@@ -417,7 +470,9 @@
       "referenceLicensePaths": [
         "licenses/GPL-2.0.txt"
       ],
-      "supplementalAportsPaths": [],
+      "supplementalAportsPaths": [
+
+      ],
       "remoteEvidencePaths": [
         "supplemental/pax-utils/README.md"
       ],

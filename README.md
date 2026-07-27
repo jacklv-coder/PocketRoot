@@ -163,7 +163,7 @@ print("stderr:", result.stderr)
 - 展开大小：`18,838,016` 字节
 - SHA-256：`be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4`
 
-固定 URL 只是清单元数据，不代表库会自动下载。仓库已从固定归档生成 RootFS 包清单与 SPDX SBOM，并完成 37 个初始候选及 97 个外置 LICENSE/NOTICE payload 的 checksum-bound 工程复核；5 个 source origin 仍需补逐包材料。许可证/NOTICE 法律复核、对应源码和完整发行物 SBOM 未完成前，不得把该 RootFS 加入 Package、App bundle 或公开发行物。
+固定 URL 只是清单元数据，不代表库会自动下载。仓库已从固定归档生成 RootFS 包清单与 SPDX SBOM，并完成 78 个初始候选及 138 个外置 LICENSE/NOTICE payload 的 checksum-bound 工程复核；BusyBox 候选材料工程项已关闭，4 个 source origin 仍需补逐包材料。许可证/NOTICE 法律复核、对应源码和完整发行物 SBOM 未完成前，不得把该 RootFS 加入 Package、App bundle 或公开发行物。
 
 ## 验证命令
 

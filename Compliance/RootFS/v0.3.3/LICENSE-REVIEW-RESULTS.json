@@ -4,11 +4,11 @@
     "version": "v0.3.3",
     "sha256": "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"
   },
-  "licenseReviewManifestSha256": "60dd3aa2d8b73f49813e081b722caa65d60580ef767ad6df4e7cf906b7baa59d",
+  "licenseReviewManifestSha256": "5c6f0971c156275869c0e5c0390cb1ce2f3acb3b55d19657d902e264cbe2ef08",
   "status": "engineering-reviewed-open-release-gates",
   "engineeringReviewCompleted": true,
   "allCandidateDigestsVerified": true,
-  "reviewedCandidateCount": 37,
+  "reviewedCandidateCount": 78,
   "sourceOriginsWithRemainingReviewItems": 8,
   "completeLicenseTextBundlePresent": false,
   "completePackageNoticeSetPresent": false,
@@ -30,7 +30,9 @@
           "conclusion": "license-declaration"
         }
       ],
-      "resolvedReviewItems": [],
+      "resolvedReviewItems": [
+
+      ],
       "remainingReviewItems": [
         "collect-complete-gpl-2.0-license-text",
         "identify-package-specific-copyright-and-notice"
@@ -51,7 +53,9 @@
           "conclusion": "license-declaration"
         }
       ],
-      "resolvedReviewItems": [],
+      "resolvedReviewItems": [
+
+      ],
       "remainingReviewItems": [
         "collect-mit-license-grant-and-copyright-notice"
       ]
@@ -76,7 +80,9 @@
           "conclusion": "attribution-list"
         }
       ],
-      "resolvedReviewItems": [],
+      "resolvedReviewItems": [
+
+      ],
       "remainingReviewItems": [
         "confirm-package-specific-attribution-and-aports-patch-notices"
       ]
@@ -184,9 +190,216 @@
           "outputPath": "evidence/busybox/coreutils-uniq.c",
           "sha256": "09c15b3e70e0b5ac2e65b42b1e556f9b25199b846b2ac75dc730d18650d14f7d",
           "conclusion": "license-header-and-attribution"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-archival-bbunzip.c",
+          "sha256": "c8a5db572c48f33b4554841e5157b7fbe41764b2e8db114201b3dfdfef5ea7e5",
+          "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-archival-libarchive-decompress_gunzip.c",
+          "sha256": "2346dd2b227d6305bbe580b50e077e52da9441881c674ad2a6a2960a1f75fa8b",
+          "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-archival-libarchive-liblzo.h",
+          "sha256": "2a544181ad8ab8386d5cd8df85758286d429fe7dadbfd3f173f91f8aac7f2389",
+          "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-archival-libarchive-lzo1x_1.c",
+          "sha256": "eba89167022a816fef6a8cf1e296588a1cf0de84ceadfee1b688ebb8b46a833a",
+          "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-archival-libarchive-lzo1x_1o.c",
+          "sha256": "255b49a7a81ebd826e23c2635574f5d36e43c286985595ca34772ac1befde940",
+          "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-archival-libarchive-lzo1x_c.c",
+          "sha256": "a05ba174e8dc9509d70f28cacaf704e201f131dd02b7cccb509dd4c70543deae",
+          "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-archival-libarchive-lzo1x_d.c",
+          "sha256": "a63a1d20e33650fe04afe12c7ad5c09b09bbd0a040e857aba8d695f30c85875c",
+          "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-archival-libarchive-unxz-xz.h",
+          "sha256": "db6edcf8424001930a8b5ff513eafd67d89f69efd5f46feab9c9f390b644d0b4",
+          "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-archival-libarchive-unxz-xz_config.h",
+          "sha256": "4f44266f23eee08aa32f424c07701b0fd7ebc90f676eecfd79afbf2705c3c981",
+          "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-archival-libarchive-unxz-xz_dec_bcj.c",
+          "sha256": "42ead75122607fa392579eaae003b7b5921dfb636f4d9e912818790228a2fc95",
+          "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-archival-libarchive-unxz-xz_dec_lzma2.c",
+          "sha256": "8b8f8854a4b3c11288d693bde95d346468cfc9aa9e59babcf734d59652e27c79",
+          "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-archival-libarchive-unxz-xz_dec_stream.c",
+          "sha256": "ec66858910c88b773e65c37dfabdab6018555773d379a8cd20a9d13a2aa102c2",
+          "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-archival-libarchive-unxz-xz_lzma2.h",
+          "sha256": "ef38ebe621800cf4960575136ea167171648c9e8e0d8ed3b98be6651d1651981",
+          "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-archival-libarchive-unxz-xz_private.h",
+          "sha256": "d0d05b876173512ec45fd5ac89163dbdd89cd95a0a1759e9f4473872d3393d37",
+          "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-archival-libarchive-unxz-xz_stream.h",
+          "sha256": "a30849b8acaafdb9613fa5fc7704b89f97050ccf9847fb6f5182487012df26aa",
+          "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-archival-lzop.c",
+          "sha256": "2ce2f015b7378d083929a58017af6177afa223091b2fde7e464fa7e2ec56dd44",
+          "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-coreutils-dos2unix.c",
+          "sha256": "594bed730a26ed7622e34b7c5774a3737b777ce9dd07023a567b6f8baaacb8f9",
+          "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-coreutils-sync.c",
+          "sha256": "655760926c4e2d4959a56710452fbefcfac1d75ed5fea320c55a4985b20c5a9d",
+          "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-coreutils-test.c",
+          "sha256": "7fa39b5204486d13765f63cbeab0b4a482b89c6c85868553857df299d792375d",
+          "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-coreutils-tr.c",
+          "sha256": "5e0e51da2636151b97f5bd905716c484a9759b055b90b27488437c945d4be6e3",
+          "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-include-liblzo_interface.h",
+          "sha256": "ece65419355194234d31b78f59d3378581cc53cb959651bc613ba781f3b65cc3",
+          "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-libbb-change_identity.c",
+          "sha256": "c8aef5e372ff6b742f18f8cfa9355e3d28d436d4be279fae5730706370e0c807",
+          "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-libbb-correct_password.c",
+          "sha256": "7f119ea757548393aed188e783fa58dbc240a35fc598acdc727295fea6290e9d",
+          "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-libbb-hash_md5_sha.c",
+          "sha256": "65dba16216f7f72b562b229c30efe3ffaa6a8d6ff8ae96044394b25adaef0217",
+          "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-libbb-procps.c",
+          "sha256": "070633eba0b4dfe7f9ee29f02dd1ace6f368acdbe5802c7b1ea570aa2873e70c",
+          "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-libbb-progress.c",
+          "sha256": "fc3db3f961b24eeed7413ca219de4d4520d041507485628e1a103f234ff03072",
+          "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-libbb-pw_encrypt_des.c",
+          "sha256": "00470df43c2ec79b76ebbdcf1ad51d14df14db4bc59142e4c8bd10d07e7f5885",
+          "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-libbb-pw_encrypt_sha.c",
+          "sha256": "1a14c5841a4ad4c8ec4de51c3f7c658dbf772f52120f2a5c9429cd69eb8b3c7d",
+          "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-libbb-run_shell.c",
+          "sha256": "f551208951ef58f131fe2a49425d51b191b6ac25b7b95905125b63eb2e8d0bce",
+          "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-libbb-setup_environment.c",
+          "sha256": "4e2f6100a44e922c5c7b154e3044c656b7edfae966b2f83c8845248674551bde",
+          "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-libbb-vfork_daemon_rexec.c",
+          "sha256": "a754155eab527a4bb038722218234371837e013f5092e77631e57ee12df1398c",
+          "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-libpwdgrp-uidgid_get.c",
+          "sha256": "bfff92a736909142e425694f80b9e85ea390a3b68b9f14896a19a90ca65f15e0",
+          "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-loginutils-add-remove-shell.c",
+          "sha256": "9250de6bdc412422d26ef4baf1ecb49cbaef759360088be49295caf263d24173",
+          "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-miscutils-bbconfig.c",
+          "sha256": "e4b817b538e139d17c57cefcd3e382a6dde4458ed42c262c762a89829acea464",
+          "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-networking-nc_bloaty.c",
+          "sha256": "c58ac147a37d8e928ccdf0948fa06d164ac41ed6ce74c5ed128012a2fd6d2362",
+          "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-procps-pmap.c",
+          "sha256": "224a941febb696871ff10ffa3a4adb8199c701ccd373098ba5c4c1b41fde494b",
+          "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-shell-ash.c",
+          "sha256": "ca769312d3c0bf0592c6bc5a810d3328b6d95bdb82fbe2fc7542b0936c4ce7ec",
+          "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-shell-shell_common.c",
+          "sha256": "090601269e1bc01a1558a56a4192a92bc133ab374bf9096fc930c2a6eeca3948",
+          "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-shell-shell_common.h",
+          "sha256": "6d0589523721f9a41f9db5d0d88035bccb086f5055b8709b22c9310004530745",
+          "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-util-linux-fdisk_osf.c",
+          "sha256": "d66020e2f68456ad1f7fda40458ee37126dea42c8e0057970d3fcdb591dafdfc",
+          "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/build-closure-util-linux-setsid.c",
+          "sha256": "29c8bb684db0c174c94f2e509832e62d8a116e864a9bf19fc9844a91452fb8dd",
+          "conclusion": "inline-license-and-attribution-notice"
         }
       ],
-      "resolvedReviewItems": [],
+      "resolvedReviewItems": [
+
+      ],
       "remainingReviewItems": [
         "confirm-enabled-bzip2-license-and-attribution-coverage",
         "confirm-enabled-ash-math-license-and-attribution-coverage",
@@ -223,7 +436,9 @@
           "conclusion": "license-reference-and-attribution"
         }
       ],
-      "resolvedReviewItems": [],
+      "resolvedReviewItems": [
+
+      ],
       "remainingReviewItems": [
         "collect-complete-mpl-2.0-license-text",
         "confirm-certificate-attribution-and-trust-store-requirements",
@@ -259,7 +474,9 @@
         "confirm-empty-libc-utils-subpackage-license-obligations",
         "confirm-bsd-2-clause-and-bsd-3-clause-notice-coverage"
       ],
-      "remainingReviewItems": []
+      "remainingReviewItems": [
+
+      ]
     },
     {
       "sourceOrigin": "musl",
@@ -297,7 +514,9 @@
           "conclusion": "license-header-and-attribution"
         }
       ],
-      "resolvedReviewItems": [],
+      "resolvedReviewItems": [
+
+      ],
       "remainingReviewItems": [
         "confirm-third-party-musl-files-and-aports-helper-notice-coverage"
       ]
@@ -322,7 +541,9 @@
           "conclusion": "attribution-list"
         }
       ],
-      "resolvedReviewItems": [],
+      "resolvedReviewItems": [
+
+      ],
       "remainingReviewItems": [
         "confirm-required-apache-notice-and-attribution-material"
       ]
@@ -342,7 +563,9 @@
           "conclusion": "complete-license-text"
         }
       ],
-      "resolvedReviewItems": [],
+      "resolvedReviewItems": [
+
+      ],
       "remainingReviewItems": [
         "confirm-package-specific-copyright-and-aports-patch-notices"
       ]
@@ -365,7 +588,9 @@
       "resolvedReviewItems": [
         "confirm-package-specific-attribution-material"
       ],
-      "remainingReviewItems": []
+      "remainingReviewItems": [
+
+      ]
     }
   ]
 }
