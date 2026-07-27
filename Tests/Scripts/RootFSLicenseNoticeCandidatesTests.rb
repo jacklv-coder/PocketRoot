@@ -29,7 +29,7 @@ class RootFSLicenseNoticeCandidatesTests < Minitest::Test
 
     assert_equal 8, validated.fetch(:sources).length
     assert_equal 13, validated.fetch(:remote_payloads).length
-    assert_equal 28, validated.fetch(:existing_evidence_paths).length
+    assert_equal 32, validated.fetch(:existing_evidence_paths).length
     assert_equal 47, validated.fetch(:aports_paths).length
   end
 
@@ -482,6 +482,65 @@ class RootFSLicenseNoticeCandidatesTests < Minitest::Test
     assert_equal(
       %w[inline-license-notice attribution],
       evidence.fetch("evidenceKinds")
+    )
+  end
+
+  def test_pins_enabled_busybox_od_hexdump_and_hd_notices
+    source = @candidate.fetch("sources").find do |candidate|
+      candidate.fetch("sourceOrigin") == "busybox"
+    end
+    review_source = @review.fetch("sources").find do |candidate|
+      candidate.fetch("sourceOrigin") == "busybox"
+    end
+    expected = {
+      "evidence/busybox/coreutils-od.c" => {
+        member: "busybox-1.36.1/coreutils/od.c",
+        bytes: 6_634,
+        sha256: "8536f85598a87c49db70a583d9c40004719e64b4939e1d58bcbe30e1e8c5417a",
+        kinds: %w[inline-license-notice attribution]
+      },
+      "evidence/busybox/coreutils-od_bloaty.c" => {
+        member: "busybox-1.36.1/coreutils/od_bloaty.c",
+        bytes: 37_473,
+        sha256: "eb4ae669c359554eac9dcbac2f7625fb5413b34a76ded366a1ec13e47a729b62",
+        kinds: %w[license-declaration attribution]
+      },
+      "evidence/busybox/util-linux-hexdump.c" => {
+        member: "busybox-1.36.1/util-linux/hexdump.c",
+        bytes: 4_392,
+        sha256: "97e49fc1c02560fd65443a7eafbcfbeab44267f3146e0efa1738ae902d69de84",
+        kinds: %w[license-declaration attribution]
+      },
+      "evidence/busybox/libbb-dump.c" => {
+        member: "busybox-1.36.1/libbb/dump.c",
+        bytes: 22_017,
+        sha256: "a1c705a48bd6eb43b4cb9cfb74d61f47f8500b601ebd9d3502906093f7c8ddfe",
+        kinds: %w[inline-license-notice attribution]
+      }
+    }
+
+    expected.each do |output_path, values|
+      evidence = review_source.fetch("candidateEvidence").find do |candidate|
+        candidate.fetch("outputPath") == output_path
+      end
+
+      assert_includes source.fetch("existingEvidencePaths"), output_path
+      assert_equal values.fetch(:member), evidence.fetch("member")
+      assert_equal values.fetch(:bytes), evidence.fetch("byteCount")
+      assert_equal values.fetch(:sha256), evidence.fetch("sha256")
+      assert_equal values.fetch(:kinds), evidence.fetch("evidenceKinds")
+    end
+    assert_includes(
+      source.fetch("supplementalAportsPaths"),
+      "aports/busybox/busyboxconfig"
+    )
+    assert_includes(
+      source.fetch("remainingReviewItems"),
+      "confirm-enabled-od-hexdump-and-hd-license-and-attribution-coverage"
+    )
+    assert_includes(
+      source.fetch("remainingReviewItems"),
+      "review-other-bundled-third-party-license-and-attribution-coverage"
     )
   end
 

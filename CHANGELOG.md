@@ -30,15 +30,15 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
   10 个 source origin、SPDX 2.3 JSON SBOM、许可证声明/attribution inventory
   和 `apk`、repository、DNS 默认配置快照；完整 LICENSE/NOTICE 与对应源码 bundle
   仍保持发行阻塞。
-- 加入 checksum-bound `LICENSE-REVIEW-RESULTS.json` 和严格验证器；28/28 个固定
+- 加入 checksum-bound `LICENSE-REVIEW-RESULTS.json` 和严格验证器；32/32 个固定
   RootFS license/NOTICE 候选已完成工程复核，8 个 source origin 仍有包级未决项，
   法律与再分发门禁保持关闭。
 - 为剩余 8 个 RootFS source origin 加入 checksum-bound
   `LICENSE-NOTICE-CANDIDATES.json`、严格验证器和仓库外原子 materializer；索引
-  13 份远端许可证/attribution 材料、47 份 aports 文件与 28 份既有证据，支持完整
+  13 份远端许可证/attribution 材料、47 份 aports 文件与 32 份既有证据，支持完整
   复验，但不提交 payload，也不解除工程、法律或再分发门禁。
 - 加入 `LICENSE-NOTICE-REVIEW-RESULTS.json` 和严格外置 payload-tree 复验器；
-  88/88 个候选 payload 已完成 checksum-bound 工程复核；新增固定
+  92/92 个候选 payload 已完成 checksum-bound 工程复核；新增固定
   `alpine-keys` GPL→MIT 上游许可判定提交，但仍保留包级版权声明缺口；
   `ca-certificates` 生成脚本与 curl 提交 `3fdc4bdb` 字节一致并固定该精确
   revision 的 curl 授权文本，trust-store 审查仍保持未决；
@@ -48,7 +48,10 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
   `coreutils/env.c`、`coreutils/echo.c`、`sysklogd/logger.c` 与
   `util-linux/cal.c`，`ping` 与 `ping6` 共同链入 `networking/ping.c`，
   `traceroute` 与 `traceroute6` 共同链入保留完整原始 BSD/LBL notice 的
-  `networking/traceroute.c`；其他内联第三方 notices 继续保持未决；
+  `networking/traceroute.c`；`od` 的 desktop 构建链入 `coreutils/od.c` 与
+  `coreutils/od_bloaty.c`，`hexdump`/`hd` 共同链入 `util-linux/hexdump.c`
+  并使用 `libbb/dump.c`，覆盖完整 Regents BSD 条款、FSF attribution 与 GPL
+  声明；其他内联第三方 notices 继续保持未决；
   `apk-tools`、`openssl`、`pax-utils` 的候选材料工程项关闭，另外 5 个 origin
   仍需补逐包材料，法律和再分发门禁保持关闭。
 - RootFS source-review materializer 新增严格仓库外下载缓存输入；缓存只替代网络

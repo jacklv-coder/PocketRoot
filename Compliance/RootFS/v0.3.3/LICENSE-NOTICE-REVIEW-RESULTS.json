@@ -4,7 +4,7 @@
     "version": "v0.3.3",
     "sha256": "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"
   },
-  "candidateManifestSha256": "510ce077842f2b0aa9c8c4cba3a9f1081a9e1fbc8737e1f925edb450a07aedd5",
+  "candidateManifestSha256": "7fd00f5f3e980fc8590100ee27ed122c65fec0dd1102d0f18268cfe27ccc852b",
   "status": "candidate-payloads-engineering-reviewed-open-release-gates",
   "engineeringReviewCompleted": true,
   "allIndexedCandidatePayloadsReviewed": true,
@@ -13,8 +13,8 @@
   "legalReviewApproved": false,
   "redistributionApproved": false,
   "candidatePayloadTreeFormat": "sha256-path-lines-v1",
-  "candidatePayloadTreeSha256": "2ae03e59319bc9519212ab6505793882c08f9223c097cfe5d9f040244b6b5eef",
-  "reviewedPayloadFileCount": 88,
+  "candidatePayloadTreeSha256": "80c88a9327ce6df178fb3d9dc0c6def2b80a27b270b83c93b2861bd13cb558e5",
+  "reviewedPayloadFileCount": 92,
   "reviewedClosedOriginEvidenceCount": 4,
   "sourceOriginsWithRemainingReviewItems": 5,
   "sources": [
@@ -82,7 +82,7 @@
       "reviewState": "candidate-payloads-engineering-reviewed-legal-review-open",
       "licenseTextCoverage": "partial",
       "attributionCoverage": "partial",
-      "reviewedExistingEvidenceCount": 10,
+      "reviewedExistingEvidenceCount": 14,
       "reviewedReferenceLicenseCount": 1,
       "reviewedSupplementalAportsCount": 37,
       "reviewedRemoteEvidenceCount": 0,
@@ -95,7 +95,8 @@
         "confirm-enabled-logger-license-and-attribution-coverage",
         "confirm-enabled-cal-license-and-attribution-coverage",
         "confirm-enabled-ping-and-ping6-license-and-attribution-coverage",
-        "confirm-enabled-traceroute-and-traceroute6-license-and-attribution-coverage"
+        "confirm-enabled-traceroute-and-traceroute6-license-and-attribution-coverage",
+        "confirm-enabled-od-hexdump-and-hd-license-and-attribution-coverage"
       ],
       "remainingReviewItems": [
         "review-other-bundled-third-party-license-and-attribution-coverage"

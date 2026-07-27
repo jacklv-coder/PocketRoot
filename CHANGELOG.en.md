@@ -32,17 +32,17 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   declared-license/attribution inventories, and default `apk`, repository, and
   DNS configuration; complete LICENSE/NOTICE and corresponding-source bundles
   remain distribution blockers.
-- A checksum-bound `LICENSE-REVIEW-RESULTS.json` and strict validator. All 28
+- A checksum-bound `LICENSE-REVIEW-RESULTS.json` and strict validator. All 32
   pinned RootFS license/NOTICE candidates have engineering review results;
   eight source origins retain package-level open items, and legal and
   redistribution gates remain closed.
 - A checksum-bound `LICENSE-NOTICE-CANDIDATES.json`, strict validator, and
   outside-repository atomic materializer for the eight remaining RootFS source
   origins. It indexes 13 remote license/attribution payloads, 47 aports files,
-  and the 28 existing evidence files for complete re-verification without
+  and the 32 existing evidence files for complete re-verification without
   committing payloads or opening engineering, legal, or redistribution gates.
 - `LICENSE-NOTICE-REVIEW-RESULTS.json` and a strict external payload-tree
-  verifier. All 88 candidate payloads now have checksum-bound engineering
+  verifier. All 92 candidate payloads now have checksum-bound engineering
   review. The pinned upstream `alpine-keys` GPL-to-MIT license-decision commit
   is included while its package-level copyright notice remains open. The
   `ca-certificates` generator is byte-identical to curl commit `3fdc4bdb`, and
@@ -55,7 +55,10 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   `util-linux/cal.c`, respectively, while `ping` and `ping6` share
   `networking/ping.c`, and `traceroute` and `traceroute6` share
   `networking/traceroute.c`; each retains its complete BSD notice, including
-  the original BSD/LBL notice for traceroute. Other inline notices stay open;
+  the original BSD/LBL notice for traceroute. The desktop `od` build includes
+  `coreutils/od.c` and `coreutils/od_bloaty.c`, while `hexdump` and `hd` share
+  `util-linux/hexdump.c` and use `libbb/dump.c`, covering the complete Regents
+  BSD terms, FSF attribution, and GPL declarations. Other inline notices stay open;
   `apk-tools`, `openssl`, and `pax-utils` have no remaining
   candidate-material engineering items, five origins still need
   package-specific material, and
