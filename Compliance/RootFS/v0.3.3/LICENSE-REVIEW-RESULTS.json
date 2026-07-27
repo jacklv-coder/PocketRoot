@@ -4,11 +4,11 @@
     "version": "v0.3.3",
     "sha256": "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"
   },
-  "licenseReviewManifestSha256": "45e86e2945da28137723aab628141939fc8979945abf9467173fec085467907f",
+  "licenseReviewManifestSha256": "60dd3aa2d8b73f49813e081b722caa65d60580ef767ad6df4e7cf906b7baa59d",
   "status": "engineering-reviewed-open-release-gates",
   "engineeringReviewCompleted": true,
   "allCandidateDigestsVerified": true,
-  "reviewedCandidateCount": 34,
+  "reviewedCandidateCount": 37,
   "sourceOriginsWithRemainingReviewItems": 8,
   "completeLicenseTextBundlePresent": false,
   "completePackageNoticeSetPresent": false,
@@ -169,6 +169,21 @@
           "outputPath": "evidence/busybox/coreutils-fold.c",
           "sha256": "db291cf01ee9a90244607c88a5d88ddf7d2600237eca6f2d7a6894815928cdef",
           "conclusion": "license-header-and-attribution"
+        },
+        {
+          "outputPath": "evidence/busybox/coreutils-cut.c",
+          "sha256": "bfae86e174a6c51c7fbfee90fd8a5e2901286940378e576e141690bfa55dcc1a",
+          "conclusion": "license-header-and-attribution"
+        },
+        {
+          "outputPath": "evidence/busybox/coreutils-sort.c",
+          "sha256": "cb92adb0e734b63ae5312a157a9a735cab44bbda4cfd01c52d556be22eca5ff0",
+          "conclusion": "license-header-and-attribution"
+        },
+        {
+          "outputPath": "evidence/busybox/coreutils-uniq.c",
+          "sha256": "09c15b3e70e0b5ac2e65b42b1e556f9b25199b846b2ac75dc730d18650d14f7d",
+          "conclusion": "license-header-and-attribution"
         }
       ],
       "resolvedReviewItems": [],
@@ -183,6 +198,7 @@
         "confirm-enabled-traceroute-and-traceroute6-license-and-attribution-coverage",
         "confirm-enabled-od-hexdump-and-hd-license-and-attribution-coverage",
         "confirm-enabled-expand-unexpand-and-fold-license-and-attribution-coverage",
+        "confirm-enabled-cut-sort-and-uniq-license-and-attribution-coverage",
         "review-other-bundled-third-party-license-and-attribution-coverage",
         "confirm-aports-patch-notices"
       ]
