@@ -73,14 +73,18 @@ machine-readable SBOM。仓库现在从固定 archive 可复现生成 15 个已�
 LICENSE/COPYING/NOTICE 文件。仓库另有与 inventory 一一对应、固定 checksum 的
 aports snapshot/upstream distfile 获取清单和仓库外 materializer，并固定了覆盖
 全部 10 个 source origin 的 78 个 license、attribution、声明与内联 notice 候选。
-第二个仓库外工具从已验证 source-review 目录提取这些候选；固定结果清单记录
+对应源码候选 materializer 把完整 inventory、10 个 aports tree、130 个规范化条目、
+9 个上游 distfile 与审查结果绑定到 schema v3 receipt 和完整 typed tree；10/10
+origin 的候选源码材料工程项已关闭，但重建环境/toolchain、源码提供机制、法律与
+交付批准保持未决。第二个仓库外工具从已验证对应源码候选目录提取许可证候选；
+固定结果清单记录
 78/78 个候选均已工程复核，`libc-dev`、`zlib` 的索引项已关闭，另外 8 个 source
 origin 仍有逐包未决项。仓库现已为这 8 个 origin 固定外置候选包：13 份远端
 许可证/attribution 材料、47 份 aports 补充文件和全部既有复核证据；工具可在
 仓库外原子生成并复验。固定结果清单把工程复核绑定到精确的 138 文件 payload
 tree；除缺少上游 MIT grant/版权声明的 `alpine-keys` 外，其余 7 个 origin 的
-候选材料工程项均已关闭。修改与构建完整性、源码提供方式和法律审查仍未完成，
-不能视为完整 NOTICE 或已批准的对应源码交付。
+候选材料工程项均已关闭。修改披露、重建环境、源码提供方式和法律审查仍未完成，
+不能视为完整 NOTICE、源码提供承诺或已批准的对应源码交付。
 
 ## 当前仓库保护
 
@@ -96,7 +100,7 @@ tree；除缺少上游 MIT grant/版权声明的 `alpine-keys` 外，其余 7 �
   [`Compliance/RootFS/v0.3.3`](../Compliance/RootFS/v0.3.3/README.md) 的包清单、
   SPDX SBOM、来源 locator、源码获取清单、license/NOTICE 候选索引与工程复核
   结果、许可证声明和默认配置证据。
-- CI 离线测试仓库外 source-review materializer 的 checksum、路径隔离和安全解包；
+- CI 离线测试仓库外对应源码候选 materializer 的 checksum、路径隔离和安全解包；
   不上传生成的源码材料。
 - README、API 注释和 ADR 明确标注 Experimental 与 shutdown 风险。
 
@@ -183,7 +187,11 @@ Alpine `apk` 可以下载、安装和执行新增代码。即使初始 RootFS �
   7 个 origin 的候选材料工程项已关闭，只有 `alpine-keys` 因缺少上游 MIT
   grant/版权声明仍未决。
 - [ ] 收集 license text 和 NOTICE。
-- [ ] 建立 copyleft corresponding source bundle。
+- [x] 建立覆盖 10/10 source origin、130 个规范化 aports 条目和 9 个上游
+  distfile 的 checksum-bound 外置 corresponding-source 候选 bundle 生成与复验
+  链路；候选材料工程审查完成，payload 不提交。
+- [ ] 完成重建环境/toolchain、修改披露、源码提供机制、法律与 corresponding-source
+  交付批准。
 - [x] 固定 DNS、repository 和 package-manager 默认配置事实。
 - [ ] 决定保留、限制、代理或禁用 guest package manager/network 的产品策略。
 - [x] 当前决定 archive 由调用方作为外部本地输入；若改为 bundle 或按需资源须重审。

@@ -37,6 +37,7 @@ jobs:
           bash -n Scripts/run-runtime-smoke.sh
           bash -n Scripts/run-runtime-device-smoke.sh
           ruby -c Scripts/prepare-rootfs-smoke-manifest.rb
+          ruby -c Scripts/rootfs-corresponding-source-review-results.rb
           ruby -c Scripts/rootfs-license-review.rb
           ruby -c Scripts/rootfs-license-review-results.rb
           ruby -c Scripts/rootfs-license-notice-candidates.rb
@@ -48,6 +49,7 @@ jobs:
           bash -n Tests/Scripts/RuntimeSmokeScriptTests.sh
           bash -n Tests/Scripts/RootFSCandidateSmokeManifestTests.sh
           ruby -c Tests/Scripts/RootFSLicenseReviewTests.rb
+          ruby -c Tests/Scripts/RootFSCorrespondingSourceReviewResultsTests.rb
           ruby -c Tests/Scripts/RootFSLicenseReviewResultsTests.rb
           ruby -c Tests/Scripts/RootFSLicenseNoticeCandidatesTests.rb
           ruby -c Tests/Scripts/RootFSLicenseNoticeBundleTests.rb
@@ -55,6 +57,7 @@ jobs:
           ruby -c Tests/Scripts/RootFSSourceBundleTests.rb
           bash Tests/Scripts/RuntimeSmokeScriptTests.sh
           bash Tests/Scripts/RootFSCandidateSmokeManifestTests.sh
+          ruby Tests/Scripts/RootFSCorrespondingSourceReviewResultsTests.rb
           ruby Tests/Scripts/RootFSLicenseReviewTests.rb
           ruby Tests/Scripts/RootFSLicenseReviewResultsTests.rb
           ruby Tests/Scripts/RootFSLicenseNoticeCandidatesTests.rb
@@ -62,6 +65,7 @@ jobs:
           ruby Tests/Scripts/RootFSLicenseNoticeReviewResultsTests.rb
           ruby Tests/Scripts/RootFSSourceBundleTests.rb
           ruby Scripts/prepare-rootfs-license-review.rb --validate-only
+          ruby Scripts/rootfs-corresponding-source-review-results.rb
           ruby Scripts/rootfs-license-review-results.rb
           ruby Scripts/rootfs-license-notice-candidates.rb
           ruby Scripts/rootfs-license-notice-review-results.rb

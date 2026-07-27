@@ -12,6 +12,7 @@ require "pathname"
 require "rbconfig"
 require "securerandom"
 require "uri"
+require_relative "rootfs-corresponding-source-review-results"
 require_relative "rootfs-license-notice-candidates"
 
 module RootFSLicenseNoticeBundle
@@ -37,6 +38,8 @@ module RootFSLicenseNoticeBundle
         "Compliance/RootFS/v0.3.3/SOURCE-ACQUISITION.json",
       source_inventory:
         "Compliance/RootFS/v0.3.3/SOURCE-INVENTORY.json",
+      source_review_results:
+        "Compliance/RootFS/v0.3.3/CORRESPONDING-SOURCE-REVIEW-RESULTS.json",
       validate_only: false
     }
     parser = OptionParser.new do |commands|
@@ -56,6 +59,12 @@ module RootFSLicenseNoticeBundle
       end
       commands.on("--source-inventory PATH", "Generated source inventory") do |value|
         options[:source_inventory] = value
+      end
+      commands.on(
+        "--source-review-results PATH",
+        "Pinned corresponding-source candidate review results"
+      ) do |value|
+        options[:source_review_results] = value
       end
       commands.on("--source-bundle DIR", "Verified external source bundle") do |value|
         options[:source_bundle] = value
@@ -190,6 +199,11 @@ module RootFSLicenseNoticeBundle
       )
     inventory =
       load_document(options.fetch(:source_inventory), "source inventory")
+    source_review_results =
+      load_document(
+        options.fetch(:source_review_results),
+        "corresponding-source review results"
+      )
     allow_file_urls =
       ENV["POCKETROOT_TEST_ALLOW_FILE_URLS"] == "1" &&
       source.fetch(:document)["testFixture"] == true
@@ -204,12 +218,25 @@ module RootFSLicenseNoticeBundle
       source_acquisition_bytes: source.fetch(:contents),
       allow_file_urls: allow_file_urls
     )
+    begin
+      RootFSCorrespondingSourceReviewResults.validate_manifest(
+        source_review_results.fetch(:document),
+        source.fetch(:document),
+        inventory.fetch(:document),
+        source_acquisition_bytes: source.fetch(:contents),
+        allow_file_urls: allow_file_urls
+      )
+    rescue RootFSCorrespondingSourceReviewResults::ValidationError => error
+      raise BundleError,
+        "corresponding-source review results are invalid: #{error.message}"
+    end
     {
       candidates: candidates,
       results: results,
       review: review,
       source: source,
       inventory: inventory,
+      source_review_results: source_review_results,
       validated: validated,
       allow_file_urls: allow_file_urls
     }
@@ -258,6 +285,8 @@ module RootFSLicenseNoticeBundle
       documents.fetch(:source).fetch(:path).to_s,
       "--source-inventory",
       documents.fetch(:inventory).fetch(:path).to_s,
+      "--review-results",
+      documents.fetch(:source_review_results).fetch(:path).to_s,
       "--verify",
       source_bundle.to_s
     ]
@@ -272,6 +301,8 @@ module RootFSLicenseNoticeBundle
       documents.fetch(:source).fetch(:path).to_s,
       "--source-inventory",
       documents.fetch(:inventory).fetch(:path).to_s,
+      "--source-review-results",
+      documents.fetch(:source_review_results).fetch(:path).to_s,
       "--source-bundle",
       source_bundle.to_s,
       "--verify",

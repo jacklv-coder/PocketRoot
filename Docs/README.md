@@ -62,8 +62,9 @@
 - `PocketRootIshRuntime` 与 `PocketRootIshRuntimeIntegration`：实验性、显式启用。
 - `PocketRootAgent`：provider-agnostic 有界 agent loop 与 OpenAI Responses transport。
 - `PocketRootAgentRuntimeTools`：显式 opt-in 的 policy 与逐次审批保护命令 adapter。
-- RootFS：安全安装机制及 15 包 inventory、SPDX SBOM、默认配置证据已完成；
-  二进制未提交、未打包、未由库下载，完整 license/NOTICE/对应源码仍阻塞发行。
+- RootFS：安全安装、15 包 inventory、SPDX SBOM、默认配置证据和 10/10 origin
+  对应源码候选材料工程复核已完成；二进制未提交、未打包、未由库下载，完整
+  license/NOTICE、源码提供/交付与法律批准仍阻塞发行。
 - iOS 18.2 arm64 Simulator：原生 smoke 已通过。
 - 默认 boot identity gate：已验证 `aarch64`、Alpine 身份、可选版本与 guest 工作目录后才 ready。
 - signed iPhone 一次性命令、Xcode 16 最低工具链和 soft shutdown 基线已通过；iPad、完整真机生命周期、PTY 和公开发行仍未完成或被阻塞。

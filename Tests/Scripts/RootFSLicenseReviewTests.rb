@@ -36,6 +36,10 @@ class RootFSLicenseReviewTests < Minitest::Test
     )
     @source_manifest_path = @temporary_directory.join("source-manifest.json")
     @source_inventory_path = @temporary_directory.join("source-inventory.json")
+    @corresponding_source_review_results_path =
+      @temporary_directory.join(
+        "corresponding-source-review-results.json"
+      )
     @review_manifest_path = @temporary_directory.join("license-review.json")
     write_fixture_documents
     @source_bundle = @temporary_directory.join("source-bundle")
@@ -159,6 +163,16 @@ class RootFSLicenseReviewTests < Minitest::Test
     assert_includes stderr, "unsafe archive member"
   end
 
+  def test_validate_only_rejects_malformed_source_review_results
+    @corresponding_source_review_results_path.binwrite("not json\n")
+
+    _stdout, stderr, status = run_review("--validate-only")
+
+    refute status.success?
+    assert_includes stderr,
+      "corresponding-source review results is invalid JSON"
+  end
+
   private
 
   def write_tar_gz(destination, files)
@@ -193,12 +207,22 @@ class RootFSLicenseReviewTests < Minitest::Test
     inventory = {
       "schemaVersion" => 1,
       "archive" => archive,
+      "completeCorrespondingSourceBundlePresent" => false,
+      "correspondingSourceCandidateEngineeringReviewCompleted" => true,
+      "candidateBundleMaterializerReady" => true,
+      "rebuildEnvironmentVerified" => false,
+      "correspondingSourceDeliveryApproved" => false,
+      "status" =>
+        "candidate-material-engineering-reviewed-external-bundle-required",
       "sourceOrigins" => [
         {
           "sourceOrigin" => "demo",
           "aportsCommit" => COMMIT,
           "binaryPackages" => ["demo"],
-          "declaredLicenseExpressions" => ["MIT"]
+          "declaredLicenseExpressions" => ["MIT"],
+          "containsDeclaredCopyleft" => false,
+          "correspondingSourceStatus" =>
+            "candidate-material-engineering-reviewed-external-bundle-required"
         }
       ]
     }
@@ -235,6 +259,48 @@ class RootFSLicenseReviewTests < Minitest::Test
       ]
     }
     source_bytes = "#{JSON.pretty_generate(source_manifest)}\n"
+    corresponding_source_review_results = {
+      "schemaVersion" => 1,
+      "archive" => archive,
+      "sourceAcquisitionSha256" => Digest::SHA256.hexdigest(source_bytes),
+      "status" =>
+        "candidate-corresponding-source-material-engineering-reviewed-open-release-gates",
+      "engineeringReviewCompleted" => true,
+      "allSourceOriginsReviewed" => true,
+      "completeCandidateSourceMaterialIndexPresent" => true,
+      "candidateBundleMaterializerReady" => true,
+      "completeCorrespondingSourceBundlePresent" => false,
+      "rebuildEnvironmentVerified" => false,
+      "correspondingSourceDeliveryApproved" => false,
+      "legalReviewApproved" => false,
+      "redistributionApproved" => false,
+      "reviewedSourceOriginCount" => 1,
+      "reviewedCanonicalAportsEntryCount" => 1,
+      "reviewedDistfileCount" => 1,
+      "sourceOriginsWithRemainingMaterialItems" => 0,
+      "sources" => [
+        {
+          "sourceOrigin" => "demo",
+          "aportsCommit" => COMMIT,
+          "binaryPackages" => ["demo"],
+          "declaredLicenseExpressions" => ["MIT"],
+          "containsDeclaredCopyleft" => false,
+          "reviewedCanonicalAportsEntryCount" => 1,
+          "reviewedDistfileCount" => 1,
+          "materialCoverage" => "complete",
+          "reviewState" =>
+            "candidate-source-material-engineering-reviewed-delivery-approval-open",
+          "resolvedReviewItems" => [
+            "bind-source-material-to-installed-binaries",
+            "pin-complete-aports-recipe-tree",
+            "pin-declared-upstream-distfiles"
+          ],
+          "remainingReviewItems" => [],
+          "engineeringConclusion" =>
+            "candidate-source-material-complete-engineering-only"
+        }
+      ]
+    }
     review_manifest = {
       "schemaVersion" => 1,
       "archive" => archive,
@@ -280,6 +346,9 @@ class RootFSLicenseReviewTests < Minitest::Test
 
     @source_inventory_path.write("#{JSON.pretty_generate(inventory)}\n")
     @source_manifest_path.binwrite(source_bytes)
+    @corresponding_source_review_results_path.write(
+      "#{JSON.pretty_generate(corresponding_source_review_results)}\n"
+    )
     @review_manifest_path.write("#{JSON.pretty_generate(review_manifest)}\n")
   end
 
@@ -290,6 +359,8 @@ class RootFSLicenseReviewTests < Minitest::Test
       SOURCE_SCRIPT.to_s,
       "--manifest", @source_manifest_path.to_s,
       "--source-inventory", @source_inventory_path.to_s,
+      "--review-results",
+      @corresponding_source_review_results_path.to_s,
       *arguments,
       chdir: REPOSITORY_ROOT.to_s
     )
@@ -305,6 +376,8 @@ class RootFSLicenseReviewTests < Minitest::Test
       "--review-manifest", @review_manifest_path.to_s,
       "--source-manifest", @source_manifest_path.to_s,
       "--source-inventory", @source_inventory_path.to_s,
+      "--source-review-results",
+      @corresponding_source_review_results_path.to_s,
       "--source-bundle", @source_bundle.to_s,
       *arguments,
       chdir: REPOSITORY_ROOT.to_s

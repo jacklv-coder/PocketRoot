@@ -5,7 +5,7 @@
 RootFS 是 PocketRoot 的外部供应链输入，不是普通测试 fixture。仓库提交的是不可变清单、校验和安全安装代码，不提交、镜像或默认打包 RootFS 二进制。
 
 > [!WARNING]
-> 固定 v0.3.3 归档已有可复现 package inventory、SPDX SBOM、默认配置证据、完整覆盖 inventory 的源码获取清单，以及 78 个初始候选和 138 个外置 LICENSE/NOTICE payload 的 checksum-bound 工程复核结果；7 个 origin 的候选材料工程项已关闭，只有缺少上游 MIT grant/版权声明的 `alpine-keys` 仍未决。完整 NOTICE、法律复核、对应源码交付审查与发行批准尚未闭环。以下 URL 与命令用于审计和本地开发，不构成公开再分发授权。应用必须先完成自己的法律与发行审查。
+> 固定 v0.3.3 归档已有可复现 package inventory、SPDX SBOM、默认配置证据、完整覆盖 inventory 的源码获取清单、10/10 origin（130 个规范化 aports 条目与 9 个上游 distfile）的对应源码候选材料工程复核，以及 78 个初始候选和 138 个外置 LICENSE/NOTICE payload 的 checksum-bound 工程复核结果；7 个 origin 的许可证候选材料工程项已关闭，只有缺少上游 MIT grant/版权声明的 `alpine-keys` 仍未决。完整 NOTICE、重建环境/toolchain、法律复核、对应源码提供与交付批准尚未闭环。以下 URL 与命令用于审计和本地开发，不构成公开再分发授权。应用必须先完成自己的法律与发行审查。
 
 ## 1. 固定清单
 
@@ -86,24 +86,25 @@ ruby Scripts/generate-rootfs-compliance.rb \
   --check
 ```
 
-源码清单可独立校验，也可在仓库外生成本地审查目录：
+源码清单与 `CORRESPONDING-SOURCE-REVIEW-RESULTS.json` 可独立校验，也可在
+仓库外生成对应源码候选目录：
 
 ```bash
 ruby Scripts/prepare-rootfs-source-bundle.rb --validate-only
 
 ruby Scripts/prepare-rootfs-source-bundle.rb \
-  --output /absolute/new/path/outside-the-repository/rootfs-v0.3.3-source-review
+  --output /absolute/new/path/outside-the-repository/rootfs-v0.3.3-corresponding-source-candidate
 
 ruby Scripts/prepare-rootfs-source-bundle.rb \
-  --verify /absolute/new/path/outside-the-repository/rootfs-v0.3.3-source-review
+  --verify /absolute/new/path/outside-the-repository/rootfs-v0.3.3-corresponding-source-candidate
 ```
 
-已有 source-review 或同布局的仓库外只读缓存可用于离线重建，不降低任何固定校验：
+已有候选 bundle 或同布局的仓库外只读缓存可用于离线重建，不降低任何固定校验：
 
 ```bash
 ruby Scripts/prepare-rootfs-source-bundle.rb \
-  --download-cache /absolute/existing/rootfs-v0.3.3-source-review \
-  --output /absolute/new/path/outside-the-repository/rootfs-v0.3.3-source-review
+  --download-cache /absolute/existing/rootfs-v0.3.3-corresponding-source-candidate \
+  --output /absolute/new/path/outside-the-repository/rootfs-v0.3.3-corresponding-source-candidate
 ```
 
 缓存必须提供 `downloads/aports/<source-origin>.tar.gz` 和
@@ -112,24 +113,26 @@ ruby Scripts/prepare-rootfs-source-bundle.rb \
 tree identity。缓存不构成来源批准，也不会改变 receipt 的固定上游来源。
 receipt 会明确标记缓存获取并记录缓存内相对路径，不会伪称访问了某个上游 URL；
 固定上游来源仍保留在 `SOURCE-ACQUISITION.json`。
-receipt schema v2 强制包含该模式。旧 v1 source-review 的传输来源存在歧义，不再
-直接通过 `--verify`；仍可把它传给 `--download-cache`，重新生成可验证的 v2 bundle。
+receipt schema v3 除强制包含该模式外，还绑定 `SOURCE-INVENTORY.json`、
+`CORRESPONDING-SOURCE-REVIEW-RESULTS.json`、候选材料工程状态及全部未解除门禁。
+旧 v1/v2 source-review 可继续作为只读 `--download-cache`，但不能直接通过
+`--verify`；必须重新生成 v3 候选 bundle。
 
 规范化 aports 目录身份覆盖条目类型、路径、普通文件权限位和内容摘要；物化时会保留
 这些权限位，`--verify` 会再次校验。
 
-在 source-review 目录验证通过后，可把固定的 78 个候选许可证/attribution 文件
+在对应源码候选目录验证通过后，可把固定的 78 个候选许可证/attribution 文件
 提取到另一个仓库外目录：
 
 ```bash
 ruby Scripts/prepare-rootfs-license-review.rb --validate-only
 
 ruby Scripts/prepare-rootfs-license-review.rb \
-  --source-bundle /absolute/new/path/outside-the-repository/rootfs-v0.3.3-source-review \
+  --source-bundle /absolute/new/path/outside-the-repository/rootfs-v0.3.3-corresponding-source-candidate \
   --output /absolute/new/path/outside-the-repository/rootfs-v0.3.3-license-review
 
 ruby Scripts/prepare-rootfs-license-review.rb \
-  --source-bundle /absolute/new/path/outside-the-repository/rootfs-v0.3.3-source-review \
+  --source-bundle /absolute/new/path/outside-the-repository/rootfs-v0.3.3-corresponding-source-candidate \
   --verify /absolute/new/path/outside-the-repository/rootfs-v0.3.3-license-review
 
 ruby Scripts/rootfs-license-review-results.rb
@@ -141,7 +144,8 @@ Git 或 CI artifact 自动添加输出。这完成的是可复现的工程获取
 随附可识别的 LICENSE/COPYING/NOTICE 文件。候选工具会核对提取文件的大小、
 SHA-256、精确路径集合与无链接/特殊节点边界。固定结果清单记录 78/78 个候选均已
 工程复核，其中 `libc-dev`、`zlib` 的索引项已关闭，另外 8 个 source origin 仍有
-未决项；输出不能直接视为完整 NOTICE 或对应源码交付材料。
+未决项；对应源码候选材料的 10/10 origin 工程复核已经完成，但输出仍不能直接
+视为完整 NOTICE、经批准的对应源码交付或源码提供承诺。
 
 BusyBox 的最后一批候选由固定 distfile、按 `APKBUILD` 顺序应用的 33 个补丁和
 固定配置共同确定。补丁后配置只发生时间戳变化；dry-run 构建图包含 487 个编译
@@ -159,12 +163,12 @@ ruby Scripts/rootfs-license-notice-review-results.rb
 ruby Scripts/prepare-rootfs-license-notice-bundle.rb --validate-only
 
 ruby Scripts/prepare-rootfs-license-notice-bundle.rb \
-  --source-bundle /absolute/new/path/outside-the-repository/rootfs-v0.3.3-source-review \
+  --source-bundle /absolute/new/path/outside-the-repository/rootfs-v0.3.3-corresponding-source-candidate \
   --license-review /absolute/new/path/outside-the-repository/rootfs-v0.3.3-license-review \
   --output /absolute/new/path/outside-the-repository/rootfs-v0.3.3-license-notice-candidates
 
 ruby Scripts/prepare-rootfs-license-notice-bundle.rb \
-  --source-bundle /absolute/new/path/outside-the-repository/rootfs-v0.3.3-source-review \
+  --source-bundle /absolute/new/path/outside-the-repository/rootfs-v0.3.3-corresponding-source-candidate \
   --license-review /absolute/new/path/outside-the-repository/rootfs-v0.3.3-license-review \
   --verify /absolute/new/path/outside-the-repository/rootfs-v0.3.3-license-notice-candidates
 

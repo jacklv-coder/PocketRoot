@@ -10,6 +10,7 @@ require "rubygems/package"
 require "securerandom"
 require "uri"
 require "zlib"
+require_relative "rootfs-corresponding-source-review-results"
 require_relative "rootfs-source-acquisition"
 
 SourceBundleError = RootFSSourceAcquisition::ValidationError
@@ -23,6 +24,8 @@ def parse_options
   options = {
     manifest: "Compliance/RootFS/v0.3.3/SOURCE-ACQUISITION.json",
     source_inventory: "Compliance/RootFS/v0.3.3/SOURCE-INVENTORY.json",
+    review_results:
+      "Compliance/RootFS/v0.3.3/CORRESPONDING-SOURCE-REVIEW-RESULTS.json",
     validate_only: false
   }
 
@@ -34,6 +37,12 @@ def parse_options
     end
     commands.on("--source-inventory PATH", "Generated RootFS source inventory") do |path|
       options[:source_inventory] = path
+    end
+    commands.on(
+      "--review-results PATH",
+      "Pinned corresponding-source candidate review results"
+    ) do |path|
+      options[:review_results] = path
     end
     commands.on("--output DIR", "New absolute directory outside the repository") do |path|
       options[:output] = path
@@ -71,13 +80,24 @@ def parse_options
   options
 end
 
-def load_json(path, label)
+def load_json_document(path, label)
   pathname = Pathname(path)
-  raise SourceBundleError, "#{label} is not a regular file: #{path}" unless pathname.file?
+  unless pathname.exist? && !pathname.symlink? && pathname.lstat.file?
+    raise SourceBundleError,
+      "#{label} is not a real regular file: #{path}"
+  end
 
-  JSON.parse(pathname.binread)
+  contents = pathname.binread
+  {
+    document: JSON.parse(contents),
+    contents: contents
+  }
 rescue JSON::ParserError => error
   raise SourceBundleError, "#{label} is invalid JSON: #{error.message}"
+end
+
+def load_json(path, label)
+  load_json_document(path, label).fetch(:document)
 end
 
 def repository_root
@@ -546,9 +566,11 @@ end
 
 def expected_bundle_path_types(sources, identities)
   path_types = {
+    "CORRESPONDING-SOURCE-REVIEW-RESULTS.json" => "file",
     "MATERIALIZATION-RECEIPT.json" => "file",
     "NOTICE.md" => "file",
-    "SOURCE-ACQUISITION.json" => "file"
+    "SOURCE-ACQUISITION.json" => "file",
+    "SOURCE-INVENTORY.json" => "file"
   }
   sources.each do |source|
     origin = source.fetch("sourceOrigin")
@@ -583,11 +605,34 @@ def expected_bundle_path_types(sources, identities)
   path_types.sort.to_h
 end
 
-def verify_receipt(receipt, manifest, sources, root, identities)
+def verify_receipt(
+  receipt,
+  manifest,
+  sources,
+  root,
+  identities,
+  source_acquisition_bytes:,
+  source_inventory_bytes:,
+  review_results_bytes:
+)
   acquisition_mode = receipt["acquisitionMode"]
-  unless receipt["schemaVersion"] == 2 &&
+  unless receipt["schemaVersion"] == 3 &&
     receipt["archive"] == manifest["archive"] &&
     %w[network download-cache].include?(acquisition_mode) &&
+    receipt["bundleKind"] ==
+      "rootfs-corresponding-source-candidate" &&
+    receipt["candidateSourceMaterialSetPresent"] == true &&
+    receipt["candidateSourceMaterialEngineeringReviewCompleted"] == true &&
+    receipt["completeCorrespondingSourceBundlePresent"] == false &&
+    receipt["rebuildEnvironmentVerified"] == false &&
+    receipt["correspondingSourceDeliveryApproved"] == false &&
+    receipt["legalReviewApproved"] == false &&
+    receipt["sourceAcquisitionSha256"] ==
+      Digest::SHA256.hexdigest(source_acquisition_bytes) &&
+    receipt["sourceInventorySha256"] ==
+      Digest::SHA256.hexdigest(source_inventory_bytes) &&
+    receipt["correspondingSourceReviewResultsSha256"] ==
+      Digest::SHA256.hexdigest(review_results_bytes) &&
     receipt["redistributionApproved"] == false
     raise SourceBundleError, "materialization receipt has invalid release metadata"
   end
@@ -734,7 +779,12 @@ def verify_acquired_sources(root, sources)
   identities
 end
 
-def verify_materialized_bundle(path, manifest_path, source_inventory_path)
+def verify_materialized_bundle(
+  path,
+  manifest_path,
+  source_inventory_path,
+  review_results_path
+)
   root = Pathname(path)
   raise SourceBundleError, "--verify must be absolute" unless root.absolute?
   if root.symlink? || !root.directory?
@@ -745,11 +795,23 @@ def verify_materialized_bundle(path, manifest_path, source_inventory_path)
   if within_path?(root, repository_root)
     raise SourceBundleError, "--verify directory must be outside the repository"
   end
-  expected_manifest = load_json(
+  manifest_input = load_json_document(
     manifest_path,
     "pinned source acquisition manifest"
   )
-  source_inventory = load_json(source_inventory_path, "source inventory")
+  source_acquisition_bytes = manifest_input.fetch(:contents)
+  expected_manifest = manifest_input.fetch(:document)
+  source_inventory_input =
+    load_json_document(source_inventory_path, "source inventory")
+  source_inventory_bytes = source_inventory_input.fetch(:contents)
+  source_inventory = source_inventory_input.fetch(:document)
+  review_results_input =
+    load_json_document(
+      review_results_path,
+      "corresponding-source review results"
+    )
+  review_results_bytes = review_results_input.fetch(:contents)
+  review_results = review_results_input.fetch(:document)
   allow_file_urls =
     ENV["POCKETROOT_TEST_ALLOW_FILE_URLS"] == "1" &&
     expected_manifest["testFixture"] == true
@@ -758,19 +820,45 @@ def verify_materialized_bundle(path, manifest_path, source_inventory_path)
     source_inventory,
     allow_file_urls: allow_file_urls
   )
+  RootFSCorrespondingSourceReviewResults.validate_manifest(
+    review_results,
+    expected_manifest,
+    source_inventory,
+    source_acquisition_bytes: source_acquisition_bytes,
+    allow_file_urls: allow_file_urls
+  )
   bundled_manifest_path = require_bundle_path(
     root,
     "SOURCE-ACQUISITION.json",
     "bundle source acquisition manifest",
     type: :file
   )
-  bundled_manifest = load_json(
-    bundled_manifest_path,
-    "bundle source acquisition manifest"
-  )
-  unless bundled_manifest == expected_manifest
+  bundled_manifest_bytes = bundled_manifest_path.binread
+  bundled_manifest = JSON.parse(bundled_manifest_bytes)
+  unless bundled_manifest_bytes == source_acquisition_bytes &&
+    bundled_manifest == expected_manifest
     raise SourceBundleError,
-      "bundle source acquisition manifest does not match the pinned manifest"
+      "bundle source acquisition manifest bytes do not match the pinned manifest"
+  end
+  bundled_inventory_path = require_bundle_path(
+    root,
+    "SOURCE-INVENTORY.json",
+    "bundle source inventory",
+    type: :file
+  )
+  unless bundled_inventory_path.binread == source_inventory_bytes
+    raise SourceBundleError,
+      "bundle source inventory does not match the pinned inventory"
+  end
+  bundled_review_results_path = require_bundle_path(
+    root,
+    "CORRESPONDING-SOURCE-REVIEW-RESULTS.json",
+    "bundle corresponding-source review results",
+    type: :file
+  )
+  unless bundled_review_results_path.binread == review_results_bytes
+    raise SourceBundleError,
+      "bundle corresponding-source review results do not match the pinned results"
   end
   identities = verify_acquired_sources(root, sources)
   receipt_path = require_bundle_path(
@@ -783,7 +871,16 @@ def verify_materialized_bundle(path, manifest_path, source_inventory_path)
     receipt_path,
     "materialization receipt"
   )
-  verify_receipt(receipt, expected_manifest, sources, root, identities)
+  verify_receipt(
+    receipt,
+    expected_manifest,
+    sources,
+    root,
+    identities,
+    source_acquisition_bytes: source_acquisition_bytes,
+    source_inventory_bytes: source_inventory_bytes,
+    review_results_bytes: review_results_bytes
+  )
 
   tree_manifest_path = require_bundle_path(
     root,
@@ -868,29 +965,40 @@ end
 
 def notice_text(manifest, source_count, distfile_count)
   <<~MARKDOWN
-    # PocketRoot RootFS source-review bundle
+    # PocketRoot RootFS corresponding-source candidate bundle
 
     This directory was materialized from `SOURCE-ACQUISITION.json` for the pinned
     RootFS `#{manifest.fetch("archive").fetch("version")}` archive with SHA-256
     `#{manifest.fetch("archive").fetch("sha256")}`.
 
-    It contains verified Alpine aports recipe snapshots for #{source_count} source
-    origins and #{distfile_count} checksum-verified upstream distfile(s). The
-    original acquisition manifest, a materialization receipt, a typed
-    `TREE-MANIFEST.json`, and `SHA256SUMS` are included. Verify regular files,
-    their permission bits, directories, and symbolic-link targets with:
+    It contains verified Alpine aports recipe trees for #{source_count} source
+    origins and #{distfile_count} checksum-verified upstream distfile(s).
+    `SOURCE-INVENTORY.json` binds those inputs to every installed binary package,
+    and `CORRESPONDING-SOURCE-REVIEW-RESULTS.json` records the checksum-bound
+    engineering review. The acquisition manifest, a materialization receipt, a
+    typed `TREE-MANIFEST.json`, and `SHA256SUMS` are also included. Verify regular
+    files, their permission bits, directories, and symbolic-link targets with:
 
         ruby Scripts/prepare-rootfs-source-bundle.rb --verify /absolute/bundle/path
 
-    This is an external, review-ready engineering bundle. It is not legal advice,
-    a reviewed package-specific NOTICE, a source-code offer, or redistribution
-    approval. Review package copyright notices, required license texts, build
-    completeness, modifications, offer mechanics, and distribution scope before
+    This is an external, engineering-reviewed corresponding-source candidate.
+    It is not legal advice, a reviewed package-specific NOTICE, a source-code
+    offer, a verified rebuild environment, or redistribution approval. Review
+    package copyright notices, required license texts, modifications, build and
+    toolchain completeness, offer mechanics, and distribution scope before
     shipping any RootFS.
   MARKDOWN
 end
 
-def materialize(manifest, sources, output, download_cache: nil)
+def materialize(
+  manifest,
+  sources,
+  output,
+  source_acquisition_bytes:,
+  source_inventory_bytes:,
+  review_results_bytes:,
+  download_cache: nil
+)
   staging = output.parent.join(".#{output.basename}.tmp-#{Process.pid}-#{SecureRandom.hex(6)}")
   raise SourceBundleError, "staging path already exists: #{staging}" if staging.exist?
 
@@ -975,16 +1083,33 @@ def materialize(manifest, sources, output, download_cache: nil)
     end
 
     staging.join("SOURCE-ACQUISITION.json").binwrite(
-      "#{JSON.pretty_generate(manifest)}\n"
+      source_acquisition_bytes
+    )
+    staging.join("SOURCE-INVENTORY.json").binwrite(source_inventory_bytes)
+    staging.join("CORRESPONDING-SOURCE-REVIEW-RESULTS.json").binwrite(
+      review_results_bytes
     )
     staging.join("NOTICE.md").binwrite(
       notice_text(manifest, sources.length, sources.sum { |entry| entry.fetch("distfiles").length })
     )
     receipt = {
-      "schemaVersion" => 2,
+      "schemaVersion" => 3,
       "archive" => manifest.fetch("archive"),
+      "bundleKind" => "rootfs-corresponding-source-candidate",
       "acquisitionMode" =>
         download_cache ? "download-cache" : "network",
+      "sourceAcquisitionSha256" =>
+        Digest::SHA256.hexdigest(source_acquisition_bytes),
+      "sourceInventorySha256" =>
+        Digest::SHA256.hexdigest(source_inventory_bytes),
+      "correspondingSourceReviewResultsSha256" =>
+        Digest::SHA256.hexdigest(review_results_bytes),
+      "candidateSourceMaterialSetPresent" => true,
+      "candidateSourceMaterialEngineeringReviewCompleted" => true,
+      "completeCorrespondingSourceBundlePresent" => false,
+      "rebuildEnvironmentVerified" => false,
+      "correspondingSourceDeliveryApproved" => false,
+      "legalReviewApproved" => false,
       "redistributionApproved" => false,
       "sources" => receipt_sources
     }
@@ -1011,14 +1136,34 @@ begin
     verify_materialized_bundle(
       options.fetch(:verify),
       options.fetch(:manifest),
-      options.fetch(:source_inventory)
+      options.fetch(:source_inventory),
+      options.fetch(:review_results)
     )
-    puts "Verified materialized RootFS source-review bundle at #{Pathname(options.fetch(:verify)).realpath}."
+    puts "Verified materialized RootFS corresponding-source candidate bundle " \
+      "at #{Pathname(options.fetch(:verify)).realpath}."
     exit
   end
 
-  manifest = load_json(options.fetch(:manifest), "source acquisition manifest")
-  source_inventory = load_json(options.fetch(:source_inventory), "source inventory")
+  manifest_input = load_json_document(
+    options.fetch(:manifest),
+    "source acquisition manifest"
+  )
+  source_acquisition_bytes = manifest_input.fetch(:contents)
+  manifest = manifest_input.fetch(:document)
+  source_inventory_input =
+    load_json_document(
+      options.fetch(:source_inventory),
+      "source inventory"
+    )
+  source_inventory_bytes = source_inventory_input.fetch(:contents)
+  source_inventory = source_inventory_input.fetch(:document)
+  review_results_input =
+    load_json_document(
+      options.fetch(:review_results),
+      "corresponding-source review results"
+    )
+  review_results_bytes = review_results_input.fetch(:contents)
+  review_results = review_results_input.fetch(:document)
   allow_file_urls =
     ENV["POCKETROOT_TEST_ALLOW_FILE_URLS"] == "1" &&
     manifest["testFixture"] == true
@@ -1027,9 +1172,17 @@ begin
     source_inventory,
     allow_file_urls: allow_file_urls
   )
+  RootFSCorrespondingSourceReviewResults.validate_manifest(
+    review_results,
+    manifest,
+    source_inventory,
+    source_acquisition_bytes: source_acquisition_bytes,
+    allow_file_urls: allow_file_urls
+  )
 
   if options.fetch(:validate_only)
-    puts "RootFS source acquisition manifest is valid (#{sources.length} source origins)."
+    puts "RootFS corresponding-source candidate inputs are valid " \
+      "(#{sources.length} source origins)."
   else
     download_cache =
       if options[:download_cache]
@@ -1046,12 +1199,19 @@ begin
       manifest,
       sources,
       output,
+      source_acquisition_bytes: source_acquisition_bytes,
+      source_inventory_bytes: source_inventory_bytes,
+      review_results_bytes: review_results_bytes,
       download_cache: download_cache
     )
-    puts "Materialized verified RootFS source-review bundle at #{output}."
+    puts "Materialized verified RootFS corresponding-source candidate bundle " \
+      "at #{output}."
   end
-rescue SourceBundleError, OptionParser::ParseError, SystemCallError,
-  Gem::Package::TarInvalidError, Zlib::GzipFile::Error => error
+rescue SourceBundleError,
+  RootFSCorrespondingSourceReviewResults::ValidationError,
+  OptionParser::ParseError, SystemCallError,
+  Gem::Package::TarInvalidError, Zlib::GzipFile::Error,
+  JSON::ParserError => error
   warn error.message
   exit 1
 end

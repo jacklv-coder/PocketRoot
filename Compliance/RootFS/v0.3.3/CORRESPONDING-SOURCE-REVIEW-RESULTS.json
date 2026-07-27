@@ -1,0 +1,250 @@
+{
+  "schemaVersion": 1,
+  "archive": {
+    "version": "v0.3.3",
+    "sha256": "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"
+  },
+  "sourceAcquisitionSha256": "ef66d6907b676ac365a980ae94e6360516c8f9a188ae53a46f1fd5d1037cd4c5",
+  "status": "candidate-corresponding-source-material-engineering-reviewed-open-release-gates",
+  "engineeringReviewCompleted": true,
+  "allSourceOriginsReviewed": true,
+  "completeCandidateSourceMaterialIndexPresent": true,
+  "candidateBundleMaterializerReady": true,
+  "completeCorrespondingSourceBundlePresent": false,
+  "rebuildEnvironmentVerified": false,
+  "correspondingSourceDeliveryApproved": false,
+  "legalReviewApproved": false,
+  "redistributionApproved": false,
+  "reviewedSourceOriginCount": 10,
+  "reviewedCanonicalAportsEntryCount": 130,
+  "reviewedDistfileCount": 9,
+  "sourceOriginsWithRemainingMaterialItems": 0,
+  "sources": [
+    {
+      "sourceOrigin": "alpine-baselayout",
+      "aportsCommit": "7749273fed55f6e1df7c9ee6a127f18099f98a94",
+      "binaryPackages": [
+        "alpine-baselayout",
+        "alpine-baselayout-data"
+      ],
+      "declaredLicenseExpressions": [
+        "GPL-2.0-only"
+      ],
+      "containsDeclaredCopyleft": true,
+      "reviewedCanonicalAportsEntryCount": 16,
+      "reviewedDistfileCount": 2,
+      "materialCoverage": "complete",
+      "reviewState": "candidate-source-material-engineering-reviewed-delivery-approval-open",
+      "resolvedReviewItems": [
+        "bind-source-material-to-installed-binaries",
+        "pin-complete-aports-recipe-tree",
+        "pin-declared-upstream-distfiles"
+      ],
+      "remainingReviewItems": [],
+      "engineeringConclusion": "candidate-source-material-complete-engineering-only"
+    },
+    {
+      "sourceOrigin": "alpine-keys",
+      "aportsCommit": "aab68f8c9ab434a46710de8e12fb3206e2930a59",
+      "binaryPackages": [
+        "alpine-keys"
+      ],
+      "declaredLicenseExpressions": [
+        "MIT"
+      ],
+      "containsDeclaredCopyleft": false,
+      "reviewedCanonicalAportsEntryCount": 18,
+      "reviewedDistfileCount": 0,
+      "materialCoverage": "complete",
+      "reviewState": "candidate-source-material-engineering-reviewed-delivery-approval-open",
+      "resolvedReviewItems": [
+        "bind-source-material-to-installed-binaries",
+        "pin-complete-aports-recipe-tree",
+        "pin-declared-upstream-distfiles"
+      ],
+      "remainingReviewItems": [],
+      "engineeringConclusion": "candidate-source-material-complete-engineering-only"
+    },
+    {
+      "sourceOrigin": "apk-tools",
+      "aportsCommit": "33283848034c9885d984c8e8697c645c57324938",
+      "binaryPackages": [
+        "apk-tools"
+      ],
+      "declaredLicenseExpressions": [
+        "GPL-2.0-only"
+      ],
+      "containsDeclaredCopyleft": true,
+      "reviewedCanonicalAportsEntryCount": 4,
+      "reviewedDistfileCount": 1,
+      "materialCoverage": "complete",
+      "reviewState": "candidate-source-material-engineering-reviewed-delivery-approval-open",
+      "resolvedReviewItems": [
+        "bind-source-material-to-installed-binaries",
+        "pin-complete-aports-recipe-tree",
+        "pin-declared-upstream-distfiles"
+      ],
+      "remainingReviewItems": [],
+      "engineeringConclusion": "candidate-source-material-complete-engineering-only"
+    },
+    {
+      "sourceOrigin": "busybox",
+      "aportsCommit": "d1b6f274f29076967826e0ecf6ebcaa5d360272f",
+      "binaryPackages": [
+        "busybox",
+        "busybox-binsh",
+        "ssl_client"
+      ],
+      "declaredLicenseExpressions": [
+        "GPL-2.0-only"
+      ],
+      "containsDeclaredCopyleft": true,
+      "reviewedCanonicalAportsEntryCount": 67,
+      "reviewedDistfileCount": 1,
+      "materialCoverage": "complete",
+      "reviewState": "candidate-source-material-engineering-reviewed-delivery-approval-open",
+      "resolvedReviewItems": [
+        "bind-source-material-to-installed-binaries",
+        "pin-complete-aports-recipe-tree",
+        "pin-declared-upstream-distfiles"
+      ],
+      "remainingReviewItems": [],
+      "engineeringConclusion": "candidate-source-material-complete-engineering-only"
+    },
+    {
+      "sourceOrigin": "ca-certificates",
+      "aportsCommit": "59534a02716a92a10d177a118c34066162eff4a6",
+      "binaryPackages": [
+        "ca-certificates-bundle"
+      ],
+      "declaredLicenseExpressions": [
+        "MPL-2.0 AND MIT"
+      ],
+      "containsDeclaredCopyleft": true,
+      "reviewedCanonicalAportsEntryCount": 3,
+      "reviewedDistfileCount": 1,
+      "materialCoverage": "complete",
+      "reviewState": "candidate-source-material-engineering-reviewed-delivery-approval-open",
+      "resolvedReviewItems": [
+        "bind-source-material-to-installed-binaries",
+        "pin-complete-aports-recipe-tree",
+        "pin-declared-upstream-distfiles"
+      ],
+      "remainingReviewItems": [],
+      "engineeringConclusion": "candidate-source-material-complete-engineering-only"
+    },
+    {
+      "sourceOrigin": "libc-dev",
+      "aportsCommit": "988f183cc9d6699930c3e18ccf4a9e36010afb56",
+      "binaryPackages": [
+        "libc-utils"
+      ],
+      "declaredLicenseExpressions": [
+        "BSD-2-Clause AND BSD-3-Clause"
+      ],
+      "containsDeclaredCopyleft": false,
+      "reviewedCanonicalAportsEntryCount": 5,
+      "reviewedDistfileCount": 0,
+      "materialCoverage": "complete",
+      "reviewState": "candidate-source-material-engineering-reviewed-delivery-approval-open",
+      "resolvedReviewItems": [
+        "bind-source-material-to-installed-binaries",
+        "pin-complete-aports-recipe-tree",
+        "pin-declared-upstream-distfiles"
+      ],
+      "remainingReviewItems": [],
+      "engineeringConclusion": "candidate-source-material-complete-engineering-only"
+    },
+    {
+      "sourceOrigin": "musl",
+      "aportsCommit": "ca7f2ab5e88794e4e654b40776f8a92256f50639",
+      "binaryPackages": [
+        "musl",
+        "musl-utils"
+      ],
+      "declaredLicenseExpressions": [
+        "MIT",
+        "MIT AND BSD-2-Clause AND GPL-2.0-or-later"
+      ],
+      "containsDeclaredCopyleft": true,
+      "reviewedCanonicalAportsEntryCount": 9,
+      "reviewedDistfileCount": 1,
+      "materialCoverage": "complete",
+      "reviewState": "candidate-source-material-engineering-reviewed-delivery-approval-open",
+      "resolvedReviewItems": [
+        "bind-source-material-to-installed-binaries",
+        "pin-complete-aports-recipe-tree",
+        "pin-declared-upstream-distfiles"
+      ],
+      "remainingReviewItems": [],
+      "engineeringConclusion": "candidate-source-material-complete-engineering-only"
+    },
+    {
+      "sourceOrigin": "openssl",
+      "aportsCommit": "b784a22cad0c452586b438cb7a597d846fc09ff4",
+      "binaryPackages": [
+        "libcrypto3",
+        "libssl3"
+      ],
+      "declaredLicenseExpressions": [
+        "Apache-2.0"
+      ],
+      "containsDeclaredCopyleft": false,
+      "reviewedCanonicalAportsEntryCount": 6,
+      "reviewedDistfileCount": 1,
+      "materialCoverage": "complete",
+      "reviewState": "candidate-source-material-engineering-reviewed-delivery-approval-open",
+      "resolvedReviewItems": [
+        "bind-source-material-to-installed-binaries",
+        "pin-complete-aports-recipe-tree",
+        "pin-declared-upstream-distfiles"
+      ],
+      "remainingReviewItems": [],
+      "engineeringConclusion": "candidate-source-material-complete-engineering-only"
+    },
+    {
+      "sourceOrigin": "pax-utils",
+      "aportsCommit": "e65a4f2d0470e70d862ef2b5c412ecf2cb9ad0a6",
+      "binaryPackages": [
+        "scanelf"
+      ],
+      "declaredLicenseExpressions": [
+        "GPL-2.0-only"
+      ],
+      "containsDeclaredCopyleft": true,
+      "reviewedCanonicalAportsEntryCount": 1,
+      "reviewedDistfileCount": 1,
+      "materialCoverage": "complete",
+      "reviewState": "candidate-source-material-engineering-reviewed-delivery-approval-open",
+      "resolvedReviewItems": [
+        "bind-source-material-to-installed-binaries",
+        "pin-complete-aports-recipe-tree",
+        "pin-declared-upstream-distfiles"
+      ],
+      "remainingReviewItems": [],
+      "engineeringConclusion": "candidate-source-material-complete-engineering-only"
+    },
+    {
+      "sourceOrigin": "zlib",
+      "aportsCommit": "9406f6fc5fca057d990eb0d260d75839eeb34d83",
+      "binaryPackages": [
+        "zlib"
+      ],
+      "declaredLicenseExpressions": [
+        "Zlib"
+      ],
+      "containsDeclaredCopyleft": false,
+      "reviewedCanonicalAportsEntryCount": 1,
+      "reviewedDistfileCount": 1,
+      "materialCoverage": "complete",
+      "reviewState": "candidate-source-material-engineering-reviewed-delivery-approval-open",
+      "resolvedReviewItems": [
+        "bind-source-material-to-installed-binaries",
+        "pin-complete-aports-recipe-tree",
+        "pin-declared-upstream-distfiles"
+      ],
+      "remainingReviewItems": [],
+      "engineeringConclusion": "candidate-source-material-complete-engineering-only"
+    }
+  ]
+}

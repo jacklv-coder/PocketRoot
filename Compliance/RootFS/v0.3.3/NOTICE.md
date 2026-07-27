@@ -60,15 +60,22 @@ approval remain open.
 Exact Alpine aports recipe locators are recorded for all
 10 source origins in `SOURCE-INVENTORY.json`.
 `SOURCE-ACQUISITION.json` pins each aports snapshot and upstream distfile
-with cryptographic checksums. The repository script can materialize those
-inputs into a new external review directory.
+with cryptographic checksums.
+`CORRESPONDING-SOURCE-REVIEW-RESULTS.json` records checksum-bound
+engineering review of all 10 origins,
+130 canonical aports entries, and
+9 upstream distfiles. The repository script can
+materialize those inputs, the generated source inventory, and the pinned
+review results into a new external corresponding-source candidate directory
+and re-verify its full typed tree.
 Source origins with declared copyleft terms are
 `alpine-baselayout`, `apk-tools`, `busybox`, `ca-certificates`, `musl`, `pax-utils`.
 
 No source archive is committed or shipped by this repository. A materialized
 directory still requires package-specific license/NOTICE, modification,
-build-completeness, offer-mechanics, and legal review before it can be
-treated as corresponding-source delivery material.
+rebuild-environment and toolchain review, offer mechanics, legal review,
+and delivery approval before it can be treated as an approved
+corresponding-source distribution.
 
 ## Runtime configuration status
 

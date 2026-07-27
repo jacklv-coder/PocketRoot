@@ -47,8 +47,13 @@ atomically materialize and re-verify it outside the repository. A pinned
 results manifest binds engineering review to the exact 138-file payload tree.
 Seven origins have no remaining candidate-material engineering items; only
 `alpine-keys` remains open because its upstream package lacks an MIT grant and
-copyright notice. Modification, build-completeness, source-offer, and legal
-reviews remain unresolved, so the output is neither a complete NOTICE set nor
+copyright notice. The corresponding-source candidate materializer now binds
+the complete inventory, 10 aports trees with 130 canonical entries, nine
+upstream distfiles, and the engineering review results to a schema-v3 receipt
+and complete typed tree. Candidate source material is engineering-complete
+for all 10 origins, while modification disclosure, rebuild environment and
+toolchain, source-offer mechanics, legal review, and delivery approval remain
+unresolved. The output is neither a complete NOTICE set, a source offer, nor
 approved corresponding-source delivery.
 
 ## Repository safeguards
@@ -61,7 +66,8 @@ source-acquisition manifest, license/NOTICE candidate index and engineering
 review results, declared-license data, and default configuration under
 [`Compliance/RootFS/v0.3.3`](../../Compliance/RootFS/v0.3.3/README.md).
 CI offline-tests checksum verification, path isolation, and safe extraction for
-the external source-review materializer; it does not upload source material.
+the external corresponding-source candidate materializer; it does not upload
+source material.
 Documentation and APIs label Experimental and shutdown risks.
 
 These engineering controls reduce the risk of accidental distribution; they do
@@ -127,7 +133,12 @@ The current code does not provide a complete product-level privacy policy.
   items, and only `alpine-keys` remains open because its upstream package
   lacks an MIT grant and copyright notice.
 - [ ] Collect license texts and NOTICE files.
-- [ ] Establish a corresponding-source bundle for copyleft components.
+- [x] Establish a checksum-bound external corresponding-source candidate
+  materialization and verification flow covering all 10 source origins, 130
+  canonical aports entries, and nine upstream distfiles; candidate-material
+  engineering review is complete and payloads remain uncommitted.
+- [ ] Approve the rebuild environment/toolchain, modification disclosure,
+  source-offer mechanics, legal review, and corresponding-source delivery.
 - [x] Record default DNS, repository, and package-manager facts.
 - [ ] Decide the product policy to retain, restrict, proxy, or disable guest
   package management and networking.

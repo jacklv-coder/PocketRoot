@@ -84,6 +84,13 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   extracted-aports-tree verification; v2 receipts distinguish network from
   cache acquisition instead of fabricating a selected URL, and ambiguous
   legacy v1 bundles must be regenerated through cache mode.
+- Checksum-bound `CORRESPONDING-SOURCE-REVIEW-RESULTS.json` and a strict
+  validator covering all 10 source origins, 130 canonical aports entries, and
+  nine upstream distfiles. The external materializer now emits a schema-v3
+  receipt and binds `SOURCE-INVENTORY.json`, the review results, the complete
+  typed tree, and checksums. Rebuild-environment/toolchain review, legal
+  review, source-offer mechanics, delivery approval, and redistribution gates
+  remain open.
 - arm64 Simulator and unsigned-device final-link gates for the full Experimental graph.
 - Repository iOS 18 native smoke covering 17 preparation, boot, guest, 8 MiB sustained binary-output, stdout/stderr overflow, command, cancellation, recovery, shutdown, and 256 MiB Simulator lifecycle peak-memory checks.
 - A repository-external, unapproved RootFS double-build candidate path for the

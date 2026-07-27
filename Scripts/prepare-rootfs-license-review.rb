@@ -9,6 +9,7 @@ require "optparse"
 require "pathname"
 require "rbconfig"
 require "securerandom"
+require_relative "rootfs-corresponding-source-review-results"
 require_relative "rootfs-license-review"
 
 LicenseReviewError = RootFSLicenseReview::ValidationError
@@ -20,6 +21,8 @@ def parse_options
     review_manifest: "Compliance/RootFS/v0.3.3/LICENSE-REVIEW.json",
     source_manifest: "Compliance/RootFS/v0.3.3/SOURCE-ACQUISITION.json",
     source_inventory: "Compliance/RootFS/v0.3.3/SOURCE-INVENTORY.json",
+    source_review_results:
+      "Compliance/RootFS/v0.3.3/CORRESPONDING-SOURCE-REVIEW-RESULTS.json",
     validate_only: false
   }
   parser = OptionParser.new do |commands|
@@ -34,7 +37,13 @@ def parse_options
     commands.on("--source-inventory PATH", "Generated source inventory") do |value|
       options[:source_inventory] = value
     end
-    commands.on("--source-bundle DIR", "Verified external source-review bundle") do |value|
+    commands.on(
+      "--source-review-results PATH",
+      "Pinned corresponding-source candidate review results"
+    ) do |value|
+      options[:source_review_results] = value
+    end
+    commands.on("--source-bundle DIR", "Verified external corresponding-source candidate") do |value|
       options[:source_bundle] = value
     end
     commands.on("--output DIR", "New absolute review directory outside the repository") do |value|
@@ -219,6 +228,8 @@ def verify_source_bundle(source_bundle, options)
     Pathname(options.fetch(:source_manifest)).expand_path.to_s,
     "--source-inventory",
     Pathname(options.fetch(:source_inventory)).expand_path.to_s,
+    "--review-results",
+    Pathname(options.fetch(:source_review_results)).expand_path.to_s,
     "--verify",
     source_bundle.to_s
   ]
@@ -226,7 +237,8 @@ def verify_source_bundle(source_bundle, options)
   return if status.success?
 
   message = stderr.strip.empty? ? stdout.strip : stderr.strip
-  raise LicenseReviewError, "source-review bundle verification failed: #{message}"
+  raise LicenseReviewError,
+    "corresponding-source candidate verification failed: #{message}"
 end
 
 def notice_text(source_count, candidate_count)
@@ -235,7 +247,8 @@ def notice_text(source_count, candidate_count)
 
     This external directory contains #{candidate_count} checksum-verified candidate
     evidence file(s) for #{source_count} source origin(s). The candidates were
-    extracted from the pinned, independently verified RootFS source-review bundle.
+    extracted from the pinned, independently verified RootFS
+    corresponding-source candidate bundle.
 
     This directory is engineering input for package-specific review. It is not a
     completed license bundle, NOTICE set, legal opinion, corresponding-source
@@ -243,10 +256,10 @@ def notice_text(source_count, candidate_count)
     `LICENSE-REVIEW.json` remains unresolved.
 
     Verify this directory against the pinned repository manifests and the original
-    external source-review bundle with:
+    external corresponding-source candidate bundle with:
 
         ruby Scripts/prepare-rootfs-license-review.rb \\
-          --source-bundle /absolute/source-review/path \\
+          --source-bundle /absolute/corresponding-source-candidate/path \\
           --verify /absolute/license-review/path
   MARKDOWN
 end
@@ -391,6 +404,26 @@ begin
     options.fetch(:source_inventory),
     "source inventory"
   )
+  source_review_results =
+    RootFSCorrespondingSourceReviewResults.load_json(
+      options.fetch(:source_review_results),
+      "corresponding-source review results"
+    )
+  allow_file_urls =
+    ENV["POCKETROOT_TEST_ALLOW_FILE_URLS"] == "1" &&
+    source_acquisition["testFixture"] == true
+  begin
+    RootFSCorrespondingSourceReviewResults.validate_manifest(
+      source_review_results,
+      source_acquisition,
+      source_inventory,
+      source_acquisition_bytes: source_acquisition_bytes,
+      allow_file_urls: allow_file_urls
+    )
+  rescue RootFSCorrespondingSourceReviewResults::ValidationError => error
+    raise LicenseReviewError,
+      "corresponding-source review results are invalid: #{error.message}"
+  end
   entries = RootFSLicenseReview.validate_manifest(
     review_manifest,
     source_acquisition,
@@ -430,8 +463,9 @@ begin
     verify_review(review, payloads)
     puts "Verified RootFS license/NOTICE candidate review at #{review}."
   end
-rescue LicenseReviewError, OptionParser::ParseError, JSON::ParserError,
-  SystemCallError => error
+rescue LicenseReviewError,
+  RootFSCorrespondingSourceReviewResults::ValidationError,
+  OptionParser::ParseError, JSON::ParserError, SystemCallError => error
   warn error.message
   exit 1
 end

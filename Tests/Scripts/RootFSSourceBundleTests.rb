@@ -30,6 +30,8 @@ class RootFSSourceBundleTests < Minitest::Test
     )
     @manifest_path = @temporary_directory.join("manifest.json")
     @inventory_path = @temporary_directory.join("inventory.json")
+    @review_results_path =
+      @temporary_directory.join("corresponding-source-review-results.json")
     write_fixture_documents
   end
 
@@ -42,13 +44,43 @@ class RootFSSourceBundleTests < Minitest::Test
     stdout, stderr, status = run_script("--output", output.to_s)
 
     assert status.success?, "#{stdout}\n#{stderr}"
-    assert_includes stdout, "Materialized verified RootFS source-review bundle"
+    assert_includes stdout,
+      "Materialized verified RootFS corresponding-source candidate bundle"
     assert_equal "pkgname=demo\n", output.join("aports/demo/APKBUILD").binread
     assert_equal "demo source\n", output.join("distfiles/demo/demo-source.txt").binread
     assert output.join("MATERIALIZATION-RECEIPT.json").file?
+    assert output.join("SOURCE-INVENTORY.json").file?
+    assert output.join("CORRESPONDING-SOURCE-REVIEW-RESULTS.json").file?
+    assert_equal @manifest_path.binread,
+      output.join("SOURCE-ACQUISITION.json").binread
+    assert_equal @inventory_path.binread,
+      output.join("SOURCE-INVENTORY.json").binread
+    assert_equal @review_results_path.binread,
+      output.join("CORRESPONDING-SOURCE-REVIEW-RESULTS.json").binread
     assert output.join("NOTICE.md").file?
     assert output.join("SHA256SUMS").file?
     assert output.join("TREE-MANIFEST.json").file?
+    receipt = JSON.parse(
+      output.join("MATERIALIZATION-RECEIPT.json").read
+    )
+    assert_equal 3, receipt.fetch("schemaVersion")
+    assert_equal "rootfs-corresponding-source-candidate",
+      receipt.fetch("bundleKind")
+    assert receipt.fetch("candidateSourceMaterialSetPresent")
+    assert receipt.fetch(
+      "candidateSourceMaterialEngineeringReviewCompleted"
+    )
+    refute receipt.fetch("completeCorrespondingSourceBundlePresent")
+    refute receipt.fetch("rebuildEnvironmentVerified")
+    refute receipt.fetch("correspondingSourceDeliveryApproved")
+    refute receipt.fetch("legalReviewApproved")
+    refute receipt.fetch("redistributionApproved")
+    assert_equal Digest::SHA256.file(@manifest_path).hexdigest,
+      receipt.fetch("sourceAcquisitionSha256")
+    assert_equal Digest::SHA256.file(@inventory_path).hexdigest,
+      receipt.fetch("sourceInventorySha256")
+    assert_equal Digest::SHA256.file(@review_results_path).hexdigest,
+      receipt.fetch("correspondingSourceReviewResultsSha256")
     tree_entries = JSON.parse(output.join("TREE-MANIFEST.json").read)
       .fetch("entries")
     tree_paths = tree_entries.map { |entry| entry.fetch("path") }
@@ -65,7 +97,8 @@ class RootFSSourceBundleTests < Minitest::Test
     verify_stdout, verify_stderr, verify_status =
       run_script("--verify", output.to_s)
     assert verify_status.success?, "#{verify_stdout}\n#{verify_stderr}"
-    assert_includes verify_stdout, "Verified materialized RootFS source-review bundle"
+    assert_includes verify_stdout,
+      "Verified materialized RootFS corresponding-source candidate bundle"
   end
 
   def test_materializes_from_checksum_verified_download_cache
@@ -272,6 +305,21 @@ class RootFSSourceBundleTests < Minitest::Test
     assert_includes stderr, "does not match generated inventory"
   end
 
+  def test_validate_only_rejects_special_file_inputs_before_reading
+    {
+      "--manifest" => "source acquisition manifest",
+      "--source-inventory" => "source inventory",
+      "--review-results" => "corresponding-source review results"
+    }.each do |option, label|
+      _stdout, stderr, status =
+        run_script("--validate-only", option, "/dev/null")
+
+      refute status.success?
+      assert_includes stderr,
+        "#{label} is not a real regular file"
+    end
+  end
+
   def test_shared_validator_rejects_malformed_snapshot_digest
     manifest = JSON.parse(
       REPOSITORY_ROOT.join(
@@ -342,7 +390,66 @@ class RootFSSourceBundleTests < Minitest::Test
       run_script("--verify", output.to_s)
     refute verify_status.success?
     assert_includes verify_stderr,
-      "bundle source acquisition manifest does not match the pinned manifest"
+      "bundle source acquisition manifest bytes do not match the pinned manifest"
+  end
+
+  def test_verify_rejects_special_file_manifest_before_reading
+    output = @temporary_directory.join("special-file-input-output")
+    _stdout, stderr, status = run_script("--output", output.to_s)
+    assert status.success?, stderr
+
+    _verify_stdout, verify_stderr, verify_status =
+      run_script(
+        "--manifest", "/dev/null",
+        "--verify", output.to_s
+      )
+
+    refute verify_status.success?
+    assert_includes verify_stderr,
+      "pinned source acquisition manifest is not a real regular file"
+  end
+
+  def test_verify_rejects_bundled_source_inventory_change
+    output = @temporary_directory.join("inventory-change-output")
+    _stdout, stderr, status = run_script("--output", output.to_s)
+    assert status.success?, stderr
+
+    bundled_inventory_path = output.join("SOURCE-INVENTORY.json")
+    bundled_inventory = JSON.parse(bundled_inventory_path.read)
+    bundled_inventory.fetch("sourceOrigins").first[
+      "binaryPackages"
+    ] = ["other"]
+    bundled_inventory_path.write(
+      "#{JSON.pretty_generate(bundled_inventory)}\n"
+    )
+    refresh_self_authored_integrity(output)
+
+    _verify_stdout, verify_stderr, verify_status =
+      run_script("--verify", output.to_s)
+    refute verify_status.success?
+    assert_includes verify_stderr,
+      "bundle source inventory does not match the pinned inventory"
+  end
+
+  def test_verify_rejects_bundled_corresponding_source_review_change
+    output = @temporary_directory.join("review-change-output")
+    _stdout, stderr, status = run_script("--output", output.to_s)
+    assert status.success?, stderr
+
+    bundled_results_path =
+      output.join("CORRESPONDING-SOURCE-REVIEW-RESULTS.json")
+    bundled_results = JSON.parse(bundled_results_path.read)
+    bundled_results["legalReviewApproved"] = true
+    bundled_results_path.write(
+      "#{JSON.pretty_generate(bundled_results)}\n"
+    )
+    refresh_self_authored_integrity(output)
+
+    _verify_stdout, verify_stderr, verify_status =
+      run_script("--verify", output.to_s)
+    refute verify_status.success?
+    assert_includes verify_stderr,
+      "bundle corresponding-source review results do not match the pinned results"
   end
 
   def test_verify_rejects_external_distfile_symlink
@@ -682,12 +789,22 @@ class RootFSSourceBundleTests < Minitest::Test
     inventory = {
       "schemaVersion" => 1,
       "archive" => archive,
+      "completeCorrespondingSourceBundlePresent" => false,
+      "correspondingSourceCandidateEngineeringReviewCompleted" => true,
+      "candidateBundleMaterializerReady" => true,
+      "rebuildEnvironmentVerified" => false,
+      "correspondingSourceDeliveryApproved" => false,
+      "status" =>
+        "candidate-material-engineering-reviewed-external-bundle-required",
       "sourceOrigins" => [
         {
           "sourceOrigin" => "demo",
           "aportsCommit" => COMMIT,
           "binaryPackages" => ["demo"],
-          "declaredLicenseExpressions" => ["MIT"]
+          "declaredLicenseExpressions" => ["MIT"],
+          "containsDeclaredCopyleft" => false,
+          "correspondingSourceStatus" =>
+            "candidate-material-engineering-reviewed-external-bundle-required"
         }
       ]
     }
@@ -724,9 +841,82 @@ class RootFSSourceBundleTests < Minitest::Test
     }
     @inventory_path.write("#{JSON.pretty_generate(inventory)}\n")
     @manifest_path.write("#{JSON.pretty_generate(manifest)}\n")
+    review_results = {
+      "schemaVersion" => 1,
+      "archive" => archive,
+      "sourceAcquisitionSha256" =>
+        Digest::SHA256.file(@manifest_path).hexdigest,
+      "status" =>
+        "candidate-corresponding-source-material-engineering-reviewed-open-release-gates",
+      "engineeringReviewCompleted" => true,
+      "allSourceOriginsReviewed" => true,
+      "completeCandidateSourceMaterialIndexPresent" => true,
+      "candidateBundleMaterializerReady" => true,
+      "completeCorrespondingSourceBundlePresent" => false,
+      "rebuildEnvironmentVerified" => false,
+      "correspondingSourceDeliveryApproved" => false,
+      "legalReviewApproved" => false,
+      "redistributionApproved" => false,
+      "reviewedSourceOriginCount" => 1,
+      "reviewedCanonicalAportsEntryCount" => 1,
+      "reviewedDistfileCount" => 1,
+      "sourceOriginsWithRemainingMaterialItems" => 0,
+      "sources" => [
+        {
+          "sourceOrigin" => "demo",
+          "aportsCommit" => COMMIT,
+          "binaryPackages" => ["demo"],
+          "declaredLicenseExpressions" => ["MIT"],
+          "containsDeclaredCopyleft" => false,
+          "reviewedCanonicalAportsEntryCount" => 1,
+          "reviewedDistfileCount" => 1,
+          "materialCoverage" => "complete",
+          "reviewState" =>
+            "candidate-source-material-engineering-reviewed-delivery-approval-open",
+          "resolvedReviewItems" => [
+            "bind-source-material-to-installed-binaries",
+            "pin-complete-aports-recipe-tree",
+            "pin-declared-upstream-distfiles"
+          ],
+          "remainingReviewItems" => [],
+          "engineeringConclusion" =>
+            "candidate-source-material-complete-engineering-only"
+        }
+      ]
+    }
+    @review_results_path.write("#{JSON.pretty_generate(review_results)}\n")
   end
 
   def run_script(*arguments, allow_file_urls: true, environment: {})
+    manifest = JSON.parse(@manifest_path.read)
+    review_results = JSON.parse(@review_results_path.read)
+    review_results["sourceAcquisitionSha256"] =
+      Digest::SHA256.file(@manifest_path).hexdigest
+    review_sources = review_results.fetch("sources")
+    manifest_sources = manifest.fetch("sources")
+    review_results["reviewedSourceOriginCount"] = manifest_sources.length
+    review_results["reviewedCanonicalAportsEntryCount"] =
+      manifest_sources.sum do |source|
+        source.fetch("aportsSnapshot").fetch("regularFileCount")
+      end
+    review_results["reviewedDistfileCount"] =
+      manifest_sources.sum { |source| source.fetch("distfiles").length }
+    review_sources.each do |review|
+      source = manifest_sources.find do |entry|
+        entry.fetch("sourceOrigin") == review.fetch("sourceOrigin")
+      end
+      next unless source
+
+      review["aportsCommit"] = source.fetch("aportsCommit")
+      review["binaryPackages"] = source.fetch("binaryPackages")
+      review["declaredLicenseExpressions"] =
+        source.fetch("declaredLicenseExpressions")
+      review["reviewedCanonicalAportsEntryCount"] =
+        source.fetch("aportsSnapshot").fetch("regularFileCount")
+      review["reviewedDistfileCount"] = source.fetch("distfiles").length
+    end
+    @review_results_path.write("#{JSON.pretty_generate(review_results)}\n")
+
     environment = environment.dup
     environment["POCKETROOT_TEST_ALLOW_FILE_URLS"] = "1" if allow_file_urls
     Open3.capture3(
@@ -735,6 +925,7 @@ class RootFSSourceBundleTests < Minitest::Test
       SCRIPT.to_s,
       "--manifest", @manifest_path.to_s,
       "--source-inventory", @inventory_path.to_s,
+      "--review-results", @review_results_path.to_s,
       *arguments,
       chdir: REPOSITORY_ROOT.to_s
     )

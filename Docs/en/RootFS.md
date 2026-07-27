@@ -5,7 +5,7 @@
 A RootFS is an external supply-chain input, not a normal fixture. PocketRoot commits immutable metadata and secure install code, not the payload.
 
 > [!WARNING]
-> The pinned v0.3.3 archive now has a reproducible package inventory, SPDX SBOM, default-configuration evidence, a source-acquisition manifest covering the complete inventory, and checksum-bound engineering review of all 78 initial candidates and all 138 external LICENSE/NOTICE payloads. Seven origins have no remaining candidate-material engineering items; only `alpine-keys`, whose upstream package lacks an MIT grant and copyright notice, remains open. The complete NOTICE set, legal review, corresponding-source delivery review, and distribution approval remain open. The URL and commands below support audit and local development; they do not grant redistribution rights.
+> The pinned v0.3.3 archive now has a reproducible package inventory, SPDX SBOM, default-configuration evidence, a source-acquisition manifest covering the complete inventory, checksum-bound corresponding-source candidate-material review of all 10 origins (130 canonical aports entries and nine upstream distfiles), and engineering review of all 78 initial and 138 external LICENSE/NOTICE candidates. Seven origins have no remaining license-candidate material items; only `alpine-keys`, whose upstream package lacks an MIT grant and copyright notice, remains open. The complete NOTICE set, rebuild environment/toolchain, legal review, source-offer mechanics, corresponding-source delivery approval, and distribution approval remain open. The URL and commands below support audit and local development; they do not grant redistribution rights.
 
 ## Pinned manifest
 
@@ -60,26 +60,27 @@ ruby Scripts/generate-rootfs-compliance.rb \
   --check
 ```
 
-Validate the source manifest or materialize a local review directory outside
-the repository:
+Validate the source manifest and
+`CORRESPONDING-SOURCE-REVIEW-RESULTS.json`, or materialize an external
+corresponding-source candidate directory:
 
 ```bash
 ruby Scripts/prepare-rootfs-source-bundle.rb --validate-only
 
 ruby Scripts/prepare-rootfs-source-bundle.rb \
-  --output /absolute/new/path/outside-the-repository/rootfs-v0.3.3-source-review
+  --output /absolute/new/path/outside-the-repository/rootfs-v0.3.3-corresponding-source-candidate
 
 ruby Scripts/prepare-rootfs-source-bundle.rb \
-  --verify /absolute/new/path/outside-the-repository/rootfs-v0.3.3-source-review
+  --verify /absolute/new/path/outside-the-repository/rootfs-v0.3.3-corresponding-source-candidate
 ```
 
-An existing source-review directory, or a read-only external directory with
+An existing candidate bundle, or a read-only external directory with
 the same layout, can rebuild the bundle offline without weakening any pin:
 
 ```bash
 ruby Scripts/prepare-rootfs-source-bundle.rb \
-  --download-cache /absolute/existing/rootfs-v0.3.3-source-review \
-  --output /absolute/new/path/outside-the-repository/rootfs-v0.3.3-source-review
+  --download-cache /absolute/existing/rootfs-v0.3.3-corresponding-source-candidate \
+  --output /absolute/new/path/outside-the-repository/rootfs-v0.3.3-corresponding-source-candidate
 ```
 
 The cache must provide `downloads/aports/<source-origin>.tar.gz` and
@@ -91,22 +92,24 @@ not change the receipt's pinned upstream origins.
 The receipt marks cached acquisition explicitly and records cache-relative
 paths rather than claiming that an upstream URL was contacted; the pinned
 upstream origins remain in `SOURCE-ACQUISITION.json`.
-Receipt schema v2 requires that explicit mode. A legacy v1 source-review
-directory has ambiguous transport provenance and is no longer accepted by
-`--verify`; pass it to `--download-cache` to regenerate a verifiable v2 bundle.
+Receipt schema v3 also binds `SOURCE-INVENTORY.json`,
+`CORRESPONDING-SOURCE-REVIEW-RESULTS.json`, the candidate-material engineering
+state, and every still-closed gate. Legacy v1/v2 source-review directories may
+remain read-only `--download-cache` inputs, but they no longer pass `--verify`;
+regenerate a v3 candidate bundle.
 
-After that source-review directory verifies, extract the 78 pinned
+After that corresponding-source candidate directory verifies, extract the 78 pinned
 license/attribution candidates into another directory outside the repository:
 
 ```bash
 ruby Scripts/prepare-rootfs-license-review.rb --validate-only
 
 ruby Scripts/prepare-rootfs-license-review.rb \
-  --source-bundle /absolute/new/path/outside-the-repository/rootfs-v0.3.3-source-review \
+  --source-bundle /absolute/new/path/outside-the-repository/rootfs-v0.3.3-corresponding-source-candidate \
   --output /absolute/new/path/outside-the-repository/rootfs-v0.3.3-license-review
 
 ruby Scripts/prepare-rootfs-license-review.rb \
-  --source-bundle /absolute/new/path/outside-the-repository/rootfs-v0.3.3-source-review \
+  --source-bundle /absolute/new/path/outside-the-repository/rootfs-v0.3.3-corresponding-source-candidate \
   --verify /absolute/new/path/outside-the-repository/rootfs-v0.3.3-license-review
 
 ruby Scripts/rootfs-license-review-results.rb
@@ -123,8 +126,10 @@ contains no identifiable LICENSE/COPYING/NOTICE files. The candidate tool
 rechecks extracted byte counts, SHA-256 digests, the exact path set, and the
 no-link/special-node boundary. The pinned results record engineering review of
 all 78 candidates: `libc-dev` and `zlib` have no remaining indexed items, while
-eight source origins still require follow-up. The output is not a completed
-NOTICE or corresponding-source delivery bundle.
+eight source origins still require license-material follow-up. All 10 origins
+now have engineering-reviewed corresponding-source candidate material, but
+the output is not a completed NOTICE, an approved corresponding-source
+delivery, or a source offer.
 
 The final BusyBox candidate set is derived from the pinned distfile, all 33
 patches applied in `APKBUILD` order, and the pinned configuration. After
@@ -146,12 +151,12 @@ ruby Scripts/rootfs-license-notice-review-results.rb
 ruby Scripts/prepare-rootfs-license-notice-bundle.rb --validate-only
 
 ruby Scripts/prepare-rootfs-license-notice-bundle.rb \
-  --source-bundle /absolute/new/path/outside-the-repository/rootfs-v0.3.3-source-review \
+  --source-bundle /absolute/new/path/outside-the-repository/rootfs-v0.3.3-corresponding-source-candidate \
   --license-review /absolute/new/path/outside-the-repository/rootfs-v0.3.3-license-review \
   --output /absolute/new/path/outside-the-repository/rootfs-v0.3.3-license-notice-candidates
 
 ruby Scripts/prepare-rootfs-license-notice-bundle.rb \
-  --source-bundle /absolute/new/path/outside-the-repository/rootfs-v0.3.3-source-review \
+  --source-bundle /absolute/new/path/outside-the-repository/rootfs-v0.3.3-corresponding-source-candidate \
   --license-review /absolute/new/path/outside-the-repository/rootfs-v0.3.3-license-review \
   --verify /absolute/new/path/outside-the-repository/rootfs-v0.3.3-license-notice-candidates
 
