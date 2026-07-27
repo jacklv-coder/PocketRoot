@@ -5,7 +5,7 @@
 RootFS 是 PocketRoot 的外部供应链输入，不是普通测试 fixture。仓库提交的是不可变清单、校验和安全安装代码，不提交、镜像或默认打包 RootFS 二进制。
 
 > [!WARNING]
-> 固定 v0.3.3 归档已有可复现 package inventory、SPDX SBOM、默认配置证据、完整覆盖 inventory 的源码获取清单，以及 37 个初始候选和 97 个外置 LICENSE/NOTICE payload 的 checksum-bound 工程复核结果；3 个 origin 的候选材料工程项已关闭，5 个仍需补逐包材料。完整 NOTICE、法律复核、对应源码交付审查与发行批准尚未闭环。以下 URL 与命令用于审计和本地开发，不构成公开再分发授权。应用必须先完成自己的法律与发行审查。
+> 固定 v0.3.3 归档已有可复现 package inventory、SPDX SBOM、默认配置证据、完整覆盖 inventory 的源码获取清单，以及 78 个初始候选和 138 个外置 LICENSE/NOTICE payload 的 checksum-bound 工程复核结果；BusyBox 构建闭包审查已收口，4 个 origin 的候选材料工程项已关闭，4 个仍需补逐包材料。完整 NOTICE、法律复核、对应源码交付审查与发行批准尚未闭环。以下 URL 与命令用于审计和本地开发，不构成公开再分发授权。应用必须先完成自己的法律与发行审查。
 
 ## 1. 固定清单
 
@@ -118,7 +118,7 @@ receipt schema v2 强制包含该模式。旧 v1 source-review 的传输来源�
 规范化 aports 目录身份覆盖条目类型、路径、普通文件权限位和内容摘要；物化时会保留
 这些权限位，`--verify` 会再次校验。
 
-在 source-review 目录验证通过后，可把固定的 37 个候选许可证/attribution 文件
+在 source-review 目录验证通过后，可把固定的 78 个候选许可证/attribution 文件
 提取到另一个仓库外目录：
 
 ```bash
@@ -139,9 +139,15 @@ ruby Scripts/rootfs-license-review-results.rb
 `APKBUILD`；`--verify` 会复核普通文件摘要、目录集合和符号链接目标。脚本不向 App、
 Git 或 CI artifact 自动添加输出。这完成的是可复现的工程获取流程。archive 内没有
 随附可识别的 LICENSE/COPYING/NOTICE 文件。候选工具会核对提取文件的大小、
-SHA-256、精确路径集合与无链接/特殊节点边界。固定结果清单记录 37/37 个候选均已
+SHA-256、精确路径集合与无链接/特殊节点边界。固定结果清单记录 78/78 个候选均已
 工程复核，其中 `libc-dev`、`zlib` 的索引项已关闭，另外 8 个 source origin 仍有
 未决项；输出不能直接视为完整 NOTICE 或对应源码交付材料。
+
+BusyBox 的最后一批候选由固定 distfile、按 `APKBUILD` 顺序应用的 33 个补丁和
+固定配置共同确定。补丁后配置只发生时间戳变化；dry-run 构建图包含 487 个编译
+单元和 562 文件递归 include 闭包，并从中固定 41 份仍含独立第三方条款或
+provenance 的文件。连同已有材料，BusyBox 现有 60 份 checksum-bound 证据；
+这关闭候选材料工程项，但不解除法律、对应源码或发行门禁。
 
 剩余 8 个 origin 的外置 LICENSE/NOTICE 候选包清单还固定了 13 份远端许可证/
 attribution 材料与 47 份 aports 补充文件。清单可独立校验；实际物化和复验必须
@@ -167,10 +173,10 @@ ruby Scripts/rootfs-license-notice-review-results.rb \
 ```
 
 工具对远端材料强制 HTTPS、重定向次数、响应大小、固定字节数与 SHA-256，并原子
-创建输出。结果清单把工程复核绑定到精确的 97 文件 payload tree；复验器拒绝路径
+创建输出。结果清单把工程复核绑定到精确的 138 文件 payload tree；复验器拒绝路径
 漂移、符号链接、特殊节点、已知摘要漂移和 tree digest 漂移。`apk-tools`、
-`openssl` 与 `pax-utils` 的候选材料工程项已关闭，另外 5 个 origin 仍需补逐包
-材料；候选 NOTICE 和 receipt 不代表法律审查或发行批准。
+`busybox`、`openssl` 与 `pax-utils` 的候选材料工程项已关闭，另外 4 个 origin
+仍需补逐包材料；候选 NOTICE 和 receipt 不代表法律审查或发行批准。
 
 不要把归档放入 `Sources/PocketRootResources/Resources`、Demo resources 或 Git LFS。合规完成前，`PocketRootBundledRootFSProvider` 的资源查找预期返回 `nil`。
 

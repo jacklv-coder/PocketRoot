@@ -4,7 +4,7 @@
     "version": "v0.3.3",
     "sha256": "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"
   },
-  "candidateManifestSha256": "537646fc1fe8bb81322d74a434227d83495ffbc4bff5a61f123a47e9effcd999",
+  "candidateManifestSha256": "534c12f8b9268a36cff13af3123bebbacf61d85b667fafce6d7649cae47c7e65",
   "status": "candidate-payloads-engineering-reviewed-open-release-gates",
   "engineeringReviewCompleted": true,
   "allIndexedCandidatePayloadsReviewed": true,
@@ -13,10 +13,10 @@
   "legalReviewApproved": false,
   "redistributionApproved": false,
   "candidatePayloadTreeFormat": "sha256-path-lines-v1",
-  "candidatePayloadTreeSha256": "e4d8eef692cba9ed38052e2b8067b5e9c46acbd6d0dd46b9158fd876d7a4ec40",
-  "reviewedPayloadFileCount": 97,
+  "candidatePayloadTreeSha256": "cc9aacfeb345129ea9df24834cdcf381dfb67c8393b11d4c1d4249855238d281",
+  "reviewedPayloadFileCount": 138,
   "reviewedClosedOriginEvidenceCount": 4,
-  "sourceOriginsWithRemainingReviewItems": 5,
+  "sourceOriginsWithRemainingReviewItems": 4,
   "sources": [
     {
       "sourceOrigin": "alpine-baselayout",
@@ -50,7 +50,9 @@
       "reviewedReferenceLicenseCount": 1,
       "reviewedSupplementalAportsCount": 0,
       "reviewedRemoteEvidenceCount": 1,
-      "resolvedReviewItems": [],
+      "resolvedReviewItems": [
+
+      ],
       "remainingReviewItems": [
         "collect-mit-license-grant-and-copyright-notice"
       ],
@@ -71,7 +73,9 @@
       "resolvedReviewItems": [
         "confirm-package-specific-attribution-and-aports-patch-notices"
       ],
-      "remainingReviewItems": [],
+      "remainingReviewItems": [
+
+      ],
       "engineeringConclusion": "candidate-material-complete-engineering-only"
     },
     {
@@ -80,9 +84,9 @@
         "GPL-2.0-only"
       ],
       "reviewState": "candidate-payloads-engineering-reviewed-legal-review-open",
-      "licenseTextCoverage": "partial",
-      "attributionCoverage": "partial",
-      "reviewedExistingEvidenceCount": 19,
+      "licenseTextCoverage": "complete",
+      "attributionCoverage": "complete",
+      "reviewedExistingEvidenceCount": 60,
       "reviewedReferenceLicenseCount": 1,
       "reviewedSupplementalAportsCount": 37,
       "reviewedRemoteEvidenceCount": 0,
@@ -98,12 +102,13 @@
         "confirm-enabled-traceroute-and-traceroute6-license-and-attribution-coverage",
         "confirm-enabled-od-hexdump-and-hd-license-and-attribution-coverage",
         "confirm-enabled-expand-unexpand-and-fold-license-and-attribution-coverage",
-        "confirm-enabled-cut-sort-and-uniq-license-and-attribution-coverage"
-      ],
-      "remainingReviewItems": [
+        "confirm-enabled-cut-sort-and-uniq-license-and-attribution-coverage",
         "review-other-bundled-third-party-license-and-attribution-coverage"
       ],
-      "engineeringConclusion": "additional-package-material-required"
+      "remainingReviewItems": [
+
+      ],
+      "engineeringConclusion": "candidate-material-complete-engineering-only"
     },
     {
       "sourceOrigin": "ca-certificates",
@@ -139,7 +144,9 @@
       "reviewedReferenceLicenseCount": 3,
       "reviewedSupplementalAportsCount": 3,
       "reviewedRemoteEvidenceCount": 0,
-      "resolvedReviewItems": [],
+      "resolvedReviewItems": [
+
+      ],
       "remainingReviewItems": [
         "confirm-third-party-musl-files-and-aports-helper-notice-coverage"
       ],
@@ -160,7 +167,9 @@
       "resolvedReviewItems": [
         "confirm-required-apache-notice-and-attribution-material"
       ],
-      "remainingReviewItems": [],
+      "remainingReviewItems": [
+
+      ],
       "engineeringConclusion": "candidate-material-complete-engineering-only"
     },
     {
@@ -178,7 +187,9 @@
       "resolvedReviewItems": [
         "confirm-package-specific-copyright-and-aports-patch-notices"
       ],
-      "remainingReviewItems": [],
+      "remainingReviewItems": [
+
+      ],
       "engineeringConclusion": "candidate-material-complete-engineering-only"
     }
   ]

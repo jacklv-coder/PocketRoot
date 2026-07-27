@@ -30,15 +30,15 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
   10 个 source origin、SPDX 2.3 JSON SBOM、许可证声明/attribution inventory
   和 `apk`、repository、DNS 默认配置快照；完整 LICENSE/NOTICE 与对应源码 bundle
   仍保持发行阻塞。
-- 加入 checksum-bound `LICENSE-REVIEW-RESULTS.json` 和严格验证器；37/37 个固定
+- 加入 checksum-bound `LICENSE-REVIEW-RESULTS.json` 和严格验证器；78/78 个固定
   RootFS license/NOTICE 候选已完成工程复核，8 个 source origin 仍有包级未决项，
   法律与再分发门禁保持关闭。
 - 为剩余 8 个 RootFS source origin 加入 checksum-bound
   `LICENSE-NOTICE-CANDIDATES.json`、严格验证器和仓库外原子 materializer；索引
-  13 份远端许可证/attribution 材料、47 份 aports 文件与 37 份既有证据，支持完整
+  13 份远端许可证/attribution 材料、47 份 aports 文件与 78 份既有证据，支持完整
   复验，但不提交 payload，也不解除工程、法律或再分发门禁。
 - 加入 `LICENSE-NOTICE-REVIEW-RESULTS.json` 和严格外置 payload-tree 复验器；
-  97/97 个候选 payload 已完成 checksum-bound 工程复核；新增固定
+  138/138 个候选 payload 已完成 checksum-bound 工程复核；新增固定
   `alpine-keys` GPL→MIT 上游许可判定提交，但仍保留包级版权声明缺口；
   `ca-certificates` 生成脚本与 curl 提交 `3fdc4bdb` 字节一致并固定该精确
   revision 的 curl 授权文本，trust-store 审查仍保持未决；
@@ -54,9 +54,11 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
   声明；`expand`/`unexpand` 共同链入 `coreutils/expand.c`，`fold` 链入
   `coreutils/fold.c`，两份源码均保留 FSF 版权、GPLv2-or-later 声明与 BusyBox
   改写署名；`cut`、`sort`、`uniq` 分别链入对应 `coreutils` 源码，三份源码均
-  保留 GPLv2-or-later 声明与原作者署名；其他内联第三方 notices 继续保持未决；
-  `apk-tools`、`openssl`、`pax-utils` 的候选材料工程项关闭，另外 5 个 origin
-  仍需补逐包材料，法律和再分发门禁保持关闭。
+  保留 GPLv2-or-later 声明与原作者署名。其余 BusyBox 审查按固定 33 个 aports
+  补丁和配置生成 487 个编译单元、562 文件 include 闭包，并固定其中 41 份仍含
+  独立第三方条款或 provenance 的源码；BusyBox 证据增至 60 份，总括工程项关闭。
+  `apk-tools`、`busybox`、`openssl`、`pax-utils` 的候选材料工程项关闭，另外
+  4 个 origin 仍需补逐包材料，法律和再分发门禁保持关闭。
 - RootFS source-review materializer 新增严格仓库外下载缓存输入；缓存只替代网络
   传输，仍逐项限制大小、拒绝 symlink/重叠路径、核对固定 SHA-512，并重新验证
   解包后的 canonical aports tree；v2 receipt 会明确区分网络与缓存获取，不伪造

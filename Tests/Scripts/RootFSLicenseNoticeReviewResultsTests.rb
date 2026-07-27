@@ -47,10 +47,10 @@ class RootFSLicenseNoticeReviewResultsTests < Minitest::Test
     assert_equal 8, validated.fetch(:sources).length
     assert_equal 13, validated.fetch(:remote_payloads).length
     assert_equal 47, validated.fetch(:aports_paths).length
-    assert_equal 97, @results.fetch("reviewedPayloadFileCount")
-    assert_equal 5,
+    assert_equal 138, @results.fetch("reviewedPayloadFileCount")
+    assert_equal 4,
       @results.fetch("sourceOriginsWithRemainingReviewItems")
-    assert_equal %w[apk-tools openssl pax-utils],
+    assert_equal %w[apk-tools busybox openssl pax-utils],
       @results.fetch("sources")
         .select { |source| source.fetch("remainingReviewItems").empty? }
         .map { |source| source.fetch("sourceOrigin") }
@@ -112,19 +112,16 @@ class RootFSLicenseNoticeReviewResultsTests < Minitest::Test
       candidate.fetch("sourceOrigin") == "busybox"
     end
 
-    assert_equal "partial", source.fetch("licenseTextCoverage")
-    assert_equal "partial", source.fetch("attributionCoverage")
+    assert_equal "complete", source.fetch("licenseTextCoverage")
+    assert_equal "complete", source.fetch("attributionCoverage")
     assert_equal 37, source.fetch("reviewedSupplementalAportsCount")
     assert_includes(
       source.fetch("resolvedReviewItems"),
       "confirm-enabled-bzip2-license-and-attribution-coverage"
     )
+    assert_empty source.fetch("remainingReviewItems")
     assert_equal(
-      ["review-other-bundled-third-party-license-and-attribution-coverage"],
-      source.fetch("remainingReviewItems")
-    )
-    assert_equal(
-      "additional-package-material-required",
+      "candidate-material-complete-engineering-only",
       source.fetch("engineeringConclusion")
     )
   end
@@ -134,19 +131,16 @@ class RootFSLicenseNoticeReviewResultsTests < Minitest::Test
       candidate.fetch("sourceOrigin") == "busybox"
     end
 
-    assert_equal "partial", source.fetch("licenseTextCoverage")
-    assert_equal "partial", source.fetch("attributionCoverage")
-    assert_equal 19, source.fetch("reviewedExistingEvidenceCount")
+    assert_equal "complete", source.fetch("licenseTextCoverage")
+    assert_equal "complete", source.fetch("attributionCoverage")
+    assert_equal 60, source.fetch("reviewedExistingEvidenceCount")
     assert_includes(
       source.fetch("resolvedReviewItems"),
       "confirm-enabled-ash-math-license-and-attribution-coverage"
     )
+    assert_empty source.fetch("remainingReviewItems")
     assert_equal(
-      ["review-other-bundled-third-party-license-and-attribution-coverage"],
-      source.fetch("remainingReviewItems")
-    )
-    assert_equal(
-      "additional-package-material-required",
+      "candidate-material-complete-engineering-only",
       source.fetch("engineeringConclusion")
     )
   end
@@ -156,19 +150,16 @@ class RootFSLicenseNoticeReviewResultsTests < Minitest::Test
       candidate.fetch("sourceOrigin") == "busybox"
     end
 
-    assert_equal "partial", source.fetch("licenseTextCoverage")
-    assert_equal "partial", source.fetch("attributionCoverage")
-    assert_equal 19, source.fetch("reviewedExistingEvidenceCount")
+    assert_equal "complete", source.fetch("licenseTextCoverage")
+    assert_equal "complete", source.fetch("attributionCoverage")
+    assert_equal 60, source.fetch("reviewedExistingEvidenceCount")
     assert_includes(
       source.fetch("resolvedReviewItems"),
       "confirm-enabled-env-license-and-attribution-coverage"
     )
+    assert_empty source.fetch("remainingReviewItems")
     assert_equal(
-      ["review-other-bundled-third-party-license-and-attribution-coverage"],
-      source.fetch("remainingReviewItems")
-    )
-    assert_equal(
-      "additional-package-material-required",
+      "candidate-material-complete-engineering-only",
       source.fetch("engineeringConclusion")
     )
   end
@@ -178,19 +169,16 @@ class RootFSLicenseNoticeReviewResultsTests < Minitest::Test
       candidate.fetch("sourceOrigin") == "busybox"
     end
 
-    assert_equal "partial", source.fetch("licenseTextCoverage")
-    assert_equal "partial", source.fetch("attributionCoverage")
-    assert_equal 19, source.fetch("reviewedExistingEvidenceCount")
+    assert_equal "complete", source.fetch("licenseTextCoverage")
+    assert_equal "complete", source.fetch("attributionCoverage")
+    assert_equal 60, source.fetch("reviewedExistingEvidenceCount")
     assert_includes(
       source.fetch("resolvedReviewItems"),
       "confirm-enabled-echo-license-and-attribution-coverage"
     )
+    assert_empty source.fetch("remainingReviewItems")
     assert_equal(
-      ["review-other-bundled-third-party-license-and-attribution-coverage"],
-      source.fetch("remainingReviewItems")
-    )
-    assert_equal(
-      "additional-package-material-required",
+      "candidate-material-complete-engineering-only",
       source.fetch("engineeringConclusion")
     )
   end
@@ -200,19 +188,16 @@ class RootFSLicenseNoticeReviewResultsTests < Minitest::Test
       candidate.fetch("sourceOrigin") == "busybox"
     end
 
-    assert_equal "partial", source.fetch("licenseTextCoverage")
-    assert_equal "partial", source.fetch("attributionCoverage")
-    assert_equal 19, source.fetch("reviewedExistingEvidenceCount")
+    assert_equal "complete", source.fetch("licenseTextCoverage")
+    assert_equal "complete", source.fetch("attributionCoverage")
+    assert_equal 60, source.fetch("reviewedExistingEvidenceCount")
     assert_includes(
       source.fetch("resolvedReviewItems"),
       "confirm-enabled-logger-license-and-attribution-coverage"
     )
+    assert_empty source.fetch("remainingReviewItems")
     assert_equal(
-      ["review-other-bundled-third-party-license-and-attribution-coverage"],
-      source.fetch("remainingReviewItems")
-    )
-    assert_equal(
-      "additional-package-material-required",
+      "candidate-material-complete-engineering-only",
       source.fetch("engineeringConclusion")
     )
   end
@@ -222,19 +207,16 @@ class RootFSLicenseNoticeReviewResultsTests < Minitest::Test
       candidate.fetch("sourceOrigin") == "busybox"
     end
 
-    assert_equal "partial", source.fetch("licenseTextCoverage")
-    assert_equal "partial", source.fetch("attributionCoverage")
-    assert_equal 19, source.fetch("reviewedExistingEvidenceCount")
+    assert_equal "complete", source.fetch("licenseTextCoverage")
+    assert_equal "complete", source.fetch("attributionCoverage")
+    assert_equal 60, source.fetch("reviewedExistingEvidenceCount")
     assert_includes(
       source.fetch("resolvedReviewItems"),
       "confirm-enabled-cal-license-and-attribution-coverage"
     )
+    assert_empty source.fetch("remainingReviewItems")
     assert_equal(
-      ["review-other-bundled-third-party-license-and-attribution-coverage"],
-      source.fetch("remainingReviewItems")
-    )
-    assert_equal(
-      "additional-package-material-required",
+      "candidate-material-complete-engineering-only",
       source.fetch("engineeringConclusion")
     )
   end
@@ -244,19 +226,16 @@ class RootFSLicenseNoticeReviewResultsTests < Minitest::Test
       candidate.fetch("sourceOrigin") == "busybox"
     end
 
-    assert_equal "partial", source.fetch("licenseTextCoverage")
-    assert_equal "partial", source.fetch("attributionCoverage")
-    assert_equal 19, source.fetch("reviewedExistingEvidenceCount")
+    assert_equal "complete", source.fetch("licenseTextCoverage")
+    assert_equal "complete", source.fetch("attributionCoverage")
+    assert_equal 60, source.fetch("reviewedExistingEvidenceCount")
     assert_includes(
       source.fetch("resolvedReviewItems"),
       "confirm-enabled-ping-and-ping6-license-and-attribution-coverage"
     )
+    assert_empty source.fetch("remainingReviewItems")
     assert_equal(
-      ["review-other-bundled-third-party-license-and-attribution-coverage"],
-      source.fetch("remainingReviewItems")
-    )
-    assert_equal(
-      "additional-package-material-required",
+      "candidate-material-complete-engineering-only",
       source.fetch("engineeringConclusion")
     )
   end
@@ -266,19 +245,16 @@ class RootFSLicenseNoticeReviewResultsTests < Minitest::Test
       candidate.fetch("sourceOrigin") == "busybox"
     end
 
-    assert_equal "partial", source.fetch("licenseTextCoverage")
-    assert_equal "partial", source.fetch("attributionCoverage")
-    assert_equal 19, source.fetch("reviewedExistingEvidenceCount")
+    assert_equal "complete", source.fetch("licenseTextCoverage")
+    assert_equal "complete", source.fetch("attributionCoverage")
+    assert_equal 60, source.fetch("reviewedExistingEvidenceCount")
     assert_includes(
       source.fetch("resolvedReviewItems"),
       "confirm-enabled-traceroute-and-traceroute6-license-and-attribution-coverage"
     )
+    assert_empty source.fetch("remainingReviewItems")
     assert_equal(
-      ["review-other-bundled-third-party-license-and-attribution-coverage"],
-      source.fetch("remainingReviewItems")
-    )
-    assert_equal(
-      "additional-package-material-required",
+      "candidate-material-complete-engineering-only",
       source.fetch("engineeringConclusion")
     )
   end
@@ -288,19 +264,16 @@ class RootFSLicenseNoticeReviewResultsTests < Minitest::Test
       candidate.fetch("sourceOrigin") == "busybox"
     end
 
-    assert_equal "partial", source.fetch("licenseTextCoverage")
-    assert_equal "partial", source.fetch("attributionCoverage")
-    assert_equal 19, source.fetch("reviewedExistingEvidenceCount")
+    assert_equal "complete", source.fetch("licenseTextCoverage")
+    assert_equal "complete", source.fetch("attributionCoverage")
+    assert_equal 60, source.fetch("reviewedExistingEvidenceCount")
     assert_includes(
       source.fetch("resolvedReviewItems"),
       "confirm-enabled-od-hexdump-and-hd-license-and-attribution-coverage"
     )
+    assert_empty source.fetch("remainingReviewItems")
     assert_equal(
-      ["review-other-bundled-third-party-license-and-attribution-coverage"],
-      source.fetch("remainingReviewItems")
-    )
-    assert_equal(
-      "additional-package-material-required",
+      "candidate-material-complete-engineering-only",
       source.fetch("engineeringConclusion")
     )
   end
@@ -310,19 +283,16 @@ class RootFSLicenseNoticeReviewResultsTests < Minitest::Test
       candidate.fetch("sourceOrigin") == "busybox"
     end
 
-    assert_equal "partial", source.fetch("licenseTextCoverage")
-    assert_equal "partial", source.fetch("attributionCoverage")
-    assert_equal 19, source.fetch("reviewedExistingEvidenceCount")
+    assert_equal "complete", source.fetch("licenseTextCoverage")
+    assert_equal "complete", source.fetch("attributionCoverage")
+    assert_equal 60, source.fetch("reviewedExistingEvidenceCount")
     assert_includes(
       source.fetch("resolvedReviewItems"),
       "confirm-enabled-expand-unexpand-and-fold-license-and-attribution-coverage"
     )
+    assert_empty source.fetch("remainingReviewItems")
     assert_equal(
-      ["review-other-bundled-third-party-license-and-attribution-coverage"],
-      source.fetch("remainingReviewItems")
-    )
-    assert_equal(
-      "additional-package-material-required",
+      "candidate-material-complete-engineering-only",
       source.fetch("engineeringConclusion")
     )
   end
@@ -332,19 +302,35 @@ class RootFSLicenseNoticeReviewResultsTests < Minitest::Test
       candidate.fetch("sourceOrigin") == "busybox"
     end
 
-    assert_equal "partial", source.fetch("licenseTextCoverage")
-    assert_equal "partial", source.fetch("attributionCoverage")
-    assert_equal 19, source.fetch("reviewedExistingEvidenceCount")
+    assert_equal "complete", source.fetch("licenseTextCoverage")
+    assert_equal "complete", source.fetch("attributionCoverage")
+    assert_equal 60, source.fetch("reviewedExistingEvidenceCount")
     assert_includes(
       source.fetch("resolvedReviewItems"),
       "confirm-enabled-cut-sort-and-uniq-license-and-attribution-coverage"
     )
+    assert_empty source.fetch("remainingReviewItems")
     assert_equal(
-      ["review-other-bundled-third-party-license-and-attribution-coverage"],
-      source.fetch("remainingReviewItems")
+      "candidate-material-complete-engineering-only",
+      source.fetch("engineeringConclusion")
     )
+  end
+
+  def test_closes_remaining_busybox_build_closure_review_item
+    source = @results.fetch("sources").find do |candidate|
+      candidate.fetch("sourceOrigin") == "busybox"
+    end
+
+    assert_equal 60, source.fetch("reviewedExistingEvidenceCount")
+    assert_includes(
+      source.fetch("resolvedReviewItems"),
+      "review-other-bundled-third-party-license-and-attribution-coverage"
+    )
+    assert_empty source.fetch("remainingReviewItems")
+    assert_equal "complete", source.fetch("licenseTextCoverage")
+    assert_equal "complete", source.fetch("attributionCoverage")
     assert_equal(
-      "additional-package-material-required",
+      "candidate-material-complete-engineering-only",
       source.fetch("engineeringConclusion")
     )
   end
