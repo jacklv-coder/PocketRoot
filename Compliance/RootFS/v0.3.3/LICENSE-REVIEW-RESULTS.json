@@ -4,11 +4,11 @@
     "version": "v0.3.3",
     "sha256": "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"
   },
-  "licenseReviewManifestSha256": "bf7ddbfae242c3a5fc5de1dfc735ef8a0cf732f251fa63aabd6c9ebc8be35547",
+  "licenseReviewManifestSha256": "45e86e2945da28137723aab628141939fc8979945abf9467173fec085467907f",
   "status": "engineering-reviewed-open-release-gates",
   "engineeringReviewCompleted": true,
   "allCandidateDigestsVerified": true,
-  "reviewedCandidateCount": 32,
+  "reviewedCandidateCount": 34,
   "sourceOriginsWithRemainingReviewItems": 8,
   "completeLicenseTextBundlePresent": false,
   "completePackageNoticeSetPresent": false,
@@ -159,6 +159,16 @@
           "outputPath": "evidence/busybox/libbb-dump.c",
           "sha256": "a1c705a48bd6eb43b4cb9cfb74d61f47f8500b601ebd9d3502906093f7c8ddfe",
           "conclusion": "inline-license-and-attribution-notice"
+        },
+        {
+          "outputPath": "evidence/busybox/coreutils-expand.c",
+          "sha256": "66296875f04016bba0721d4fa80393317ffca014e4b4722ed8e7e7fb1c882802",
+          "conclusion": "license-header-and-attribution"
+        },
+        {
+          "outputPath": "evidence/busybox/coreutils-fold.c",
+          "sha256": "db291cf01ee9a90244607c88a5d88ddf7d2600237eca6f2d7a6894815928cdef",
+          "conclusion": "license-header-and-attribution"
         }
       ],
       "resolvedReviewItems": [],
@@ -172,6 +182,7 @@
         "confirm-enabled-ping-and-ping6-license-and-attribution-coverage",
         "confirm-enabled-traceroute-and-traceroute6-license-and-attribution-coverage",
         "confirm-enabled-od-hexdump-and-hd-license-and-attribution-coverage",
+        "confirm-enabled-expand-unexpand-and-fold-license-and-attribution-coverage",
         "review-other-bundled-third-party-license-and-attribution-coverage",
         "confirm-aports-patch-notices"
       ]

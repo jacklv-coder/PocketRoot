@@ -295,6 +295,32 @@
             "attribution"
           ],
           "reviewState": "unreviewed-candidate"
+        },
+        {
+          "sourceKind": "distfile-member",
+          "distfile": "busybox-1.36.1.tar.bz2",
+          "member": "busybox-1.36.1/coreutils/expand.c",
+          "outputPath": "evidence/busybox/coreutils-expand.c",
+          "byteCount": 6393,
+          "sha256": "66296875f04016bba0721d4fa80393317ffca014e4b4722ed8e7e7fb1c882802",
+          "evidenceKinds": [
+            "license-declaration",
+            "attribution"
+          ],
+          "reviewState": "unreviewed-candidate"
+        },
+        {
+          "sourceKind": "distfile-member",
+          "distfile": "busybox-1.36.1.tar.bz2",
+          "member": "busybox-1.36.1/coreutils/fold.c",
+          "outputPath": "evidence/busybox/coreutils-fold.c",
+          "byteCount": 5018,
+          "sha256": "db291cf01ee9a90244607c88a5d88ddf7d2600237eca6f2d7a6894815928cdef",
+          "evidenceKinds": [
+            "license-declaration",
+            "attribution"
+          ],
+          "reviewState": "unreviewed-candidate"
         }
       ],
       "openReviewItems": [
@@ -307,6 +333,7 @@
         "confirm-enabled-ping-and-ping6-license-and-attribution-coverage",
         "confirm-enabled-traceroute-and-traceroute6-license-and-attribution-coverage",
         "confirm-enabled-od-hexdump-and-hd-license-and-attribution-coverage",
+        "confirm-enabled-expand-unexpand-and-fold-license-and-attribution-coverage",
         "review-other-bundled-third-party-license-and-attribution-coverage",
         "confirm-aports-patch-notices"
       ]
