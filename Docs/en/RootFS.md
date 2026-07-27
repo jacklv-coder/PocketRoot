@@ -5,7 +5,7 @@
 A RootFS is an external supply-chain input, not a normal fixture. PocketRoot commits immutable metadata and secure install code, not the payload.
 
 > [!WARNING]
-> The pinned v0.3.3 archive now has a reproducible package inventory, SPDX SBOM, default-configuration evidence, a source-acquisition manifest covering the complete inventory, checksum-bound corresponding-source candidate-material review of all 10 origins (130 canonical aports entries and nine upstream distfiles), and engineering review of all 78 initial and 138 external LICENSE/NOTICE candidates. Seven origins have no remaining license-candidate material items; only `alpine-keys`, whose upstream package lacks an MIT grant and copyright notice, remains open. The complete NOTICE set, rebuild environment/toolchain, legal review, source-offer mechanics, corresponding-source delivery approval, and distribution approval remain open. The URL and commands below support audit and local development; they do not grant redistribution rights.
+> The pinned v0.3.3 archive now has a reproducible package inventory, SPDX SBOM, default-configuration evidence, a source-acquisition manifest covering the complete inventory, checksum-bound corresponding-source candidate-material review of all 10 origins (130 canonical aports entries and nine upstream distfiles), and engineering review of all 78 initial and 138 external LICENSE/NOTICE candidates. Seven origins have no remaining license-candidate material items; only `alpine-keys`, whose upstream package lacks an MIT grant and copyright notice, remains open. The historical builder source is identified, but the pinned release archive's exact build environment and rebuild remain unverified. A separate schema-v4 successor is reproducible across invocations on the same host; it neither replaces the pin nor authorizes distribution. The complete NOTICE set, legal review, source-offer mechanics, corresponding-source delivery approval, and distribution approval remain open.
 
 ## Pinned manifest
 
@@ -58,7 +58,27 @@ small metadata members:
 ruby Scripts/generate-rootfs-compliance.rb \
   --archive "$ROOTFS_ARCHIVE" \
   --check
+
+ruby Scripts/rootfs-rebuild-delivery-evidence.rb
 ```
+
+`REBUILD-ENVIRONMENT-REVIEW.json` keeps two conclusions separate. The v0.3.3
+historical source is identifiable, but its old script did not pin the download
+digest, host `fakefsify`, or a complete toolchain receipt, so it does not prove
+an exact rebuild of the published archive. The successor source tree merged in
+upstream commit `4755a00` produced the same
+`445d41bbe9f8b1584ba8a4cac05300633e446763aa8a17e690c92b91dca03042`
+archive in two independent invocations, each containing its own double build.
+The host `fakefsify` bytes differed while source provenance stayed equal, and
+the difference remains in external environment receipts. This proves only
+same-host successor-recipe reproducibility, not cross-host/OS reproducibility
+or permission to replace, commit, or publish a RootFS.
+
+`SOURCE-DELIVERY-INVENTORY.json` indexes five delivery units covering the
+historical and successor builders, pinned Alpine input, corresponding-source
+material, and modification disclosure. A complete inventory is not a
+materialized or approved delivery: the source bundle, complete LICENSE/NOTICE,
+source offer, legal review, and redistribution approval remain open.
 
 Validate the source manifest and
 `CORRESPONDING-SOURCE-REVIEW-RESULTS.json`, or materialize an external

@@ -158,7 +158,17 @@ The repository records metadata and secure install code, not `fs.tar.gz`:
 - expanded tar size `18,838,016` bytes
 - SHA-256 `be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4`
 
-The pinned URL is metadata, not an automatic download. The repository now generates a RootFS package inventory and SPDX SBOM from the pinned archive. Do not add the payload to a Package/App bundle before license, NOTICE, corresponding-source, and complete release SBOM review.
+The pinned URL is metadata, not an automatic download. The repository now
+generates a RootFS package inventory and SPDX SBOM, has engineering-reviewed
+candidate source material for all ten origins, and records checksum-bound
+review of all 78 initial and 138 external LICENSE/NOTICE payloads. The
+historical builder source is identified, but the pinned release archive's
+exact environment and rebuild remain unverified. A schema-v4 successor is
+byte-reproducible across two same-host invocations and four total builds, and
+a five-unit source-delivery inventory is recorded, but neither replaces the
+pin. Do not add the payload to a Package/App bundle before the complete
+NOTICE, materialized source bundle and offer, legal and delivery approval, and
+complete release-SBOM review.
 
 ## Validation
 

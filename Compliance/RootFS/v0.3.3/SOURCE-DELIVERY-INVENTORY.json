@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-27T00:00:00Z",
+  "archive": {
+    "version": "v0.3.3",
+    "sha256": "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"
+  },
+  "inputEvidence": {
+    "SOURCE-ACQUISITION.json": {
+      "sha256": "ef66d6907b676ac365a980ae94e6360516c8f9a188ae53a46f1fd5d1037cd4c5"
+    },
+    "SOURCE-INVENTORY.json": {
+      "sha256": "1896e49891a3f1228e59d3e967a5014d57eb7b477199e6ff3a1fe62e1b119ae9"
+    },
+    "CORRESPONDING-SOURCE-REVIEW-RESULTS.json": {
+      "sha256": "7ec83e3697fbf86539019332b7c6f0d5e26d77ed8372f36a6170fc2a6498a957"
+    },
+    "REBUILD-ENVIRONMENT-REVIEW.json": {
+      "sha256": "efaa1075c67fe7017e22735b17fd1ffb6bd2f6fa237354d0225ee737362c42f4"
+    }
+  },
+  "deliveryUnits": [
+    {
+      "id": "historical-rootfs-builder",
+      "kind": "git-source",
+      "source": {
+        "repository": "https://github.com/Lolendor/ish-arm64-pkg",
+        "releaseTag": "v0.3.3",
+        "releaseTagObject": "9ac7f73878d4b9109e96cb2c21a6537a89635ca4",
+        "revision": "6f96f02c71830914c2a608258a26a8ef0833d026",
+        "tree": "75a5fdedc64b2f80ada10eefe65c361d37a9408d",
+        "buildScriptPath": "scripts/build-rootfs.sh",
+        "buildScriptSHA256": "5dc6883c9074e668a752e62f3d455e4742c1eb59bf3f43d3ebc023f3065b9387",
+        "nestedIshRepository": "https://github.com/Lolendor/ish-arm64",
+        "nestedIshPath": "third_party/ish",
+        "nestedIshRevision": "2f075626049d989dc9ac350a35c09f0b18930ffc"
+      },
+      "purpose": "identify the release-tagged builder source associated with the pinned v0.3.3 archive",
+      "indexed": true,
+      "materializedForDelivery": false
+    },
+    {
+      "id": "successor-rootfs-builder",
+      "kind": "git-source",
+      "source": {
+        "repository": "https://github.com/jacklv-coder/ish-arm64-pkg",
+        "revision": "ae78b164b004c63419b628c4c68e4dc2d531a16c",
+        "mergedByPullRequest": 17,
+        "mergeCommit": "4755a001cdc248d0b3a1e120fbed5a4dace15a69",
+        "sourceTree": "499ed24fddc5adc9f874903303eca2043deee9ad",
+        "buildScriptPath": "scripts/build-rootfs.sh",
+        "candidateScriptPath": "scripts/prepare-rootfs-candidate.sh",
+        "captureScriptPath": "scripts/capture-rootfs-build-environment.py",
+        "rootfsPinPath": "scripts/alpine-rootfs-pin.sh",
+        "nestedIshRepository": "https://github.com/jacklv-coder/ish-arm64",
+        "nestedIshPath": "third_party/ish",
+        "nestedIshRevision": "c36dfd25462737b45559eb48d4b09f799471572e",
+        "buildScriptSHA256": "89e9bee9c1033e9a4ca2128052ee6aa5cdaa98c857379e195bf4f914d734facd",
+        "candidateScriptSHA256": "78911c4a144634da7125d3f2706ea54368cba3306e949fae550eae08e48b8520",
+        "captureScriptSHA256": "7dd3d24e80d07ca0d5c5780ccb5c64da67a0f606c57398d9605e26ee529e01e0",
+        "rootfsPinSHA256": "f30323374ae55272542819622c30ec447d5729b70061b5692d4bbf3338bba328"
+      },
+      "purpose": "provide the deterministic successor recipe and captured environment tooling",
+      "indexed": true,
+      "materializedForDelivery": false
+    },
+    {
+      "id": "alpine-minirootfs-input",
+      "kind": "pinned-binary-input",
+      "source": {
+        "version": "3.19.1",
+        "architecture": "aarch64",
+        "url": "https://dl-cdn.alpinelinux.org/alpine/v3.19/releases/aarch64/alpine-minirootfs-3.19.1-aarch64.tar.gz",
+        "sha256": "7ef5eef3a5b1d198dfb1610cde1ef5b0755ff5d838fb1e5e1b9f42b59214820f"
+      },
+      "purpose": "bind the successor base userspace input",
+      "indexed": true,
+      "materializedForDelivery": false
+    },
+    {
+      "id": "installed-package-corresponding-source",
+      "kind": "aports-and-upstream-distfiles",
+      "sourceOriginCount": 10,
+      "canonicalAportsEntryCount": 130,
+      "upstreamDistfileCount": 9,
+      "materializer": "Scripts/prepare-rootfs-source-bundle.rb",
+      "indexed": true,
+      "engineeringReviewed": true,
+      "materializedForDelivery": false
+    },
+    {
+      "id": "rootfs-modifications",
+      "kind": "modification-disclosure",
+      "items": [
+        "build and install the AArch64 /sbin/ishsv supervisor",
+        "duplicate the Alpine userspace into /srv/vms/.template",
+        "set base and template resolver, apk repositories, and hostnames",
+        "convert the merged tar input into iSH fakefs metadata and data",
+        "seal the initial fakefs identity and package it with deterministic tar and gzip metadata"
+      ],
+      "indexed": true,
+      "materializedForDelivery": false
+    }
+  ],
+  "coverage": {
+    "deliveryUnitCount": 5,
+    "candidateSourceMaterialIndexComplete": true,
+    "modificationDisclosureIndexed": true,
+    "successorRebuildEvidenceIndexed": true,
+    "materializedCorrespondingSourceBundlePresent": false,
+    "completeLicenseAndNoticeBundlePresent": false,
+    "sourceOfferPrepared": false,
+    "deliveryMechanismApproved": false,
+    "legalReviewApproved": false,
+    "redistributionApproved": false
+  },
+  "status": "complete-engineering-inventory-materialization-and-approval-open"
+}

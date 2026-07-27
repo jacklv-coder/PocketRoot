@@ -68,6 +68,15 @@ engineering review of all 10 origins,
 materialize those inputs, the generated source inventory, and the pinned
 review results into a new external corresponding-source candidate directory
 and re-verify its full typed tree.
+`REBUILD-ENVIRONMENT-REVIEW.json` records that the historical v0.3.3
+builder source is identified but its exact release toolchain and published
+archive rebuild remain unverified. It separately records a schema-v4
+successor candidate whose 2 independent
+invocations and 4 total builds produced one
+byte-identical archive while preserving differing host-tool bytes in
+external environment receipts. `SOURCE-DELIVERY-INVENTORY.json` indexes all
+5 builder, input, package-source, and
+modification-disclosure delivery units.
 Source origins with declared copyleft terms are
 `alpine-baselayout`, `apk-tools`, `busybox`, `ca-certificates`, `musl`, `pax-utils`.
 

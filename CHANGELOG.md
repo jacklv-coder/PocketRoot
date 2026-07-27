@@ -73,6 +73,12 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
   对应源码候选材料工程复核。仓库外 materializer 升级为 schema v3，会把
   `SOURCE-INVENTORY.json`、审查结果、完整 typed tree 与摘要一起绑定并复验；
   重建环境/toolchain、法律审查、源码提供机制、交付批准和再分发门禁保持关闭。
+- 加入可复现的 `REBUILD-ENVIRONMENT-REVIEW.json` 与
+  `SOURCE-DELIVERY-INVENTORY.json`：定位 v0.3.3 历史 builder 及嵌套 iSH，
+  明确其精确发布环境/归档重建仍未验证；同时记录 schema-v4 后继候选在两次独立
+  调用、共四次构建中的同 host 字节级复现，以及历史/后继 builder、Alpine 输入、
+  10-origin 源码材料和修改披露组成的 5 单元交付清单。材料化、source offer、法律、
+  交付和再分发门禁保持关闭。
 - 加入完整 Experimental graph 的 arm64 Simulator 与 unsigned device final-link gate。
 - 加入 repository-owned iOS 18 native smoke App 和 runner，覆盖 17 项 prepare、boot、guest、8 MiB 持续二进制输出、stdout/stderr 超限、command、取消、recovery、shutdown 与 256 MiB Simulator 生命周期峰值内存门禁。
 - native smoke 新增仓库外、未授权 RootFS 双构建候选入口：校验候选 provenance、

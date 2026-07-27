@@ -51,9 +51,15 @@ copyright notice. The corresponding-source candidate materializer now binds
 the complete inventory, 10 aports trees with 130 canonical entries, nine
 upstream distfiles, and the engineering review results to a schema-v3 receipt
 and complete typed tree. Candidate source material is engineering-complete
-for all 10 origins, while modification disclosure, rebuild environment and
-toolchain, source-offer mechanics, legal review, and delivery approval remain
-unresolved. The output is neither a complete NOTICE set, a source offer, nor
+for all 10 origins. Modification disclosure is indexed in the five-unit
+delivery inventory, while the pinned release's exact rebuild,
+source-offer mechanics, legal review, and delivery approval remain
+unresolved. New rebuild evidence identifies the
+historical v0.3.3 builder but does not claim its exact environment or archive
+rebuild. A schema-v4 successor is byte-reproducible across two same-host
+invocations and four total builds. Its five-unit source-delivery inventory is
+complete, while the materialized bundle, source offer, legal review, and
+delivery approval remain open. The output is neither a complete NOTICE set, a source offer, nor
 approved corresponding-source delivery.
 
 ## Repository safeguards
