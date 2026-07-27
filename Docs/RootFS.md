@@ -5,7 +5,7 @@
 RootFS 是 PocketRoot 的外部供应链输入，不是普通测试 fixture。仓库提交的是不可变清单、校验和安全安装代码，不提交、镜像或默认打包 RootFS 二进制。
 
 > [!WARNING]
-> 固定 v0.3.3 归档已有可复现 package inventory、SPDX SBOM、默认配置证据、完整覆盖 inventory 的源码获取清单、10/10 origin（130 个规范化 aports 条目与 9 个上游 distfile）的对应源码候选材料工程复核，以及 78 个初始候选和 138 个外置 LICENSE/NOTICE payload 的 checksum-bound 工程复核结果；7 个 origin 的许可证候选材料工程项已关闭，只有缺少上游 MIT grant/版权声明的 `alpine-keys` 仍未决。完整 NOTICE、重建环境/toolchain、法律复核、对应源码提供与交付批准尚未闭环。以下 URL 与命令用于审计和本地开发，不构成公开再分发授权。应用必须先完成自己的法律与发行审查。
+> 固定 v0.3.3 归档已有可复现 package inventory、SPDX SBOM、默认配置证据、完整覆盖 inventory 的源码获取清单、10/10 origin（130 个规范化 aports 条目与 9 个上游 distfile）的对应源码候选材料工程复核，以及 78 个初始候选和 138 个外置 LICENSE/NOTICE payload 的 checksum-bound 工程复核结果；7 个 origin 的许可证候选材料工程项已关闭，只有缺少上游 MIT grant/版权声明的 `alpine-keys` 仍未决。历史 builder 源码已定位，但固定发布归档的精确重建环境和重建仍未验证；独立的 schema-v4 后继候选已通过同 host 跨调用复现，但不替换当前 pin，也不构成发布授权。完整 NOTICE、法律复核、对应源码提供与交付批准尚未闭环。以下 URL 与命令用于审计和本地开发，不构成公开再分发授权。应用必须先完成自己的法律与发行审查。
 
 ## 1. 固定清单
 
@@ -84,7 +84,23 @@ JSON SBOM、声明许可证清单、attribution inventory、`apk`/repository/DNS
 ruby Scripts/generate-rootfs-compliance.rb \
   --archive "$ROOTFS_ARCHIVE" \
   --check
+
+ruby Scripts/rootfs-rebuild-delivery-evidence.rb
 ```
+
+`REBUILD-ENVIRONMENT-REVIEW.json` 明确区分两种结论：v0.3.3 历史源码可定位，
+但旧脚本没有固定下载输入摘要、host `fakefsify` 和完整 toolchain receipt，因此
+无法声明已精确重建发布归档；上游合并提交 `4755a00` 所含源码树的后继候选，在
+两次独立调用（每次内部双构建）中得到相同的
+`445d41bbe9f8b1584ba8a4cac05300633e446763aa8a17e690c92b91dca03042`
+归档。两次 host `fakefsify` 字节不同而源码 provenance 相同，差异保存在外部环境
+receipt 中，RootFS 内容保持一致。这只验证同一 host 上的后继 recipe，不验证
+跨 host/OS，也不允许替换、提交或发布 RootFS。
+
+`SOURCE-DELIVERY-INVENTORY.json` 把历史与后继 builder、固定 Alpine 输入、
+对应源码材料和修改披露列成 5 个交付单元。该清单完整不等于材料已经生成或可以
+交付；source bundle、完整 LICENSE/NOTICE、source offer、法律审查和再分发批准
+仍保持关闭。
 
 源码清单与 `CORRESPONDING-SOURCE-REVIEW-RESULTS.json` 可独立校验，也可在
 仓库外生成对应源码候选目录：

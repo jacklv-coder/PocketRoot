@@ -13,6 +13,7 @@ require_relative "rootfs-license-notice-candidates"
 require_relative "rootfs-license-notice-review-results"
 require_relative "rootfs-license-review"
 require_relative "rootfs-license-review-results"
+require_relative "rootfs-rebuild-delivery-evidence"
 require_relative "rootfs-source-acquisition"
 
 ARCHIVE_VERSION = "v0.3.3"
@@ -526,12 +527,25 @@ def notice_markdown(
   packages,
   source_entries,
   corresponding_source_review_results,
+  rebuild_environment_review,
+  source_delivery_inventory,
   license_notice_paths,
   license_review_entries,
   license_review_result_entries,
   license_notice_candidates,
   license_notice_review_results
 )
+  successor_invocation_count =
+    rebuild_environment_review.fetch("successorCandidateBuild").fetch(
+      "independentInvocationCount"
+    )
+  successor_build_count =
+    rebuild_environment_review.fetch("successorCandidateBuild").fetch(
+      "totalComparedBuildCount"
+    )
+  source_delivery_unit_count =
+    source_delivery_inventory.fetch("coverage").fetch("deliveryUnitCount")
+
   package_rows = packages.map do |package|
     "| `#{package[:name]}` | `#{package[:version]}` | " \
       "`#{package[:license]}` | `#{package[:source_origin]}` | " \
@@ -633,6 +647,15 @@ def notice_markdown(
     materialize those inputs, the generated source inventory, and the pinned
     review results into a new external corresponding-source candidate directory
     and re-verify its full typed tree.
+    `REBUILD-ENVIRONMENT-REVIEW.json` records that the historical v0.3.3
+    builder source is identified but its exact release toolchain and published
+    archive rebuild remain unverified. It separately records a schema-v4
+    successor candidate whose #{successor_invocation_count} independent
+    invocations and #{successor_build_count} total builds produced one
+    byte-identical archive while preserving differing host-tool bytes in
+    external environment receipts. `SOURCE-DELIVERY-INVENTORY.json` indexes all
+    #{source_delivery_unit_count} builder, input, package-source, and
+    modification-disclosure delivery units.
     Source origins with declared copyleft terms are
     #{copyleft_sources.join(", ")}.
 
@@ -656,6 +679,8 @@ def evidence(
   source_entries,
   inspected,
   corresponding_source_review_results,
+  rebuild_environment_review,
+  source_delivery_inventory,
   license_review_entries,
   license_review_result_entries,
   license_notice_candidates,
@@ -730,6 +755,20 @@ def evidence(
         true,
       "correspondingSourceCandidateBundleMaterializerReady" => true,
       "correspondingSourceRebuildEnvironmentVerified" => false,
+      "publishedArchiveExactRebuildVerified" => false,
+      "successorBuildEnvironmentCaptured" =>
+        rebuild_environment_review.fetch("conclusions").fetch(
+          "successorBuildEnvironmentCaptured"
+        ),
+      "successorSameHostCrossInvocationReproducibilityVerified" =>
+        rebuild_environment_review.fetch("conclusions").fetch(
+          "successorSameHostCrossInvocationReproducibilityVerified"
+        ),
+      "completeSourceDeliveryInventory" =>
+        source_delivery_inventory.fetch("coverage").fetch(
+          "candidateSourceMaterialIndexComplete"
+        ),
+      "sourceDeliveryMaterialized" => false,
       "correspondingSourceDeliveryApproved" => false,
       "completeLicenseReviewCandidateIndex" => true,
       "licenseCandidateEngineeringReviewCompleted" => true,
@@ -860,6 +899,23 @@ def build_outputs(
   end
   validated_license_notice_review_results =
     license_notice_review_results.fetch(:document)
+  generated_source_inventory_bytes = pretty_json(generated_source_inventory)
+  rebuild_delivery_outputs = RootFSRebuildDeliveryEvidence.build(
+    source_acquisition: source_acquisition.fetch(:document),
+    source_inventory: generated_source_inventory,
+    corresponding_source_review_results:
+      corresponding_source_review_results.fetch(:document),
+    source_acquisition_bytes: source_acquisition.fetch(:contents),
+    source_inventory_bytes: generated_source_inventory_bytes,
+    corresponding_source_review_results_bytes:
+      corresponding_source_review_results.fetch(:contents)
+  )
+  rebuild_environment_review = JSON.parse(
+    rebuild_delivery_outputs.fetch("REBUILD-ENVIRONMENT-REVIEW.json")
+  )
+  source_delivery_inventory = JSON.parse(
+    rebuild_delivery_outputs.fetch("SOURCE-DELIVERY-INVENTORY.json")
+  )
   outputs = {
     "EVIDENCE.json" => pretty_json(
       evidence(
@@ -867,6 +923,8 @@ def build_outputs(
         source_entries,
         inspected,
         corresponding_source_review_results.fetch(:document),
+        rebuild_environment_review,
+        source_delivery_inventory,
         license_review_entries,
         license_review_result_entries,
         validated_license_notice_candidates,
@@ -896,6 +954,8 @@ def build_outputs(
       packages,
       source_entries,
       corresponding_source_review_results.fetch(:document),
+      rebuild_environment_review,
+      source_delivery_inventory,
       inspected.fetch(:license_notice_paths),
       license_review_entries,
       license_review_result_entries,
@@ -908,8 +968,9 @@ def build_outputs(
     ),
     "SBOM.spdx.json" => pretty_json(sbom(packages)),
     "SOURCE-ACQUISITION.json" => source_acquisition.fetch(:contents),
-    "SOURCE-INVENTORY.json" => pretty_json(generated_source_inventory)
+    "SOURCE-INVENTORY.json" => generated_source_inventory_bytes
   }
+  outputs.merge!(rebuild_delivery_outputs)
 
   checksum_lines = outputs.sort.map do |filename, contents|
     "#{Digest::SHA256.hexdigest(contents)}  #{filename}"

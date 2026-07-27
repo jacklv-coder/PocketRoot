@@ -91,6 +91,15 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   typed tree, and checksums. Rebuild-environment/toolchain review, legal
   review, source-offer mechanics, delivery approval, and redistribution gates
   remain open.
+- Reproducible `REBUILD-ENVIRONMENT-REVIEW.json` and
+  `SOURCE-DELIVERY-INVENTORY.json` evidence. It identifies the historical
+  v0.3.3 builder and nested iSH while keeping its exact release environment
+  and published-archive rebuild unverified; separately, it records a
+  schema-v4 successor byte-reproduced across two independent invocations and
+  four total builds. A five-unit delivery inventory covers both builders, the
+  Alpine input, all ten origins' source material, and modification disclosure,
+  while materialization, source-offer, legal, delivery, and redistribution
+  gates remain closed.
 - arm64 Simulator and unsigned-device final-link gates for the full Experimental graph.
 - Repository iOS 18 native smoke covering 17 preparation, boot, guest, 8 MiB sustained binary-output, stdout/stderr overflow, command, cancellation, recovery, shutdown, and 256 MiB Simulator lifecycle peak-memory checks.
 - A repository-external, unapproved RootFS double-build candidate path for the

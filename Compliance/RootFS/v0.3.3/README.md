@@ -17,6 +17,13 @@ pinned RootFS archive. It does not store the RootFS payload.
 - `CORRESPONDING-SOURCE-REVIEW-RESULTS.json`：绑定全部 10 个 source origin、
   130 个规范化 aports 条目和 9 个 upstream distfile 的对应源码候选材料工程
   复核；重建环境、法律、源码提供、交付与再分发批准保持关闭；
+- `REBUILD-ENVIRONMENT-REVIEW.json`：区分固定 v0.3.3 发布归档与后继候选；
+  历史 builder 源码已定位，但发布归档的精确 toolchain/重建仍无法验证；后继
+  schema-v4 候选在两次独立调用、共四次构建中得到相同 archive，并保留各次
+  host tool/environment receipt；
+- `SOURCE-DELIVERY-INVENTORY.json`：把历史/后继 builder、固定 Alpine 输入、
+  10 个 origin 的源码材料与 RootFS 修改披露列成 5 个交付单元；inventory
+  已完整，但材料化 bundle、源码提供、法律、交付与再分发批准仍关闭；
 - `LICENSE-INVENTORY.json`：声明的许可证表达式、标识符和 archive 内
   license/notice 文件检查结果；
 - `LICENSE-REVIEW.json`：覆盖 10 个 source origin 的 78 个候选许可证文本、
@@ -52,6 +59,15 @@ engineering review to the exact 138-file payload tree. Seven origins have no
 remaining candidate-material engineering items; only `alpine-keys` remains
 open because the upstream package lacks an MIT grant and copyright notice.
 Legal and redistribution approval remain open.
+`REBUILD-ENVIRONMENT-REVIEW.json` identifies the historical builder while
+recording that its exact release environment and published-archive rebuild
+cannot be verified. It separately records a schema-v4 successor that produced
+one byte-identical archive across two independent invocations and four total
+builds, even though the captured host-tool bytes differed. This is same-host
+successor reproducibility evidence, not proof for the pinned release archive,
+cross-host reproducibility, or permission to replace or distribute it.
+`SOURCE-DELIVERY-INVENTORY.json` indexes five required delivery units; none is
+committed as an approved materialized source delivery.
 
 固定 `alpine-baselayout` aports snapshot 的 16 个 canonical entries 已逐项
 检查：15 个普通文件，以及 1 个指向 `alpine-baselayout.post-install` 的
@@ -705,8 +721,9 @@ inventory，10/10 origin 的对应源码候选材料工程复核已完成；78 �
 8 个 source origin 的 138 个新候选 payload 已完成 checksum-bound 工程复核；
 `alpine-baselayout`、`apk-tools`、`busybox`、`ca-certificates`、`musl`、
 `openssl`、`pax-utils` 的候选材料工程项已关闭；只有 `alpine-keys` 因上游
-MIT grant/版权声明缺失仍未决。修改说明、重建环境/toolchain、源码提供方式、
-对应源码交付批准、法律审查、App Store 2.5.2 产品策略和负责人批准仍是发行阻塞项。
+MIT grant/版权声明缺失仍未决。5 单元修改/源码交付 inventory 已建立，但固定
+发布归档的精确重建环境/重建、实际材料化 bundle、源码提供方式、对应源码交付
+批准、法律审查、App Store 2.5.2 产品策略和负责人批准仍是发行阻塞项。
 
 These files are not a complete third-party LICENSE/NOTICE bundle, approved
 copyleft corresponding-source delivery, legal advice, or redistribution
@@ -717,7 +734,8 @@ and candidate source material for all 10 origins has engineering review. All
 checksum-bound engineering review. `alpine-baselayout`, `apk-tools`, `busybox`,
 `ca-certificates`, `musl`, `openssl`, and `pax-utils` have no remaining
 candidate-material engineering items; only `alpine-keys` remains open because
-its upstream MIT grant and copyright notice are missing. Modification
-disclosure, rebuild environment/toolchain, source-offer mechanics,
+its upstream MIT grant and copyright notice are missing. The five-unit
+modification/source-delivery inventory is recorded, while the pinned release's
+exact environment/rebuild, materialized bundle, source-offer mechanics,
 corresponding-source delivery approval, legal review, App Store 2.5.2 product
 policy, and authorized approval remain distribution blockers.

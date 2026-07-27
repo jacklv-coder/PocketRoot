@@ -76,15 +76,19 @@ aports snapshot/upstream distfile 获取清单和仓库外 materializer，并固
 对应源码候选 materializer 把完整 inventory、10 个 aports tree、130 个规范化条目、
 9 个上游 distfile 与审查结果绑定到 schema v3 receipt 和完整 typed tree；10/10
 origin 的候选源码材料工程项已关闭，但重建环境/toolchain、源码提供机制、法律与
-交付批准保持未决。第二个仓库外工具从已验证对应源码候选目录提取许可证候选；
+交付批准保持未决。新增重建证据明确记录：历史 v0.3.3 builder 源码已定位，但
+发布归档的精确环境/重建未验证；schema-v4 后继候选已在同 host 两次独立调用、
+共四次构建中逐字节复现。5 单元源码交付 inventory 已完整，实际 bundle、source
+offer、法律和交付批准仍未完成。第二个仓库外工具从已验证对应源码候选目录提取许可证候选；
 固定结果清单记录
 78/78 个候选均已工程复核，`libc-dev`、`zlib` 的索引项已关闭，另外 8 个 source
 origin 仍有逐包未决项。仓库现已为这 8 个 origin 固定外置候选包：13 份远端
 许可证/attribution 材料、47 份 aports 补充文件和全部既有复核证据；工具可在
 仓库外原子生成并复验。固定结果清单把工程复核绑定到精确的 138 文件 payload
 tree；除缺少上游 MIT grant/版权声明的 `alpine-keys` 外，其余 7 个 origin 的
-候选材料工程项均已关闭。修改披露、重建环境、源码提供方式和法律审查仍未完成，
-不能视为完整 NOTICE、源码提供承诺或已批准的对应源码交付。
+候选材料工程项均已关闭。修改披露已进入 5 单元交付 inventory，但固定发布归档
+的精确重建、实际 bundle、源码提供方式和法律审查仍未完成，不能视为完整 NOTICE、
+源码提供承诺或已批准的对应源码交付。
 
 ## 当前仓库保护
 
