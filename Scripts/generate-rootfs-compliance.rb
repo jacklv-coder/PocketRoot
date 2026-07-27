@@ -559,6 +559,12 @@ def notice_markdown(
     license_notice_review_results.fetch(
       "sourceOriginsWithRemainingReviewItems"
     )
+  candidate_open_origin_label =
+    if candidate_open_origins == 1
+      "origin still requires"
+    else
+      "origins still require"
+    end
 
   <<~MARKDOWN
     # Pinned RootFS attribution inventory
@@ -600,8 +606,8 @@ def notice_markdown(
     `LICENSE-NOTICE-REVIEW-RESULTS.json` records checksum-bound engineering
     review of all #{license_notice_review_results.fetch("reviewedPayloadFileCount")} indexed
     payload files. #{candidate_complete_origins} origins have no remaining
-    candidate-material engineering items; #{candidate_open_origins} origins
-    still require package-specific material. Legal review and redistribution
+    candidate-material engineering items; #{candidate_open_origins} #{candidate_open_origin_label}
+    package-specific material. Legal review and redistribution
     approval remain open.
 
     ## Corresponding-source status

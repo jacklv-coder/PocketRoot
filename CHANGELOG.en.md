@@ -46,8 +46,10 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   review. The pinned upstream `alpine-keys` GPL-to-MIT license-decision commit
   is included while its package-level copyright notice remains open. The
   `ca-certificates` generator is byte-identical to curl commit `3fdc4bdb`, and
-  that exact revision's curl license is pinned while trust-store review stays
-  open. The pinned BusyBox configuration now binds enabled bzip2 support to
+  that exact revision's curl license is pinned. The pinned Mozilla
+  `certdata.txt` reproducibly generates a bundle byte-identical to the RootFS
+  installed file, closing the trust-store candidate-material engineering
+  item. The pinned BusyBox configuration now binds enabled bzip2 support to
   its exact source license, confirms that enabled ash arithmetic links
   `shell/math.c`, which retains complete MIT and BSD-3-Clause notices, and
   confirms that the installed `env`, `echo`, `logger`, and `cal` applets link
@@ -67,10 +69,15 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   patches and configuration to derive 487 compilation units and a 562-file
   include closure, then pins the 41 files retaining independent third-party
   terms or provenance. BusyBox evidence increases to 60 files and its broad
-  engineering item closes. `apk-tools`, `busybox`, `openssl`, and `pax-utils`
-  have no remaining candidate-material engineering items, four origins still
-  need package-specific material, and legal and redistribution gates remain
-  closed.
+  engineering item closes. The pinned `alpine-baselayout` aports snapshot and
+  netbase 6.4 copyright complete package-origin/notice inspection. The musl
+  `COPYRIGHT`, three installed helper license headers, notice-free `ldconfig`
+  and generated `ldd`, and three aports patches complete its third-party
+  closure review. `alpine-baselayout`, `apk-tools`, `busybox`,
+  `ca-certificates`, `musl`, `openssl`, and `pax-utils` have no remaining
+  candidate-material engineering items. Only `alpine-keys`, whose upstream
+  package lacks an MIT grant and copyright notice, remains open; legal and
+  redistribution gates remain closed.
 - Strict external download-cache input for the RootFS source-review
   materializer. A cache replaces network transport only: inputs remain
   size-bounded and symlink/overlap-rejected, with pinned SHA-512 and canonical

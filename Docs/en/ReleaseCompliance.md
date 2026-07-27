@@ -45,11 +45,11 @@ candidate bundle for those origins: 13 remote license/attribution payloads,
 47 supplemental aports files, and all existing reviewed evidence. The tool can
 atomically materialize and re-verify it outside the repository. A pinned
 results manifest binds engineering review to the exact 138-file payload tree.
-`apk-tools`, `busybox`, `openssl`, and `pax-utils` have no remaining
-candidate-material engineering items; four origins still need package-specific material. Modification,
-build-completeness, source-offer, and legal reviews remain unresolved, so the
-output is neither a complete NOTICE set nor approved corresponding-source
-delivery.
+Seven origins have no remaining candidate-material engineering items; only
+`alpine-keys` remains open because its upstream package lacks an MIT grant and
+copyright notice. Modification, build-completeness, source-offer, and legal
+reviews remain unresolved, so the output is neither a complete NOTICE set nor
+approved corresponding-source delivery.
 
 ## Repository safeguards
 
@@ -123,9 +123,9 @@ The current code does not provide a complete product-level privacy policy.
   materializer for the eight remaining origins; payloads stay uncommitted and
   approval gates stay closed.
 - [x] Complete checksum-bound engineering review of all 138 external candidate
-  payloads; the BusyBox build-closure review is closed, four origins have no
-  remaining candidate-material engineering items, and four still need
-  package-specific material.
+  payloads; seven origins have no remaining candidate-material engineering
+  items, and only `alpine-keys` remains open because its upstream package
+  lacks an MIT grant and copyright notice.
 - [ ] Collect license texts and NOTICE files.
 - [ ] Establish a corresponding-source bundle for copyleft components.
 - [x] Record default DNS, repository, and package-manager facts.

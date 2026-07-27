@@ -50,9 +50,9 @@ files, together with all checksum-bound reviewed evidence. The repository
 tool can materialize and re-verify that bundle outside the repository.
 `LICENSE-NOTICE-REVIEW-RESULTS.json` records checksum-bound engineering
 review of all 138 indexed
-payload files. 4 origins have no remaining
-candidate-material engineering items; 4 origins
-still require package-specific material. Legal review and redistribution
+payload files. 7 origins have no remaining
+candidate-material engineering items; 1 origin still requires
+package-specific material. Legal review and redistribution
 approval remain open.
 
 ## Corresponding-source status

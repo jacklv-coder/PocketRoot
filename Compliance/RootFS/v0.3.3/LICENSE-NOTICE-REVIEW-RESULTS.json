@@ -16,7 +16,7 @@
   "candidatePayloadTreeSha256": "cc9aacfeb345129ea9df24834cdcf381dfb67c8393b11d4c1d4249855238d281",
   "reviewedPayloadFileCount": 138,
   "reviewedClosedOriginEvidenceCount": 4,
-  "sourceOriginsWithRemainingReviewItems": 4,
+  "sourceOriginsWithRemainingReviewItems": 1,
   "sources": [
     {
       "sourceOrigin": "alpine-baselayout",
@@ -25,18 +25,19 @@
       ],
       "reviewState": "candidate-payloads-engineering-reviewed-legal-review-open",
       "licenseTextCoverage": "complete",
-      "attributionCoverage": "partial",
+      "attributionCoverage": "complete",
       "reviewedExistingEvidenceCount": 1,
       "reviewedReferenceLicenseCount": 1,
       "reviewedSupplementalAportsCount": 0,
       "reviewedRemoteEvidenceCount": 1,
       "resolvedReviewItems": [
-        "collect-complete-gpl-2.0-license-text"
-      ],
-      "remainingReviewItems": [
+        "collect-complete-gpl-2.0-license-text",
         "identify-package-specific-copyright-and-notice"
       ],
-      "engineeringConclusion": "additional-package-material-required"
+      "remainingReviewItems": [
+
+      ],
+      "engineeringConclusion": "candidate-material-complete-engineering-only"
     },
     {
       "sourceOrigin": "alpine-keys",
@@ -117,19 +118,20 @@
       ],
       "reviewState": "candidate-payloads-engineering-reviewed-legal-review-open",
       "licenseTextCoverage": "complete",
-      "attributionCoverage": "partial",
+      "attributionCoverage": "complete",
       "reviewedExistingEvidenceCount": 2,
       "reviewedReferenceLicenseCount": 2,
       "reviewedSupplementalAportsCount": 0,
       "reviewedRemoteEvidenceCount": 2,
       "resolvedReviewItems": [
         "collect-complete-mpl-2.0-license-text",
+        "confirm-certificate-attribution-and-trust-store-requirements",
         "confirm-mit-script-notices-relevant-to-shipped-bundle"
       ],
       "remainingReviewItems": [
-        "confirm-certificate-attribution-and-trust-store-requirements"
+
       ],
-      "engineeringConclusion": "additional-package-material-required"
+      "engineeringConclusion": "candidate-material-complete-engineering-only"
     },
     {
       "sourceOrigin": "musl",
@@ -139,18 +141,18 @@
       ],
       "reviewState": "candidate-payloads-engineering-reviewed-legal-review-open",
       "licenseTextCoverage": "complete",
-      "attributionCoverage": "partial",
+      "attributionCoverage": "complete",
       "reviewedExistingEvidenceCount": 5,
       "reviewedReferenceLicenseCount": 3,
       "reviewedSupplementalAportsCount": 3,
       "reviewedRemoteEvidenceCount": 0,
       "resolvedReviewItems": [
-
-      ],
-      "remainingReviewItems": [
         "confirm-third-party-musl-files-and-aports-helper-notice-coverage"
       ],
-      "engineeringConclusion": "additional-package-material-required"
+      "remainingReviewItems": [
+
+      ],
+      "engineeringConclusion": "candidate-material-complete-engineering-only"
     },
     {
       "sourceOrigin": "openssl",

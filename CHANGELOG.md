@@ -41,7 +41,8 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
   138/138 个候选 payload 已完成 checksum-bound 工程复核；新增固定
   `alpine-keys` GPL→MIT 上游许可判定提交，但仍保留包级版权声明缺口；
   `ca-certificates` 生成脚本与 curl 提交 `3fdc4bdb` 字节一致并固定该精确
-  revision 的 curl 授权文本，trust-store 审查仍保持未决；
+  revision 的 curl 授权文本；固定 Mozilla `certdata.txt` 可复现生成与 RootFS
+  安装文件逐字节一致的证书束，trust-store 候选材料工程项关闭；
   BusyBox 固定配置确认 bzip2 与源包内精确授权绑定，确认启用的 ash 算术模块
   链入保留完整 MIT 与 BSD-3-Clause notices 的 `shell/math.c`，并确认已安装的
   `env`、`echo`、`logger` 与 `cal` applet 分别链入保留完整 BSD notice 的
@@ -57,8 +58,12 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
   保留 GPLv2-or-later 声明与原作者署名。其余 BusyBox 审查按固定 33 个 aports
   补丁和配置生成 487 个编译单元、562 文件 include 闭包，并固定其中 41 份仍含
   独立第三方条款或 provenance 的源码；BusyBox 证据增至 60 份，总括工程项关闭。
-  `apk-tools`、`busybox`、`openssl`、`pax-utils` 的候选材料工程项关闭，另外
-  4 个 origin 仍需补逐包材料，法律和再分发门禁保持关闭。
+  `alpine-baselayout` 的固定 aports 快照与 netbase 6.4 copyright 完成包级来源/
+  notice 核对；musl `COPYRIGHT`、三个已安装辅助工具许可头、无额外 notice 的
+  `ldconfig`/生成 `ldd` 及三个 aports patch 完成第三方闭包复核。
+  `alpine-baselayout`、`apk-tools`、`busybox`、`ca-certificates`、`musl`、
+  `openssl`、`pax-utils` 的候选材料工程项关闭；只有缺少上游 MIT grant/版权声明的
+  `alpine-keys` 仍未决，法律和再分发门禁保持关闭。
 - RootFS source-review materializer 新增严格仓库外下载缓存输入；缓存只替代网络
   传输，仍逐项限制大小、拒绝 symlink/重叠路径、核对固定 SHA-512，并重新验证
   解包后的 canonical aports tree；v2 receipt 会明确区分网络与缓存获取，不伪造
