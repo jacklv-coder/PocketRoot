@@ -39,6 +39,15 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   output and validates the SBOM against the pinned official schema. This
   evidence does not scan a final archive; the complete release-artifact SBOM
   and distribution-authorization gates remain closed.
+- A deterministic external `.app`/`.xcarchive` artifact scanner. It bounds file
+  count/size, rejects symlinks and special files, records per-file digests,
+  Mach-O architectures/dependencies/undefined symbols, codesign entitlements,
+  and private-framework/private-entitlement/JIT/`MAP_JIT` signals, then
+  atomically emits and byte-reverifies an inventory, file-level SPDX 2.3 SBOM,
+  and checksums. CI scans the ephemeral unsigned device runtime App, requires
+  clean risk signals, and schema-validates the SBOM without uploading the App
+  or evidence. Final signed/exported artifacts, their complete SBOM, and
+  distribution authorization remain closed.
 - A checksum-bound `LICENSE-REVIEW-RESULTS.json` and strict validator. All 78
   pinned RootFS license/NOTICE candidates have engineering review results;
   eight source origins retain package-level open items, and legal and

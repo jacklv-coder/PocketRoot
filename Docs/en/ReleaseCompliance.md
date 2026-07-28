@@ -25,6 +25,18 @@ a final archive and explicitly keeps `completeReleaseArtifactSBOM=false` and
 `distributionAuthorized=false`; it is not a release-artifact SBOM or
 distribution authorization.
 
+The repository also provides `Scripts/scan-release-artifact.rb`. It creates a
+deterministic inventory for an external `.app`, or the App selected by an
+external `.xcarchive`, including per-file SHA-1/SHA-256, Mach-O
+architectures/dependencies/undefined symbols, signature/entitlements, private
+framework signals, `MAP_JIT` signals, and a file-level SPDX 2.3 SBOM. CI
+materializes and re-verifies this evidence for the unsigned device runtime App,
+validates its SBOM against the pinned official schema, and uploads neither the
+App nor evidence directory. This closes only the engineering scan capability;
+the output keeps `signedReleaseArtifact=false`,
+`exportedReleaseArtifact=false`, `completeReleaseArtifactSBOM=false`, and
+`distributionAuthorized=false`.
+
 ## Known facts
 
 The package repository carries GPL identifiers and a GPL-3.0 statement but did not provide a complete top-level license/notice set at audit. The pinned iSH source has GPL and `LICENSE.IOS` terms. Binary/source correspondence needs a durable reproducible record.
@@ -87,7 +99,9 @@ the external corresponding-source candidate materializer; it does not upload
 source material.
 CI also regenerates the maximal Experimental engineering-composition
 inventory/SPDX SBOM and validates it against the pinned official SPDX 2.3
-schema; it neither builds nor scans a final release archive.
+schema. It additionally scans the ephemeral unsigned device runtime App's full
+file tree and Mach-O/entitlement risk signals, but uploads no output and
+neither builds nor scans a final release archive.
 Documentation and APIs label Experimental and shutdown risks.
 
 These engineering controls reduce the risk of accidental distribution; they do
@@ -101,9 +115,13 @@ A release decision must address shell freedom, guest networking and package mana
 
 ## Private APIs, entitlements, and JIT
 
-Static inspection of the pinned archive and a linked consumer found no `MAP_JIT`, JIT entitlement, private framework path, or `com.apple.private.*` entitlement. The ARM64 engine uses precompiled gadgets.
+Static inspection plus the unsigned device runtime App engineering scan found
+no `MAP_JIT`, JIT entitlement, private framework path, or
+`com.apple.private.*` entitlement. The ARM64 engine uses precompiled gadgets.
 
-This is not an App Review guarantee. Signed devices, final entitlements, exported-binary scans, and runtime behavior review remain required.
+That App is not signed, exported, or a distribution candidate, so this is not
+an App Review guarantee. Final entitlements, exported-binary scans, and runtime
+behavior review remain required.
 
 ## Data and privacy
 
@@ -175,6 +193,9 @@ The current code does not provide a complete product-level privacy policy.
 
 - [x] Complete RootFS install, native final links, and the 17-check smoke with
   the minimum Xcode 16 toolchain.
+- [x] Generate and re-verify a deterministic file inventory, Mach-O/
+  entitlement risk evidence, and file-level SPDX 2.3 SBOM for the ephemeral
+  unsigned device runtime App.
 - [x] Run the signed iPhone one-shot smoke.
 - [ ] Run the signed iPad smoke and complete iPhone/iPad lifecycle coverage.
 - [x] Keep complete Simulator smoke lifecycle `ru_maxrss` at or below 256 MiB.
@@ -192,6 +213,8 @@ The current code does not provide a complete product-level privacy policy.
 - [ ] Corresponding-source location and retrieval instructions.
 - [x] Generate the maximal Experimental engineering composition's dependency,
   revision, hash inventory, and SPDX SBOM.
+- [x] Generate a file-level scan inventory/SPDX SBOM for an ephemeral unsigned
+  engineering App while keeping every release and authorization gate closed.
 - [ ] Generate a complete SBOM from the built and scanned final release artifact.
 - [ ] Security guidance and known limitations.
 - [ ] RootFS update and deletion policy.

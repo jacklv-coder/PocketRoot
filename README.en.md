@@ -20,7 +20,7 @@ adapter, execute bounded one-shot shell commands inside the iOS sandbox.
 | iSH boot and one-shot commands | Experimental | `iOS + arm64`; one-shot cancellation confirms guest exit |
 | Lightweight agent loop | Core, OpenAI transport, and approval-gated command tool available | Agent and Runtime Tools are explicit opt-ins; no Codex CLI install or automatic shell approval |
 | Interactive PTY and SwiftTerm | Not implemented | Session input, resize, signal, and safe close remain planned |
-| Physical devices and distribution | Partially passed / blocked | iPhone one-shot, suspend/resume, UIKit lifecycle, forced-relaunch persistence, bounded storage-failure recovery, and bounded memory-warning recovery passed; a maximal Experimental composition inventory/SPDX SBOM is generated, while real storage pressure, iPad, jetsam/power-cut, final-artifact scanning and a complete release-artifact SBOM, license/NOTICE/corresponding-source, and App Store gates remain |
+| Physical devices and distribution | Partially passed / blocked | Multiple iPhone runtime gates and the unsigned engineering App file/Mach-O/entitlement scan passed; real storage pressure, iPad, jetsam/power-cut, final signed/exported-artifact scanning and its complete SBOM, license/NOTICE/corresponding-source, and App Store gates remain |
 
 The default `PocketRoot` product includes neither the agent loop nor native
 iSH and never bundles or downloads a RootFS. Agent applications explicitly
@@ -168,9 +168,10 @@ byte-reproducible across two same-host invocations and four total builds, and
 a five-unit source-delivery inventory plus a unified external candidate
 materializer is recorded, but neither replaces the pin. The repository also
 generates a reproducible maximal Experimental composition inventory/SPDX SBOM
-covering PocketRoot, ABI.6 IshEmbed/XCFramework, iSH, the supervisor musl
-source, the external RootFS, and its 15 packages; this is not a scan of a
-final App archive. Do not add the payload to a Package/App bundle before the
+and CI ephemerally scans the unsigned device runtime App's complete file tree,
+Mach-O, signature/entitlements, and risk signals into a file-level SPDX 2.3
+SBOM. This is not a scan of a final signed/exported App archive, and CI uploads
+no scan output. Do not add the payload to a Package/App bundle before the
 complete NOTICE/source offer, legal and delivery approval, and complete
 release-artifact SBOM review.
 
@@ -221,4 +222,4 @@ See the [Documentation Hub](Docs/en/README.md).
 
 ## License and release
 
-PocketRoot's first-public-release license policy is still being finalized. The Experimental runtime links GPL-identified upstream code and the candidate RootFS contains multiple copyleft and permissive licenses. Package-level and maximal Experimental engineering-composition SPDX SBOMs are generated, but production, TestFlight, and public distribution remain blocked until complete physical-device lifecycle, license, NOTICE, corresponding source, a complete SBOM from the scanned final artifact, and App Store 2.5.2 gates have explicit dispositions.
+PocketRoot's first-public-release license policy is still being finalized. The Experimental runtime links GPL-identified upstream code and the candidate RootFS contains multiple copyleft and permissive licenses. Package-level, maximal Experimental engineering-composition, and unsigned engineering-App file-level SPDX SBOMs are generated, but production, TestFlight, and public distribution remain blocked until complete physical-device lifecycle, license, NOTICE, corresponding source, a complete SBOM from the scanned final signed/exported artifact, and App Store 2.5.2 gates have explicit dispositions.

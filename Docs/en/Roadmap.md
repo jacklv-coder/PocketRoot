@@ -19,10 +19,11 @@ Status:
 4. Published and pinned IshEmbed `v0.4.0-abi.6`, completing the unified
    control-path deadline, one-shot Swift Task cancellation, native exit
    confirmation, and post-cancellation recovery.
-5. Completed a maximal Experimental engineering-composition inventory/SPDX
-   SBOM covering the default Demo, all Swift products, ABI.6
-   IshEmbed/XCFramework, iSH, supervisor musl source, and the external
-   RootFS's 15 packages; the final release-artifact scan gate remains closed.
+5. Completed the maximal Experimental engineering-composition inventory/SPDX
+   SBOM and added a deterministic external `.app`/`.xcarchive` scanner. CI now
+   scans the unsigned device runtime App's files, Mach-O metadata,
+   entitlements, and risk signals; final signed/exported artifact scanning and
+   the complete release-artifact SBOM remain closed.
 6. Current: RootFS capacity preflight, the full write/promotion ENOSPC matrix,
    explicit file/directory persistence, deterministic power-loss cut points,
    the 8 MiB sustained binary-output baseline, physical forced-relaunch
@@ -103,6 +104,7 @@ This establishes the current Simulator, minimum-Xcode 16, and single-iPhone one-
 | App lifecycle and memory | In progress | Simulator and Jack iPhone have 256 MiB `ru_maxrss` gates; physical process suspend/resume, UIKit foreground/background, post-termination data recovery, and bounded App-delegate memory-warning recovery passed; add real memory-pressure/jetsam evidence |
 | RootFS ENOSPC/power faults | In progress | Peak-space preflight, full ENOSPC, seven persistence barriers, deterministic power-loss cuts, and bounded capacity/ENOSPC cleanup recovery on Jack iPhone are covered; add real storage-pressure/power-cut evidence |
 | Maximal Experimental engineering composition inventory/SBOM | Passed | Keep SwiftPM/Xcode targets, ABI.6 dependency/source, the external RootFS's 15 packages, and checksums reproducible; never describe it as a final release-archive scan or distribution authorization |
+| Unsigned engineering App scan | Passed | CI ephemerally scans the full file tree, Mach-O, signature/entitlements, private-framework/JIT signals, and validates the file-level SPDX; upload no output and keep every final-release gate closed |
 | License-reviewed RootFS | Blocked | The 15-package/10-origin evidence, corresponding-source candidate material for all 10 origins, all 78 initial candidates, and all 138 external LICENSE/NOTICE payloads have checksum-bound engineering review. The historical builder is identified; a schema-v4 successor is reproducible across same-host invocations, with a five-unit delivery inventory and unified external candidate materializer. Only the `alpine-keys` MIT grant/copyright notice remains open, followed by a pinned-release exact-rebuild conclusion, complete NOTICE/source offer, legal review, delivery approval, and authorized release |
 | App Store 2.5.2 | Blocked | Written guest download/execute policy decision |
 
@@ -181,9 +183,10 @@ Status: **Not started / gated**.
 Engineering includes lifecycle recovery, RootFS migration/data policy, performance/memory/battery, long workloads, storage/jetsam, reproducible dependency builds, security/sandbox, localization/accessibility, and telemetry/privacy.
 
 Compliance includes PocketRoot license, upstream LICENSE/NOTICE, corresponding
-source, the already-generated maximal engineering-composition SBOM, a final
-built-and-scanned release-artifact SBOM, provenance, App Store 2.5.2, privacy
-manifest, release notes, and known limits.
+source, the already-generated maximal engineering-composition and unsigned
+engineering-App file-level SBOMs, a final signed/exported built-and-scanned
+release-artifact SBOM, provenance, App Store 2.5.2, privacy manifest, release
+notes, and known limits.
 
 A Beta or Distribution Candidate can be defined only after every distribution blocker has an approved disposition.
 

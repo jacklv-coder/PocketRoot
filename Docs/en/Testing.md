@@ -12,6 +12,7 @@ PocketRoot separates host logic, real RootFS, iOS build, native final-link, and 
 | Real asset test | Filtered test with archive env | Exact release archive validates and materializes once | Existing-installation reuse or iSH boot |
 | Demo build | `./Scripts/build.sh` | Umbrella and UIKit build | Experimental graph |
 | Native final link | `./Scripts/build-runtime-spike.sh` | Full graph forms arm64 executables | Physical or guest behavior |
+| Unsigned engineering App scan | `ruby Scripts/scan-release-artifact.rb` | Deterministic external `.app`/`.xcarchive` file hashes, Mach-O, signature/entitlement risk signals, and file-level SPDX | Final signed/exported artifact, dependency-license completeness, or distribution authorization |
 | Simulator native smoke | `./Scripts/run-runtime-smoke.sh` | Prepare, boot, command bounds, returning soft shutdown | Other toolchains, physical devices, distribution |
 | Physical native smoke | `./Scripts/run-runtime-device-smoke.sh` | Same 17 checks with optional process suspend/resume, UIKit lifecycle, forced-relaunch persistence, bounded storage-failure recovery, or bounded memory-warning recovery; development entitlements and returning soft shutdown | Real storage/memory pressure, power cut, jetsam, iPad, distribution |
 | Documentation | `./Scripts/check-docs.sh` | Pairs, Chinese coverage, relative links | Implementation correctness |
@@ -357,7 +358,12 @@ independently verifies the exact RootFS, runs its first-materialization test,
 regenerates the RootFS and maximal Experimental engineering-composition
 evidence, validates both SBOMs against the pinned official SPDX 2.3 schema,
 obtains pinned XcodeGen with checksum validation, generates the project, builds
-the Demo, and final-links arm64 Simulator and unsigned-device runtime Apps.
+the Demo, and final-links arm64 Simulator and unsigned-device runtime Apps. It
+then materializes and byte-reverifies the unsigned device App's
+file/Mach-O/entitlement inventory and file-level SPDX 2.3 SBOM, requires no
+private-framework, private-entitlement, JIT-entitlement, `MAP_JIT`, or invalid
+signature signal, and validates the generated SBOM with the same schema. It
+uploads neither the App nor scan evidence.
 
 The minimum-toolchain job explicitly selects Xcode 16.0 / iOS 18.0 SDK,
 validates real RootFS installation, installs the iOS 18.0 Simulator runtime,
@@ -377,6 +383,7 @@ Simulator evidence does not prove signed-device or distribution readiness.
 | smoke | Shell syntax + Simulator smoke + signed-device smoke when available |
 | docs | Documentation check |
 | release composition/compliance evidence | Generator tests + `--check` + pinned SPDX schema validation |
+| artifact scanner or CI scan gate | Ruby fixture security/drift tests + real unsigned-device App materialize/verify + pinned SPDX schema validation |
 | upstream/RootFS update | Full suite + supply-chain/compliance reaudit |
 
 ## Evidence language
