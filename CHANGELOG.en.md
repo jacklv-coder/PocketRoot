@@ -48,6 +48,12 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   clean risk signals, and schema-validates the SBOM without uploading the App
   or evidence. Final signed/exported artifacts, their complete SBOM, and
   distribution authorization remain closed.
+- A local development-signed engineering `.xcarchive` build/scan gate. It
+  handles real archive plists containing `CreationDate`, creates a standard
+  installable smoke archive, and verifies development entitlements, signature,
+  risk signals, deterministic evidence, and the SPDX schema. The runner never
+  installs, exports, or uploads an App; final release signing/export and
+  distribution authorization remain closed.
 - A checksum-bound `LICENSE-REVIEW-RESULTS.json` and strict validator. All 78
   pinned RootFS license/NOTICE candidates have engineering review results;
   eight source origins retain package-level open items, and legal and

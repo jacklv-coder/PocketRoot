@@ -231,6 +231,7 @@ POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
 | 最终链接实验性 runtime | `./Scripts/build-runtime-spike.sh` |
 | 真实 RootFS 集成测试 | `POCKETROOT_ROOTFS_ARCHIVE=... swift test --filter testPinnedReleaseArchiveWhenProvidedByEnvironment` |
 | iOS 18 原生 smoke | `POCKETROOT_ROOTFS_ARCHIVE=... ./Scripts/run-runtime-smoke.sh` |
+| development-signed archive 扫描 | `POCKETROOT_DEVELOPMENT_TEAM=... POCKETROOT_SIGNED_ARCHIVE_OUTPUT=/absolute/new/output POCKETROOT_SPDX_SCHEMA=/absolute/schema.json ./Scripts/build-signed-engineering-archive.sh` |
 | 签名真机原生 smoke | `POCKETROOT_ROOTFS_ARCHIVE=... POCKETROOT_SMOKE_DEVICE=... POCKETROOT_DEVELOPMENT_TEAM=... ./Scripts/run-runtime-device-smoke.sh` |
 | 签名真机暂停/恢复 smoke | `POCKETROOT_SMOKE_LIFECYCLE=1` 加到签名真机 smoke 命令 |
 | 签名真机 UIKit lifecycle smoke | `POCKETROOT_SMOKE_UI_LIFECYCLE=1` 加到签名真机 smoke 命令 |

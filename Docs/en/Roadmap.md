@@ -22,8 +22,9 @@ Status:
 5. Completed the maximal Experimental engineering-composition inventory/SPDX
    SBOM and added a deterministic external `.app`/`.xcarchive` scanner. CI now
    scans the unsigned device runtime App's files, Mach-O metadata,
-   entitlements, and risk signals; final signed/exported artifact scanning and
-   the complete release-artifact SBOM remain closed.
+   entitlements, and risk signals, and the local development-signed engineering
+   archive gate is complete; final release signing/export scanning and the
+   complete release-artifact SBOM remain closed.
 6. Current: RootFS capacity preflight, the full write/promotion ENOSPC matrix,
    explicit file/directory persistence, deterministic power-loss cut points,
    the 8 MiB sustained binary-output baseline, physical forced-relaunch
@@ -105,6 +106,7 @@ This establishes the current Simulator, minimum-Xcode 16, and single-iPhone one-
 | RootFS ENOSPC/power faults | In progress | Peak-space preflight, full ENOSPC, seven persistence barriers, deterministic power-loss cuts, and bounded capacity/ENOSPC cleanup recovery on Jack iPhone are covered; add real storage-pressure/power-cut evidence |
 | Maximal Experimental engineering composition inventory/SBOM | Passed | Keep SwiftPM/Xcode targets, ABI.6 dependency/source, the external RootFS's 15 packages, and checksums reproducible; never describe it as a final release-archive scan or distribution authorization |
 | Unsigned engineering App scan | Passed | CI ephemerally scans the full file tree, Mach-O, signature/entitlements, private-framework/JIT signals, and validates the file-level SPDX; upload no output and keep every final-release gate closed |
+| Development-signed engineering archive | Passed | Locally build a standard `.xcarchive`, require development entitlements and a valid signature, and re-verify clean risk evidence and SPDX; never install/export/upload it and keep every final-release gate closed |
 | License-reviewed RootFS | Blocked | The 15-package/10-origin evidence, corresponding-source candidate material for all 10 origins, all 78 initial candidates, and all 138 external LICENSE/NOTICE payloads have checksum-bound engineering review. The historical builder is identified; a schema-v4 successor is reproducible across same-host invocations, with a five-unit delivery inventory and unified external candidate materializer. Only the `alpine-keys` MIT grant/copyright notice remains open, followed by a pinned-release exact-rebuild conclusion, complete NOTICE/source offer, legal review, delivery approval, and authorized release |
 | App Store 2.5.2 | Blocked | Written guest download/execute policy decision |
 

@@ -170,8 +170,10 @@ materializer is recorded, but neither replaces the pin. The repository also
 generates a reproducible maximal Experimental composition inventory/SPDX SBOM
 and CI ephemerally scans the unsigned device runtime App's complete file tree,
 Mach-O, signature/entitlements, and risk signals into a file-level SPDX 2.3
-SBOM. This is not a scan of a final signed/exported App archive, and CI uploads
-no scan output. Do not add the payload to a Package/App bundle before the
+SBOM. A local runner also builds and scans a development-signed engineering
+`.xcarchive` with equivalent deterministic evidence. Neither path uploads scan
+output or represents a final release-signed/exported App archive. Do not add
+the payload to a Package/App bundle before the
 complete NOTICE/source offer, legal and delivery approval, and complete
 release-artifact SBOM review.
 
@@ -189,13 +191,27 @@ POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
 POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
   ./Scripts/run-runtime-smoke.sh
 
+POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
+POCKETROOT_SIGNED_ARCHIVE_OUTPUT=/absolute/new/archive-scan \
+POCKETROOT_SPDX_SCHEMA=/absolute/spdx-2.3-schema.json \
+  ./Scripts/build-signed-engineering-archive.sh
+
 POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
 POCKETROOT_SMOKE_DEVICE=<physical-device-reference> \
 POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
   ./Scripts/run-runtime-device-smoke.sh
 ```
 
-Both native runners require Apple Silicon and the exact local archive. The first uses an iOS 18 Simulator; the second requires a paired iOS 18+ physical device with Developer Mode and development signing. Its reference may be any CoreDevice UUID, hardware UDID, or device name accepted by `devicectl`; the runner validates a physical iOS device and resolves its hardware UDID first. They cover preparation, guest identity, command context, streams, exit, timeout/output-limit recovery, and soft shutdown that returns to Swift. See [Testing](Docs/en/Testing.md).
+The signed-archive runner only builds and scans a development-signed
+`.xcarchive` on the Mac; it never installs, exports, or uploads it. Both native
+smoke runners require Apple Silicon and the exact local RootFS archive. The
+first uses an iOS 18 Simulator; the second requires a paired iOS 18+ physical
+device with Developer Mode and development signing. Its reference may be any
+CoreDevice UUID, hardware UDID, or device name accepted by `devicectl`; the
+runner validates a physical iOS device and resolves its hardware UDID first.
+They cover preparation, guest identity, command context, streams, exit,
+timeout/output-limit recovery, and soft shutdown that returns to Swift. See
+[Testing](Docs/en/Testing.md).
 
 ## Documentation
 

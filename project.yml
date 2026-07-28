@@ -69,7 +69,7 @@ targets:
         ARCHS: arm64
         "EXCLUDED_ARCHS[sdk=iphonesimulator*]": x86_64
         ONLY_ACTIVE_ARCH: YES
-        SKIP_INSTALL: YES
+        SKIP_INSTALL: NO
         SUPPORTS_MACCATALYST: NO
         ENABLE_DEBUG_DYLIB: NO
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
@@ -140,6 +140,8 @@ schemes:
     run:
       config: Debug
     analyze:
+      config: Debug
+    archive:
       config: Debug
 
   PocketRootDemo:

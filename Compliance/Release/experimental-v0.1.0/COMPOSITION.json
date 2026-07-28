@@ -12,7 +12,7 @@
     "LICENSE": "9858dd8b44db130c423cb772ec04d1a16fceb4fa57c679b27e301b9f76861bba",
     "Package.resolved": "3ed8fb9402ec802b88cd33c6353a60ee2f805dc94724476721d57e198bac424c",
     "Package.swift": "4b1bbde562422157c581e5df0b309eb25d14d520fb39b77175416b1d7b8e1697",
-    "project.yml": "5498917ef7bd4ceadd0b11c168241d3523f16646e00bdd861dac50ed7e772810",
+    "project.yml": "e3c35541c7b86aaf198169f7eb0a463253aa478badebde92ae6f83a387fcc967",
     "Sources/CPocketRootArchiveSupport/CPocketRootArchiveSupport.c": "0abfdca5894c5e888de4ba48a73880dbbe2a593785c509684b52bfa412249751",
     "Sources/CPocketRootArchiveSupport/include/CPocketRootArchiveSupport.h": "064a56d06ca4a40fc754a8b4a62273efc5c691abb008ae44c54fb792dd39edfc",
     "Sources/PocketRoot/PocketRoot.swift": "3031826f9f05ef3480e23489d0000620b1b8bb39e006e3d3784ac577bad9d401",
@@ -314,7 +314,7 @@
             "ARCHS": "arm64",
             "EXCLUDED_ARCHS[sdk=iphonesimulator*]": "x86_64",
             "ONLY_ACTIVE_ARCH": true,
-            "SKIP_INSTALL": true,
+            "SKIP_INSTALL": false,
             "SUPPORTS_MACCATALYST": false,
             "ENABLE_DEBUG_DYLIB": false,
             "INFOPLIST_KEY_UILaunchScreen_Generation": true

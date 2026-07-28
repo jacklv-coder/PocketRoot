@@ -188,7 +188,7 @@ module PocketRootReleaseCompliance
     "Package.swift" =>
       "4b1bbde562422157c581e5df0b309eb25d14d520fb39b77175416b1d7b8e1697",
     "project.yml" =>
-      "5498917ef7bd4ceadd0b11c168241d3523f16646e00bdd861dac50ed7e772810"
+      "e3c35541c7b86aaf198169f7eb0a463253aa478badebde92ae6f83a387fcc967"
   }.freeze
   IMPLEMENTATION_ROOTS = %w[
     Sources
@@ -682,7 +682,7 @@ module PocketRootReleaseCompliance
             "ARCHS" => "arm64",
             "EXCLUDED_ARCHS[sdk=iphonesimulator*]" => "x86_64",
             "ONLY_ACTIVE_ARCH" => true,
-            "SKIP_INSTALL" => true,
+            "SKIP_INSTALL" => false,
             "SUPPORTS_MACCATALYST" => false,
             "ENABLE_DEBUG_DYLIB" => false,
             "INFOPLIST_KEY_UILaunchScreen_Generation" => true

@@ -202,6 +202,7 @@ real memory pressure and is not jetsam evidence.
 | Experimental final links | `./Scripts/build-runtime-spike.sh` |
 | Real RootFS first-materialization test | `POCKETROOT_ROOTFS_ARCHIVE=... swift test --filter testPinnedReleaseArchiveWhenProvidedByEnvironment` |
 | Native smoke | `POCKETROOT_ROOTFS_ARCHIVE=... ./Scripts/run-runtime-smoke.sh` |
+| Development-signed archive scan | `POCKETROOT_DEVELOPMENT_TEAM=... POCKETROOT_SIGNED_ARCHIVE_OUTPUT=/absolute/new/output POCKETROOT_SPDX_SCHEMA=/absolute/schema.json ./Scripts/build-signed-engineering-archive.sh` |
 | Signed physical native smoke | `POCKETROOT_ROOTFS_ARCHIVE=... POCKETROOT_SMOKE_DEVICE=... POCKETROOT_DEVELOPMENT_TEAM=... ./Scripts/run-runtime-device-smoke.sh` |
 | Signed process suspend/resume smoke | Add `POCKETROOT_SMOKE_LIFECYCLE=1` to the signed physical smoke command |
 | Signed UIKit lifecycle smoke | Add `POCKETROOT_SMOKE_UI_LIFECYCLE=1` to the signed physical smoke command |

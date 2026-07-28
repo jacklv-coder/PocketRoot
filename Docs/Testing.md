@@ -12,7 +12,8 @@ PocketRoot 把验证分成宿主逻辑、真实 RootFS、iOS 构建、完整原�
 | 真实 RootFS 资产测试 | 带环境变量的 filtered test | macOS | 精确 release archive 可校验并完成首次物化 | 已有安装可复用或 iSH 能 boot |
 | 默认 Demo 构建 | `./Scripts/build.sh` | Xcode + iOS SDK | 伞形产品和 UIKit Demo 可构建 | 实验 runtime 已链接 |
 | 原生最终链接 | `./Scripts/build-runtime-spike.sh` | Apple toolchain | 完整实验依赖图可生成 iOS 可执行文件 | 真机或 guest 行为 |
-| unsigned 工程 App 扫描 | `ruby Scripts/scan-release-artifact.rb` | macOS + 外部 `.app`/`.xcarchive` | 确定性文件摘要、Mach-O、签名/entitlement 风险信号与文件级 SPDX | 最终签名/导出制品、依赖许可证完备性或分发授权 |
+| 工程 App/archive 扫描 | `ruby Scripts/scan-release-artifact.rb` | macOS + 外部 `.app`/`.xcarchive` | 确定性文件摘要、Mach-O、签名/entitlement 风险信号与文件级 SPDX | 最终导出制品、依赖许可证完备性或分发授权 |
+| development-signed archive 门禁 | `./Scripts/build-signed-engineering-archive.sh` | macOS + Xcode 账号/开发签名 | 标准 `.xcarchive`、development entitlement、clean 风险信号、复验与 SPDX schema | IPA/export、发行签名、安装、上传或分发授权 |
 | Simulator 原生 smoke | `./Scripts/run-runtime-smoke.sh` | Apple Silicon + iOS 18 Simulator + archive | prepare、boot、命令边界和 soft shutdown 返回 | 其他工具链、真机或发行可用 |
 | 物理设备原生 smoke | `./Scripts/run-runtime-device-smoke.sh` | 签名 iOS 18+ iPhone/iPad + archive | 同一 17 项检查、可选进程暂停/恢复、UIKit 前后台、强制重启持久化、受限存储故障或有界内存警告恢复，development entitlement 与 shutdown 返回 | 真实 storage/memory pressure、断电、jetsam、iPad 或发行可用 |
 | 文档检查 | `./Scripts/check-docs.sh` | macOS/Linux shell | 中英文成对、中文覆盖和相对链接 | 技术实现正确 |
@@ -316,6 +317,29 @@ command/recovery/shutdown 检查，峰值 146.6 MiB。候选始终位于仓库�
 SDK，完成固定 RootFS 首次物化、arm64 Simulator/unsigned device final-link，并在
 iOS 18.0 Simulator 执行同一套 17 项 native smoke。
 
+### Development-signed engineering archive
+
+使用仓库外全新输出目录、Apple team ID 和已下载的固定官方 SPDX 2.3 schema：
+
+```bash
+POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
+POCKETROOT_SIGNED_ARCHIVE_OUTPUT=/absolute/new/archive-scan \
+POCKETROOT_SPDX_SCHEMA=/absolute/spdx-2.3-schema.json \
+  ./Scripts/build-signed-engineering-archive.sh
+```
+
+runner 生成标准 `PocketRootIshRuntimeSmoke.xcarchive`，要求 App 使用有效
+development 签名且 `get-task-allow=true`，然后生成/复验文件、Mach-O、
+entitlement 与风险 evidence，并校验文件级 SPDX。它会在构建前使用固定 lockfile
+执行 `npm ci --ignore-scripts`，并要求 schema SHA-256 与 CI 固定的官方 SPDX 2.3
+schema 一致。成功目录只保留 archive 与 `evidence`；DerivedData 使用临时目录并
+清理。可选的
+`POCKETROOT_CLONED_SOURCE_PACKAGES_DIR` 必须是仓库外现有真实目录。
+
+该命令不调用 `devicectl`，不安装 App，不执行 `-exportArchive`，也不上传输出。
+它证明 development-signed engineering archive 可构建和扫描，不证明最终发行签名、
+导出 IPA、完整发行物 SBOM、App Review 或分发授权。
+
 ### 签名 iPhone/iPad runner
 
 物理设备 runner 使用明确的设备引用与 Apple team ID，避免误装到其他设备：
@@ -474,6 +498,7 @@ smoke。CI 的 Simulator 结果不证明签名真机或发行可用。
 | 文档 | `./Scripts/check-docs.sh` |
 | 发行组成或合规证据 | 生成器测试 + `--check` + 固定 SPDX schema 校验 |
 | 制品扫描器或 CI 扫描门禁 | Ruby fixture 安全/漂移测试 + 真实 unsigned device App 生成/复验 + 固定 SPDX schema 校验 |
+| signed archive runner/project archive 设置 | 脚本契约测试 + 本地 development-signed `.xcarchive` 生成/复验 + 固定 SPDX schema 校验 |
 | 上游 revision/RootFS | 全部测试 + 供应链与合规重审 |
 
 ## 10. 真机门禁
