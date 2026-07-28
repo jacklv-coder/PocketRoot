@@ -37,6 +37,7 @@ jobs:
           bash -n Scripts/run-runtime-smoke.sh
           bash -n Scripts/run-runtime-device-smoke.sh
           bash -n Scripts/build-signed-engineering-archive.sh
+          bash -n Scripts/inject-demo-rootfs.sh
           ruby -c Scripts/prepare-rootfs-smoke-manifest.rb
           ruby -c Scripts/rootfs-corresponding-source-review-results.rb
           ruby -c Scripts/rootfs-license-review.rb
@@ -55,6 +56,7 @@ jobs:
           bash -n Tests/Scripts/RuntimeSmokeScriptTests.sh
           bash -n Tests/Scripts/SignedEngineeringArchiveScriptTests.sh
           bash -n Tests/Scripts/RootFSCandidateSmokeManifestTests.sh
+          bash -n Tests/Scripts/DemoRootFSInjectionScriptTests.sh
           ruby -c Tests/Scripts/RootFSLicenseReviewTests.rb
           ruby -c Tests/Scripts/RootFSCorrespondingSourceReviewResultsTests.rb
           ruby -c Tests/Scripts/RootFSLicenseReviewResultsTests.rb
@@ -69,6 +71,7 @@ jobs:
           bash Tests/Scripts/RuntimeSmokeScriptTests.sh
           bash Tests/Scripts/SignedEngineeringArchiveScriptTests.sh
           bash Tests/Scripts/RootFSCandidateSmokeManifestTests.sh
+          bash Tests/Scripts/DemoRootFSInjectionScriptTests.sh
           ruby Tests/Scripts/RootFSCorrespondingSourceReviewResultsTests.rb
           ruby Tests/Scripts/RootFSLicenseReviewTests.rb
           ruby Tests/Scripts/RootFSLicenseReviewResultsTests.rb
@@ -117,6 +120,8 @@ jobs:
           echo "$ROOTFS_SHA256  $archive" | shasum -a 256 --check
           POCKETROOT_ROOTFS_ARCHIVE="$archive" \
             swift test --filter testPinnedReleaseArchiveWhenProvidedByEnvironment
+          POCKETROOT_ROOTFS_ARCHIVE="$archive" \
+            bash Tests/Scripts/DemoRootFSInjectionScriptTests.sh
           ruby Scripts/generate-rootfs-compliance.rb \
             --archive "$archive" \
             --check
@@ -137,6 +142,7 @@ jobs:
             "$spdx_schema" \
             Compliance/Release/experimental-v0.1.0/SBOM.spdx.json
           echo "POCKETROOT_SPDX_SCHEMA=$spdx_schema" >> "$GITHUB_ENV"
+          echo "POCKETROOT_DEMO_ROOTFS_ARCHIVE=$archive" >> "$GITHUB_ENV"
 
       - name: Install XcodeGen
         env:
@@ -166,7 +172,24 @@ jobs:
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath "$RUNNER_TEMP/PocketRootDerivedData" \
             CODE_SIGNING_ALLOWED=NO \
+            POCKETROOT_DEMO_ROOTFS_ARCHIVE="$POCKETROOT_DEMO_ROOTFS_ARCHIVE" \
             build
+          demo_rootfs="$RUNNER_TEMP/PocketRootDerivedData/Build/Products/Debug-iphonesimulator/PocketRootDemo.app/pocketroot-fs-v0.3.3.tar.gz"
+          test "$(stat -f '%z' "$demo_rootfs")" = "6581376"
+          echo "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4  $demo_rootfs" \
+            | shasum -a 256 --check
+
+      - name: Compile Demo unit tests
+        run: |
+          xcodebuild \
+            -project PocketRootDemo.xcodeproj \
+            -scheme PocketRootDemo \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/PocketRootDerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            POCKETROOT_DEMO_ROOTFS_ARCHIVE="$POCKETROOT_DEMO_ROOTFS_ARCHIVE" \
+            build-for-testing
 
       - name: Final-link iSH runtime app for arm64 iOS Simulator
         run: |

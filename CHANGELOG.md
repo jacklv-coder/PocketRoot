@@ -13,6 +13,9 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
 - 为 `PocketRootAgent` 增加原生 OpenAI Responses API transport、宿主 bearer credential contract、strict function schema 预检、连续回合映射、脱敏错误与有界 HTTP request/response body。
 - 新增显式 opt-in `PocketRootAgentRuntimeTools` 产品；Linux 命令必须通过整批工具级预检、宿主 allow/deny policy 与逐次审批，并受 cwd、environment、timeout 和 model-visible output 配额约束。
 - 建立纯 UIKit Demo，包含 System、Terminal、Commands、Diagnostics。
+- Demo 显式接通实验 iSH、SwiftTerm PTY、Commands 与 Files；加入仓库外固定 RootFS
+  的 Debug-only 大小/hash 校验注入、共享 runtime 生命周期和动态 Diagnostics，
+  Release 构建保持不注入。
 - 加入 XcodeGen `project.yml`、工程生成、测试和构建脚本。
 - 加入 placeholder runtime、terminal API 基础与单元测试。
 - 加入不依赖 Agent Loop 或 PTY 的轻量命令终端：在有界一次性命令之间保存

@@ -25,7 +25,8 @@ The XCFramework has no macOS or x86_64 Simulator slice. The macOS fallback tests
 
 ```mermaid
 flowchart TB
-    Demo["PocketRootDemo"] --> Umbrella["PocketRoot safe umbrella"]
+    Demo["PocketRootDemo<br/>Debug integration"] --> Umbrella["PocketRoot safe umbrella"]
+    Demo --> Integration
     Umbrella --> Core["PocketRootCore"]
     Umbrella --> Terminal["PocketRootTerminal"]
     Umbrella --> Resources["PocketRootResources"]
@@ -51,7 +52,9 @@ flowchart TB
 - IshRuntime depends on Core and conditionally on IshEmbed for iOS.
 - IshRuntimeIntegration is the public Resources/runtime composition boundary.
 - The umbrella exports Core, Terminal, and Resources only.
-- The default Demo links the umbrella; native spikes link the Experimental integration.
+- The safe package umbrella still omits iSH. The repository Demo, compile
+  spike, and smoke explicitly link the Experimental integration; only Debug
+  Demo builds may inject the pinned external RootFS.
 
 ## Responsibilities
 
@@ -108,7 +111,10 @@ Experimental products.
 
 ### PocketRootDemo
 
-A programmatic UIKit shell with System, Terminal, Commands, and Diagnostics stacks. It contains no runtime implementation or RootFS payload.
+A programmatic UIKit integration with System, Terminal, Commands, and
+Diagnostics stacks. One `DemoRuntimeStore` composes the external pinned RootFS,
+Experimental runtime, SwiftTerm PTY, and Files page. No RootFS enters the source
+tree; only a size/digest-verified Debug build injection may add it to the App.
 
 ## End-to-end flow
 

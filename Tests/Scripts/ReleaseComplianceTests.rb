@@ -14,6 +14,7 @@ class ReleaseComplianceTests < Minitest::Test
     "Package.resolved",
     "Package.swift",
     "project.yml",
+    "Scripts/inject-demo-rootfs.sh",
     "ThirdPartyNotices/SwiftTerm-LICENSE.txt",
     "Compliance/RootFS/v0.3.3/EVIDENCE.json",
     "Compliance/RootFS/v0.3.3/SBOM.spdx.json"
@@ -112,7 +113,7 @@ class ReleaseComplianceTests < Minitest::Test
     refute composition.dig("coverage", "distributionAuthorized")
   end
 
-  def test_default_demo_excludes_runtime_and_rootfs
+  def test_default_demo_links_runtime_but_does_not_bundle_rootfs_by_default
     composition =
       JSON.parse(
         PocketRootReleaseCompliance.build_outputs.fetch("COMPOSITION.json")
@@ -122,8 +123,8 @@ class ReleaseComplianceTests < Minitest::Test
         profile.fetch("id") == "default-demo"
       end
 
-    refute default_profile.fetch("includesIshRuntime")
-    refute default_profile.fetch("requiresExternalRootFS")
+    assert default_profile.fetch("includesIshRuntime")
+    assert default_profile.fetch("requiresExternalRootFS")
     refute composition.dig(
       "externalComponents",
       "rootFS",
@@ -134,6 +135,23 @@ class ReleaseComplianceTests < Minitest::Test
       "rootFS",
       "downloadedByLibrary"
     )
+  end
+
+  def test_rejects_demo_rootfs_injection_script_drift
+    root = input_fixture
+    path = root.join("Scripts/inject-demo-rootfs.sh")
+    path.binwrite(
+      path.binread.sub(
+        'BUILD_CONFIGURATION="${CONFIGURATION:-Debug}"',
+        'BUILD_CONFIGURATION="${CONFIGURATION:-Release}"'
+      )
+    )
+
+    error = assert_raises(PocketRootReleaseCompliance::ComplianceError) do
+      PocketRootReleaseCompliance.build_outputs(root)
+    end
+
+    assert_includes error.message, "repository input digest drifted"
   end
 
   def test_rejects_package_resolved_revision_drift

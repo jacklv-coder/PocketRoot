@@ -30,13 +30,20 @@ Native support requires iOS + arm64 + explicit Experimental products. macOS, x86
 
 The upstream package has no macOS XCFramework slice despite its manifest declaration; direct upstream macOS native tests can fail. PocketRoot host tests use injected/unsupported drivers.
 
-## Default Demo says runtime is not installed
+## Demo reports `RootFS Missing`
 
-Expected. The Demo uses the placeholder shared system and injects no real
-runtime into Terminal. The library's SwiftTerm PTY and Files pages require an
-application-owned prepared and booted system. Follow the
-[integration guide](IntegrationGuide.md); do not add an unreviewed archive to
-the default bundle.
+The Demo links the Experimental runtime but never downloads a RootFS or reads
+one from the repository. Configure the pinned local archive and rebuild:
+
+```bash
+./Scripts/inject-demo-rootfs.sh \
+  --install-development-archive /absolute/path/to/fs.tar.gz
+```
+
+The script rejects symlinks, wrong size/digest, source-tree inputs, and Release
+injection. Diagnostics should then show `RootFS Embedded`; after System Boot it
+becomes `Installed` and the runtime becomes `Ready`. See the [integration
+guide](IntegrationGuide.md) for host-App integration.
 
 ## Runtime not booted
 

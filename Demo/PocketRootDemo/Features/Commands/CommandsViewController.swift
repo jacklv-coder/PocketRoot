@@ -2,11 +2,23 @@ import PocketRoot
 import UIKit
 
 @MainActor
-final class CommandsViewController: UIViewController {
+final class CommandsViewController: UIViewController, DemoRuntimeStoreObserver {
 
+    private let runtimeStore: DemoRuntimeStore
     private let commandField = UITextField()
     private let runButton = UIButton(type: .system)
     private let outputTextView = UITextView()
+    private var isObserving = false
+
+    init(runtimeStore: DemoRuntimeStore) {
+        self.runtimeStore = runtimeStore
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) is unavailable")
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -16,6 +28,32 @@ final class CommandsViewController: UIViewController {
 
         configureNavigationItem()
         configureView()
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        guard !isObserving else {
+            return
+        }
+        isObserving = true
+        runtimeStore.addObserver(self)
+        Task {
+            await runtimeStore.refreshRuntimeState()
+        }
+    }
+
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        runtimeStore.removeObserver(self)
+        isObserving = false
+    }
+
+    func demoRuntimeStoreDidChange(_ store: DemoRuntimeStore) {
+        runButton.isEnabled = store.readySystem != nil
+        commandField.isEnabled = store.readySystem != nil
+        if store.readySystem == nil, !store.phase.displayName.isEmpty {
+            outputTextView.text = "Runtime: \(store.phase.displayName)"
+        }
     }
 
     private func configureNavigationItem() {
@@ -106,17 +144,16 @@ final class CommandsViewController: UIViewController {
 
         let request = PocketRootCommandRequest(command: command)
         Task { [weak self] in
-            do {
-                let result = try await PocketRootSystem.shared.execute(request)
-                self?.outputTextView.text = Self.output(from: result)
-            } catch {
-                self?.outputTextView.text = [
-                    "Runtime is not installed yet.",
-                    "",
-                    error.localizedDescription
-                ].joined(separator: "\n")
+            guard let self else {
+                return
             }
-            self?.runButton.isEnabled = true
+            do {
+                let result = try await runtimeStore.execute(request)
+                outputTextView.text = Self.output(from: result)
+            } catch {
+                outputTextView.text = error.localizedDescription
+            }
+            runButton.isEnabled = runtimeStore.readySystem != nil
         }
     }
 

@@ -91,13 +91,19 @@ PocketRootIshRuntimeFactory.isAvailable
 
 在 PocketRoot 仓库运行宿主测试；adapter seam 会使用 unsupported/injected driver。原生行为用 `build-runtime-spike.sh` 与 iOS smoke 验证。
 
-## 默认 Demo 报 “Runtime is not installed yet”
+## Demo 显示 `RootFS Missing`
 
-这是当前预期行为。Demo 只依赖安全伞形 `PocketRoot`，System 和 Commands 使用
-placeholder `PocketRootSystem.shared`，也没有向 Terminal 注入真实 runtime。库提供的
-SwiftTerm PTY 与 Files 页面必须接收已经 prepare、boot 的 application-owned system。
+Demo 已链接实验 runtime，但不会从网络下载或从仓库读取 RootFS。用固定本地归档配置
+Debug 开发资产后重新构建：
 
-不要通过向默认 bundle 随意加入 RootFS 解决。真实应用接入流程见[应用接入指南](IntegrationGuide.md)。
+```bash
+./Scripts/inject-demo-rootfs.sh \
+  --install-development-archive /absolute/path/to/fs.tar.gz
+```
+
+脚本会拒绝 symlink、错误大小/hash、源码树内输入和 Release 注入。成功后
+Diagnostics 应先显示 `RootFS Embedded`，点击 System 的 Boot 后变为 `Installed`，
+runtime 变为 `Ready`。真实应用接入流程见[应用接入指南](IntegrationGuide.md)。
 
 ## `runtimeNotBooted`
 

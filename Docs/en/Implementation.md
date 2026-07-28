@@ -154,7 +154,13 @@ host process cannot boot another iSH lifecycle.
 
 ## Demo, final link, and smoke
 
-The default Demo stays asset-free and placeholder-backed. The compile spike proves the complete native graph final-links. The smoke injects a verified archive into a dedicated App, runs composition and command checks, cancels a blocked command and verifies recovery, waits for soft shutdown to return, verifies `.terminated` and `restartRequired`, and only then persists a successful report. The host explicitly stops the otherwise idle test App during cleanup.
+The Demo explicitly links the Experimental graph but keeps RootFS material
+outside the repository. Its Debug build phase accepts only the exact pinned
+size/digest, removes stale output when absent, and never injects into Release.
+`DemoRuntimeStore` runs `prepare → boot` and shares one system across System,
+Terminal, Commands, and Files. The compile spike proves final linking, while
+the separate smoke remains the automated behavioral evidence and persists
+success only after bounded shutdown returns.
 
 ## Invariants
 

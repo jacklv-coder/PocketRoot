@@ -1,25 +1,63 @@
 import UIKit
 
 @MainActor
-final class DiagnosticsViewController: UIViewController {
+final class DiagnosticsViewController: UIViewController, DemoRuntimeStoreObserver {
+    private struct StatusLabels {
+        let value: UILabel
+        let row: UIView
+    }
+
+    private let runtimeStore: DemoRuntimeStore
+    private var statusLabels: [String: StatusLabels] = [:]
+    private var isObserving = false
+
+    init(runtimeStore: DemoRuntimeStore) {
+        self.runtimeStore = runtimeStore
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) is unavailable")
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "Diagnostics"
         navigationItem.largeTitleDisplayMode = .always
         view.backgroundColor = .systemGroupedBackground
-
         configureView()
     }
 
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        guard !isObserving else {
+            return
+        }
+        isObserving = true
+        runtimeStore.addObserver(self)
+        Task {
+            await runtimeStore.refreshRuntimeState()
+        }
+    }
+
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        runtimeStore.removeObserver(self)
+        isObserving = false
+    }
+
+    func demoRuntimeStoreDidChange(_ store: DemoRuntimeStore) {
+        update(name: "Package", status: .init(text: "Ready", isReady: true))
+        update(name: "UIKit Demo", status: .init(text: "Ready", isReady: true))
+        update(name: "RootFS", status: store.rootFSStatus)
+        update(name: "iSH Runtime", status: store.runtimeStatus)
+        update(name: "SwiftTerm", status: .init(text: "Linked", isReady: true))
+    }
+
     private func configureView() {
-        let rows = [
-            statusRow(name: "Package", status: "Ready", isReady: true),
-            statusRow(name: "UIKit Demo", status: "Ready", isReady: true),
-            statusRow(name: "RootFS", status: "Pending", isReady: false),
-            statusRow(name: "iSH Runtime", status: "Pending", isReady: false),
-            statusRow(name: "SwiftTerm", status: "Pending", isReady: false)
-        ]
+        let names = ["Package", "UIKit Demo", "RootFS", "iSH Runtime", "SwiftTerm"]
+        let rows = names.map(makeStatusRow)
 
         let stackView = UIStackView(arrangedSubviews: rows)
         stackView.axis = .vertical
@@ -27,7 +65,6 @@ final class DiagnosticsViewController: UIViewController {
         stackView.layer.cornerRadius = 12
         stackView.clipsToBounds = true
         stackView.translatesAutoresizingMaskIntoConstraints = false
-
         view.addSubview(stackView)
 
         NSLayoutConstraint.activate([
@@ -46,17 +83,17 @@ final class DiagnosticsViewController: UIViewController {
         ])
     }
 
-    private func statusRow(name: String, status: String, isReady: Bool) -> UIView {
+    private func makeStatusRow(name: String) -> UIView {
         let nameLabel = UILabel()
         nameLabel.text = name
         nameLabel.font = .preferredFont(forTextStyle: .body)
         nameLabel.adjustsFontForContentSizeCategory = true
 
         let statusLabel = UILabel()
-        statusLabel.text = status
+        statusLabel.text = "Checking"
         statusLabel.font = .preferredFont(forTextStyle: .body)
         statusLabel.adjustsFontForContentSizeCategory = true
-        statusLabel.textColor = isReady ? .systemGreen : .systemOrange
+        statusLabel.textColor = .secondaryLabel
         statusLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
 
         let row = UIStackView(arrangedSubviews: [nameLabel, statusLabel])
@@ -72,6 +109,16 @@ final class DiagnosticsViewController: UIViewController {
             trailing: 16
         )
         row.backgroundColor = .secondarySystemGroupedBackground
+        statusLabels[name] = StatusLabels(value: statusLabel, row: row)
         return row
+    }
+
+    private func update(name: String, status: DemoDiagnosticStatus) {
+        guard let labels = statusLabels[name] else {
+            return
+        }
+        labels.value.text = status.text
+        labels.value.textColor = status.isReady ? .systemGreen : .systemOrange
+        labels.row.accessibilityValue = status.text
     }
 }

@@ -19,6 +19,7 @@ final class PTYTerminalBridge: NSObject, @preconcurrency TerminalViewDelegate {
 
     var titleHandler: ((String) -> Void)?
     var directoryHandler: ((String?) -> Void)?
+    var sessionEndHandler: ((PocketRootTerminalSessionEndReason) -> Void)?
 
     init(
         allowsInput: Bool,
@@ -64,9 +65,9 @@ final class PTYTerminalBridge: NSObject, @preconcurrency TerminalViewDelegate {
             } catch is CancellationError {
                 return
             } catch {
-                self?.feedStatus(
-                    "\r\nPocketRoot terminal error: \(error.localizedDescription)\r\n"
-                )
+                let message = error.localizedDescription
+                self?.feedStatus("\r\nPocketRoot terminal error: \(message)\r\n")
+                self?.sessionEndHandler?(.failed(message))
             }
         }
     }
@@ -168,9 +169,15 @@ final class PTYTerminalBridge: NSObject, @preconcurrency TerminalViewDelegate {
         case .exited(let exitCode):
             feedStatus("\r\n[Process exited with code \(exitCode)]\r\n")
             session = nil
+            operationTail?.cancel()
+            operationTail = nil
+            sessionEndHandler?(.exited(exitCode))
         case .failed(let message):
             feedStatus("\r\n[PocketRoot terminal failed: \(message)]\r\n")
             session = nil
+            operationTail?.cancel()
+            operationTail = nil
+            sessionEndHandler?(.failed(message))
         }
     }
 

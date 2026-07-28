@@ -10,7 +10,7 @@ PocketRoot 把验证分成宿主逻辑、真实 RootFS、iOS 构建、完整原�
 | --- | --- | --- | --- | --- |
 | Swift Package 单元测试 | `./Scripts/test.sh` | macOS | Core、Resources、Terminal、adapter seam 和 composition 行为 | 原生 XCFramework 能运行 |
 | 真实 RootFS 资产测试 | 带环境变量的 filtered test | macOS | 精确 release archive 可校验并完成首次物化 | 已有安装可复用或 iSH 能 boot |
-| 默认 Demo 构建 | `./Scripts/build.sh` | Xcode + iOS SDK | 伞形产品和 UIKit Demo 可构建 | 实验 runtime 已链接 |
+| Demo 构建 | `./Scripts/build.sh` | Apple Silicon + Xcode + iOS SDK | 实验 runtime、SwiftTerm 与 UIKit Demo 可完成 arm64 最终链接；配置时固定 RootFS 可注入 Debug App | guest 已运行、真机行为或发行可用 |
 | 原生最终链接 | `./Scripts/build-runtime-spike.sh` | Apple toolchain | 完整实验依赖图可生成 iOS 可执行文件 | 真机或 guest 行为 |
 | 工程 App/archive 扫描 | `ruby Scripts/scan-release-artifact.rb` | macOS + 外部 `.app`/`.xcarchive` | 确定性文件摘要、Mach-O、签名/entitlement 风险信号与文件级 SPDX | 最终导出制品、依赖许可证完备性或分发授权 |
 | development-signed archive 门禁 | `./Scripts/build-signed-engineering-archive.sh` | macOS + Xcode 账号/开发签名 | 标准 `.xcarchive`、development entitlement、clean 风险信号、复验与 SPDX schema | IPA/export、发行签名、安装、上传或分发授权 |
@@ -139,7 +139,7 @@ POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
 
 该 filtered test 每次使用新的临时安装目录，只断言真实 release asset 的首次物化，不断言第二次准备的复用。复用行为由 `testRootFSInstallerInstallsThenReusesVerifiedVersion` 等合成 fixture 用例覆盖。测试读取本地路径，不由 library 下载。
 
-## 5. 默认 Demo 构建
+## 5. Demo 构建
 
 ```bash
 ./Scripts/bootstrap.sh
@@ -153,7 +153,11 @@ POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
 - destination：`generic/platform=iOS Simulator`；
 - code signing：关闭。
 
-它验证默认安全伞形产品和 UIKit 层。因为 Demo 没依赖 `PocketRootIshRuntimeIntegration`，不能用该结果声称 IshEmbed 已最终链接。
+Demo 显式依赖 `PocketRootIshRuntime` 与
+`PocketRootIshRuntimeIntegration`，因此该构建会把实验 runtime、SwiftTerm 和 UIKit
+页面最终链接为 arm64 App。配置固定 RootFS 后，Debug build phase 还会校验并注入归档；
+未配置时 Demo 仍可构建并显示 `RootFS Missing`。构建成功不证明 guest 已启动、真机行为
+或发行可用。
 
 ## 6. 完整实验依赖图最终链接
 

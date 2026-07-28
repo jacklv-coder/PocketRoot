@@ -1,6 +1,12 @@
 import Foundation
 import PocketRootCore
 
+/// Describes why an interactive terminal stopped accepting input.
+public enum PocketRootTerminalSessionEndReason: Sendable, Equatable {
+    case exited(Int32)
+    case failed(String)
+}
+
 #if canImport(UIKit) && canImport(SwiftTerm)
 import SwiftTerm
 import UIKit
@@ -10,6 +16,11 @@ import UIKit
 public final class PocketRootTerminalViewController: UIViewController {
     public let configuration: PocketRootTerminalConfiguration
     public private(set) var theme: PocketRootTerminalTheme
+    /// Called when the guest shell exits or the PTY connection fails.
+    ///
+    /// Hosts can use this callback to dismiss the terminal or offer a new
+    /// session. Calling ``closeSession()`` does not invoke the callback.
+    public var onSessionEnded: ((PocketRootTerminalSessionEndReason) -> Void)?
 
     /// Transcript support is retained for the lightweight command fallback.
     /// Interactive PTY screen state is owned by SwiftTerm.
@@ -154,6 +165,7 @@ public final class PocketRootTerminalViewController: UIViewController {
     /// active task and disconnects its callbacks.
     public func closeSession() {
         commandBridge.detach()
+        ptyBridge?.sessionEndHandler = nil
         ptyBridge?.detach()
     }
 
@@ -177,6 +189,9 @@ public final class PocketRootTerminalViewController: UIViewController {
         ptyTerminalView = terminal
         bridge.titleHandler = { [weak self] title in
             self?.title = title.isEmpty ? "Terminal" : title
+        }
+        bridge.sessionEndHandler = { [weak self] reason in
+            self?.onSessionEnded?(reason)
         }
         bridge.attach(to: terminal)
     }
@@ -267,6 +282,7 @@ public final class PocketRootTerminalViewController {
     public let configuration: PocketRootTerminalConfiguration
     public private(set) var theme: PocketRootTerminalTheme
     public private(set) var transcript: String
+    public var onSessionEnded: ((PocketRootTerminalSessionEndReason) -> Void)?
 
     public init(
         configuration: PocketRootTerminalConfiguration = .init(),

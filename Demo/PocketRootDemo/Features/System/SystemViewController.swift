@@ -1,24 +1,81 @@
-import PocketRoot
 import UIKit
 
 @MainActor
-final class SystemViewController: UIViewController {
-
+final class SystemViewController: UIViewController, DemoRuntimeStoreObserver {
+    private let runtimeStore: DemoRuntimeStore
     private let runtimeValueLabel = UILabel()
     private let rootFSValueLabel = UILabel()
     private let architectureValueLabel = UILabel()
     private let bootButton = UIButton(type: .system)
     private let healthCheckButton = UIButton(type: .system)
     private let shutdownButton = UIButton(type: .system)
+    private var isObserving = false
+
+    init(runtimeStore: DemoRuntimeStore) {
+        self.runtimeStore = runtimeStore
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) is unavailable")
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "System"
         navigationItem.largeTitleDisplayMode = .always
         view.backgroundColor = .systemGroupedBackground
-
         configureView()
-        refreshRuntimeState()
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        guard !isObserving else {
+            return
+        }
+        isObserving = true
+        runtimeStore.addObserver(self)
+        Task {
+            await runtimeStore.refreshRuntimeState()
+        }
+    }
+
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        runtimeStore.removeObserver(self)
+        isObserving = false
+    }
+
+    func demoRuntimeStoreDidChange(_ store: DemoRuntimeStore) {
+        runtimeValueLabel.text = store.phase.displayName
+        rootFSValueLabel.text = store.rootFSStatus.text
+        architectureValueLabel.text = store.phase == .ready ? "aarch64" : "—"
+
+        bootButton.isEnabled = store.canBoot
+        healthCheckButton.isEnabled = store.readySystem != nil
+        shutdownButton.isEnabled = store.canShutdown
+
+        switch store.phase {
+        case .rootFSMissing:
+            bootButton.configuration?.title = "RootFS Not Embedded"
+        case .preparingRootFS:
+            bootButton.configuration?.title = "Preparing RootFS…"
+        case .booting:
+            bootButton.configuration?.title = "Booting…"
+        case .ready:
+            bootButton.configuration?.title = "Runtime Ready"
+        case .runtimeUnavailable:
+            bootButton.configuration?.title = "Runtime Unavailable"
+        case .terminated:
+            bootButton.configuration?.title = "Restart App to Boot Again"
+        case .failed:
+            bootButton.configuration?.title = store.canBoot
+                ? "Retry Prepare and Boot"
+                : "Boot Failed"
+        case .idle, .shuttingDown:
+            bootButton.configuration?.title = "Prepare and Boot Runtime"
+        }
     }
 
     private func configureView() {
@@ -37,7 +94,7 @@ final class SystemViewController: UIViewController {
 
         configureButton(
             bootButton,
-            title: "Boot Runtime",
+            title: "Prepare and Boot Runtime",
             symbolName: "power",
             action: #selector(bootRuntime)
         )
@@ -51,7 +108,7 @@ final class SystemViewController: UIViewController {
             shutdownButton,
             title: "Shutdown",
             symbolName: "stop.circle",
-            action: #selector(shutdownRuntime)
+            action: #selector(confirmShutdown)
         )
         shutdownButton.tintColor = .systemRed
 
@@ -63,10 +120,20 @@ final class SystemViewController: UIViewController {
         buttonStack.axis = .vertical
         buttonStack.spacing = DemoConstants.itemSpacing
 
+        let noteLabel = UILabel()
+        noteLabel.text = [
+            "The reviewed RootFS is installed on first boot.",
+            "After Shutdown, restart the App before booting again."
+        ].joined(separator: "\n")
+        noteLabel.font = .preferredFont(forTextStyle: .footnote)
+        noteLabel.textColor = .secondaryLabel
+        noteLabel.numberOfLines = 0
+
         let contentStack = UIStackView(arrangedSubviews: [
             titleLabel,
             statusStack,
-            buttonStack
+            buttonStack,
+            noteLabel
         ])
         contentStack.axis = .vertical
         contentStack.spacing = DemoConstants.sectionSpacing
@@ -130,93 +197,62 @@ final class SystemViewController: UIViewController {
 
     @objc
     private func bootRuntime() {
-        setButtonsEnabled(false)
-        Task { [weak self] in
-            do {
-                try await PocketRootSystem.shared.boot()
-            } catch {
-                self?.presentError(error)
-            }
-            self?.setButtonsEnabled(true)
-            self?.refreshRuntimeState()
+        Task {
+            await runtimeStore.boot()
         }
     }
 
     @objc
     private func runHealthCheck() {
         Task { [weak self] in
-            let state = await PocketRootSystem.shared.state
-            self?.refreshRuntimeState(state)
-
+            guard let self else {
+                return
+            }
+            await runtimeStore.refreshRuntimeState()
             let alert = UIAlertController(
                 title: "Runtime Health",
-                message: "Current state: \(Self.description(for: state))",
+                message: "Current state: \(runtimeStore.phase.displayName)",
                 preferredStyle: .alert
             )
             alert.addAction(UIAlertAction(title: "OK", style: .default))
-            self?.present(alert, animated: true)
+            present(alert, animated: true)
         }
     }
 
     @objc
-    private func shutdownRuntime() {
-        setButtonsEnabled(false)
-        Task { [weak self] in
-            do {
-                try await PocketRootSystem.shared.shutdown()
-            } catch {
-                self?.presentError(error)
-            }
-            self?.setButtonsEnabled(true)
-            self?.refreshRuntimeState()
-        }
-    }
-
-    private func refreshRuntimeState() {
-        Task { [weak self] in
-            let state = await PocketRootSystem.shared.state
-            self?.refreshRuntimeState(state)
-        }
-    }
-
-    private func refreshRuntimeState(_ state: PocketRootRuntimeState) {
-        runtimeValueLabel.text = Self.description(for: state)
-        rootFSValueLabel.text = "Not Installed"
-        architectureValueLabel.text = "Unknown"
-    }
-
-    private func setButtonsEnabled(_ isEnabled: Bool) {
-        bootButton.isEnabled = isEnabled
-        healthCheckButton.isEnabled = isEnabled
-        shutdownButton.isEnabled = isEnabled
-    }
-
-    private func presentError(_ error: Error) {
+    private func confirmShutdown() {
         let alert = UIAlertController(
-            title: "PocketRoot",
-            message: error.localizedDescription,
+            title: "Shutdown Runtime?",
+            message: "The embedded runtime cannot boot again until this App process restarts.",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        alert.addAction(
+            UIAlertAction(title: "Shutdown", style: .destructive) { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    guard let self,
+                          let failure = await runtimeStore.shutdown()
+                    else {
+                        return
+                    }
+                    presentShutdownFailure(failure)
+                }
+            }
+        )
+        present(alert, animated: true)
+    }
+
+    private func presentShutdownFailure(_ failure: String) {
+        let alert = UIAlertController(
+            title: "Shutdown Not Completed",
+            message: [
+                failure,
+                "",
+                "Finish the active command or terminal session, then try again."
+            ].joined(separator: "\n"),
             preferredStyle: .alert
         )
         alert.addAction(UIAlertAction(title: "OK", style: .default))
         present(alert, animated: true)
-    }
-
-    private static func description(for state: PocketRootRuntimeState) -> String {
-        switch state {
-        case .idle:
-            "Not Installed"
-        case .preparingRootFS:
-            "Preparing RootFS"
-        case .booting:
-            "Booting"
-        case .ready:
-            "Ready"
-        case .shuttingDown:
-            "Shutting Down"
-        case .terminated:
-            "Restart Required"
-        case .failed(let message):
-            "Failed: \(message)"
-        }
     }
 }

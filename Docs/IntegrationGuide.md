@@ -434,6 +434,10 @@ let terminalViewController = PocketRootTerminalViewController(
     configuration: .interactive(initialWorkingDirectory: "/root"),
     theme: .dark
 )
+terminalViewController.onSessionEnded = { [weak terminalViewController] _ in
+    // shell 执行 exit 或 PTY 失败后，关闭页面或向用户提供“新建终端”入口。
+    terminalViewController?.navigationController?.popViewController(animated: true)
+}
 
 navigationController?.pushViewController(
     terminalViewController,
@@ -499,6 +503,7 @@ SwiftTerm 负责 ANSI/VT、软键盘、选择、滚动和辅助功能语义；br
 - [ ] Terminal 与 Files 页面注入的是同一个已 boot、由应用持有的 system。
 - [ ] 每个命令有正数 timeout，并处理非零 exit、signal、timeout 和输出超限。
 - [ ] 页面永久移除时调用 `closeSession()`，或由 SwiftUI dismantle 自动回收 PTY。
+- [ ] UIKit 通过 `onSessionEnded` 处理 shell `exit`/PTY 失败，并提供关闭或新建终端入口。
 - [ ] 只读页面明确设置 `allowsInput: false`，并接受切换 backend/configuration 会重建会话。
 - [ ] 产品接受 shutdown 后同一宿主进程不能再次 boot 的单 lifecycle 契约。
 - [ ] 没有把 Simulator 结果当作真机或发行结论。

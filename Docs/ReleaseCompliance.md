@@ -14,7 +14,7 @@ PocketRoot 的实验性 iSH runtime、XCFramework 和候选 RootFS 当前仅用�
 - TestFlight 分发；
 - App Store 提交；
 - 公开或私有二进制 SDK 分发；
-- 把 RootFS 加入 Swift Package、Demo 或 App bundle；
+- 把 RootFS 加入 Swift Package、Release/TestFlight/App Store bundle；
 - 镜像未完成合规材料的 XCFramework 或 RootFS；
 - 宣称已经满足 GPL、NOTICE、对应源码或 SBOM 义务。
 
@@ -40,7 +40,8 @@ PocketRoot 的实验性 iSH runtime、XCFramework 和候选 RootFS 当前仅用�
 提交可复现的最大实验工程组合清单和 SPDX 2.3 JSON SBOM。它区分默认 Demo、
 原生 runtime smoke 与全部 Swift products，并覆盖固定 ABI.6 IshEmbed/XCFramework、
 iSH gitlink、supervisor musl source、调用方提供的外部 RootFS 及其中 15 个 Alpine
-包。默认 Demo 不含 IshEmbed 或 RootFS。该证据没有扫描最终 archive，明确保持
+包。Demo 现在显式链接 IshEmbed；仓库仍不含 RootFS，只有本地 Debug 构建可从仓库外
+注入精确固定资产，Release 构建明确跳过。该证据没有扫描最终 archive，明确保持
 `completeReleaseArtifactSBOM=false` 和 `distributionAuthorized=false`，不能代替
 发行制品 SBOM 或发行授权。
 

@@ -10,7 +10,7 @@ PocketRoot separates host logic, real RootFS, iOS build, native final-link, and 
 | --- | --- | --- | --- |
 | Package tests | `./Scripts/test.sh` | Core, Resources, Terminal, adapter seam, composition | Native runtime execution |
 | Real asset test | Filtered test with archive env | Exact release archive validates and materializes once | Existing-installation reuse or iSH boot |
-| Demo build | `./Scripts/build.sh` | Umbrella and UIKit build | Experimental graph |
+| Demo build | `./Scripts/build.sh` | Experimental runtime, SwiftTerm, and UIKit final-link as an arm64 App; optional pinned RootFS injection into Debug | Guest execution, physical-device behavior, distribution |
 | Native final link | `./Scripts/build-runtime-spike.sh` | Full graph forms arm64 executables | Physical or guest behavior |
 | Engineering App/archive scan | `ruby Scripts/scan-release-artifact.rb` | Deterministic external `.app`/`.xcarchive` file hashes, Mach-O, signature/entitlement risk signals, and file-level SPDX | Final exported artifact, dependency-license completeness, or distribution authorization |
 | Development-signed archive gate | `./Scripts/build-signed-engineering-archive.sh` | Standard `.xcarchive`, development entitlements, clean risk signals, deterministic re-verification, and SPDX schema validation | IPA export, release signing, installation, upload, or distribution authorization |
@@ -88,7 +88,12 @@ This requires the exact size and SHA-256, validates the extracted fakefs, and as
 ./Scripts/build-runtime-spike.sh
 ```
 
-The Demo build checks the safe umbrella. The runtime spike final-links the full graph for arm64 generic Simulator and unsigned generic device. A device destination link is not signed hardware execution.
+The Demo build final-links the Experimental runtime, SwiftTerm, and UIKit as an
+arm64 App. With the pinned RootFS configured, its Debug build phase also
+validates and injects the archive; without it, the App still builds and reports
+`RootFS Missing`. The runtime spike separately final-links the full graph for
+arm64 generic Simulator and unsigned generic device. None of these builds proves
+guest execution, signed hardware behavior, or distribution readiness.
 
 ## Native smoke
 
