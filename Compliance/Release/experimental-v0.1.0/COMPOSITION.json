@@ -95,7 +95,7 @@
     "Demo/PocketRootDemo/Shared/Runtime/DemoRuntimeStore.swift": "a1c48ac00bda87dc5332daf5ddd75715b6d18e84d5eaae80e6c8da11f63db8da",
     "Demo/PocketRootDemo/Shared/Support/DemoConstants.swift": "9e47feedb5056ecb96f4d297324c29c2ff975031cce63abb46f112f324a4f610",
     "Demo/PocketRootDemo/Shared/UI/PlaceholderViewController.swift": "48e0f6462228a66face2aef51f9bd39ec02923c4d1c01b6b34f920948998f2b8",
-    "Examples/PocketRootHostApp/Sources/HostApp.swift": "a0f06314c408094d39313602d42a5b98c0f8e138d40068547750cb913cd6a890",
+    "Examples/PocketRootHostApp/Sources/HostApp.swift": "7070f5d85abccc920b5aec93cf5b4ea3e1a8222c208159d5ae403544ec9c1c73",
     "Examples/PocketRootHostApp/Sources/Info.plist": "99b1ff84734d07b14fc2f5e8df3b360d9a98cdde657bfc7d304afd3e6a32579a",
     "Spikes/PocketRootIshRuntimeCompileSpike/PocketRootIshRuntimeCompileSpike.swift": "829a9ef79d67cb93aae5fbea32561c5c5497a7a017922bb1ebb344b4c0c32da8",
     "Spikes/PocketRootIshRuntimeSmoke/PocketRootIshRuntimeSmoke.swift": "e5a903fbb2f2994c45c5d57cf8df840263b5dd3a0716d8b9bbf0ad9018785af2",

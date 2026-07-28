@@ -172,6 +172,12 @@ class ReleaseComplianceTests < Minitest::Test
     assert_includes source, "private unowned let runtimeOwner: HostAppDelegate"
     assert_includes source, "func sceneDidDisconnect(_ scene: UIScene)"
     assert_includes source, "hostViewController.closeActiveTerminal()"
+    assert_includes source, "override func viewDidAppear(_ animated: Bool)"
+    refute_includes source, "override func viewWillAppear(_ animated: Bool)"
+    assert_match(
+      /viewDidAppear.*?await runtimeController\.refreshRuntimeState\(\)/m,
+      source
+    )
 
     info =
       REPOSITORY_ROOT
