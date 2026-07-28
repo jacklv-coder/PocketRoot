@@ -72,25 +72,57 @@ final class PocketRootHostAppUITests: XCTestCase {
         XCTAssertTrue(terminal.waitForExistence(timeout: 30))
         terminal.tap()
         terminal.typeText(
-            "seq 1 128; "
+            "seq 1 128; printf '__PTY_OUTPUT_128__\\n'; "
                 + "printf 'after-foreground\\n' "
                 + ">> /root/pocketroot-device-ui-smoke/lifecycle.txt\n"
         )
-        allowTerminalToDrain()
+        wait(
+            for: NSPredicate(
+                format: "value CONTAINS %@",
+                "__PTY_OUTPUT_128__"
+            ),
+            evaluatedWith: terminal,
+            timeout: 30
+        )
 
+        let portraitSize = queryTerminalSize(
+            terminal,
+            marker: "__PORTRAIT_SIZE__"
+        )
         XCUIDevice.shared.orientation = .landscapeLeft
         allowTerminalToDrain()
-        XCTAssertTrue(terminalElement(in: app).exists)
+        terminal = terminalElement(in: app)
+        XCTAssertTrue(terminal.exists)
+        terminal.tap()
+        let landscapeSize = queryTerminalSize(
+            terminal,
+            marker: "__LANDSCAPE_SIZE__"
+        )
+        XCTAssertGreaterThan(landscapeSize.columns, portraitSize.columns)
+
         XCUIDevice.shared.orientation = .portrait
         allowTerminalToDrain()
-        XCTAssertTrue(terminalElement(in: app).exists)
+        terminal = terminalElement(in: app)
+        XCTAssertTrue(terminal.exists)
+        terminal.tap()
+        let returnedPortraitSize = queryTerminalSize(
+            terminal,
+            marker: "__RETURNED_PORTRAIT_SIZE__"
+        )
+        XCTAssertLessThan(
+            returnedPortraitSize.columns,
+            landscapeSize.columns
+        )
 
         tapBackButton(in: app)
         XCTAssertTrue(terminalButton.waitForExistence(timeout: 30))
         wait(
-            for: NSPredicate(format: "enabled == true"),
+            for: NSPredicate(
+                format: "enabled == true AND value == %@",
+                "Session Closed"
+            ),
             evaluatedWith: terminalButton,
-            timeout: 10
+            timeout: 30
         )
 
         terminalButton.tap()
@@ -196,6 +228,42 @@ final class PocketRootHostAppUITests: XCTestCase {
 
     private func allowTerminalToDrain() {
         RunLoop.current.run(until: Date().addingTimeInterval(1))
+    }
+
+    private func queryTerminalSize(
+        _ terminal: XCUIElement,
+        marker: String
+    ) -> (rows: Int, columns: Int) {
+        terminal.typeText("printf '\(marker)'; stty size\n")
+
+        var result: (rows: Int, columns: Int)?
+        let expression = try! NSRegularExpression(
+            pattern: NSRegularExpression.escapedPattern(for: marker)
+                + #"([0-9]+) ([0-9]+)"#
+        )
+        let predicate = NSPredicate { object, _ in
+            guard let element = object as? XCUIElement,
+                  let value = element.value as? String
+            else {
+                return false
+            }
+            let range = NSRange(value.startIndex..., in: value)
+            guard let match = expression.firstMatch(
+                in: value,
+                range: range
+            ),
+                let rowsRange = Range(match.range(at: 1), in: value),
+                let columnsRange = Range(match.range(at: 2), in: value),
+                let rows = Int(value[rowsRange]),
+                let columns = Int(value[columnsRange])
+            else {
+                return false
+            }
+            result = (rows, columns)
+            return true
+        }
+        wait(for: predicate, evaluatedWith: terminal, timeout: 30)
+        return result ?? (0, 0)
     }
 
     private func wait(

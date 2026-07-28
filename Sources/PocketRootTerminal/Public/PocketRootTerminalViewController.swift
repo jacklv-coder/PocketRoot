@@ -163,10 +163,16 @@ public final class PocketRootTerminalViewController: UIViewController {
     /// Explicitly releases the guest PTY. Call this when the host permanently
     /// removes the terminal controller. The command fallback also cancels its
     /// active task and disconnects its callbacks.
-    public func closeSession() {
+    public func closeSession(
+        completion: (@MainActor () -> Void)? = nil
+    ) {
         commandBridge.detach()
         ptyBridge?.sessionEndHandler = nil
-        ptyBridge?.detach()
+        if let ptyBridge {
+            ptyBridge.detach(completion: completion)
+        } else {
+            completion?()
+        }
     }
 
     private func setUpInteractiveTerminal(with bridge: PTYTerminalBridge) {
