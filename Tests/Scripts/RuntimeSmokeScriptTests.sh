@@ -7,6 +7,7 @@ PARSER="$ROOT_DIR/Scripts/select-ios18-simulator-runtime.awk"
 SIMULATOR_RUNNER="$ROOT_DIR/Scripts/run-runtime-smoke.sh"
 DEVICE_RUNNER="$ROOT_DIR/Scripts/run-runtime-device-smoke.sh"
 HOST_UI_RUNNER="$ROOT_DIR/Scripts/run-host-app-ui-smoke.sh"
+HOST_DEVICE_UI_RUNNER="$ROOT_DIR/Scripts/run-host-app-device-ui-smoke.sh"
 PROJECT_SPEC="$ROOT_DIR/project.yml"
 SMOKE_APP="$ROOT_DIR/Spikes/PocketRootIshRuntimeSmoke/PocketRootIshRuntimeSmoke.swift"
 
@@ -40,6 +41,7 @@ assert_runtime "" \
 bash -n "$SIMULATOR_RUNNER"
 bash -n "$DEVICE_RUNNER"
 bash -n "$HOST_UI_RUNNER"
+bash -n "$HOST_DEVICE_UI_RUNNER"
 
 if ! grep -Fq -- 'POCKETROOT_HOST_UI_SMOKE_DEVICE' "$HOST_UI_RUNNER" \
   || ! grep -Fq -- 'PocketRootHostAppUITests' "$HOST_UI_RUNNER" \
@@ -47,6 +49,20 @@ if ! grep -Fq -- 'POCKETROOT_HOST_UI_SMOKE_DEVICE' "$HOST_UI_RUNNER" \
   || ! grep -Fq -- '-test-timeouts-enabled YES' "$HOST_UI_RUNNER" \
   || ! grep -Fq -- 'xcrun simctl delete "$DEVICE_UDID"' "$HOST_UI_RUNNER"; then
     echo "Host App UI smoke runner is missing deterministic inputs or cleanup." >&2
+    exit 1
+fi
+
+if ! grep -Fq -- 'POCKETROOT_HOST_DEVICE_UI_SMOKE_DEVICE' "$HOST_DEVICE_UI_RUNNER" \
+  || ! grep -Fq -- 'result.hardwareProperties.udid' "$HOST_DEVICE_UI_RUNNER" \
+  || ! grep -Fq -- '"$DEVICE_REALITY" != "physical"' "$HOST_DEVICE_UI_RUNNER" \
+  || ! grep -Fq -- 'result.deviceProperties.osVersionNumber' "$HOST_DEVICE_UI_RUNNER" \
+  || ! grep -Fq -- 'xcrun --sdk iphoneos --show-sdk-version' "$HOST_DEVICE_UI_RUNNER" \
+  || ! grep -Fq -- 'build-for-testing' "$HOST_DEVICE_UI_RUNNER" \
+  || ! grep -Fq -- 'test-without-building' "$HOST_DEVICE_UI_RUNNER" \
+  || ! grep -Fq -- '"$SIGNED_TEAM_IDENTIFIER" != "$DEVELOPMENT_TEAM"' "$HOST_DEVICE_UI_RUNNER" \
+  || ! grep -Fq -- 'POCKETROOT_KEEP_SMOKE_ARTIFACTS' "$HOST_DEVICE_UI_RUNNER" \
+  || ! grep -Fq -- 'xcrun devicectl device uninstall app' "$HOST_DEVICE_UI_RUNNER"; then
+    echo "Host App physical-device UI runner is missing validation or cleanup." >&2
     exit 1
 fi
 

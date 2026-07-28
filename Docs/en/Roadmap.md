@@ -181,13 +181,21 @@ Completed in this closure:
 4. SwiftTerm pinned at `dd2fb8ac…` with UIKit and SwiftUI bridges.
 5. NUL-framed guest directory browsing and bounded file preview.
 6. Session/runtime/file-browser tests and strict-concurrency iOS compilation.
-7. A real iOS 18 Simulator UI closure that boots, types a file-creation command
-   into SwiftTerm, navigates through Files, and verifies the preview; Xcode 16
-   CI reruns it.
+7. A real iOS 18 Simulator UI closure that boots and covers sustained
+   SwiftTerm input/output, background/foreground, rotation resize,
+   close/reopen, persistent Files preview, and ordered shutdown; Xcode 16 CI
+   reruns it.
+8. A repository-owned physical Host App runner that validates physical iOS,
+   development signing and entitlements, reuses the same lifecycle UI test,
+   and fails closed when the device OS exceeds Xcode's support range.
 
-Remaining gates are interactive lifecycle coverage on an available signed iPhone,
-background/foreground and sustained output, plus iPad keyboard, rotation,
-layout, and VoiceOver verification. The implementation retains direct low-level
+The remaining iPhone gate is execution under an Xcode whose device-support
+range includes the selected signed device. Jack iPhone currently runs iOS 26.6
+beta while the installed Xcode 26.1.1 officially supports devices through iOS
+26.1; its signed build was verified, but the incompatible XCTest session is not
+counted as passed. Physical interactive-program, real memory-pressure, and
+long-duration output evidence remain, plus iPad keyboard, rotation, layout, and
+VoiceOver verification. The implementation retains direct low-level
 `IshSession` ownership and does not use the upstream high-level terminal wrapper.
 
 Acceptance requires predictable session lifecycle, ownership across app transitions, no use-after-free or unbounded reads, shutdown behind all sessions, usable device keyboards/resize/VoiceOver, and recoverable errors.

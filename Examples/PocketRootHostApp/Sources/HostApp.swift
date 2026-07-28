@@ -63,6 +63,7 @@ final class HostViewController: UIViewController {
     private let bootButton = UIButton(type: .system)
     private let terminalButton = UIButton(type: .system)
     private let filesButton = UIButton(type: .system)
+    private let shutdownButton = UIButton(type: .system)
 
     private unowned let runtimeOwner: HostAppDelegate
     private weak var activeTerminal: PocketRootTerminalViewController?
@@ -141,13 +142,21 @@ final class HostViewController: UIViewController {
             action: #selector(openFiles)
         )
         filesButton.accessibilityIdentifier = "PocketRootHost.files"
+        configure(
+            shutdownButton,
+            title: "Shutdown Runtime",
+            symbol: "power.circle",
+            action: #selector(shutdownRuntime)
+        )
+        shutdownButton.accessibilityIdentifier = "PocketRootHost.shutdown"
 
         let stack = UIStackView(
             arrangedSubviews: [
                 statusLabel,
                 bootButton,
                 terminalButton,
-                filesButton
+                filesButton,
+                shutdownButton
             ]
         )
         stack.axis = .vertical
@@ -264,12 +273,31 @@ final class HostViewController: UIViewController {
         navigationController?.pushViewController(files, animated: true)
     }
 
+    @objc
+    private func shutdownRuntime() {
+        guard let controller = runtimeController else {
+            return
+        }
+        closeActiveTerminal()
+        Task {
+            do {
+                try await controller.shutdown()
+            } catch {
+                presentMessage(
+                    title: "Shutdown Failed",
+                    message: error.localizedDescription
+                )
+            }
+        }
+    }
+
     private func render(phase: PocketRootIshRuntimePhase) {
         statusLabel.text = "Runtime: \(Self.phaseDescription(phase))"
         let isReady = phase == .ready
         bootButton.isEnabled = runtimeController?.canBoot ?? true
         terminalButton.isEnabled = isReady
         filesButton.isEnabled = isReady
+        shutdownButton.isEnabled = isReady
     }
 
     private func bind(

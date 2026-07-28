@@ -6,7 +6,8 @@ Package 产品即可完成：
 1. 校验并安装调用方提供的 RootFS；
 2. boot 同一个 iSH runtime；
 3. 打开可交互 SwiftTerm PTY；
-4. 浏览同一个 guest 的 `/root` 文件夹。
+4. 浏览同一个 guest 的 `/root` 文件夹；
+5. 先关闭所有终端 session，再有序 shutdown runtime。
 
 它只依赖 `PocketRoot` 和 `PocketRootIshRuntimeIntegration`，不复制或导入 Demo
 内部实现。工程文件由本目录的 `project.yml` 生成：
@@ -43,9 +44,21 @@ POCKETROOT_ROOTFS_ARCHIVE=/absolute/path/to/fs.tar.gz \
   ./Scripts/run-host-app-ui-smoke.sh
 ```
 
-该测试在临时 iOS 18 Simulator 中 Boot，向 SwiftTerm PTY 输入命令创建文件，再从
-Files 页面进入目录并核对文件预览。可用
+该测试在临时 iOS 18 Simulator 中 Boot，向 SwiftTerm PTY 输入命令创建文件，并覆盖
+持续输出、前后台、旋转 resize、关闭/重开终端、Files 预览与有序 shutdown。可用
 `POCKETROOT_HOST_UI_SMOKE_DEVICE=<Simulator-UDID>` 复用已有模拟器。
+
+用签名真机运行同一生命周期测试：
+
+```bash
+POCKETROOT_ROOTFS_ARCHIVE=/absolute/path/to/fs.tar.gz \
+POCKETROOT_HOST_DEVICE_UI_SMOKE_DEVICE=<physical-device-reference> \
+POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
+  ./Scripts/run-host-app-device-ui-smoke.sh
+```
+
+设备必须已配对、启用 Developer Mode，且其系统版本在已安装 Xcode 的 device-support
+范围内。Team ID 使用开发证书 subject 的 `OU`。
 
 ## English
 
@@ -64,6 +77,10 @@ POCKETROOT_ROOTFS_ARCHIVE=/absolute/path/to/fs.tar.gz \
   ./Scripts/run-host-app-ui-smoke.sh
 ```
 
-This runs the real Simulator UI closure: boot, type a file-creation command
-into the SwiftTerm PTY, navigate through Files, and verify the preview. Set
-`POCKETROOT_HOST_UI_SMOKE_DEVICE` to reuse an existing Simulator.
+This runs the real Simulator UI closure: boot, sustained SwiftTerm PTY input
+and output, background/foreground, rotation resize, terminal close/reopen,
+Files preview, and ordered shutdown. Set `POCKETROOT_HOST_UI_SMOKE_DEVICE` to
+reuse an existing Simulator. Use `run-host-app-device-ui-smoke.sh` with
+`POCKETROOT_HOST_DEVICE_UI_SMOKE_DEVICE` and the development certificate
+subject's `OU` team ID for the signed-device form; the device OS must be within
+the installed Xcode device-support range.
