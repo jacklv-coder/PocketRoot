@@ -144,12 +144,39 @@ module PocketRootReleaseArtifactScanner
   end
 
   def outside_repository!(path, label)
-    root = repository_root.to_s
-    candidate = path.to_s
-    if candidate == root ||
-      candidate.start_with?("#{root}#{File::SEPARATOR}")
+    if filesystem_path_within?(path, repository_root)
       raise ScanError, "#{label} must be outside the repository"
     end
+  end
+
+  def filesystem_path_within?(candidate, parent)
+    parent_path = Pathname(parent)
+    return false unless parent_path.exist? || parent_path.symlink?
+
+    parent_stat = parent_path.lstat
+    current = Pathname(candidate)
+    until current.exist? || current.symlink?
+      ancestor = current.parent
+      if ancestor == current
+        raise ScanError,
+          "could not resolve filesystem containment for #{candidate}"
+      end
+      current = ancestor
+    end
+    loop do
+      current_stat = current.lstat
+      if current_stat.dev == parent_stat.dev &&
+        current_stat.ino == parent_stat.ino
+        return true
+      end
+      ancestor = current.parent
+      return false if ancestor == current
+
+      current = ancestor
+    end
+  rescue SystemCallError => error
+    raise ScanError,
+      "could not resolve filesystem containment: #{error.message}"
   end
 
   def real_external_directory(path, label)
@@ -1237,10 +1264,7 @@ module PocketRootReleaseArtifactScanner
   end
 
   def within_path?(candidate, parent)
-    candidate_path = candidate.to_s
-    parent_path = parent.to_s
-    candidate_path == parent_path ||
-      candidate_path.start_with?("#{parent_path}#{File::SEPARATOR}")
+    filesystem_path_within?(candidate, parent)
   end
 
   def reject_evidence_input_overlap!(evidence, kind, input_path)

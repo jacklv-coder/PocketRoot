@@ -701,6 +701,35 @@ class ReleaseArtifactScannerTests < Minitest::Test
     refute nested_output.exist?
   end
 
+  def test_case_variants_cannot_bypass_filesystem_containment
+    root = Scanner.repository_root
+    case_variant_root =
+      root.parent.join(root.basename.to_s.swapcase)
+    unless case_variant_root.exist? &&
+      same_filesystem_entry?(case_variant_root, root)
+      skip "filesystem is case-sensitive"
+    end
+
+    repository_output =
+      case_variant_root.join("Compliance/release-artifact-case-test")
+    repository_error = assert_raises(Scanner::ScanError) do
+      Scanner.resolved_new_output(repository_output)
+    end
+    assert_includes repository_error.message, "outside the repository"
+    refute repository_output.exist?
+
+    app = application_fixture("case-overlap")
+    case_variant_app = Pathname(app.to_s.swapcase)
+    assert case_variant_app.exist?
+    assert same_filesystem_entry?(case_variant_app, app)
+    nested_output = case_variant_app.join("evidence")
+    overlap_error = assert_raises(Scanner::ScanError) do
+      Scanner.materialize(nested_output, "app", app, runner: @runner)
+    end
+    assert_includes overlap_error.message, "must not overlap"
+    refute nested_output.exist?
+  end
+
   def test_rejects_unexpected_evidence_file
     app = application_fixture
     output = @temporary_directory.join("evidence")
@@ -767,6 +796,12 @@ class ReleaseArtifactScannerTests < Minitest::Test
   end
 
   private
+
+  def same_filesystem_entry?(left, right)
+    left_stat = left.lstat
+    right_stat = right.lstat
+    left_stat.dev == right_stat.dev && left_stat.ino == right_stat.ino
+  end
 
   def mach_o_fixture
     [
