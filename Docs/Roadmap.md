@@ -20,7 +20,8 @@
    一次性命令 Swift Task 取消、native 退出确认和取消后恢复。
 5. 完成最大实验工程组合 inventory/SPDX SBOM，并加入仓库外 `.app`/`.xcarchive`
    确定性扫描器；CI 已扫描 unsigned device runtime App 的文件、Mach-O、
-   entitlement 与风险信号。最终签名/导出发行制品扫描和完整 SBOM 门禁继续关闭。
+   entitlement 与风险信号，本地 development-signed engineering archive 门禁也已
+   闭环。最终发行签名/导出制品扫描和完整 SBOM 门禁继续关闭。
 6. 当前：RootFS 容量预检、全写入/promotion ENOSPC、显式文件/目录持久化、确定性
    power-loss 切点矩阵、8 MiB 持续二进制输出基线、真机强制重启持久化和受限
    存储故障恢复和真机有界内存警告恢复已完成；继续真实 storage pressure/强制断电、
@@ -108,6 +109,7 @@
 | RootFS ENOSPC/掉电 | 进行中 | 峰值空间预检、全 ENOSPC、七点持久化屏障、确定性掉电切点和 Jack iPhone 受限容量/ENOSPC 清理恢复已覆盖；补真实 storage pressure/强制断电 |
 | 最大实验工程组合 inventory/SBOM | 已通过 | 保持 SwiftPM/Xcode target、ABI.6 dependency/source、外部 RootFS 15 包与 checksum 可复现；不得把它表述为最终发行 archive 扫描或发行授权 |
 | unsigned 工程 App 扫描 | 已通过 | CI 临时扫描完整文件树、Mach-O、签名/entitlement、私有 framework/JIT 信号并校验文件级 SPDX；不上传输出，所有最终发行门禁保持关闭 |
+| development-signed engineering archive | 已通过 | 本地生成标准 `.xcarchive`，要求 development entitlement 与有效签名，复验 clean 风险 evidence 和 SPDX；不安装/导出/上传，最终发行门禁保持关闭 |
 | License-reviewed RootFS | 阻塞 | 15 包 inventory、10 source origin、SPDX SBOM、默认配置证据、10/10 origin 对应源码候选材料工程复核、78/78 初始候选和 138/138 外置 LICENSE/NOTICE payload 工程复核已完成；历史 builder 已定位、后继 schema-v4 候选完成同 host 跨调用复现，5 单元交付 inventory 与统一仓库外候选 materializer 已建立。只有 `alpine-keys` 的 MIT grant/版权声明仍未决，之后完成固定发布归档精确重建结论、完整 NOTICE/source offer、法律与交付批准 |
 | App Store 2.5.2 | 阻塞 | guest download/execute policy 有书面结论 |
 

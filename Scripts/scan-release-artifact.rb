@@ -190,7 +190,7 @@ module PocketRootReleaseArtifactScanner
     resolved
   end
 
-  def parse_plist_file(path, runner, label)
+  def parse_plist_file(path, runner, label, key_path: nil)
     if path.symlink? || !path.exist?
       raise ScanError, "#{label} must be a bounded real regular file"
     end
@@ -201,14 +201,35 @@ module PocketRootReleaseArtifactScanner
     parse_plist_data(
       snapshot_file(path, stat, label),
       runner,
-      label
+      label,
+      key_path: key_path
     )
   end
 
-  def parse_plist_data(contents, runner, label)
+  def parse_plist_data(contents, runner, label, key_path: nil)
     if contents.bytesize > MAXIMUM_PROPERTY_LIST_BYTES
       raise ScanError,
         "#{label} exceeds #{MAXIMUM_PROPERTY_LIST_BYTES} bytes"
+    end
+    if key_path
+      extraction =
+        runner.run(
+          [
+            "/usr/bin/plutil",
+            "-extract",
+            key_path,
+            "xml1",
+            "-o",
+            "-",
+            "--",
+            "-"
+          ],
+          stdin_data: contents
+        )
+      unless extraction.success
+        raise ScanError, "#{label} is missing or not readable"
+      end
+      contents = extraction.stdout
     end
     result =
       runner.run(
@@ -254,13 +275,13 @@ module PocketRootReleaseArtifactScanner
     unless input.extname == ".xcarchive"
       raise ScanError, "--xcarchive must name a .xcarchive directory"
     end
-    archive_info =
-      parse_plist_file(input.join("Info.plist"), runner, "archive Info.plist")
-    application_properties = archive_info["ApplicationProperties"]
-    unless application_properties.is_a?(Hash)
-      raise ScanError,
-        "archive ApplicationProperties must contain a dictionary"
-    end
+    application_properties =
+      parse_plist_file(
+        input.join("Info.plist"),
+        runner,
+        "archive ApplicationProperties",
+        key_path: "ApplicationProperties"
+      )
     metadata_application_path =
       safe_relative_path(
         application_properties["ApplicationPath"],

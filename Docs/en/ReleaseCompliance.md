@@ -32,8 +32,12 @@ architectures/dependencies/undefined symbols, signature/entitlements, private
 framework signals, `MAP_JIT` signals, and a file-level SPDX 2.3 SBOM. CI
 materializes and re-verifies this evidence for the unsigned device runtime App,
 validates its SBOM against the pinned official schema, and uploads neither the
-App nor evidence directory. This closes only the engineering scan capability;
-the output keeps `signedReleaseArtifact=false`,
+App nor evidence directory. Local
+`Scripts/build-signed-engineering-archive.sh` also builds a standard
+development-signed smoke `.xcarchive`, verifies `get-task-allow`, signature,
+and clean risk signals, and re-verifies equivalent evidence without installing,
+exporting, or uploading the App. This closes only the engineering scan
+capability; the output keeps `signedReleaseArtifact=false`,
 `exportedReleaseArtifact=false`, `completeReleaseArtifactSBOM=false`, and
 `distributionAuthorized=false`.
 
@@ -196,12 +200,17 @@ The current code does not provide a complete product-level privacy policy.
 - [x] Generate and re-verify a deterministic file inventory, Mach-O/
   entitlement risk evidence, and file-level SPDX 2.3 SBOM for the ephemeral
   unsigned device runtime App.
+- [x] Validate signature, `get-task-allow`, private-API/JIT risk signals,
+  deterministic re-verification, and the SPDX schema for a local
+  development-signed engineering `.xcarchive`, without installing, exporting,
+  or uploading it.
 - [x] Run the signed iPhone one-shot smoke.
 - [ ] Run the signed iPad smoke and complete iPhone/iPad lifecycle coverage.
 - [x] Keep complete Simulator smoke lifecycle `ru_maxrss` at or below 256 MiB.
 - [ ] Validate foreground/background behavior, physical jetsam handling, and storage
   pressure.
-- [ ] Scan entitlements, private APIs, JIT behavior, and exported archives.
+- [ ] Scan entitlements, private APIs, and JIT behavior in the final
+  release-signed exported archive/IPA.
 - [ ] Record a written Guideline 2.5.2 disposition.
 - [ ] Review privacy manifests, networking, and data retention.
 - [x] Record the returning soft-shutdown and no-reboot-in-process single-lifecycle contract.
@@ -215,6 +224,9 @@ The current code does not provide a complete product-level privacy policy.
   revision, hash inventory, and SPDX SBOM.
 - [x] Generate a file-level scan inventory/SPDX SBOM for an ephemeral unsigned
   engineering App while keeping every release and authorization gate closed.
+- [x] Generate and re-verify a file-level inventory/SPDX SBOM for a
+  development-signed engineering archive while keeping final signing, export,
+  and authorization gates closed.
 - [ ] Generate a complete SBOM from the built and scanned final release artifact.
 - [ ] Security guidance and known limitations.
 - [ ] RootFS update and deletion policy.

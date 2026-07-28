@@ -36,6 +36,7 @@ jobs:
         run: |
           bash -n Scripts/run-runtime-smoke.sh
           bash -n Scripts/run-runtime-device-smoke.sh
+          bash -n Scripts/build-signed-engineering-archive.sh
           ruby -c Scripts/prepare-rootfs-smoke-manifest.rb
           ruby -c Scripts/rootfs-corresponding-source-review-results.rb
           ruby -c Scripts/rootfs-license-review.rb
@@ -52,6 +53,7 @@ jobs:
           ruby -c Scripts/generate-release-compliance.rb
           ruby -c Scripts/scan-release-artifact.rb
           bash -n Tests/Scripts/RuntimeSmokeScriptTests.sh
+          bash -n Tests/Scripts/SignedEngineeringArchiveScriptTests.sh
           bash -n Tests/Scripts/RootFSCandidateSmokeManifestTests.sh
           ruby -c Tests/Scripts/RootFSLicenseReviewTests.rb
           ruby -c Tests/Scripts/RootFSCorrespondingSourceReviewResultsTests.rb
@@ -65,6 +67,7 @@ jobs:
           ruby -c Tests/Scripts/ReleaseComplianceTests.rb
           ruby -c Tests/Scripts/ReleaseArtifactScannerTests.rb
           bash Tests/Scripts/RuntimeSmokeScriptTests.sh
+          bash Tests/Scripts/SignedEngineeringArchiveScriptTests.sh
           bash Tests/Scripts/RootFSCandidateSmokeManifestTests.sh
           ruby Tests/Scripts/RootFSCorrespondingSourceReviewResultsTests.rb
           ruby Tests/Scripts/RootFSLicenseReviewTests.rb

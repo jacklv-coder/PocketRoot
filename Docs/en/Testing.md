@@ -12,7 +12,8 @@ PocketRoot separates host logic, real RootFS, iOS build, native final-link, and 
 | Real asset test | Filtered test with archive env | Exact release archive validates and materializes once | Existing-installation reuse or iSH boot |
 | Demo build | `./Scripts/build.sh` | Umbrella and UIKit build | Experimental graph |
 | Native final link | `./Scripts/build-runtime-spike.sh` | Full graph forms arm64 executables | Physical or guest behavior |
-| Unsigned engineering App scan | `ruby Scripts/scan-release-artifact.rb` | Deterministic external `.app`/`.xcarchive` file hashes, Mach-O, signature/entitlement risk signals, and file-level SPDX | Final signed/exported artifact, dependency-license completeness, or distribution authorization |
+| Engineering App/archive scan | `ruby Scripts/scan-release-artifact.rb` | Deterministic external `.app`/`.xcarchive` file hashes, Mach-O, signature/entitlement risk signals, and file-level SPDX | Final exported artifact, dependency-license completeness, or distribution authorization |
+| Development-signed archive gate | `./Scripts/build-signed-engineering-archive.sh` | Standard `.xcarchive`, development entitlements, clean risk signals, deterministic re-verification, and SPDX schema validation | IPA export, release signing, installation, upload, or distribution authorization |
 | Simulator native smoke | `./Scripts/run-runtime-smoke.sh` | Prepare, boot, command bounds, returning soft shutdown | Other toolchains, physical devices, distribution |
 | Physical native smoke | `./Scripts/run-runtime-device-smoke.sh` | Same 17 checks with optional process suspend/resume, UIKit lifecycle, forced-relaunch persistence, bounded storage-failure recovery, or bounded memory-warning recovery; development entitlements and returning soft shutdown | Real storage/memory pressure, power cut, jetsam, iPad, distribution |
 | Documentation | `./Scripts/check-docs.sh` | Pairs, Chinese coverage, relative links | Implementation correctness |
@@ -212,6 +213,35 @@ iOS 18.0 SDK on an arm64 macOS runner, materializes the pinned RootFS,
 final-links arm64 Simulator and unsigned-device Apps, and runs the same
 17-check native smoke on an iOS 18.0 Simulator.
 
+### Development-signed engineering archive
+
+Provide a new external output directory, an Apple team ID, and the downloaded
+pinned official SPDX 2.3 schema:
+
+```bash
+POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
+POCKETROOT_SIGNED_ARCHIVE_OUTPUT=/absolute/new/archive-scan \
+POCKETROOT_SPDX_SCHEMA=/absolute/spdx-2.3-schema.json \
+  ./Scripts/build-signed-engineering-archive.sh
+```
+
+The runner creates a standard `PocketRootIshRuntimeSmoke.xcarchive`, requires a
+valid development signature, requires every Mach-O entry to be `signed-valid`,
+and requires `get-task-allow=true`. It then materializes and
+re-verifies file/Mach-O/entitlement/risk evidence, and validates the file-level
+SPDX document. Before building, it runs `npm ci --ignore-scripts` from the
+pinned lockfile and requires the schema SHA-256 to match the same official SPDX
+2.3 schema pinned by CI. The successful output retains only the archive and
+`evidence`; temporary DerivedData is removed. An optional
+`POCKETROOT_CLONED_SOURCE_PACKAGES_DIR` must identify an existing real external
+directory.
+
+The command never invokes `devicectl`, installs an App, calls
+`-exportArchive`, or uploads output. It proves that a development-signed
+engineering archive can be built and scanned, not final release signing, IPA
+export, a complete release-artifact SBOM, App Review, or distribution
+authorization.
+
 ### Signed iPhone/iPad runner
 
 Use an explicit physical-device reference and team identifier:
@@ -384,6 +414,7 @@ Simulator evidence does not prove signed-device or distribution readiness.
 | docs | Documentation check |
 | release composition/compliance evidence | Generator tests + `--check` + pinned SPDX schema validation |
 | artifact scanner or CI scan gate | Ruby fixture security/drift tests + real unsigned-device App materialize/verify + pinned SPDX schema validation |
+| signed archive runner/project archive settings | Script-contract test + local development-signed `.xcarchive` materialize/verify + pinned SPDX schema validation |
 | upstream/RootFS update | Full suite + supply-chain/compliance reaudit |
 
 ## Evidence language

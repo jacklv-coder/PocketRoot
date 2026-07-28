@@ -163,7 +163,7 @@ print("stderr:", result.stderr)
 - 展开大小：`18,838,016` 字节
 - SHA-256：`be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4`
 
-固定 URL 只是清单元数据，不代表库会自动下载。仓库已从固定归档生成 RootFS 包清单与 SPDX SBOM，完成全部 10 个 source origin（130 个规范化 aports 条目、9 个上游 distfile）的对应源码候选材料工程复核，并完成 78 个初始候选及 138 个外置 LICENSE/NOTICE payload 的 checksum-bound 工程复核；除缺少上游 MIT grant/版权声明的 `alpine-keys` 外，其余 7 个许可证候选 origin 的工程项均已关闭。历史 builder 源码已定位，但固定发布归档的精确环境/重建未验证；schema-v4 后继候选已在同 host 两次独立调用、共四次构建中复现，5 单元源码交付 inventory 与统一仓库外候选 materializer 也已建立，但不替换当前 pin。仓库另有可复现的最大实验组合 inventory/SPDX SBOM，并会在 CI 临时扫描 unsigned device runtime App 的完整文件树、Mach-O、签名/entitlement 和风险信号，生成文件级 SPDX 2.3 SBOM；这不是最终签名/导出 App archive 的扫描结果，输出也不会上传。完整 NOTICE/source offer、交付批准、法律复核和完整发行物 SBOM 未完成前，不得把该 RootFS 加入 Package、App bundle 或公开发行物。
+固定 URL 只是清单元数据，不代表库会自动下载。仓库已从固定归档生成 RootFS 包清单与 SPDX SBOM，完成全部 10 个 source origin（130 个规范化 aports 条目、9 个上游 distfile）的对应源码候选材料工程复核，并完成 78 个初始候选及 138 个外置 LICENSE/NOTICE payload 的 checksum-bound 工程复核；除缺少上游 MIT grant/版权声明的 `alpine-keys` 外，其余 7 个许可证候选 origin 的工程项均已关闭。历史 builder 源码已定位，但固定发布归档的精确环境/重建未验证；schema-v4 后继候选已在同 host 两次独立调用、共四次构建中复现，5 单元源码交付 inventory 与统一仓库外候选 materializer 也已建立，但不替换当前 pin。仓库另有可复现的最大实验组合 inventory/SPDX SBOM；CI 临时扫描 unsigned device runtime App，本地 runner 还构建并扫描 development-signed engineering `.xcarchive`，两者都复验完整文件树、Mach-O、签名/entitlement、风险信号和文件级 SPDX 2.3 SBOM，且不上传输出。它们不是最终发行签名/导出 archive 的扫描结果。完整 NOTICE/source offer、交付批准、法律复核和完整发行物 SBOM 未完成前，不得把该 RootFS 加入 Package、App bundle 或公开发行物。
 
 ## 验证命令
 
@@ -179,13 +179,25 @@ POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
 POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
   ./Scripts/run-runtime-smoke.sh
 
+POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
+POCKETROOT_SIGNED_ARCHIVE_OUTPUT=/absolute/new/archive-scan \
+POCKETROOT_SPDX_SCHEMA=/absolute/spdx-2.3-schema.json \
+  ./Scripts/build-signed-engineering-archive.sh
+
 POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
 POCKETROOT_SMOKE_DEVICE=<physical-device-reference> \
 POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
   ./Scripts/run-runtime-device-smoke.sh
 ```
 
-两个 smoke runner 都要求 Apple Silicon 和精确匹配固定清单的本地归档；前者使用 iOS 18 Simulator，后者要求已配对、已启用 Developer Mode 且可开发签名的 iOS 18+ 真机。真机引用可以是 `devicectl` 接受的 CoreDevice UUID、硬件 UDID 或设备名；runner 会先验证 physical iOS 属性并解析硬件 UDID。它们验证 RootFS 准备、启动、guest 身份、命令上下文、输出、退出码、超时恢复、输出上限恢复和返回 Swift 的 soft shutdown。详细矩阵见[测试与验证](Docs/Testing.md)。
+signed archive runner 只在 Mac 上生成并扫描 development-signed
+`.xcarchive`，不安装、导出或上传。两个 smoke runner 都要求 Apple Silicon 和精确
+匹配固定清单的本地归档；前者使用 iOS 18 Simulator，后者要求已配对、已启用
+Developer Mode 且可开发签名的 iOS 18+ 真机。真机引用可以是 `devicectl` 接受的
+CoreDevice UUID、硬件 UDID 或设备名；runner 会先验证 physical iOS 属性并解析硬件
+UDID。它们验证 RootFS 准备、启动、guest 身份、命令上下文、输出、退出码、超时
+恢复、输出上限恢复和返回 Swift 的 soft shutdown。详细矩阵见
+[测试与验证](Docs/Testing.md)。
 
 ## 文档导航
 

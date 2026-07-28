@@ -48,19 +48,20 @@ class ReleaseArtifactScannerTests < Minitest::Test
       tool = command.first
       case tool
       when "/usr/bin/plutil"
-        if command.last == "-"
+        if command.include?("-extract")
+          result("archive application properties")
+        elsif command.last == "-"
           if stdin_data == "<plist/>"
             result(JSON.generate(@pending_entitlements || @entitlements))
-          elsif stdin_data == "archive plist"
+          elsif stdin_data == "archive application properties"
             result(
               JSON.generate(
-                {
-                  "ApplicationProperties" =>
-                    @archive_application_properties ||
-                    {"ApplicationPath" => @archive_application_path}
-                }
+                @archive_application_properties ||
+                  {"ApplicationPath" => @archive_application_path}
               )
             )
+          elsif stdin_data == "archive plist"
+            result("", "top-level archive metadata contains a date", false)
           else
             result(application_info_json)
           end
@@ -428,6 +429,39 @@ class ReleaseArtifactScannerTests < Minitest::Test
       inventory.dig("input", "applicationRelativePath")
     )
     assert_equal app.basename.to_s, "PocketRootRuntime.app"
+  end
+
+  def test_extracts_application_properties_from_real_archive_metadata
+    archive_info = @temporary_directory.join("ArchiveInfo.plist")
+    archive_info.binwrite(
+      <<~PLIST
+        <?xml version="1.0" encoding="UTF-8"?>
+        <plist version="1.0">
+        <dict>
+          <key>ApplicationProperties</key>
+          <dict>
+            <key>ApplicationPath</key>
+            <string>Applications/PocketRootRuntime.app</string>
+          </dict>
+          <key>CreationDate</key>
+          <date>2026-07-28T00:00:00Z</date>
+        </dict>
+        </plist>
+      PLIST
+    )
+
+    application_properties =
+      Scanner.parse_plist_file(
+        archive_info,
+        Scanner::SystemRunner.new,
+        "archive ApplicationProperties",
+        key_path: "ApplicationProperties"
+      )
+
+    assert_equal(
+      "Applications/PocketRootRuntime.app",
+      application_properties.fetch("ApplicationPath")
+    )
   end
 
   def test_fat_macho_dependency_parser_ignores_architecture_headers

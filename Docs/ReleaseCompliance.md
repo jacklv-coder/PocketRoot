@@ -47,8 +47,11 @@ iSH gitlink、supervisor musl source、调用方提供的外部 RootFS 及其中
 `.xcarchive` 中的 App 建立确定性文件清单、逐文件 SHA-1/SHA-256、Mach-O
 架构/依赖/未定义符号、签名/entitlement、私有 framework 与 `MAP_JIT` 信号，
 并生成文件级 SPDX 2.3 SBOM。CI 对 unsigned device runtime App 临时生成、复验并
-用固定官方 schema 校验这些证据，不上传 App 或证据目录。该扫描只关闭“工程制品
-可扫描”能力项；输出固定保持 `signedReleaseArtifact=false`、
+用固定官方 schema 校验这些证据，不上传 App 或证据目录。本地
+`Scripts/build-signed-engineering-archive.sh` 还会构建标准 development-signed
+smoke `.xcarchive`，验证 `get-task-allow`、签名和 clean 风险信号并复验同类证据；
+它不安装、导出或上传 App。该扫描只关闭“工程制品可扫描”能力项；输出固定保持
+`signedReleaseArtifact=false`、
 `exportedReleaseArtifact=false`、`completeReleaseArtifactSBOM=false` 和
 `distributionAuthorized=false`。
 
@@ -230,11 +233,14 @@ Alpine `apk` 可以下载、安装和执行新增代码。即使初始 RootFS �
 - [x] Xcode 16 minimum-toolchain RootFS install、native final-link 与 17 项 smoke。
 - [x] 对临时 unsigned device runtime App 生成并复验确定性文件清单、Mach-O/
   entitlement 风险证据和文件级 SPDX 2.3 SBOM。
+- [x] 对本地 development-signed engineering `.xcarchive` 验证签名、
+  `get-task-allow`、private API/JIT 风险信号、确定性复验和 SPDX schema；不安装、
+  导出或上传。
 - [x] signed iPhone 一次性命令 smoke。
 - [ ] signed iPad smoke 与完整 iPhone/iPad lifecycle。
 - [x] Simulator 完整 smoke 生命周期 `ru_maxrss` 不超过 256 MiB。
 - [ ] foreground/background、真机 jetsam、storage pressure。
-- [ ] entitlement、private API、JIT 与 archive scan。
+- [ ] 最终发行签名、导出 archive/IPA 的 entitlement、private API 与 JIT scan。
 - [ ] Guideline 2.5.2 书面结论。
 - [ ] 隐私清单、网络与数据保留评审。
 - [x] 记录 soft shutdown 返回与同进程不可再次 boot 的 single-lifecycle 契约。
@@ -247,6 +253,8 @@ Alpine `apk` 可以下载、安装和执行新增代码。即使初始 RootFS �
 - [x] 生成最大实验工程组合的 dependency/revision/hash inventory 与 SPDX SBOM。
 - [x] 为临时 unsigned 工程 App 生成文件级扫描 inventory/SPDX SBOM；所有发行和
   授权门禁保持关闭。
+- [x] 为 development-signed engineering archive 生成并复验文件级
+  inventory/SPDX SBOM；最终签名、导出和授权门禁保持关闭。
 - [ ] 从最终构建并扫描的发行制品生成完整 SBOM。
 - [ ] 安全与已知限制。
 - [ ] RootFS 更新和删除策略。
