@@ -329,7 +329,8 @@ POCKETROOT_SPDX_SCHEMA=/absolute/spdx-2.3-schema.json \
 ```
 
 runner 生成标准 `PocketRootIshRuntimeSmoke.xcarchive`，要求 App 使用有效
-development 签名且 `get-task-allow=true`，然后生成/复验文件、Mach-O、
+development 签名、每个 Mach-O 都是 `signed-valid` 且 `get-task-allow=true`，
+然后生成/复验文件、Mach-O、
 entitlement 与风险 evidence，并校验文件级 SPDX。它会在构建前使用固定 lockfile
 执行 `npm ci --ignore-scripts`，并要求 schema SHA-256 与 CI 固定的官方 SPDX 2.3
 schema 一致。成功目录只保留 archive 与 `evidence`；DerivedData 使用临时目录并

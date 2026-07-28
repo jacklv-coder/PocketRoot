@@ -151,10 +151,16 @@ ruby -rjson -e '
     )
   signature = inventory.fetch("signature")
   entitlements = signature.fetch("entitlements")
+  mach_o_binaries = inventory.fetch("machOBinaries")
   coverage = inventory.fetch("coverage")
   unless inventory.dig("input", "kind") == "xcarchive" &&
     signature.fetch("status") == "signed-valid" &&
     signature.fetch("valid") == true &&
+    !mach_o_binaries.empty? &&
+    mach_o_binaries.all? { |binary|
+      binary.dig("signature", "status") == "signed-valid" &&
+        binary.dig("signature", "valid") == true
+    } &&
     entitlements.fetch("get-task-allow") == true &&
     entitlements.fetch("com.apple.developer.team-identifier") ==
       ARGV.fetch(1) &&

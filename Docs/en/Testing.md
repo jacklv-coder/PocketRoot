@@ -226,7 +226,8 @@ POCKETROOT_SPDX_SCHEMA=/absolute/spdx-2.3-schema.json \
 ```
 
 The runner creates a standard `PocketRootIshRuntimeSmoke.xcarchive`, requires a
-valid development signature with `get-task-allow=true`, materializes and
+valid development signature, requires every Mach-O entry to be `signed-valid`,
+and requires `get-task-allow=true`. It then materializes and
 re-verifies file/Mach-O/entitlement/risk evidence, and validates the file-level
 SPDX document. Before building, it runs `npm ci --ignore-scripts` from the
 pinned lockfile and requires the schema SHA-256 to match the same official SPDX

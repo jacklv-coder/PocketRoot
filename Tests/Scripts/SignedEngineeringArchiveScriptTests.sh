@@ -42,6 +42,9 @@ if ! grep -Fq -- 'PocketRootReleaseArtifactScanner.resolved_new_output(' "$RUNNE
   || ! grep -Fq -- 'npm ci' "$RUNNER" \
   || ! grep -Fq -- '--ignore-scripts' "$RUNNER" \
   || ! grep -Fq -- 'validate-spdx.mjs' "$RUNNER" \
+  || ! grep -Fq -- '!mach_o_binaries.empty?' "$RUNNER" \
+  || ! grep -Fq -- 'mach_o_binaries.all? { |binary|' "$RUNNER" \
+  || ! grep -Fq -- 'binary.dig("signature", "status") == "signed-valid"' "$RUNNER" \
   || ! grep -Fq -- 'entitlements.fetch("get-task-allow") == true' "$RUNNER" \
   || ! grep -Fq -- 'coverage.fetch("distributionAuthorized") == false' "$RUNNER"; then
     echo "Signed archive runner does not enforce its build, scan, or closed-gate contract." >&2
