@@ -5,6 +5,8 @@ import UIKit
 @main
 @MainActor
 final class HostAppDelegate: UIResponder, UIApplicationDelegate {
+    var runtimeController: PocketRootIshRuntimeController?
+
     func application(
         _ application: UIApplication,
         configurationForConnecting connectingSceneSession: UISceneSession,
@@ -28,15 +30,28 @@ final class HostSceneDelegate: UIResponder, UIWindowSceneDelegate {
         willConnectTo session: UISceneSession,
         options connectionOptions: UIScene.ConnectionOptions
     ) {
-        guard let windowScene = scene as? UIWindowScene else {
+        guard let windowScene = scene as? UIWindowScene,
+              let appDelegate = UIApplication.shared.delegate as? HostAppDelegate
+        else {
             return
         }
         let window = UIWindow(windowScene: windowScene)
         window.rootViewController = UINavigationController(
-            rootViewController: HostViewController()
+            rootViewController: HostViewController(runtimeOwner: appDelegate)
         )
         window.makeKeyAndVisible()
         self.window = window
+    }
+
+    func sceneDidDisconnect(_ scene: UIScene) {
+        if let navigationController =
+            window?.rootViewController as? UINavigationController,
+           let hostViewController =
+            navigationController.viewControllers.first as? HostViewController
+        {
+            hostViewController.closeActiveTerminal()
+        }
+        window = nil
     }
 }
 
@@ -49,15 +64,33 @@ final class HostViewController: UIViewController {
     private let terminalButton = UIButton(type: .system)
     private let filesButton = UIButton(type: .system)
 
-    private var runtimeController: PocketRootIshRuntimeController?
+    private unowned let runtimeOwner: HostAppDelegate
     private weak var activeTerminal: PocketRootTerminalViewController?
+
+    private var runtimeController: PocketRootIshRuntimeController? {
+        runtimeOwner.runtimeController
+    }
+
+    init(runtimeOwner: HostAppDelegate) {
+        self.runtimeOwner = runtimeOwner
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) is unavailable")
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "PocketRoot Host"
         view.backgroundColor = .systemBackground
         configureView()
-        render(phase: .idle)
+        if let runtimeController {
+            bind(to: runtimeController)
+        } else {
+            render(phase: .idle)
+        }
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -68,6 +101,11 @@ final class HostViewController: UIViewController {
             activeTerminal.closeSession()
             self.activeTerminal = nil
         }
+    }
+
+    func closeActiveTerminal() {
+        activeTerminal?.closeSession()
+        activeTerminal = nil
     }
 
     private func configureView() {
@@ -158,10 +196,8 @@ final class HostViewController: UIViewController {
                         workDirectory: "/"
                     )
                 )
-                runtimeController = controller
-                controller.onPhaseChange = { [weak self] phase in
-                    self?.render(phase: phase)
-                }
+                runtimeOwner.runtimeController = controller
+                bind(to: controller, refreshRuntimeState: false)
             }
             Task {
                 do {
@@ -222,6 +258,21 @@ final class HostViewController: UIViewController {
         bootButton.isEnabled = runtimeController?.canBoot ?? true
         terminalButton.isEnabled = isReady
         filesButton.isEnabled = isReady
+    }
+
+    private func bind(
+        to controller: PocketRootIshRuntimeController,
+        refreshRuntimeState: Bool = true
+    ) {
+        controller.onPhaseChange = { [weak self] phase in
+            self?.render(phase: phase)
+        }
+        render(phase: controller.phase)
+        if refreshRuntimeState {
+            Task {
+                await controller.refreshRuntimeState()
+            }
+        }
     }
 
     private func applicationSupportURL() throws -> URL {

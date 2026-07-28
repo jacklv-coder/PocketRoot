@@ -209,7 +209,7 @@ module PocketRootReleaseCompliance
     "project.yml" =>
       "dde326aa375b5c63362e3696402e52e023c9d1f88a26c751a652d42fa24a2800",
     "Examples/PocketRootHostApp/project.yml" =>
-      "c0c8a51a095f410eb121ffade8cb1fabd3f276b2395f386d6b034775ec6746b5",
+      "189efb965ae3dabdad11a37b1b62332a93b07a58613c0ec28c23bf73e93decec",
     "Scripts/inject-demo-rootfs.sh" =>
       "3982b5382b0d1e13e0c8e8a5bb5404c5bad1dfc4d6e9cd23a39e3395a83087bb",
     "ThirdPartyNotices/SwiftTerm-LICENSE.txt" =>

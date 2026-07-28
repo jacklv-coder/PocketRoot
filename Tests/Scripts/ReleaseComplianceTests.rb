@@ -158,6 +158,31 @@ class ReleaseComplianceTests < Minitest::Test
     refute host_profile.fetch("artifactBuiltAndScanned")
   end
 
+  def test_standalone_host_retains_runtime_across_scene_recreation
+    source =
+      REPOSITORY_ROOT
+        .join("Examples/PocketRootHostApp/Sources/HostApp.swift")
+        .binread
+
+    assert_match(
+      /final class HostAppDelegate:.*?var runtimeController:/m,
+      source
+    )
+    assert_includes source, "HostViewController(runtimeOwner: appDelegate)"
+    assert_includes source, "private unowned let runtimeOwner: HostAppDelegate"
+    assert_includes source, "func sceneDidDisconnect(_ scene: UIScene)"
+    assert_includes source, "hostViewController.closeActiveTerminal()"
+
+    info =
+      REPOSITORY_ROOT
+        .join("Examples/PocketRootHostApp/Sources/Info.plist")
+        .binread
+    assert_match(
+      /<key>UIApplicationSupportsMultipleScenes<\/key>\s*<false\/>/,
+      info
+    )
+  end
+
   def test_rejects_demo_rootfs_injection_script_drift
     root = input_fixture
     path = root.join("Scripts/inject-demo-rootfs.sh")
