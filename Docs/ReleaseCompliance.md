@@ -34,6 +34,15 @@ PocketRoot 的实验性 iSH runtime、XCFramework 和候选 RootFS 当前仅用�
 
 合规评审必须覆盖整个组合，不能只检查根目录 `LICENSE`。
 
+仓库现已在
+[`Compliance/Release/experimental-v0.1.0`](../Compliance/Release/experimental-v0.1.0/README.md)
+提交可复现的最大实验工程组合清单和 SPDX 2.3 JSON SBOM。它区分默认 Demo、
+原生 runtime smoke 与全部 Swift products，并覆盖固定 ABI.6 IshEmbed/XCFramework、
+iSH gitlink、supervisor musl source、调用方提供的外部 RootFS 及其中 15 个 Alpine
+包。默认 Demo 不含 IshEmbed 或 RootFS。该证据没有扫描最终 archive，明确保持
+`completeReleaseArtifactSBOM=false` 和 `distributionAuthorized=false`，不能代替
+发行制品 SBOM 或发行授权。
+
 ## 已知许可证事实
 
 ### IshEmbed 与 iSH
@@ -104,6 +113,8 @@ tree；除缺少上游 MIT grant/版权声明的 `alpine-keys` 外，其余 7 �
   [`Compliance/RootFS/v0.3.3`](../Compliance/RootFS/v0.3.3/README.md) 的包清单、
   SPDX SBOM、来源 locator、源码获取清单、license/NOTICE 候选索引与工程复核
   结果、许可证声明和默认配置证据。
+- CI 重新生成并比对最大实验工程组合 inventory/SPDX SBOM，并使用固定官方
+  SPDX 2.3 schema 校验；它不构建或扫描最终发行 archive。
 - CI 离线测试仓库外对应源码候选 materializer 的 checksum、路径隔离和安全解包；
   不上传生成的源码材料。
 - README、API 注释和 ADR 明确标注 Experimental 与 shutdown 风险。
@@ -221,8 +232,8 @@ Alpine `apk` 可以下载、安装和执行新增代码。即使初始 RootFS �
 - [ ] LICENSE bundle。
 - [ ] NOTICE。
 - [ ] corresponding-source location 与获取说明。
-- [ ] SBOM。
-- [ ] dependency/revision/hash inventory。
+- [x] 生成最大实验工程组合的 dependency/revision/hash inventory 与 SPDX SBOM。
+- [ ] 从最终构建并扫描的发行制品生成完整 SBOM。
 - [ ] 安全与已知限制。
 - [ ] RootFS 更新和删除策略。
 - [ ] App Review notes。

@@ -48,6 +48,7 @@ jobs:
           ruby -c Scripts/prepare-rootfs-delivery-candidate.rb
           ruby -c Scripts/rootfs-source-acquisition.rb
           ruby -c Scripts/prepare-rootfs-source-bundle.rb
+          ruby -c Scripts/generate-release-compliance.rb
           bash -n Tests/Scripts/RuntimeSmokeScriptTests.sh
           bash -n Tests/Scripts/RootFSCandidateSmokeManifestTests.sh
           ruby -c Tests/Scripts/RootFSLicenseReviewTests.rb
@@ -59,6 +60,7 @@ jobs:
           ruby -c Tests/Scripts/RootFSRebuildDeliveryEvidenceTests.rb
           ruby -c Tests/Scripts/RootFSDeliveryCandidateTests.rb
           ruby -c Tests/Scripts/RootFSSourceBundleTests.rb
+          ruby -c Tests/Scripts/ReleaseComplianceTests.rb
           bash Tests/Scripts/RuntimeSmokeScriptTests.sh
           bash Tests/Scripts/RootFSCandidateSmokeManifestTests.sh
           ruby Tests/Scripts/RootFSCorrespondingSourceReviewResultsTests.rb
@@ -70,6 +72,7 @@ jobs:
           ruby Tests/Scripts/RootFSRebuildDeliveryEvidenceTests.rb
           ruby Tests/Scripts/RootFSDeliveryCandidateTests.rb
           ruby Tests/Scripts/RootFSSourceBundleTests.rb
+          ruby Tests/Scripts/ReleaseComplianceTests.rb
           ruby Scripts/prepare-rootfs-license-review.rb --validate-only
           ruby Scripts/rootfs-corresponding-source-review-results.rb
           ruby Scripts/rootfs-license-review-results.rb
@@ -79,6 +82,7 @@ jobs:
           ruby Scripts/prepare-rootfs-license-notice-bundle.rb --validate-only
           ruby Scripts/prepare-rootfs-delivery-candidate.rb --validate-only
           ruby Scripts/prepare-rootfs-source-bundle.rb --validate-only
+          ruby Scripts/generate-release-compliance.rb --check
 
       - name: Report Apple toolchain
         run: |
@@ -122,6 +126,9 @@ jobs:
           node Scripts/rootfs-compliance-validator/validate-spdx.mjs \
             "$spdx_schema" \
             Compliance/RootFS/v0.3.3/SBOM.spdx.json
+          node Scripts/rootfs-compliance-validator/validate-spdx.mjs \
+            "$spdx_schema" \
+            Compliance/Release/experimental-v0.1.0/SBOM.spdx.json
 
       - name: Install XcodeGen
         env:

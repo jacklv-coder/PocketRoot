@@ -6,7 +6,7 @@ This is the sole source of truth for immutable revisions, nested gitlinks,
 artifact URLs, sizes, and SHA-256 values used by the Experimental runtime.
 Branches, moving tags, unverified release aliases, and local caches are not pins.
 
-Audit date: 2026-07-24
+Audit date: 2026-07-27
 
 ## 1. IshEmbed Swift package
 
@@ -139,7 +139,10 @@ PocketRoot remains Experimental. Open gates include:
 - sustained workload, peak memory, and jetsam behavior;
 - generated RootFS package inventory, SPDX SBOM, source locators, and default
   configuration are present, while the complete license/NOTICE and
-  corresponding-source bundles remain open; and
+  corresponding-source bundles remain open;
+- the maximal Experimental engineering-composition inventory/SPDX SBOM binds
+  the ABI.6 assets, iSH gitlink, supervisor musl source, and external RootFS
+  recorded here, while no final App archive has been scanned; and
 - an App Store Review Guideline 2.5.2 decision.
 
 ## 6. Update procedure

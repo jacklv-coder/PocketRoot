@@ -14,6 +14,17 @@ Production, TestFlight, App Store, public/private binary SDK distribution, RootF
 
 A native-enabled app may contain PocketRoot source, ish-arm64-pkg source, a static IshKernel XCFramework, iSH-derived source and submodules, an Alpine fakefs archive, guest packages under multiple licenses, and application download/command/UI policy. Review must cover the whole combination.
 
+The repository now commits a reproducible maximal Experimental engineering
+composition inventory and SPDX 2.3 JSON SBOM under
+[`Compliance/Release/experimental-v0.1.0`](../../Compliance/Release/experimental-v0.1.0/README.md).
+It distinguishes the default Demo, native-runtime smoke, and all Swift products,
+and covers pinned ABI.6 IshEmbed/XCFramework, the iSH gitlink, supervisor musl
+source, the caller-provided external RootFS, and its 15 Alpine packages. The
+default Demo contains neither IshEmbed nor a RootFS. This evidence does not scan
+a final archive and explicitly keeps `completeReleaseArtifactSBOM=false` and
+`distributionAuthorized=false`; it is not a release-artifact SBOM or
+distribution authorization.
+
 ## Known facts
 
 The package repository carries GPL identifiers and a GPL-3.0 statement but did not provide a complete top-level license/notice set at audit. The pinned iSH source has GPL and `LICENSE.IOS` terms. Binary/source correspondence needs a durable reproducible record.
@@ -74,6 +85,9 @@ review results, declared-license data, and default configuration under
 CI offline-tests checksum verification, path isolation, and safe extraction for
 the external corresponding-source candidate materializer; it does not upload
 source material.
+CI also regenerates the maximal Experimental engineering-composition
+inventory/SPDX SBOM and validates it against the pinned official SPDX 2.3
+schema; it neither builds nor scans a final release archive.
 Documentation and APIs label Experimental and shutdown risks.
 
 These engineering controls reduce the risk of accidental distribution; they do
@@ -176,8 +190,9 @@ The current code does not provide a complete product-level privacy policy.
 - [ ] LICENSE bundle.
 - [ ] NOTICE.
 - [ ] Corresponding-source location and retrieval instructions.
-- [ ] SBOM.
-- [ ] Dependency, revision, and hash inventory.
+- [x] Generate the maximal Experimental engineering composition's dependency,
+  revision, hash inventory, and SPDX SBOM.
+- [ ] Generate a complete SBOM from the built and scanned final release artifact.
 - [ ] Security guidance and known limitations.
 - [ ] RootFS update and deletion policy.
 - [ ] App Review notes.

@@ -30,6 +30,11 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
   10 个 source origin、SPDX 2.3 JSON SBOM、许可证声明/attribution inventory
   和 `apk`、repository、DNS 默认配置快照；完整 LICENSE/NOTICE 与对应源码 bundle
   仍保持发行阻塞。
+- 加入可复现的最大实验工程组合 inventory 与 SPDX 2.3 JSON SBOM，区分默认 Demo、
+  原生 runtime smoke 和全部 Swift products，绑定 ABI.6 IshEmbed/XCFramework、
+  iSH、supervisor musl source、外部 RootFS 及其中 15 个包；CI 比对生成结果并
+  使用固定官方 schema 校验。该证据未扫描最终 archive，完整发行物 SBOM 与发行授权
+  门禁保持关闭。
 - 加入 checksum-bound `LICENSE-REVIEW-RESULTS.json` 和严格验证器；78/78 个固定
   RootFS license/NOTICE 候选已完成工程复核，8 个 source origin 仍有包级未决项，
   法律与再分发门禁保持关闭。

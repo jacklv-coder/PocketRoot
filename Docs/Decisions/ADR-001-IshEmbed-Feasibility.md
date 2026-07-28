@@ -238,7 +238,7 @@ Experimental 产品加入默认 umbrella。
 
 ## RootFS 与发行约束
 
-审核 package 有 GPL 标识，但缺少完整顶层 LICENSE/NOTICE 组合。iSH submodule 有 GPL 和 `LICENSE.IOS`。Alpine RootFS 包含 GPL、Apache、MPL、MIT、BSD、Zlib 等 family。仓库已从固定 release asset 生成包清单与 SPDX SBOM，但该 asset 仍没有完整 license bundle、NOTICE 或对应源码交付材料，完整发行物 SBOM 也尚未完成。
+审核 package 有 GPL 标识，但缺少完整顶层 LICENSE/NOTICE 组合。iSH submodule 有 GPL 和 `LICENSE.IOS`。Alpine RootFS 包含 GPL、Apache、MPL、MIT、BSD、Zlib 等 family。仓库已从固定 release asset 生成包清单与 SPDX SBOM，并生成覆盖最大实验工程组合的 SPDX SBOM；后者没有扫描最终 App archive。该 asset 仍没有完整 license bundle、NOTICE 或对应源码交付材料，完整发行物 SBOM 也尚未完成。
 
 静态链接和 RootFS 分发保持阻塞，直到：
 
