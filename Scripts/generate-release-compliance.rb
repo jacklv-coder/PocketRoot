@@ -208,14 +208,17 @@ module PocketRootReleaseCompliance
       "fff762dc74981f136159838d480f1d28deb292100e74ebdcd2589885366c3a4f",
     "project.yml" =>
       "dde326aa375b5c63362e3696402e52e023c9d1f88a26c751a652d42fa24a2800",
+    "Examples/PocketRootHostApp/project.yml" =>
+      "c0c8a51a095f410eb121ffade8cb1fabd3f276b2395f386d6b034775ec6746b5",
     "Scripts/inject-demo-rootfs.sh" =>
-      "209408853e25550e11701e3d08286c3a3592abff3b087a3539ec63fac12f8b51",
+      "3982b5382b0d1e13e0c8e8a5bb5404c5bad1dfc4d6e9cd23a39e3395a83087bb",
     "ThirdPartyNotices/SwiftTerm-LICENSE.txt" =>
       "1c34c11581e20feb2b7ea122146a6690261dae94b2c8444e8cff902e567df6ae"
   }.freeze
   IMPLEMENTATION_ROOTS = %w[
     Sources
     Demo/PocketRootDemo
+    Examples/PocketRootHostApp/Sources
     Spikes/PocketRootIshRuntimeCompileSpike
     Spikes/PocketRootIshRuntimeSmoke
   ].freeze
@@ -932,6 +935,11 @@ module PocketRootReleaseCompliance
     package_resolved, package_resolved_bytes =
       load_json(root.join("Package.resolved"), "Package.resolved")
     project_bytes = read_regular(root.join("project.yml"), "project.yml")
+    host_project_bytes =
+      read_regular(
+        root.join("Examples/PocketRootHostApp/project.yml"),
+        "Host App project.yml"
+      )
     license_bytes = read_regular(root.join("LICENSE"), "LICENSE")
     demo_rootfs_injection_bytes =
       read_regular(
@@ -972,6 +980,8 @@ module PocketRootReleaseCompliance
       "Package.resolved" => Digest::SHA256.hexdigest(package_resolved_bytes),
       "Package.swift" => Digest::SHA256.hexdigest(package_swift),
       "project.yml" => Digest::SHA256.hexdigest(project_bytes),
+      "Examples/PocketRootHostApp/project.yml" =>
+        Digest::SHA256.hexdigest(host_project_bytes),
       "Scripts/inject-demo-rootfs.sh" =>
         Digest::SHA256.hexdigest(demo_rootfs_injection_bytes),
       SWIFTTERM.fetch("noticePath") =>
@@ -1038,6 +1048,17 @@ module PocketRootReleaseCompliance
               PocketRootIshRuntimeIntegration
               PocketRootResources
             ],
+          "includesIshRuntime" => true,
+          "requiresExternalRootFS" => true,
+          "artifactBuiltAndScanned" => false
+        },
+        {
+          "id" => "standalone-host-example",
+          "rootTarget" => "PocketRootHostApp",
+          "swiftProducts" => %w[
+            PocketRoot
+            PocketRootIshRuntimeIntegration
+          ],
           "includesIshRuntime" => true,
           "requiresExternalRootFS" => true,
           "artifactBuiltAndScanned" => false
@@ -1410,8 +1431,8 @@ module PocketRootReleaseCompliance
       # PocketRoot experimental release-composition evidence
 
       此目录记录 `#{RELEASE_VERSION}` 源码树可复现的**最大实验组合**，不是已构建、
-      已扫描或获准发行的 App 制品。`COMPOSITION.json` 区分默认 Demo、原生 runtime
-      smoke 与全部 Swift products；`SBOM.spdx.json` 汇总 PocketRoot、固定 ABI.6
+      已扫描或获准发行的 App 制品。`COMPOSITION.json` 区分默认 Demo、独立宿主示例、
+      原生 runtime smoke 与全部 Swift products；`SBOM.spdx.json` 汇总 PocketRoot、固定 ABI.6
       IshEmbed/XCFramework、精确 iSH gitlink、静态 supervisor 使用的 musl source、
       固定 SwiftTerm 与其解析依赖，以及调用方提供的外部 RootFS 和其中 15 个 Alpine 包。
 
@@ -1432,7 +1453,8 @@ module PocketRootReleaseCompliance
       This directory records the reproducible **maximal experimental
       composition** of the `#{RELEASE_VERSION}` source tree. It is not a built,
       scanned, or authorized App artifact. `COMPOSITION.json` distinguishes the
-      default Demo, native-runtime smoke, and all Swift products.
+      default Demo, standalone host example, native-runtime smoke, and all
+      Swift products.
       `SBOM.spdx.json` combines PocketRoot, pinned ABI.6 IshEmbed/XCFramework,
       the exact iSH gitlink, the musl source snapshot used by the static guest
       supervisor, pinned SwiftTerm and its resolved dependency, and the
@@ -1484,6 +1506,7 @@ module PocketRootReleaseCompliance
     unless profiles.map { |profile| profile.fetch("id") } == %w[
       default-demo
       native-runtime-smoke
+      standalone-host-example
       swift-package-all-products
     ] &&
       profiles.all? { |profile| profile["artifactBuiltAndScanned"] == false } &&

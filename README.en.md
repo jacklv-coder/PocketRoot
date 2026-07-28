@@ -118,12 +118,7 @@ Select `PocketRootIshRuntimeIntegration` explicitly. No stable Git tag exists ye
 ```swift
 import Foundation
 import PocketRoot
-import PocketRootIshRuntime
 import PocketRootIshRuntimeIntegration
-
-guard PocketRootIshRuntimeFactory.isAvailable else {
-    fatalError("The native runtime requires an arm64 iOS build.")
-}
 
 let applicationSupportURL = try FileManager.default.url(
     for: .applicationSupportDirectory,
@@ -132,14 +127,16 @@ let applicationSupportURL = try FileManager.default.url(
     create: true
 )
 
-let prepared = try await PocketRootIshSystemFactory.prepareSystem(
-    archiveURL: localReviewedArchiveURL,
-    applicationSupportURL: applicationSupportURL
+let runtimeController = PocketRootIshRuntimeController(
+    configuration: PocketRootIshRuntimeControllerConfiguration(
+        archiveURL: localReviewedArchiveURL,
+        applicationSupportURL: applicationSupportURL
+    )
 )
 
-try await prepared.system.boot()
+_ = try await runtimeController.boot()
 
-let result = try await prepared.system.execute(
+let result = try await runtimeController.execute(
     PocketRootCommandRequest(
         command: "/bin/uname -m",
         workingDirectory: "/",
@@ -155,7 +152,7 @@ print(result.stderr)
 Contract:
 
 1. `archiveURL` is a caller-owned reviewed local regular file.
-2. Preparation verifies, installs, and composes; it does not download or boot.
+2. `runtimeController.boot()` verifies, installs, composes, and explicitly boots; it does not download the RootFS.
 3. `applicationSupportURL/rootfs/<version>` directly contains `meta.db`, `data/`, and `.pocketroot-rootfs.json`; there is no retained `fs/` layer. A valid version directory and installation record can be reused even when `current.json` is missing or mismatched; reuse repairs it.
 4. Boot is explicit and runs the default health gate on the same serial native executor. The built-in v0.3.3 RootFS manifest returns `ready` only after observing `aarch64`, Alpine `3.19.1`, and the configured guest working directory.
 5. Commands run through `/bin/sh -lc` and are shell strings, not argv-safe APIs.
@@ -163,7 +160,9 @@ Contract:
 7. Native shutdown soft-halts and joins the kernel before returning. It publishes `.terminated`, and the same host process cannot boot again.
 8. Completed public calls publish only stable states. Fail-close exposes `.failed`; reentrant calls cannot leak internal transitions, and older asynchronous snapshots cannot overwrite a newer failure.
 
-See the [Integration Guide](Docs/en/IntegrationGuide.md).
+See the buildable standalone
+[`Examples/PocketRootHostApp`](Examples/PocketRootHostApp) and the
+[Integration Guide](Docs/en/IntegrationGuide.md).
 
 ## RootFS policy
 

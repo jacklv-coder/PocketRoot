@@ -5,7 +5,7 @@ set -euo pipefail
 EXPECTED_BYTE_COUNT="6581376"
 EXPECTED_SHA256="be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"
 RESOURCE_FILE_NAME="pocketroot-fs-v0.3.3.tar.gz"
-DEVELOPMENT_ASSET_DIRECTORY="${POCKETROOT_DEMO_DEVELOPMENT_ASSET_DIRECTORY:-${HOME}/Library/Application Support/PocketRootDevelopment/RootFS}"
+DEVELOPMENT_ASSET_DIRECTORY="${POCKETROOT_DEVELOPMENT_ASSET_DIRECTORY:-${POCKETROOT_DEMO_DEVELOPMENT_ASSET_DIRECTORY:-${HOME}/Library/Application Support/PocketRootDevelopment/RootFS}}"
 DEVELOPMENT_ASSET_PATH="$DEVELOPMENT_ASSET_DIRECTORY/$RESOURCE_FILE_NAME"
 REPOSITORY_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 
@@ -17,7 +17,7 @@ validate_archive() {
     local actual_sha256
 
     if [[ ! -f "$archive_path" || -L "$archive_path" ]]; then
-        echo "PocketRoot Demo RootFS must be a regular, non-symbolic-link file: $archive_path" >&2
+        echo "PocketRoot development RootFS must be a regular, non-symbolic-link file: $archive_path" >&2
         return 2
     fi
 
@@ -34,14 +34,14 @@ validate_archive() {
 
     actual_byte_count="$(stat -f '%z' "$RESOLVED_ARCHIVE_PATH")"
     if [[ "$actual_byte_count" != "$EXPECTED_BYTE_COUNT" ]]; then
-        echo "PocketRoot Demo RootFS size mismatch." >&2
+        echo "PocketRoot development RootFS size mismatch." >&2
         echo "Expected $EXPECTED_BYTE_COUNT bytes, got $actual_byte_count." >&2
         return 2
     fi
 
     actual_sha256="$(shasum -a 256 "$RESOLVED_ARCHIVE_PATH" | awk '{print $1}')"
     if [[ "$actual_sha256" != "$EXPECTED_SHA256" ]]; then
-        echo "PocketRoot Demo RootFS SHA-256 mismatch." >&2
+        echo "PocketRoot development RootFS SHA-256 mismatch." >&2
         echo "Expected $EXPECTED_SHA256, got $actual_sha256." >&2
         return 2
     fi
@@ -73,7 +73,7 @@ if [[ "${1:-}" == "--install-development-archive" ]]; then
     fi
     validate_archive "$2"
     install_atomically "$RESOLVED_ARCHIVE_PATH" "$DEVELOPMENT_ASSET_PATH"
-    echo "PocketRoot Demo: configured reviewed development RootFS at $DEVELOPMENT_ASSET_PATH"
+    echo "PocketRoot: configured reviewed development RootFS at $DEVELOPMENT_ASSET_PATH"
     exit 0
 fi
 
@@ -89,24 +89,24 @@ fi
 
 RESOURCE_DIRECTORY="$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH"
 DESTINATION="$RESOURCE_DIRECTORY/$RESOURCE_FILE_NAME"
-EXPLICIT_ARCHIVE_PATH="${POCKETROOT_DEMO_ROOTFS_ARCHIVE:-}"
+EXPLICIT_ARCHIVE_PATH="${POCKETROOT_DEVELOPMENT_ROOTFS_ARCHIVE:-${POCKETROOT_DEMO_ROOTFS_ARCHIVE:-}}"
 BUILD_CONFIGURATION="${CONFIGURATION:-Debug}"
 
 if [[ "$BUILD_CONFIGURATION" != "Debug" ]]; then
     rm -f "$DESTINATION"
     if [[ -n "$EXPLICIT_ARCHIVE_PATH" ]]; then
-        echo "PocketRoot Demo RootFS injection is restricted to Debug builds." >&2
+        echo "PocketRoot development RootFS injection is restricted to Debug builds." >&2
         echo "Release/TestFlight/App Store bundling remains blocked by release-compliance gates." >&2
         exit 2
     fi
-    echo "PocketRoot Demo: RootFS injection skipped for $BUILD_CONFIGURATION."
+    echo "PocketRoot: RootFS injection skipped for $BUILD_CONFIGURATION."
     exit 0
 fi
 
 ARCHIVE_PATH="${EXPLICIT_ARCHIVE_PATH:-$DEVELOPMENT_ASSET_PATH}"
 if [[ ! -e "$ARCHIVE_PATH" ]]; then
     rm -f "$DESTINATION"
-    echo "PocketRoot Demo: no RootFS injected."
+    echo "PocketRoot: no RootFS injected."
     echo "Configure one with:"
     echo "  $0 --install-development-archive /absolute/path/to/fs.tar.gz"
     exit 0
@@ -115,4 +115,4 @@ fi
 validate_archive "$ARCHIVE_PATH"
 install_atomically "$RESOLVED_ARCHIVE_PATH" "$DESTINATION"
 
-echo "PocketRoot Demo: injected reviewed RootFS at $DESTINATION"
+echo "PocketRoot: injected reviewed development RootFS at $DESTINATION"

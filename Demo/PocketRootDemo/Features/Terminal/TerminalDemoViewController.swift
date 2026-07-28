@@ -115,7 +115,7 @@ final class TerminalDemoViewController: UIViewController, DemoRuntimeStoreObserv
         case .rootFSMissing:
             statusLabel.text = [
                 "RootFS is not embedded in this Debug build.",
-                "Rebuild with POCKETROOT_DEMO_ROOTFS_ARCHIVE set to the reviewed archive."
+                "Rebuild with POCKETROOT_DEVELOPMENT_ROOTFS_ARCHIVE set to the reviewed archive."
             ].joined(separator: "\n")
         case .runtimeUnavailable:
             statusLabel.text = "The arm64 iSH runtime is unavailable in this build."

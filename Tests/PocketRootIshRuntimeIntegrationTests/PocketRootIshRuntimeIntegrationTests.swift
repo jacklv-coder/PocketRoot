@@ -7,6 +7,89 @@ import XCTest
 
 @available(macOS 13.0, *)
 final class PocketRootIshRuntimeIntegrationTests: XCTestCase {
+    @MainActor
+    func testControllerRejectsUnavailableRuntime() async throws {
+        let configuration = makeControllerConfiguration()
+        let controller = PocketRootIshRuntimeController(
+            configuration: configuration,
+            runtimeAvailable: false,
+            prepareSystem: { _ in
+                XCTFail("Unavailable runtime must fail before RootFS preparation.")
+                throw CocoaError(.fileReadUnknown)
+            }
+        )
+
+        XCTAssertEqual(controller.phase, .unavailable)
+        XCTAssertFalse(controller.canBoot)
+        do {
+            _ = try await controller.boot()
+            XCTFail("Unavailable runtime unexpectedly booted.")
+        } catch let error as PocketRootIshRuntimeControllerError {
+            XCTAssertEqual(error, .runtimeUnavailable)
+        }
+    }
+
+    @MainActor
+    func testControllerPreparationFailureIsObservableAndRetryable() async {
+        let expectedError = CocoaError(.fileReadCorruptFile)
+        let controller = PocketRootIshRuntimeController(
+            configuration: makeControllerConfiguration(),
+            runtimeAvailable: true,
+            prepareSystem: { _ in
+                throw expectedError
+            }
+        )
+        var observedPhases: [PocketRootIshRuntimePhase] = []
+        controller.onPhaseChange = {
+            observedPhases.append($0)
+        }
+
+        do {
+            _ = try await controller.boot()
+            XCTFail("The injected preparation failure unexpectedly booted.")
+        } catch {
+            XCTAssertEqual(
+                (error as NSError).code,
+                (expectedError as NSError).code
+            )
+        }
+
+        XCTAssertEqual(observedPhases.first, .preparingRootFS)
+        guard case .failed = controller.phase else {
+            return XCTFail("Preparation failure was not published.")
+        }
+        XCTAssertTrue(controller.canBoot)
+        XCTAssertNil(controller.system)
+        XCTAssertNil(controller.readySystem)
+    }
+
+    @MainActor
+    func testControllerMapsAuthoritativeRuntimeStates() {
+        XCTAssertEqual(
+            PocketRootIshRuntimeController.phase(for: .idle),
+            .idle
+        )
+        XCTAssertEqual(
+            PocketRootIshRuntimeController.phase(
+                for: .idle,
+                fallbackFailure: "retry later"
+            ),
+            .failed("retry later")
+        )
+        XCTAssertEqual(
+            PocketRootIshRuntimeController.phase(for: .ready),
+            .ready
+        )
+        XCTAssertEqual(
+            PocketRootIshRuntimeController.phase(for: .failed("transport")),
+            .failed("transport")
+        )
+        XCTAssertEqual(
+            PocketRootIshRuntimeController.phase(for: .terminated),
+            .terminated
+        )
+    }
+
     func testFactoryDerivesHealthDefaultFromManifest() {
         XCTAssertEqual(
             PocketRootIshSystemFactory.defaultHealthCheck(for: .ishEmbedV0_3_3),
@@ -164,6 +247,18 @@ final class PocketRootIshRuntimeIntegrationTests: XCTestCase {
             expandedArchiveByteCount: 10_240
         )
         return (directoryURL, archiveURL, applicationSupportURL, manifest)
+    }
+
+    private func makeControllerConfiguration()
+        -> PocketRootIshRuntimeControllerConfiguration
+    {
+        PocketRootIshRuntimeControllerConfiguration(
+            archiveURL: URL(fileURLWithPath: "/tmp/reviewed-rootfs.tar.gz"),
+            applicationSupportURL: URL(
+                fileURLWithPath: "/tmp/PocketRootHostTests",
+                isDirectory: true
+            )
+        )
     }
 
     private func assertNoInstallerResidue(in applicationSupportURL: URL) throws {

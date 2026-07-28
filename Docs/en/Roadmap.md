@@ -97,7 +97,7 @@ This establishes the current Simulator, minimum-Xcode 16, and single-iPhone one-
 | Secure RootFS install/recovery | Passed | Preserve real-asset, snapshot, capacity-preflight, rollback, and recovery coverage |
 | RootFS/runtime composition | Passed | Keep caller-controlled, no-download, no-auto-boot |
 | Default post-boot identity gate | Passed | Require aarch64, Alpine identity, optional version, and command context before ready; retain failed-slot regression coverage |
-| Real Demo runtime injection | Not started | Inject one prepared system without bundling an unreviewed RootFS |
+| Demo and external-host runtime integration | Passed | The Demo and standalone Host App share the public controller; Debug injects only the exact verified external RootFS and Release remains payload-free |
 | Host-safe soft shutdown | Passed | v0.4.0-abi.6 soft-halts, joins, and returns to Swift; the process remains single-lifecycle |
 | Signed iPhone | Passed | v0.4.0-abi.6 completed the 17-check one-shot/soft-shutdown/peak-memory smoke; keep rerunning after runtime changes |
 | Signed iPad | Blocked | Physical boot and command smoke |

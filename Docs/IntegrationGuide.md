@@ -27,8 +27,8 @@ PocketRoot 暴露八个产品：
 仅构建业务模型或 UI 时依赖 `PocketRoot`。需要 agent loop 时额外显式依赖
 `PocketRootAgent`；需要把已准备的 system 作为审批保护的命令工具交给 agent 时，再显式依赖
 `PocketRootAgentRuntimeTools`。具体门禁见[轻量 Agent Loop](Agent.md)。要启动真实 guest，至少显式依赖
-`PocketRootIshRuntimeIntegration`；示例还直接读取
-`PocketRootIshRuntimeFactory.isAvailable`，因此同时列出 `PocketRootIshRuntime` 产品。
+`PocketRootIshRuntimeIntegration`。只有直接使用底层 runtime factory 时才需要再显式选择
+`PocketRootIshRuntime`；推荐的宿主控制器不需要业务 App 直接导入它。
 
 项目尚未发布稳定 Git tag。远程接入应固定到经过审核的完整 commit：
 
@@ -44,12 +44,6 @@ targets: [
         name: "YourAppFeature",
         dependencies: [
             .product(name: "PocketRoot", package: "PocketRoot"),
-            .product(name: "PocketRootAgent", package: "PocketRoot"),
-            .product(
-                name: "PocketRootAgentRuntimeTools",
-                package: "PocketRoot"
-            ),
-            .product(name: "PocketRootIshRuntime", package: "PocketRoot"),
             .product(
                 name: "PocketRootIshRuntimeIntegration",
                 package: "PocketRoot"
@@ -65,8 +59,7 @@ targets: [
 2. 输入 `https://github.com/jacklv-coder/PocketRoot.git`；
 3. 在首个 release tag 前使用 **Commit** 规则并填入已审核完整 SHA；
 4. 默认接入选择 `PocketRoot`；
-5. 真实 runtime 另外选择 `PocketRootIshRuntime` 和
-   `PocketRootIshRuntimeIntegration`。
+5. 真实 runtime 另外选择 `PocketRootIshRuntimeIntegration`。
 
 本地开发可使用：
 
@@ -210,6 +203,52 @@ let prepared = try await PocketRootIshSystemFactory.prepareSystem(
 实际安全算法见 [RootFS 安全方案](RootFS.md)。
 
 ## 4. 启动运行时
+
+### 推荐：一个宿主控制器完成最小闭环
+
+业务 App 应长期保留一个 `PocketRootIshRuntimeController`。它负责 RootFS
+准备、进程级生命周期、状态通知和失败后的权威状态对账；终端页面与文件页面必须共享
+它返回的同一个 `PocketRootSystem`：
+
+```swift
+import PocketRoot
+import PocketRootIshRuntimeIntegration
+
+let runtimeController = PocketRootIshRuntimeController(
+    configuration: PocketRootIshRuntimeControllerConfiguration(
+        archiveURL: localReviewedArchiveURL,
+        applicationSupportURL: applicationSupportURL,
+        workDirectory: "/"
+    )
+)
+
+runtimeController.onPhaseChange = { phase in
+    // 在主线程更新 Boot、Terminal 与 Files 控件。
+}
+
+let system = try await runtimeController.boot()
+
+let terminal = PocketRootTerminalViewController(
+    system: system,
+    configuration: .interactive(initialWorkingDirectory: "/root"),
+    theme: .dark
+)
+let files = PocketRootFileBrowserViewController(
+    system: system,
+    initialPath: "/root"
+)
+```
+
+只有 `runtimeController.readySystem` 非空时才打开终端或文件页面。PTY 页面离开时调用
+`closeSession()`；若收到致命 session 结束原因，则调用
+`await runtimeController.refreshRuntimeState()`。不要为两个页面分别 prepare 或 boot。
+完整的独立 XcodeGen 宿主位于
+[`Examples/PocketRootHostApp`](../Examples/PocketRootHostApp)，只依赖公开 Swift Package
+产品，不读取 Demo 内部代码。CI 会真实编译它并核对注入的 RootFS。
+
+### 底层手动生命周期
+
+如果产品需要自行管理 prepared system，可以继续直接使用组合 factory：
 
 ```swift
 let system = prepared.system

@@ -98,20 +98,42 @@ final class DemoRuntimeStoreTests: XCTestCase {
         XCTAssertTrue(store.canBoot)
     }
 
+    func testStorageSetupFailureRemainsRetryableBeforeControllerCreation() async throws {
+        let fixture = try makeBundle(includesRootFS: true)
+        defer {
+            try? FileManager.default.removeItem(at: fixture.directory)
+        }
+        let blockedApplicationSupportURL = fixture.directory
+            .appendingPathComponent("ApplicationSupport")
+        try Data("not-a-directory".utf8).write(
+            to: blockedApplicationSupportURL
+        )
+        let store = DemoRuntimeStore(
+            bundle: fixture.bundle,
+            runtimeAvailable: true,
+            applicationSupportURL: blockedApplicationSupportURL
+        )
+
+        await store.boot()
+
+        guard case .failed = store.phase else {
+            return XCTFail("A storage setup failure was not published.")
+        }
+        XCTAssertNil(store.system)
+        XCTAssertTrue(store.canBoot)
+    }
+
     func testRejectedShutdownPreservesUnderlyingReadyState() {
-        let phase = DemoRuntimeStore.reconciledPhase(
-            for: .ready,
-            hasInstallation: true,
-            fallbackFailure: "Wait for the active command to finish."
+        let phase = DemoRuntimeStore.demoPhase(
+            for: .ready
         )
 
         XCTAssertEqual(phase, .ready)
     }
 
     func testFatalRuntimeStateReconcilesToFailure() {
-        let phase = DemoRuntimeStore.reconciledPhase(
-            for: .failed("transport unavailable"),
-            hasInstallation: true
+        let phase = DemoRuntimeStore.demoPhase(
+            for: .failed("transport unavailable")
         )
 
         XCTAssertEqual(phase, .failed("transport unavailable"))

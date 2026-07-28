@@ -88,10 +88,9 @@ final class DemoRuntimeStore {
     private let runtimeAvailable: Bool
     private let applicationSupportURLOverride: URL?
     private var observers: [WeakObserver] = []
+    private var runtimeController: PocketRootIshRuntimeController?
 
     private(set) var phase: DemoRuntimePhase
-    private(set) var system: PocketRootSystem?
-    private(set) var installation: PocketRootRootFSInstallation?
 
     init(
         bundle: Bundle = .main,
@@ -124,22 +123,31 @@ final class DemoRuntimeStore {
     }
 
     var canBoot: Bool {
+        if let runtimeController {
+            return runtimeController.canBoot
+        }
         switch phase {
-        case .idle:
-            true
-        case .failed:
-            system == nil
+        case .idle, .failed:
+            return true
         default:
-            false
+            return false
         }
     }
 
     var canShutdown: Bool {
-        phase == .ready
+        runtimeController?.canShutdown == true
     }
 
     var readySystem: PocketRootSystem? {
-        phase == .ready ? system : nil
+        runtimeController?.readySystem
+    }
+
+    var system: PocketRootSystem? {
+        runtimeController?.system
+    }
+
+    var installation: PocketRootRootFSInstallation? {
+        runtimeController?.installation
     }
 
     var rootFSStatus: DemoDiagnosticStatus {
@@ -203,44 +211,38 @@ final class DemoRuntimeStore {
         }
 
         do {
-            publish(.preparingRootFS)
             let applicationSupportURL = try makeApplicationSupportURL()
-            let prepared = try await PocketRootIshSystemFactory.prepareSystem(
-                archiveURL: archiveURL,
-                applicationSupportURL: applicationSupportURL,
-                manifest: .ishEmbedV0_3_3,
-                workDirectory: "/"
+            let controller = runtimeController ?? PocketRootIshRuntimeController(
+                configuration: PocketRootIshRuntimeControllerConfiguration(
+                    archiveURL: archiveURL,
+                    applicationSupportURL: applicationSupportURL,
+                    workDirectory: "/"
+                )
             )
-            installation = prepared.installation
-            system = prepared.system
-
-            publish(.booting)
-            try await prepared.system.boot()
-            let state = await prepared.system.state
-            guard state == .ready else {
-                throw DemoRuntimeStoreError.unexpectedState(state)
+            if runtimeController == nil {
+                runtimeController = controller
+                controller.onPhaseChange = { [weak self] phase in
+                    self?.publish(Self.demoPhase(for: phase))
+                }
             }
-            publish(.ready)
+            try await controller.boot()
         } catch {
-            publish(.failed(error.localizedDescription))
+            if runtimeController == nil {
+                publish(.failed(error.localizedDescription))
+            }
         }
     }
 
     func shutdown() async -> String? {
-        guard let system, canShutdown else {
+        guard let runtimeController, canShutdown else {
             return nil
         }
 
-        publish(.shuttingDown)
         do {
-            try await system.shutdown()
-            publish(.terminated)
+            try await runtimeController.shutdown()
             return nil
         } catch {
             let failure = error.localizedDescription
-            await reconcileRuntimeState(
-                fallbackFailure: failure
-            )
             return failure
         }
     }
@@ -248,74 +250,36 @@ final class DemoRuntimeStore {
     func execute(
         _ request: PocketRootCommandRequest
     ) async throws -> PocketRootCommandResult {
-        guard let system = readySystem else {
+        guard let runtimeController else {
             throw DemoRuntimeStoreError.runtimeNotReady
         }
-        do {
-            return try await system.execute(request)
-        } catch {
-            await refreshRuntimeState()
-            throw error
-        }
+        return try await runtimeController.execute(request)
     }
 
     func refreshRuntimeState() async {
-        guard system != nil else {
-            return
-        }
-        switch phase {
-        case .preparingRootFS, .booting, .shuttingDown:
-            // PocketRootSystem deliberately exposes only the last stable
-            // state while a lifecycle call is suspended. Keep the Demo's
-            // transient phase so controls cannot admit a second lifecycle.
-            return
-        default:
-            break
-        }
-        await reconcileRuntimeState()
+        await runtimeController?.refreshRuntimeState()
     }
 
-    static func reconciledPhase(
-        for state: PocketRootRuntimeState,
-        hasInstallation: Bool,
-        fallbackFailure: String? = nil
-    ) -> DemoRuntimePhase? {
-        switch state {
+    static func demoPhase(
+        for phase: PocketRootIshRuntimePhase
+    ) -> DemoRuntimePhase {
+        switch phase {
+        case .unavailable:
+            .runtimeUnavailable
         case .idle:
-            hasInstallation
-                ? .idle
-                : fallbackFailure.map(DemoRuntimePhase.failed)
-        case .ready:
-            .ready
-        case .terminated:
-            .terminated
-        case .failed(let message):
-            .failed(message)
+            .idle
         case .preparingRootFS:
             .preparingRootFS
         case .booting:
             .booting
+        case .ready:
+            .ready
         case .shuttingDown:
             .shuttingDown
-        }
-    }
-
-    private func reconcileRuntimeState(
-        fallbackFailure: String? = nil
-    ) async {
-        guard let system else {
-            if let fallbackFailure {
-                publish(.failed(fallbackFailure))
-            }
-            return
-        }
-        let state = await system.state
-        if let reconciledPhase = Self.reconciledPhase(
-            for: state,
-            hasInstallation: installation != nil,
-            fallbackFailure: fallbackFailure
-        ) {
-            publish(reconciledPhase)
+        case .terminated:
+            .terminated
+        case .failed(let message):
+            .failed(message)
         }
     }
 

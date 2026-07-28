@@ -85,7 +85,7 @@ the pinned SHA-256, then atomically copies it under
 For a single command-line build, pass the input directly:
 
 ```bash
-POCKETROOT_DEMO_ROOTFS_ARCHIVE=/absolute/path/to/fs.tar.gz \
+POCKETROOT_DEVELOPMENT_ROOTFS_ARCHIVE=/absolute/path/to/fs.tar.gz \
   ./Scripts/build.sh
 ```
 

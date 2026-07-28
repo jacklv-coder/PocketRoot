@@ -14,6 +14,7 @@ class ReleaseComplianceTests < Minitest::Test
     "Package.resolved",
     "Package.swift",
     "project.yml",
+    "Examples/PocketRootHostApp/project.yml",
     "Scripts/inject-demo-rootfs.sh",
     "ThirdPartyNotices/SwiftTerm-LICENSE.txt",
     "Compliance/RootFS/v0.3.3/EVIDENCE.json",
@@ -135,6 +136,26 @@ class ReleaseComplianceTests < Minitest::Test
       "rootFS",
       "downloadedByLibrary"
     )
+  end
+
+  def test_standalone_host_profile_uses_only_public_integration_products
+    composition =
+      JSON.parse(
+        PocketRootReleaseCompliance.build_outputs.fetch("COMPOSITION.json")
+      )
+    host_profile =
+      composition.fetch("profiles").find do |profile|
+        profile.fetch("id") == "standalone-host-example"
+      end
+
+    assert_equal "PocketRootHostApp", host_profile.fetch("rootTarget")
+    assert_equal(
+      ["PocketRoot", "PocketRootIshRuntimeIntegration"],
+      host_profile.fetch("swiftProducts")
+    )
+    assert host_profile.fetch("includesIshRuntime")
+    assert host_profile.fetch("requiresExternalRootFS")
+    refute host_profile.fetch("artifactBuiltAndScanned")
   end
 
   def test_rejects_demo_rootfs_injection_script_drift
