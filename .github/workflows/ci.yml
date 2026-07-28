@@ -48,7 +48,9 @@ jobs:
           ruby -c Scripts/prepare-rootfs-delivery-candidate.rb
           ruby -c Scripts/rootfs-source-acquisition.rb
           ruby -c Scripts/prepare-rootfs-source-bundle.rb
+          ruby -c Scripts/pocketroot-deterministic-json.rb
           ruby -c Scripts/generate-release-compliance.rb
+          ruby -c Scripts/scan-release-artifact.rb
           bash -n Tests/Scripts/RuntimeSmokeScriptTests.sh
           bash -n Tests/Scripts/RootFSCandidateSmokeManifestTests.sh
           ruby -c Tests/Scripts/RootFSLicenseReviewTests.rb
@@ -61,6 +63,7 @@ jobs:
           ruby -c Tests/Scripts/RootFSDeliveryCandidateTests.rb
           ruby -c Tests/Scripts/RootFSSourceBundleTests.rb
           ruby -c Tests/Scripts/ReleaseComplianceTests.rb
+          ruby -c Tests/Scripts/ReleaseArtifactScannerTests.rb
           bash Tests/Scripts/RuntimeSmokeScriptTests.sh
           bash Tests/Scripts/RootFSCandidateSmokeManifestTests.sh
           ruby Tests/Scripts/RootFSCorrespondingSourceReviewResultsTests.rb
@@ -73,6 +76,7 @@ jobs:
           ruby Tests/Scripts/RootFSDeliveryCandidateTests.rb
           ruby Tests/Scripts/RootFSSourceBundleTests.rb
           ruby Tests/Scripts/ReleaseComplianceTests.rb
+          ruby Tests/Scripts/ReleaseArtifactScannerTests.rb
           ruby Scripts/prepare-rootfs-license-review.rb --validate-only
           ruby Scripts/rootfs-corresponding-source-review-results.rb
           ruby Scripts/rootfs-license-review-results.rb
@@ -129,6 +133,7 @@ jobs:
           node Scripts/rootfs-compliance-validator/validate-spdx.mjs \
             "$spdx_schema" \
             Compliance/Release/experimental-v0.1.0/SBOM.spdx.json
+          echo "POCKETROOT_SPDX_SCHEMA=$spdx_schema" >> "$GITHUB_ENV"
 
       - name: Install XcodeGen
         env:
@@ -183,8 +188,28 @@ jobs:
             -derivedDataPath "$RUNNER_TEMP/PocketRootIshRuntimeDeviceCompileSpikeDerivedData" \
             ARCHS=arm64 \
             ONLY_ACTIVE_ARCH=YES \
+            GENERATE_INFOPLIST_FILE=YES \
             CODE_SIGNING_ALLOWED=NO \
             build
+
+      - name: Scan unsigned iSH runtime engineering app
+        run: |
+          app="$RUNNER_TEMP/PocketRootIshRuntimeDeviceCompileSpikeDerivedData/Build/Products/Debug-iphoneos/PocketRootIshRuntimeCompileSpike.app"
+          evidence="$RUNNER_TEMP/PocketRootIshRuntimeArtifactScan"
+          ruby Scripts/scan-release-artifact.rb \
+            --app "$app" \
+            --output "$evidence" \
+            --expected-bundle-identifier \
+              com.jacklv.PocketRootIshRuntimeCompileSpike
+          ruby Scripts/scan-release-artifact.rb \
+            --app "$app" \
+            --verify "$evidence" \
+            --expected-bundle-identifier \
+              com.jacklv.PocketRootIshRuntimeCompileSpike \
+            --require-clean
+          node Scripts/rootfs-compliance-validator/validate-spdx.mjs \
+            "$POCKETROOT_SPDX_SCHEMA" \
+            "$evidence/SBOM.spdx.json"
 
   minimum-xcode-16:
     name: Minimum Xcode 16.0

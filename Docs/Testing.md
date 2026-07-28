@@ -12,6 +12,7 @@ PocketRoot 把验证分成宿主逻辑、真实 RootFS、iOS 构建、完整原�
 | 真实 RootFS 资产测试 | 带环境变量的 filtered test | macOS | 精确 release archive 可校验并完成首次物化 | 已有安装可复用或 iSH 能 boot |
 | 默认 Demo 构建 | `./Scripts/build.sh` | Xcode + iOS SDK | 伞形产品和 UIKit Demo 可构建 | 实验 runtime 已链接 |
 | 原生最终链接 | `./Scripts/build-runtime-spike.sh` | Apple toolchain | 完整实验依赖图可生成 iOS 可执行文件 | 真机或 guest 行为 |
+| unsigned 工程 App 扫描 | `ruby Scripts/scan-release-artifact.rb` | macOS + 外部 `.app`/`.xcarchive` | 确定性文件摘要、Mach-O、签名/entitlement 风险信号与文件级 SPDX | 最终签名/导出制品、依赖许可证完备性或分发授权 |
 | Simulator 原生 smoke | `./Scripts/run-runtime-smoke.sh` | Apple Silicon + iOS 18 Simulator + archive | prepare、boot、命令边界和 soft shutdown 返回 | 其他工具链、真机或发行可用 |
 | 物理设备原生 smoke | `./Scripts/run-runtime-device-smoke.sh` | 签名 iOS 18+ iPhone/iPad + archive | 同一 17 项检查、可选进程暂停/恢复、UIKit 前后台、强制重启持久化、受限存储故障或有界内存警告恢复，development entitlement 与 shutdown 返回 | 真实 storage/memory pressure、断电、jetsam、iPad 或发行可用 |
 | 文档检查 | `./Scripts/check-docs.sh` | macOS/Linux shell | 中英文成对、中文覆盖和相对链接 | 技术实现正确 |
@@ -443,12 +444,15 @@ RootFS。这只是兼容性证据，不授权 RootFS 分发，也不改变正式
 5. 下载精确 v0.3.3 archive；
 6. 先检查字节数和 SHA-256；
 7. 运行真实资产 filtered test，重现 RootFS 和最大实验工程组合合规证据，并用固定
-   官方 SPDX 2.3 schema 校验两份 SBOM；
+   官方 SPDX 2.3 schema 校验两份已提交 SBOM；
 8. 下载固定 XcodeGen 版本并校验 SHA-256；
 9. 生成 Xcode 工程；
 10. 构建默认 Demo；
 11. 最终链接 arm64 Simulator runtime App；
-12. 最终链接 unsigned arm64 device runtime App。
+12. 最终链接 unsigned arm64 device runtime App；
+13. 对该临时 App 生成并逐字节复验文件/Mach-O/entitlement inventory 与文件级
+    SPDX 2.3 SBOM，要求无 private framework、private entitlement、JIT entitlement、
+    `MAP_JIT` 或无效签名信号，再用同一固定 schema 校验；App 和证据均不上传。
 
 最低工具链 job 另外固定选择 Xcode 16.0 / iOS 18.0 SDK，验证真实 RootFS install、
 安装 iOS 18.0 Simulator runtime、完成 Simulator/device final-link，并执行 17 项原生
@@ -469,6 +473,7 @@ smoke。CI 的 Simulator 结果不证明签名真机或发行可用。
 | PTY/SwiftTerm（未来） | unit + final-link + Simulator + signed iPhone/iPad lifecycle |
 | 文档 | `./Scripts/check-docs.sh` |
 | 发行组成或合规证据 | 生成器测试 + `--check` + 固定 SPDX schema 校验 |
+| 制品扫描器或 CI 扫描门禁 | Ruby fixture 安全/漂移测试 + 真实 unsigned device App 生成/复验 + 固定 SPDX schema 校验 |
 | 上游 revision/RootFS | 全部测试 + 供应链与合规重审 |
 
 ## 10. 真机门禁

@@ -7,6 +7,7 @@ require "optparse"
 require "pathname"
 require "securerandom"
 require "yaml"
+require_relative "pocketroot-deterministic-json"
 
 module PocketRootReleaseCompliance
   RELEASE_VERSION = "0.1.0"
@@ -239,88 +240,10 @@ module PocketRootReleaseCompliance
   end
 
   def pretty_json(value)
-    "#{render_json(value)}\n"
-  end
-
-  def render_json(value, depth = 0)
-    indentation = "  " * depth
-    child_indentation = "  " * (depth + 1)
-
-    case value
-    when Hash
-      return "{}" if value.empty?
-
-      members = value.map do |key, child|
-        unless key.is_a?(String)
-          raise ComplianceError, "JSON object key must be a string"
-        end
-        "#{child_indentation}#{json_string(key)}: " \
-          "#{render_json(child, depth + 1)}"
-      end
-      "{\n#{members.join(",\n")}\n#{indentation}}"
-    when Array
-      return "[]" if value.empty?
-
-      members = value.map do |child|
-        "#{child_indentation}#{render_json(child, depth + 1)}"
-      end
-      "[\n#{members.join(",\n")}\n#{indentation}]"
-    when String
-      json_string(value)
-    when Integer
-      value.to_s
-    when Float
-      unless value.finite?
-        raise ComplianceError, "JSON number must be finite"
-      end
-      value.to_s
-    when TrueClass
-      "true"
-    when FalseClass
-      "false"
-    when NilClass
-      "null"
-    else
-      raise ComplianceError, "unsupported JSON value: #{value.class}"
-    end
-  end
-
-  def json_string(value)
-    encoded = value.dup
-    if encoded.encoding == Encoding::BINARY
-      encoded.force_encoding(Encoding::UTF_8)
-    else
-      encoded = encoded.encode(Encoding::UTF_8)
-    end
-    unless encoded.valid_encoding?
-      raise ComplianceError, "JSON string must be valid UTF-8"
-    end
-
-    escaped = encoded.each_codepoint.map do |codepoint|
-      case codepoint
-      when 0x08
-        "\\b"
-      when 0x09
-        "\\t"
-      when 0x0A
-        "\\n"
-      when 0x0C
-        "\\f"
-      when 0x0D
-        "\\r"
-      when 0x22
-        "\\\""
-      when 0x5C
-        "\\\\"
-      when 0x00..0x1F
-        format("\\u%04x", codepoint)
-      else
-        codepoint.chr(Encoding::UTF_8)
-      end
-    end.join
-    "\"#{escaped}\""
-  rescue EncodingError
-    raise ComplianceError, "JSON string must be valid UTF-8"
+    PocketRootDeterministicJSON.dump(
+      value,
+      error_class: ComplianceError
+    )
   end
 
   def read_regular(path, label, maximum_bytes: 16 * 1_024 * 1_024)

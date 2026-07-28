@@ -43,6 +43,15 @@ iSH gitlink、supervisor musl source、调用方提供的外部 RootFS 及其中
 `completeReleaseArtifactSBOM=false` 和 `distributionAuthorized=false`，不能代替
 发行制品 SBOM 或发行授权。
 
+仓库另提供 `Scripts/scan-release-artifact.rb`，对仓库外 `.app` 或
+`.xcarchive` 中的 App 建立确定性文件清单、逐文件 SHA-1/SHA-256、Mach-O
+架构/依赖/未定义符号、签名/entitlement、私有 framework 与 `MAP_JIT` 信号，
+并生成文件级 SPDX 2.3 SBOM。CI 对 unsigned device runtime App 临时生成、复验并
+用固定官方 schema 校验这些证据，不上传 App 或证据目录。该扫描只关闭“工程制品
+可扫描”能力项；输出固定保持 `signedReleaseArtifact=false`、
+`exportedReleaseArtifact=false`、`completeReleaseArtifactSBOM=false` 和
+`distributionAuthorized=false`。
+
 ## 已知许可证事实
 
 ### IshEmbed 与 iSH
@@ -114,7 +123,8 @@ tree；除缺少上游 MIT grant/版权声明的 `alpine-keys` 外，其余 7 �
   SPDX SBOM、来源 locator、源码获取清单、license/NOTICE 候选索引与工程复核
   结果、许可证声明和默认配置证据。
 - CI 重新生成并比对最大实验工程组合 inventory/SPDX SBOM，并使用固定官方
-  SPDX 2.3 schema 校验；它不构建或扫描最终发行 archive。
+  SPDX 2.3 schema 校验；它还临时扫描 unsigned device runtime App 的完整文件树与
+  Mach-O/entitlement 风险信号，但不上传输出，也不构建或扫描最终发行 archive。
 - CI 离线测试仓库外对应源码候选 materializer 的 checksum、路径隔离和安全解包；
   不上传生成的源码材料。
 - README、API 注释和 ADR 明确标注 Experimental 与 shutdown 风险。
@@ -142,7 +152,7 @@ Alpine `apk` 可以下载、安装和执行新增代码。即使初始 RootFS �
 
 ## 私有 API、entitlement 与 JIT
 
-已完成的静态检查没有在 release archive 或完整 consumer binary 中发现：
+已完成的静态检查和 unsigned device runtime App 工程扫描没有发现：
 
 - `MAP_JIT`；
 - JIT entitlement；
@@ -151,7 +161,7 @@ Alpine `apk` 可以下载、安装和执行新增代码。即使初始 RootFS �
 
 当前 ARM64 engine 使用预编译 gadget，而不是运行时生成机器码。
 
-这只是固定制品的静态证据和 Simulator 证据，不是 App Review 保证。仍需：
+该 App 不是签名、导出或分发候选，因此这仍不是 App Review 保证。仍需：
 
 - signed iPhone/iPad；
 - 最终 entitlement 检查；
@@ -218,6 +228,8 @@ Alpine `apk` 可以下载、安装和执行新增代码。即使初始 RootFS �
 ### Apple 平台
 
 - [x] Xcode 16 minimum-toolchain RootFS install、native final-link 与 17 项 smoke。
+- [x] 对临时 unsigned device runtime App 生成并复验确定性文件清单、Mach-O/
+  entitlement 风险证据和文件级 SPDX 2.3 SBOM。
 - [x] signed iPhone 一次性命令 smoke。
 - [ ] signed iPad smoke 与完整 iPhone/iPad lifecycle。
 - [x] Simulator 完整 smoke 生命周期 `ru_maxrss` 不超过 256 MiB。
@@ -233,6 +245,8 @@ Alpine `apk` 可以下载、安装和执行新增代码。即使初始 RootFS �
 - [ ] NOTICE。
 - [ ] corresponding-source location 与获取说明。
 - [x] 生成最大实验工程组合的 dependency/revision/hash inventory 与 SPDX SBOM。
+- [x] 为临时 unsigned 工程 App 生成文件级扫描 inventory/SPDX SBOM；所有发行和
+  授权门禁保持关闭。
 - [ ] 从最终构建并扫描的发行制品生成完整 SBOM。
 - [ ] 安全与已知限制。
 - [ ] RootFS 更新和删除策略。

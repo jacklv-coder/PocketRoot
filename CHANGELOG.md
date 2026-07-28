@@ -35,6 +35,12 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
   iSH、supervisor musl source、外部 RootFS 及其中 15 个包；CI 比对生成结果并
   使用固定官方 schema 校验。该证据未扫描最终 archive，完整发行物 SBOM 与发行授权
   门禁保持关闭。
+- 加入仓库外 `.app`/`.xcarchive` 确定性制品扫描器：限制文件数量/大小并拒绝
+  symlink/special file，记录逐文件摘要、Mach-O 架构/依赖/未定义符号、
+  codesign entitlement、private framework/private entitlement/JIT/`MAP_JIT`
+  信号，原子生成 inventory、文件级 SPDX 2.3 SBOM 与校验和并支持逐字节复验。
+  CI 扫描临时 unsigned device runtime App、要求风险信号为空并校验 SBOM，但不上传
+  App 或证据；最终签名/导出制品、完整发行物 SBOM 与分发授权仍保持关闭。
 - 加入 checksum-bound `LICENSE-REVIEW-RESULTS.json` 和严格验证器；78/78 个固定
   RootFS license/NOTICE 候选已完成工程复核，8 个 source origin 仍有包级未决项，
   法律与再分发门禁保持关闭。
