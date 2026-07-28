@@ -183,7 +183,9 @@
 6. 幂等 terminate、close-all-before-shutdown；
 7. 固定 SwiftTerm `dd2fb8ac…` 并完成 UIKit/SwiftUI bridge；
 8. NUL-framed guest 目录浏览与有界文件预览；
-9. session/runtime/file-browser 单元测试与 iOS strict-concurrency 编译。
+9. session/runtime/file-browser 单元测试与 iOS strict-concurrency 编译；
+10. iOS 18 Simulator 真实 UI 闭环：Boot 后向 SwiftTerm PTY 输入命令创建文件，
+    再从 Files 页面进入目录并核对文件预览；Xcode 16 CI 持续执行。
 
 未完成门禁：
 

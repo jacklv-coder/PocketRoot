@@ -16,6 +16,7 @@ class ReleaseComplianceTests < Minitest::Test
     "project.yml",
     "Examples/PocketRootHostApp/project.yml",
     "Scripts/inject-demo-rootfs.sh",
+    "Scripts/run-host-app-ui-smoke.sh",
     "ThirdPartyNotices/SwiftTerm-LICENSE.txt",
     "Compliance/RootFS/v0.3.3/EVIDENCE.json",
     "Compliance/RootFS/v0.3.3/SBOM.spdx.json"
@@ -187,6 +188,31 @@ class ReleaseComplianceTests < Minitest::Test
       /<key>UIApplicationSupportsMultipleScenes<\/key>\s*<false\/>/,
       info
     )
+  end
+
+  def test_standalone_host_has_real_pty_and_files_ui_smoke
+    project =
+      REPOSITORY_ROOT
+        .join("Examples/PocketRootHostApp/project.yml")
+        .binread
+    ui_test =
+      REPOSITORY_ROOT
+        .join(
+          "Examples/PocketRootHostApp/UITests/PocketRootHostAppUITests.swift"
+        )
+        .binread
+    runner =
+      REPOSITORY_ROOT
+        .join("Scripts/run-host-app-ui-smoke.sh")
+        .binread
+    workflow = REPOSITORY_ROOT.join(".github/workflows/ci.yml").binread
+
+    assert_includes project, "PocketRootHostAppUITests:"
+    assert_includes project, "type: bundle.ui-testing"
+    assert_includes ui_test, "terminal.typeText("
+    assert_includes ui_test, "PocketRootFiles.preview"
+    assert_includes runner, "-test-timeouts-enabled YES"
+    assert_includes workflow, "./Scripts/run-host-app-ui-smoke.sh"
   end
 
   def test_rejects_demo_rootfs_injection_script_drift

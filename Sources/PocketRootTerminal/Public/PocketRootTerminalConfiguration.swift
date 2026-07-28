@@ -10,6 +10,7 @@ public struct PocketRootTerminalConfiguration: Sendable, Equatable {
     public let initialWorkingDirectory: String
     public let commandTimeout: Duration
     public let maximumTranscriptCharacters: Int
+    public let cursorBlinkEnabled: Bool
 
     public init(
         placeholderText: String = "Terminal integration pending",
@@ -18,7 +19,8 @@ public struct PocketRootTerminalConfiguration: Sendable, Equatable {
         showsAccessoryView: Bool = true,
         initialWorkingDirectory: String = "/root",
         commandTimeout: Duration = .seconds(30),
-        maximumTranscriptCharacters: Int = 1_048_576
+        maximumTranscriptCharacters: Int = 1_048_576,
+        cursorBlinkEnabled: Bool = true
     ) {
         self.placeholderText = placeholderText
         self.prompt = prompt
@@ -27,6 +29,7 @@ public struct PocketRootTerminalConfiguration: Sendable, Equatable {
         self.initialWorkingDirectory = initialWorkingDirectory
         self.commandTimeout = commandTimeout
         self.maximumTranscriptCharacters = max(1, maximumTranscriptCharacters)
+        self.cursorBlinkEnabled = cursorBlinkEnabled
     }
 
     /// The minimum stateful command-line experience backed by one-shot shell
@@ -47,14 +50,16 @@ public struct PocketRootTerminalConfiguration: Sendable, Equatable {
 
     /// A persistent PTY terminal rendered by SwiftTerm.
     public static func interactive(
-        initialWorkingDirectory: String = "/root"
+        initialWorkingDirectory: String = "/root",
+        cursorBlinkEnabled: Bool = true
     ) -> PocketRootTerminalConfiguration {
         PocketRootTerminalConfiguration(
             placeholderText: "",
             prompt: "",
             allowsInput: true,
             showsAccessoryView: false,
-            initialWorkingDirectory: initialWorkingDirectory
+            initialWorkingDirectory: initialWorkingDirectory,
+            cursorBlinkEnabled: cursorBlinkEnabled
         )
     }
 

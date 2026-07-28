@@ -118,6 +118,7 @@ final class HostViewController: UIViewController {
         statusLabel.adjustsFontForContentSizeCategory = true
         statusLabel.numberOfLines = 0
         statusLabel.textAlignment = .center
+        statusLabel.accessibilityIdentifier = "PocketRootHost.status"
 
         configure(
             bootButton,
@@ -125,18 +126,21 @@ final class HostViewController: UIViewController {
             symbol: "power",
             action: #selector(bootRuntime)
         )
+        bootButton.accessibilityIdentifier = "PocketRootHost.boot"
         configure(
             terminalButton,
             title: "Open Terminal",
             symbol: "terminal",
             action: #selector(openTerminal)
         )
+        terminalButton.accessibilityIdentifier = "PocketRootHost.terminal"
         configure(
             filesButton,
             title: "Open Files",
             symbol: "folder",
             action: #selector(openFiles)
         )
+        filesButton.accessibilityIdentifier = "PocketRootHost.files"
 
         let stack = UIStackView(
             arrangedSubviews: [
@@ -229,7 +233,10 @@ final class HostViewController: UIViewController {
         }
         let terminal = PocketRootTerminalViewController(
             system: system,
-            configuration: .interactive(initialWorkingDirectory: "/root"),
+            configuration: .interactive(
+                initialWorkingDirectory: "/root",
+                cursorBlinkEnabled: !isUITesting
+            ),
             theme: .dark
         )
         let controller = runtimeController
@@ -300,6 +307,10 @@ final class HostViewController: UIViewController {
         var mutableURL = url
         try mutableURL.setResourceValues(values)
         return url
+    }
+
+    private var isUITesting: Bool {
+        ProcessInfo.processInfo.arguments.contains("-PocketRootUITesting")
     }
 
     private func presentMessage(title: String, message: String) {

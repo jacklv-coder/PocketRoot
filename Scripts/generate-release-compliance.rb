@@ -209,9 +209,11 @@ module PocketRootReleaseCompliance
     "project.yml" =>
       "dde326aa375b5c63362e3696402e52e023c9d1f88a26c751a652d42fa24a2800",
     "Examples/PocketRootHostApp/project.yml" =>
-      "189efb965ae3dabdad11a37b1b62332a93b07a58613c0ec28c23bf73e93decec",
+      "6895e39bd2233525013e3cf087ddfb1f15788bb57dd689b979bf340c1b6ab83e",
     "Scripts/inject-demo-rootfs.sh" =>
       "3982b5382b0d1e13e0c8e8a5bb5404c5bad1dfc4d6e9cd23a39e3395a83087bb",
+    "Scripts/run-host-app-ui-smoke.sh" =>
+      "e25eb244ca6295ec93bd3c43bc7c48efc49d1a68100bb674d0396928b925f6a6",
     "ThirdPartyNotices/SwiftTerm-LICENSE.txt" =>
       "1c34c11581e20feb2b7ea122146a6690261dae94b2c8444e8cff902e567df6ae"
   }.freeze
@@ -946,6 +948,11 @@ module PocketRootReleaseCompliance
         root.join("Scripts/inject-demo-rootfs.sh"),
         "Demo RootFS injection script"
       )
+    host_app_ui_smoke_bytes =
+      read_regular(
+        root.join("Scripts/run-host-app-ui-smoke.sh"),
+        "Host App UI smoke script"
+      )
     swiftterm_notice_bytes =
       read_regular(
         root.join(SWIFTTERM.fetch("noticePath")),
@@ -984,6 +991,8 @@ module PocketRootReleaseCompliance
         Digest::SHA256.hexdigest(host_project_bytes),
       "Scripts/inject-demo-rootfs.sh" =>
         Digest::SHA256.hexdigest(demo_rootfs_injection_bytes),
+      "Scripts/run-host-app-ui-smoke.sh" =>
+        Digest::SHA256.hexdigest(host_app_ui_smoke_bytes),
       SWIFTTERM.fetch("noticePath") =>
         Digest::SHA256.hexdigest(swiftterm_notice_bytes)
     }

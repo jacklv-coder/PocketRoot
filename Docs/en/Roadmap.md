@@ -181,6 +181,9 @@ Completed in this closure:
 4. SwiftTerm pinned at `dd2fb8ac…` with UIKit and SwiftUI bridges.
 5. NUL-framed guest directory browsing and bounded file preview.
 6. Session/runtime/file-browser tests and strict-concurrency iOS compilation.
+7. A real iOS 18 Simulator UI closure that boots, types a file-creation command
+   into SwiftTerm, navigates through Files, and verifies the preview; Xcode 16
+   CI reruns it.
 
 Remaining gates are interactive lifecycle coverage on an available signed iPhone,
 background/foreground and sustained output, plus iPad keyboard, rotation,

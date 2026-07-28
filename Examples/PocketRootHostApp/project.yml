@@ -67,11 +67,35 @@ targets:
           "$SRCROOT/../../Scripts/inject-demo-rootfs.sh"
         basedOnDependencyAnalysis: false
 
+  PocketRootHostAppUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: "18.0"
+
+    sources:
+      - path: UITests
+
+    dependencies:
+      - target: PocketRootHostApp
+
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jacklv.examples.PocketRootHostAppUITests
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: "5.0"
+        SWIFT_STRICT_CONCURRENCY: complete
+        SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
+        TEST_TARGET_NAME: PocketRootHostApp
+
 schemes:
   PocketRootHostApp:
     build:
       targets:
         PocketRootHostApp: all
+        PocketRootHostAppUITests: [test]
+    test:
+      targets:
+        - PocketRootHostAppUITests
     run:
       config: Debug
     archive:

@@ -375,6 +375,9 @@ When `sessionConfiguration` is omitted, the PTY uses
 `configuration.initialWorkingDirectory`. Pass an explicit session configuration
 to customize the shell, environment, or terminal size; that complete session
 configuration takes precedence.
+`cursorBlinkEnabled` defaults to `true`. Deterministic screenshots or UI
+automation may set it to `false` without changing PTY input, output, or
+lifecycle behavior.
 
 The guest file browser is another ready-to-present page:
 
