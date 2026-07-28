@@ -85,6 +85,55 @@ final class PocketRootTerminalTests: XCTestCase {
         XCTAssertEqual(PocketRootTerminalTheme.system.fontSize, 14)
     }
 
+    func testWorkspaceConfigurationDefaultsToInteractiveRootTerminal() {
+        let configuration = PocketRootWorkspaceConfiguration()
+
+        XCTAssertEqual(
+            configuration.terminalConfiguration,
+            .interactive()
+        )
+        XCTAssertNil(configuration.terminalSessionConfiguration)
+        XCTAssertEqual(configuration.terminalTheme, .dark)
+        XCTAssertEqual(configuration.initialFilePath, "/root")
+        XCTAssertEqual(configuration.initialSurface, .terminal)
+        XCTAssertEqual(
+            PocketRootWorkspaceSurface.allCases,
+            [.terminal, .files]
+        )
+    }
+
+    func testWorkspaceConfigurationPreservesCustomSurfaces() {
+        let session = PocketRootSessionConfiguration(
+            shell: "/bin/ash",
+            workingDirectory: "/workspace",
+            environment: ["TERM": "xterm-256color"]
+        )
+        let configuration = PocketRootWorkspaceConfiguration(
+            terminalConfiguration: .interactive(
+                initialWorkingDirectory: "/fallback",
+                cursorBlinkEnabled: false
+            ),
+            terminalSessionConfiguration: session,
+            terminalTheme: PocketRootTerminalTheme(
+                palette: .system,
+                fontSize: 17
+            ),
+            initialFilePath: "/workspace",
+            initialSurface: .files
+        )
+
+        XCTAssertEqual(
+            configuration.terminalSessionConfiguration,
+            session
+        )
+        XCTAssertFalse(
+            configuration.terminalConfiguration.cursorBlinkEnabled
+        )
+        XCTAssertEqual(configuration.terminalTheme.fontSize, 17)
+        XCTAssertEqual(configuration.initialFilePath, "/workspace")
+        XCTAssertEqual(configuration.initialSurface, .files)
+    }
+
     func testControllerMaintainsTranscriptWithoutLoadingUI() async {
         let transcript = await MainActor.run {
             let controller = PocketRootTerminalViewController()

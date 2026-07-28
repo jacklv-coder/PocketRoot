@@ -351,7 +351,32 @@ the runtime.
 
 ## 9. Embed Terminal and Files
 
-After preparation and boot, UIKit can open the SwiftTerm PTY directly:
+After preparation and boot, the smallest integration can present one workspace
+containing a persistent PTY and guest file browser. Switching surfaces does not
+recreate the terminal session:
+
+```swift
+import PocketRootTerminal
+
+let workspace = PocketRootWorkspaceViewController(
+    system: system,
+    configuration: .init(
+        terminalConfiguration: .interactive(
+            initialWorkingDirectory: "/root"
+        ),
+        initialFilePath: "/root"
+    )
+)
+navigationController?.pushViewController(workspace, animated: true)
+```
+
+The host injects an already-ready system. The workspace does not install a
+RootFS, boot, or shut down the runtime. It closes its PTY when permanently
+removed; before host-driven shutdown, call
+`workspace.closeSession(completion:)`. The UIKit segmented control and tab bar
+both switch Terminal/Files without destroying either child page.
+
+For a terminal-only surface, UIKit can open the SwiftTerm PTY directly:
 
 ```swift
 import PocketRootTerminal
@@ -389,7 +414,7 @@ let filesViewController = PocketRootFileBrowserViewController(
 navigationController?.pushViewController(filesViewController, animated: true)
 ```
 
-SwiftUI can expose both:
+SwiftUI has the same composed entry point:
 
 ```swift
 import PocketRootTerminal
@@ -399,12 +424,10 @@ struct LinuxTerminalScreen: View {
     let system: PocketRootSystem
 
     var body: some View {
-        TabView {
-            PocketRootTerminalView(system: system)
-            NavigationStack {
-                PocketRootFileBrowserView(system: system)
-            }
-        }
+        PocketRootWorkspaceView(
+            system: system,
+            configuration: .init(initialFilePath: "/root")
+        )
     }
 }
 ```

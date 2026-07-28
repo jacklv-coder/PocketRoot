@@ -190,6 +190,9 @@
 11. repository-owned Host App 真机 runner：解析并验证 physical iOS、开发签名和
     entitlement，复用同一生命周期 UI 测试，并在设备 OS 超出 Xcode 支持范围时
     fail closed。
+12. 公开 UIKit/SwiftUI Workspace：宿主以一个入口打开 Terminal 与 Files，切换页面
+    不重建 PTY；UIKit 支持顶部与底部切换，退出时关闭 session，Host App Simulator
+    UI smoke 验证文件创建、预览和同一 PTY 持续性。
 
 未完成门禁：
 

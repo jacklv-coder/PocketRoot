@@ -7,7 +7,8 @@ Package 产品即可完成：
 2. boot 同一个 iSH runtime；
 3. 打开可交互 SwiftTerm PTY；
 4. 浏览同一个 guest 的 `/root` 文件夹；
-5. 先关闭所有终端 session，再有序 shutdown runtime。
+5. 通过公开 Workspace 在持续 PTY 与 Files 间切换，终端 session 不重建；
+6. 先关闭所有终端 session，再有序 shutdown runtime。
 
 它只依赖 `PocketRoot` 和 `PocketRootIshRuntimeIntegration`，不复制或导入 Demo
 内部实现。工程文件由本目录的 `project.yml` 生成：
@@ -45,7 +46,8 @@ POCKETROOT_ROOTFS_ARCHIVE=/absolute/path/to/fs.tar.gz \
 ```
 
 该测试在临时 iOS 18 Simulator 中 Boot，向 SwiftTerm PTY 输入命令创建文件，并覆盖
-持续输出、前后台、旋转 resize、关闭/重开终端、Files 预览与有序 shutdown。可用
+持续输出、前后台、旋转 resize、关闭/重开终端、Workspace 跨页面 PTY 持续性、
+Files 预览与有序 shutdown。可用
 `POCKETROOT_HOST_UI_SMOKE_DEVICE=<Simulator-UDID>` 复用已有模拟器。
 
 用签名真机运行同一生命周期测试：
@@ -64,7 +66,8 @@ POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
 
 This standalone iOS host proves that a consumer can validate and install a
 caller-provided RootFS, boot one shared iSH runtime, open an interactive
-SwiftTerm PTY, and browse `/root` using only the public `PocketRoot` and
+SwiftTerm PTY, and use the public Workspace to switch between that persistent
+PTY and `/root` browsing using only the public `PocketRoot` and
 `PocketRootIshRuntimeIntegration` products. Generate the project from
 `project.yml` with XcodeGen. The commands above configure the reviewed
 development RootFS or provide it to one Debug build. Release builds always
@@ -79,7 +82,8 @@ POCKETROOT_ROOTFS_ARCHIVE=/absolute/path/to/fs.tar.gz \
 
 This runs the real Simulator UI closure: boot, sustained SwiftTerm PTY input
 and output, background/foreground, rotation resize, terminal close/reopen,
-Files preview, and ordered shutdown. Set `POCKETROOT_HOST_UI_SMOKE_DEVICE` to
+Workspace session persistence across Files, preview, and ordered shutdown. Set
+`POCKETROOT_HOST_UI_SMOKE_DEVICE` to
 reuse an existing Simulator. Use `run-host-app-device-ui-smoke.sh` with
 `POCKETROOT_HOST_DEVICE_UI_SMOKE_DEVICE` and the development certificate
 subject's `OU` team ID for the signed-device form; the device OS must be within

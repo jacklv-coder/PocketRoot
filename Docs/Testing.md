@@ -15,7 +15,7 @@ PocketRoot 把验证分成宿主逻辑、真实 RootFS、iOS 构建、完整原�
 | 工程 App/archive 扫描 | `ruby Scripts/scan-release-artifact.rb` | macOS + 外部 `.app`/`.xcarchive` | 确定性文件摘要、Mach-O、签名/entitlement 风险信号与文件级 SPDX | 最终导出制品、依赖许可证完备性或分发授权 |
 | development-signed archive 门禁 | `./Scripts/build-signed-engineering-archive.sh` | macOS + Xcode 账号/开发签名 | 标准 `.xcarchive`、development entitlement、clean 风险信号、复验与 SPDX schema | IPA/export、发行签名、安装、上传或分发授权 |
 | Simulator 原生 smoke | `./Scripts/run-runtime-smoke.sh` | Apple Silicon + iOS 18 Simulator + archive | prepare、boot、命令边界和 soft shutdown 返回 | 其他工具链、真机或发行可用 |
-| Host App UI smoke | `./Scripts/run-host-app-ui-smoke.sh` | Apple Silicon + iOS 18 Simulator + archive | 公开宿主 Boot、SwiftTerm PTY 输入/持续输出、前后台、旋转 resize、关闭/重开、Files 预览与有序 shutdown | 真机键盘、iPad 或发行可用 |
+| Host App UI smoke | `./Scripts/run-host-app-ui-smoke.sh` | Apple Silicon + iOS 18 Simulator + archive | 公开宿主 Boot、SwiftTerm PTY 输入/持续输出、前后台、旋转 resize、关闭/重开、Workspace 跨页面 PTY 持续性、Files 预览与有序 shutdown | 真机键盘、iPad 或发行可用 |
 | Host App 真机 UI smoke | `./Scripts/run-host-app-device-ui-smoke.sh` | 支持设备 OS 的 Xcode + development-signed iPhone/iPad + archive | 同一 Host App 生命周期 UI 测试的真机执行、签名与 development entitlement | iPad、真实压力或发行可用 |
 | 物理设备原生 smoke | `./Scripts/run-runtime-device-smoke.sh` | 签名 iOS 18+ iPhone/iPad + archive | 同一 17 项检查、可选进程暂停/恢复、UIKit 前后台、强制重启持久化、受限存储故障或有界内存警告恢复，development entitlement 与 shutdown 返回 | 真实 storage/memory pressure、断电、jetsam、iPad 或发行可用 |
 | 文档检查 | `./Scripts/check-docs.sh` | macOS/Linux shell | 中英文成对、中文覆盖和相对链接 | 技术实现正确 |

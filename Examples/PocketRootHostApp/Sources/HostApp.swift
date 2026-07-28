@@ -49,7 +49,7 @@ final class HostSceneDelegate: UIResponder, UIWindowSceneDelegate {
            let hostViewController =
             navigationController.viewControllers.first as? HostViewController
         {
-            hostViewController.closeActiveTerminal()
+            hostViewController.closeActiveInteractiveSurfaces()
         }
         window = nil
     }
@@ -63,11 +63,14 @@ final class HostViewController: UIViewController {
     private let bootButton = UIButton(type: .system)
     private let terminalButton = UIButton(type: .system)
     private let filesButton = UIButton(type: .system)
+    private let workspaceButton = UIButton(type: .system)
     private let shutdownButton = UIButton(type: .system)
 
     private unowned let runtimeOwner: HostAppDelegate
     private var activeTerminal: PocketRootTerminalViewController?
+    private var activeWorkspace: PocketRootWorkspaceViewController?
     private var isClosingTerminal = false
+    private var isClosingWorkspace = false
     private var isShutdownRequested = false
 
     private var runtimeController: PocketRootIshRuntimeController? {
@@ -103,6 +106,11 @@ final class HostViewController: UIViewController {
         {
             closeActiveTerminal()
         }
+        if let activeWorkspace,
+           navigationController?.topViewController !== activeWorkspace
+        {
+            closeActiveWorkspace()
+        }
         if let runtimeController {
             Task {
                 await runtimeController.refreshRuntimeState()
@@ -126,6 +134,33 @@ final class HostViewController: UIViewController {
                 render(phase: runtimeController?.phase ?? .idle)
             }
             completion?()
+        }
+    }
+
+    func closeActiveWorkspace(completion: (() -> Void)? = nil) {
+        guard let workspace = activeWorkspace else {
+            completion?()
+            return
+        }
+        activeWorkspace = nil
+        isClosingWorkspace = true
+        workspaceButton.accessibilityValue = "Session Closing"
+        render(phase: runtimeController?.phase ?? .idle)
+        workspace.closeSession { [weak self] in
+            if let self {
+                isClosingWorkspace = false
+                workspaceButton.accessibilityValue = "Session Closed"
+                render(phase: runtimeController?.phase ?? .idle)
+            }
+            completion?()
+        }
+    }
+
+    func closeActiveInteractiveSurfaces(
+        completion: (() -> Void)? = nil
+    ) {
+        closeActiveTerminal { [weak self] in
+            self?.closeActiveWorkspace(completion: completion)
         }
     }
 
@@ -158,6 +193,13 @@ final class HostViewController: UIViewController {
         )
         filesButton.accessibilityIdentifier = "PocketRootHost.files"
         configure(
+            workspaceButton,
+            title: "Open Workspace",
+            symbol: "rectangle.split.2x1",
+            action: #selector(openWorkspace)
+        )
+        workspaceButton.accessibilityIdentifier = "PocketRootHost.workspace"
+        configure(
             shutdownButton,
             title: "Shutdown Runtime",
             symbol: "power.circle",
@@ -171,6 +213,7 @@ final class HostViewController: UIViewController {
                 bootButton,
                 terminalButton,
                 filesButton,
+                workspaceButton,
                 shutdownButton
             ]
         )
@@ -292,8 +335,40 @@ final class HostViewController: UIViewController {
     }
 
     @objc
+    private func openWorkspace() {
+        guard !isClosingWorkspace,
+              let system = runtimeController?.readySystem
+        else {
+            return
+        }
+        let workspace = PocketRootWorkspaceViewController(
+            system: system,
+            configuration: PocketRootWorkspaceConfiguration(
+                terminalConfiguration: .interactive(
+                    initialWorkingDirectory: "/root",
+                    cursorBlinkEnabled: !isUITesting
+                )
+            )
+        )
+        let controller = runtimeController
+        workspace.onTerminalSessionEnded = {
+            [weak workspace, weak controller] reason in
+            workspace?.title = Self.sessionEndTitle(reason)
+            if case .failed = reason {
+                Task {
+                    await controller?.refreshRuntimeState()
+                }
+            }
+        }
+        activeWorkspace = workspace
+        workspaceButton.accessibilityValue = "Session Open"
+        navigationController?.pushViewController(workspace, animated: true)
+    }
+
+    @objc
     private func shutdownRuntime() {
         guard !isClosingTerminal,
+              !isClosingWorkspace,
               !isShutdownRequested,
               let controller = runtimeController
         else {
@@ -301,7 +376,7 @@ final class HostViewController: UIViewController {
         }
         isShutdownRequested = true
         render(phase: controller.phase)
-        closeActiveTerminal { [weak self] in
+        closeActiveInteractiveSurfaces { [weak self] in
             Task {
                 do {
                     try await controller.shutdown()
@@ -323,8 +398,12 @@ final class HostViewController: UIViewController {
         bootButton.isEnabled = runtimeController?.canBoot ?? true
         terminalButton.isEnabled = isReady && !isClosingTerminal
         filesButton.isEnabled = isReady
+        workspaceButton.isEnabled = isReady && !isClosingWorkspace
         shutdownButton.isEnabled =
-            isReady && !isClosingTerminal && !isShutdownRequested
+            isReady
+                && !isClosingTerminal
+                && !isClosingWorkspace
+                && !isShutdownRequested
     }
 
     private func bind(
