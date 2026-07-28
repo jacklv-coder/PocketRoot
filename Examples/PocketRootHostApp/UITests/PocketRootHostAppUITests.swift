@@ -3,36 +3,12 @@ import XCTest
 @MainActor
 final class PocketRootHostAppUITests: XCTestCase {
     func testPTYCommandCreatesFileVisibleInFiles() {
-        let app = XCUIApplication()
-        app.launchArguments += [
-            "-AppleLanguages", "(en)",
-            "-AppleLocale", "en_US",
-            "-PocketRootUITesting"
-        ]
-        app.launch()
-
-        let status = app.staticTexts["PocketRootHost.status"]
-        XCTAssertTrue(status.waitForExistence(timeout: 10))
-        XCTAssertEqual(status.label, "Runtime: Ready to Boot")
-
-        let bootButton = app.buttons["PocketRootHost.boot"]
-        XCTAssertTrue(bootButton.waitForExistence(timeout: 10))
-        bootButton.tap()
-        wait(
-            for: NSPredicate(format: "label == %@", "Runtime: Ready"),
-            evaluatedWith: status,
-            timeout: 90
-        )
+        let app = launchAndBoot()
 
         let terminalButton = app.buttons["PocketRootHost.terminal"]
-        wait(
-            for: NSPredicate(format: "enabled == true"),
-            evaluatedWith: terminalButton,
-            timeout: 10
-        )
         terminalButton.tap()
 
-        let terminal = app.descendants(matching: .any)["PocketRootTerminal.pty"]
+        let terminal = terminalElement(in: app)
         XCTAssertTrue(terminal.waitForExistence(timeout: 30))
         terminal.tap()
         terminal.typeText(
@@ -65,6 +41,229 @@ final class PocketRootHostAppUITests: XCTestCase {
         let preview = app.staticTexts["PocketRootFiles.preview"]
         XCTAssertTrue(preview.waitForExistence(timeout: 30))
         XCTAssertEqual(preview.label, "PocketRoot UI smoke\n")
+    }
+
+    func testPTYLifecycleAndShutdown() {
+        addTeardownBlock {
+            XCUIDevice.shared.orientation = .portrait
+        }
+
+        let app = launchAndBoot()
+        let terminalButton = app.buttons["PocketRootHost.terminal"]
+        terminalButton.tap()
+
+        var terminal = terminalElement(in: app)
+        XCTAssertTrue(terminal.waitForExistence(timeout: 30))
+        terminal.tap()
+        terminal.typeText(
+            "rm -rf /root/pocketroot-device-ui-smoke; "
+                + "mkdir -p /root/pocketroot-device-ui-smoke; "
+                + "printf 'before-background\\n' "
+                + "> /root/pocketroot-device-ui-smoke/lifecycle.txt\n"
+        )
+        allowTerminalToDrain()
+
+        XCUIDevice.shared.press(.home)
+        XCTAssertTrue(app.wait(for: .runningBackground, timeout: 15))
+        app.activate()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30))
+
+        terminal = terminalElement(in: app)
+        XCTAssertTrue(terminal.waitForExistence(timeout: 30))
+        terminal.tap()
+        terminal.typeText(
+            "seq 1 128; printf '__PTY_OUTPUT_128__\\n'; "
+                + "printf 'after-foreground\\n' "
+                + ">> /root/pocketroot-device-ui-smoke/lifecycle.txt\n"
+        )
+        wait(
+            for: NSPredicate(
+                format: "value CONTAINS %@",
+                "__PTY_OUTPUT_128__"
+            ),
+            evaluatedWith: terminal,
+            timeout: 30
+        )
+
+        let portraitSize = queryTerminalSize(
+            terminal,
+            marker: "__PORTRAIT_SIZE__"
+        )
+        XCUIDevice.shared.orientation = .landscapeLeft
+        allowTerminalToDrain()
+        terminal = terminalElement(in: app)
+        XCTAssertTrue(terminal.exists)
+        terminal.tap()
+        let landscapeSize = queryTerminalSize(
+            terminal,
+            marker: "__LANDSCAPE_SIZE__"
+        )
+        XCTAssertGreaterThan(landscapeSize.columns, portraitSize.columns)
+
+        XCUIDevice.shared.orientation = .portrait
+        allowTerminalToDrain()
+        terminal = terminalElement(in: app)
+        XCTAssertTrue(terminal.exists)
+        terminal.tap()
+        let returnedPortraitSize = queryTerminalSize(
+            terminal,
+            marker: "__RETURNED_PORTRAIT_SIZE__"
+        )
+        XCTAssertLessThan(
+            returnedPortraitSize.columns,
+            landscapeSize.columns
+        )
+
+        tapBackButton(in: app)
+        XCTAssertTrue(terminalButton.waitForExistence(timeout: 30))
+        wait(
+            for: NSPredicate(
+                format: "enabled == true AND value == %@",
+                "Session Closed"
+            ),
+            evaluatedWith: terminalButton,
+            timeout: 30
+        )
+
+        terminalButton.tap()
+        terminal = terminalElement(in: app)
+        XCTAssertTrue(terminal.waitForExistence(timeout: 30))
+        terminal.tap()
+        terminal.typeText(
+            "printf 'after-reopen\\n' "
+                + ">> /root/pocketroot-device-ui-smoke/lifecycle.txt; exit\n"
+        )
+
+        let exitedNavigationBar = app.navigationBars["Terminal Exited (0)"]
+        XCTAssertTrue(exitedNavigationBar.waitForExistence(timeout: 30))
+        exitedNavigationBar.buttons.element(boundBy: 0).tap()
+
+        let filesButton = app.buttons["PocketRootHost.files"]
+        XCTAssertTrue(filesButton.waitForExistence(timeout: 10))
+        filesButton.tap()
+
+        let directory = app.descendants(matching: .any)[
+            "PocketRootFiles.entry./root/pocketroot-device-ui-smoke"
+        ]
+        XCTAssertTrue(directory.waitForExistence(timeout: 30))
+        directory.tap()
+
+        let file = app.descendants(matching: .any)[
+            "PocketRootFiles.entry./root/pocketroot-device-ui-smoke/lifecycle.txt"
+        ]
+        XCTAssertTrue(file.waitForExistence(timeout: 30))
+        file.tap()
+
+        let preview = app.staticTexts["PocketRootFiles.preview"]
+        XCTAssertTrue(preview.waitForExistence(timeout: 30))
+        XCTAssertEqual(
+            preview.label,
+            "before-background\nafter-foreground\nafter-reopen\n"
+        )
+
+        returnToHost(in: app)
+        let shutdownButton = app.buttons["PocketRootHost.shutdown"]
+        XCTAssertTrue(shutdownButton.waitForExistence(timeout: 30))
+        shutdownButton.tap()
+
+        let status = app.staticTexts["PocketRootHost.status"]
+        wait(
+            for: NSPredicate(format: "label == %@", "Runtime: Restart App"),
+            evaluatedWith: status,
+            timeout: 30
+        )
+        XCTAssertFalse(terminalButton.isEnabled)
+        XCTAssertFalse(filesButton.isEnabled)
+        XCTAssertFalse(shutdownButton.isEnabled)
+    }
+
+    private func launchAndBoot() -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchArguments += [
+            "-AppleLanguages", "(en)",
+            "-AppleLocale", "en_US",
+            "-PocketRootUITesting"
+        ]
+        app.launch()
+
+        let status = app.staticTexts["PocketRootHost.status"]
+        XCTAssertTrue(status.waitForExistence(timeout: 10))
+        XCTAssertEqual(status.label, "Runtime: Ready to Boot")
+
+        let bootButton = app.buttons["PocketRootHost.boot"]
+        XCTAssertTrue(bootButton.waitForExistence(timeout: 10))
+        bootButton.tap()
+        wait(
+            for: NSPredicate(format: "label == %@", "Runtime: Ready"),
+            evaluatedWith: status,
+            timeout: 90
+        )
+
+        let terminalButton = app.buttons["PocketRootHost.terminal"]
+        wait(
+            for: NSPredicate(format: "enabled == true"),
+            evaluatedWith: terminalButton,
+            timeout: 10
+        )
+        return app
+    }
+
+    private func terminalElement(in app: XCUIApplication) -> XCUIElement {
+        app.descendants(matching: .any)["PocketRootTerminal.pty"]
+    }
+
+    private func tapBackButton(in app: XCUIApplication) {
+        let backButton = app.navigationBars.buttons.element(boundBy: 0)
+        XCTAssertTrue(backButton.waitForExistence(timeout: 10))
+        backButton.tap()
+    }
+
+    private func returnToHost(in app: XCUIApplication) {
+        let status = app.staticTexts["PocketRootHost.status"]
+        for _ in 0..<4 where !status.exists {
+            tapBackButton(in: app)
+        }
+        XCTAssertTrue(status.waitForExistence(timeout: 10))
+    }
+
+    private func allowTerminalToDrain() {
+        RunLoop.current.run(until: Date().addingTimeInterval(1))
+    }
+
+    private func queryTerminalSize(
+        _ terminal: XCUIElement,
+        marker: String
+    ) -> (rows: Int, columns: Int) {
+        terminal.typeText("printf '\(marker)'; stty size\n")
+
+        var result: (rows: Int, columns: Int)?
+        let expression = try! NSRegularExpression(
+            pattern: NSRegularExpression.escapedPattern(for: marker)
+                + #"([0-9]+) ([0-9]+)"#
+        )
+        let predicate = NSPredicate { object, _ in
+            guard let element = object as? XCUIElement,
+                  let value = element.value as? String
+            else {
+                return false
+            }
+            let range = NSRange(value.startIndex..., in: value)
+            guard let match = expression.firstMatch(
+                in: value,
+                range: range
+            ),
+                let rowsRange = Range(match.range(at: 1), in: value),
+                let columnsRange = Range(match.range(at: 2), in: value),
+                let rows = Int(value[rowsRange]),
+                let columns = Int(value[columnsRange])
+            else {
+                return false
+            }
+            result = (rows, columns)
+            return true
+        }
+        wait(for: predicate, evaluatedWith: terminal, timeout: 30)
+        return result ?? (0, 0)
     }
 
     private func wait(

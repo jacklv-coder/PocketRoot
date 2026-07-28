@@ -8,12 +8,17 @@ import UIKit
 final class PTYTerminalBridge: NSObject, @preconcurrency TerminalViewDelegate {
     typealias SessionFactory = @Sendable () async throws -> any PocketRootSession
 
+    private static let maximumAccessibilitySnapshotBytes = 16 * 1_024
+
     private let sessionFactory: SessionFactory
     private let allowsInput: Bool
     private weak var terminalView: TerminalView?
     private var session: (any PocketRootSession)?
     private var connectionTask: Task<Void, Never>?
     private var operationTail: Task<Void, Never>?
+    private var detachTask: Task<Void, Never>?
+    private var accessibilityUpdateTask: Task<Void, Never>?
+    private var accessibilityOutput = Data()
     private var pendingSize: PocketRootTerminalSize?
     private var pendingInput = Data()
 
@@ -30,7 +35,7 @@ final class PTYTerminalBridge: NSObject, @preconcurrency TerminalViewDelegate {
     }
 
     func attach(to terminalView: TerminalView) {
-        guard connectionTask == nil else {
+        guard connectionTask == nil, detachTask == nil else {
             return
         }
         self.terminalView = terminalView
@@ -72,21 +77,45 @@ final class PTYTerminalBridge: NSObject, @preconcurrency TerminalViewDelegate {
         }
     }
 
-    func detach() {
+    func detach(completion: (@MainActor () -> Void)? = nil) {
         terminalView?.terminalDelegate = nil
         terminalView = nil
-        connectionTask?.cancel()
+        accessibilityUpdateTask?.cancel()
+        accessibilityUpdateTask = nil
+        if let detachTask {
+            Task {
+                await detachTask.value
+                completion?()
+            }
+            return
+        }
+        let connectingTask = connectionTask
+        connectingTask?.cancel()
         connectionTask = nil
-        operationTail?.cancel()
+        let queuedOperation = operationTail
+        queuedOperation?.cancel()
         operationTail = nil
         pendingSize = nil
         pendingInput.removeAll(keepingCapacity: false)
-        if let session {
-            Task {
-                await session.terminate()
-            }
-        }
+        let activeSession = session
         session = nil
+        guard connectingTask != nil
+                || queuedOperation != nil
+                || activeSession != nil
+        else {
+            completion?()
+            return
+        }
+        let task = Task { [weak self] in
+            if let activeSession {
+                await activeSession.terminate()
+            }
+            await connectingTask?.value
+            await queuedOperation?.value
+            self?.detachTask = nil
+            completion?()
+        }
+        detachTask = task
     }
 
     func sizeChanged(source _: TerminalView, newCols: Int, newRows: Int) {
@@ -94,6 +123,7 @@ final class PTYTerminalBridge: NSObject, @preconcurrency TerminalViewDelegate {
             rows: UInt16(clamping: newRows),
             columns: UInt16(clamping: newCols)
         )
+        updateAccessibilitySnapshot()
         guard session != nil else {
             pendingSize = size
             return
@@ -166,6 +196,8 @@ final class PTYTerminalBridge: NSObject, @preconcurrency TerminalViewDelegate {
             break
         case .standardOutput(let data), .standardError(let data):
             terminalView?.feed(byteArray: Array(data)[...])
+            appendAccessibilityOutput(data)
+            scheduleAccessibilitySnapshot()
         case .exited(let exitCode):
             feedStatus("\r\n[Process exited with code \(exitCode)]\r\n")
             session = nil
@@ -183,6 +215,46 @@ final class PTYTerminalBridge: NSObject, @preconcurrency TerminalViewDelegate {
 
     private func feedStatus(_ text: String) {
         terminalView?.feed(text: text)
+        appendAccessibilityOutput(Data(text.utf8))
+        updateAccessibilitySnapshot()
+    }
+
+    private func appendAccessibilityOutput(_ data: Data) {
+        let limit = Self.maximumAccessibilitySnapshotBytes
+        if data.count >= limit {
+            accessibilityOutput = Data(data.suffix(limit))
+            return
+        }
+        let overflow = accessibilityOutput.count + data.count - limit
+        if overflow > 0 {
+            accessibilityOutput.removeFirst(overflow)
+        }
+        accessibilityOutput.append(data)
+    }
+
+    private func scheduleAccessibilitySnapshot() {
+        guard accessibilityUpdateTask == nil else {
+            return
+        }
+        accessibilityUpdateTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 100_000_000)
+            guard !Task.isCancelled, let self else {
+                return
+            }
+            accessibilityUpdateTask = nil
+            updateAccessibilitySnapshot()
+        }
+    }
+
+    private func updateAccessibilitySnapshot() {
+        guard let terminalView else {
+            return
+        }
+        let terminal = terminalView.getTerminal()
+        let dimensions = terminal.getDims()
+        let transcript = String(decoding: accessibilityOutput, as: UTF8.self)
+        terminalView.accessibilityValue =
+            "rows=\(dimensions.rows) columns=\(dimensions.cols)\n\(transcript)"
     }
 
     private func enqueue(

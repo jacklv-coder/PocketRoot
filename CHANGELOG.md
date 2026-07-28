@@ -37,7 +37,10 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
   system，打开 SwiftTerm PTY 与 guest 文件页面；CI 编译宿主并核对 Debug RootFS，
   Release 继续保持不注入。
 - 加入 Host App 的 iOS 18 Simulator UI smoke：通过真实 SwiftTerm PTY 输入创建文件，
-  再从 Files 页面进入目录并核对预览；光标闪烁可配置关闭以支持确定性 UI 自动化。
+  并覆盖持续输出、前后台、旋转 resize、关闭/重开、Files 预览与有序 shutdown；
+  光标闪烁可配置关闭以支持确定性 UI 自动化。
+- 加入 development-signed Host App 真机 UI runner：验证 physical iOS、设备/Xcode
+  支持范围、签名与 entitlement，再复用同一生命周期测试；默认清理 App 和诊断制品。
 - 加入 process-wide ownership、serial native execution、lifecycle reentrancy protection。
 - 加入一次性命令的 cwd、environment、stderr merge、exit、signal、timeout 和 stream mapping。
 - 加入默认 post-boot identity gate；使用固定命令和 NUL framing，在 `ready` 前验证 guest 架构、Alpine 身份、可选版本与工作目录。

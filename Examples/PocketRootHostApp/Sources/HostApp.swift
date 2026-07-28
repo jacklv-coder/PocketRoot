@@ -63,9 +63,12 @@ final class HostViewController: UIViewController {
     private let bootButton = UIButton(type: .system)
     private let terminalButton = UIButton(type: .system)
     private let filesButton = UIButton(type: .system)
+    private let shutdownButton = UIButton(type: .system)
 
     private unowned let runtimeOwner: HostAppDelegate
-    private weak var activeTerminal: PocketRootTerminalViewController?
+    private var activeTerminal: PocketRootTerminalViewController?
+    private var isClosingTerminal = false
+    private var isShutdownRequested = false
 
     private var runtimeController: PocketRootIshRuntimeController? {
         runtimeOwner.runtimeController
@@ -98,8 +101,7 @@ final class HostViewController: UIViewController {
         if let activeTerminal,
            navigationController?.topViewController !== activeTerminal
         {
-            activeTerminal.closeSession()
-            self.activeTerminal = nil
+            closeActiveTerminal()
         }
         if let runtimeController {
             Task {
@@ -108,9 +110,23 @@ final class HostViewController: UIViewController {
         }
     }
 
-    func closeActiveTerminal() {
-        activeTerminal?.closeSession()
+    func closeActiveTerminal(completion: (() -> Void)? = nil) {
+        guard let terminal = activeTerminal else {
+            completion?()
+            return
+        }
         activeTerminal = nil
+        isClosingTerminal = true
+        terminalButton.accessibilityValue = "Session Closing"
+        render(phase: runtimeController?.phase ?? .idle)
+        terminal.closeSession { [weak self] in
+            if let self {
+                isClosingTerminal = false
+                terminalButton.accessibilityValue = "Session Closed"
+                render(phase: runtimeController?.phase ?? .idle)
+            }
+            completion?()
+        }
     }
 
     private func configureView() {
@@ -141,13 +157,21 @@ final class HostViewController: UIViewController {
             action: #selector(openFiles)
         )
         filesButton.accessibilityIdentifier = "PocketRootHost.files"
+        configure(
+            shutdownButton,
+            title: "Shutdown Runtime",
+            symbol: "power.circle",
+            action: #selector(shutdownRuntime)
+        )
+        shutdownButton.accessibilityIdentifier = "PocketRootHost.shutdown"
 
         let stack = UIStackView(
             arrangedSubviews: [
                 statusLabel,
                 bootButton,
                 terminalButton,
-                filesButton
+                filesButton,
+                shutdownButton
             ]
         )
         stack.axis = .vertical
@@ -228,7 +252,9 @@ final class HostViewController: UIViewController {
 
     @objc
     private func openTerminal() {
-        guard let system = runtimeController?.readySystem else {
+        guard !isClosingTerminal,
+              let system = runtimeController?.readySystem
+        else {
             return
         }
         let terminal = PocketRootTerminalViewController(
@@ -249,6 +275,7 @@ final class HostViewController: UIViewController {
             }
         }
         activeTerminal = terminal
+        terminalButton.accessibilityValue = "Session Open"
         navigationController?.pushViewController(terminal, animated: true)
     }
 
@@ -264,12 +291,40 @@ final class HostViewController: UIViewController {
         navigationController?.pushViewController(files, animated: true)
     }
 
+    @objc
+    private func shutdownRuntime() {
+        guard !isClosingTerminal,
+              !isShutdownRequested,
+              let controller = runtimeController
+        else {
+            return
+        }
+        isShutdownRequested = true
+        render(phase: controller.phase)
+        closeActiveTerminal { [weak self] in
+            Task {
+                do {
+                    try await controller.shutdown()
+                } catch {
+                    self?.isShutdownRequested = false
+                    self?.render(phase: controller.phase)
+                    self?.presentMessage(
+                        title: "Shutdown Failed",
+                        message: error.localizedDescription
+                    )
+                }
+            }
+        }
+    }
+
     private func render(phase: PocketRootIshRuntimePhase) {
         statusLabel.text = "Runtime: \(Self.phaseDescription(phase))"
         let isReady = phase == .ready
         bootButton.isEnabled = runtimeController?.canBoot ?? true
-        terminalButton.isEnabled = isReady
+        terminalButton.isEnabled = isReady && !isClosingTerminal
         filesButton.isEnabled = isReady
+        shutdownButton.isEnabled =
+            isReady && !isClosingTerminal && !isShutdownRequested
     }
 
     private func bind(

@@ -15,7 +15,8 @@ PocketRoot separates host logic, real RootFS, iOS build, native final-link, and 
 | Engineering App/archive scan | `ruby Scripts/scan-release-artifact.rb` | Deterministic external `.app`/`.xcarchive` file hashes, Mach-O, signature/entitlement risk signals, and file-level SPDX | Final exported artifact, dependency-license completeness, or distribution authorization |
 | Development-signed archive gate | `./Scripts/build-signed-engineering-archive.sh` | Standard `.xcarchive`, development entitlements, clean risk signals, deterministic re-verification, and SPDX schema validation | IPA export, release signing, installation, upload, or distribution authorization |
 | Simulator native smoke | `./Scripts/run-runtime-smoke.sh` | Prepare, boot, command bounds, returning soft shutdown | Other toolchains, physical devices, distribution |
-| Host App UI smoke | `./Scripts/run-host-app-ui-smoke.sh` | Public-host boot, SwiftTerm PTY file creation, Files navigation, and preview on an iOS 18 Simulator | Physical keyboards, iPad, distribution |
+| Host App UI smoke | `./Scripts/run-host-app-ui-smoke.sh` | Public-host boot, SwiftTerm PTY input/sustained output, background/foreground, resize rotation, close/reopen, Files preview, and ordered shutdown on an iOS 18 Simulator | Physical keyboards, iPad, distribution |
+| Physical Host App UI smoke | `./Scripts/run-host-app-device-ui-smoke.sh` | The same lifecycle UI test on a development-signed iPhone/iPad, including signature and development entitlements | iPad, real pressure, distribution |
 | Physical native smoke | `./Scripts/run-runtime-device-smoke.sh` | Same 17 checks with optional process suspend/resume, UIKit lifecycle, forced-relaunch persistence, bounded storage-failure recovery, or bounded memory-warning recovery; development entitlements and returning soft shutdown | Real storage/memory pressure, power cut, jetsam, iPad, distribution |
 | Documentation | `./Scripts/check-docs.sh` | Pairs, Chinese coverage, relative links | Implementation correctness |
 
@@ -326,6 +327,33 @@ Settings and reactivate the same PID for UIKit callbacks, or terminate a seed
 PID and require a different verification PID. The runner terminates the
 process and uninstalls the App and
 RootFS data by default; `POCKETROOT_KEEP_DEVICE_APP=1` retains it.
+
+### Physical Host App UI runner
+
+Run the same Host App lifecycle UI test on one explicitly selected signed
+device:
+
+```bash
+POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
+POCKETROOT_HOST_DEVICE_UI_SMOKE_DEVICE=<physical-device-reference> \
+POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
+  ./Scripts/run-host-app-device-ui-smoke.sh
+```
+
+The runner validates a physical iOS destination, requires the device OS not to
+exceed the installed iOS SDK, checks the development-signing team, application
+identifier, and `get-task-allow`, then executes boot, sustained PTY
+input/output, background/foreground, rotation resize, terminal close/reopen,
+persistent Files preview, and ordered shutdown. It uninstalls the Host App and
+UI test runner and removes temporary DerivedData by default.
+`POCKETROOT_KEEP_DEVICE_APP=1` retains only the Host App;
+`POCKETROOT_KEEP_SMOKE_ARTIFACTS=1` retains only the local
+diagnostic directory.
+
+Use the development certificate subject's `OU` as the team ID, not the
+personal identifier shown in parentheses in the certificate display name. A
+newer device OS than Xcode's device-support range fails before build; a
+successful signature or install is not reported as a passed XCTest lifecycle.
 
 The 2026-07-24 rerun used Xcode 26.1.1, a development-provisioned iPhone 17 Pro
 on iOS 26.1, and the v0.4.0-abi.6 runtime pin. The device-produced

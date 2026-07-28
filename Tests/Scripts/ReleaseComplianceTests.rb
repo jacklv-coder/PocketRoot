@@ -16,6 +16,7 @@ class ReleaseComplianceTests < Minitest::Test
     "project.yml",
     "Examples/PocketRootHostApp/project.yml",
     "Scripts/inject-demo-rootfs.sh",
+    "Scripts/run-host-app-device-ui-smoke.sh",
     "Scripts/run-host-app-ui-smoke.sh",
     "ThirdPartyNotices/SwiftTerm-LICENSE.txt",
     "Compliance/RootFS/v0.3.3/EVIDENCE.json",
@@ -205,13 +206,22 @@ class ReleaseComplianceTests < Minitest::Test
       REPOSITORY_ROOT
         .join("Scripts/run-host-app-ui-smoke.sh")
         .binread
+    device_runner =
+      REPOSITORY_ROOT
+        .join("Scripts/run-host-app-device-ui-smoke.sh")
+        .binread
     workflow = REPOSITORY_ROOT.join(".github/workflows/ci.yml").binread
 
     assert_includes project, "PocketRootHostAppUITests:"
     assert_includes project, "type: bundle.ui-testing"
     assert_includes ui_test, "terminal.typeText("
     assert_includes ui_test, "PocketRootFiles.preview"
+    assert_includes ui_test, "testPTYLifecycleAndShutdown"
+    assert_includes ui_test, "PocketRootHost.shutdown"
     assert_includes runner, "-test-timeouts-enabled YES"
+    assert_includes device_runner, "build-for-testing"
+    assert_includes device_runner, "test-without-building"
+    assert_includes device_runner, "result.deviceProperties.osVersionNumber"
     assert_includes workflow, "./Scripts/run-host-app-ui-smoke.sh"
   end
 

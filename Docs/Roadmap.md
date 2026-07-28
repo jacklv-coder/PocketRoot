@@ -185,12 +185,18 @@
 8. NUL-framed guest 目录浏览与有界文件预览；
 9. session/runtime/file-browser 单元测试与 iOS strict-concurrency 编译；
 10. iOS 18 Simulator 真实 UI 闭环：Boot 后向 SwiftTerm PTY 输入命令创建文件，
-    再从 Files 页面进入目录并核对文件预览；Xcode 16 CI 持续执行。
+    并覆盖持续输出、前后台、旋转 resize、关闭/重开、Files 预览与有序 shutdown；
+    Xcode 16 CI 持续执行。
+11. repository-owned Host App 真机 runner：解析并验证 physical iOS、开发签名和
+    entitlement，复用同一生命周期 UI 测试，并在设备 OS 超出 Xcode 支持范围时
+    fail closed。
 
 未完成门禁：
 
-- 当前可用 signed iPhone 上持续输入、交互程序、resize、关闭/重开页面和 shutdown 顺序；
-- background/foreground、内存压力和长时间输出；
+- 在 device-support 兼容的 Xcode 上完成 signed iPhone Host App UI runner；当前
+  Jack iPhone 为 iOS 26.6 beta，本机 Xcode 26.1.1 的官方设备支持上限为 iOS 26.1，
+  signed build 已验证但 XCTest 因工具链不兼容未计为通过；
+- 真机交互程序、真实内存压力和长时间输出；
 - iPad 键盘、旋转、layout 和 VoiceOver 实机验证。
 
 实现直接使用低层 `IshSession` 所有权，不使用上游高层 `IshTerminal` wrapper。

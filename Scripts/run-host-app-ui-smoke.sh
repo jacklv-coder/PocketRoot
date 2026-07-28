@@ -11,7 +11,7 @@ DERIVED_DATA_ROOT="$(
     mktemp -d "${TMPDIR:-/tmp}/PocketRootHostAppUISmoke.XXXXXX"
 )"
 CLONED_SOURCE_PACKAGES_DIR="${POCKETROOT_CLONED_SOURCE_PACKAGES_DIR:-${TMPDIR:-/tmp}/PocketRootSharedSourcePackages}"
-ONLY_TESTING="PocketRootHostAppUITests/PocketRootHostAppUITests/testPTYCommandCreatesFileVisibleInFiles"
+ONLY_TESTING="PocketRootHostAppUITests/PocketRootHostAppUITests"
 
 cleanup() {
     if [[ "$CREATED_DEVICE" == "true" &&
@@ -67,6 +67,7 @@ xcrun simctl bootstatus "$DEVICE_UDID" -b
 
 POCKETROOT_DEVELOPMENT_ROOTFS_ARCHIVE="$ARCHIVE_PATH" \
 xcodebuild \
+  -quiet \
   -project "$HOST_APP_DIR/PocketRootHostApp.xcodeproj" \
   -scheme PocketRootHostApp \
   -configuration Debug \
