@@ -293,7 +293,8 @@ final class HostViewController: UIViewController {
 
     @objc
     private func shutdownRuntime() {
-        guard !isShutdownRequested,
+        guard !isClosingTerminal,
+              !isShutdownRequested,
               let controller = runtimeController
         else {
             return
@@ -322,7 +323,8 @@ final class HostViewController: UIViewController {
         bootButton.isEnabled = runtimeController?.canBoot ?? true
         terminalButton.isEnabled = isReady && !isClosingTerminal
         filesButton.isEnabled = isReady
-        shutdownButton.isEnabled = isReady && !isShutdownRequested
+        shutdownButton.isEnabled =
+            isReady && !isClosingTerminal && !isShutdownRequested
     }
 
     private func bind(

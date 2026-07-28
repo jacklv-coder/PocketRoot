@@ -337,7 +337,11 @@ public final class PocketRootTerminalViewController {
     }
 
     public func cancelActiveCommand() {}
-    public func closeSession() {}
+    public func closeSession(
+        completion: (@MainActor () -> Void)? = nil
+    ) {
+        completion?()
+    }
 }
 
 #endif
