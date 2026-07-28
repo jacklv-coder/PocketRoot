@@ -35,6 +35,10 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   session-local.
 - SwiftTerm pinned at `dd2fb8ac…` with UIKit/SwiftUI terminal pages, plus a
   NUL-framed guest folder page and bounded text/binary previews up to 512 KiB.
+- Public UIKit/SwiftUI Workspace composition surfaces for an already-booted
+  system. Terminal and Files stay alive across switches, removal closes the
+  PTY, and the Host App UI smoke verifies file creation, preview, and return to
+  the same session.
 - Unified iOS 18 deployment baseline.
 - Experimental `PocketRootIshRuntime` pinned to IshEmbed release revision `38d25d6f8726145e7e988172f12000020d89a638` and the `v0.4.0-abi.6` XCFramework.
 - Experimental `PocketRootIshRuntimeIntegration` composing caller-local RootFS installation and native runtime.

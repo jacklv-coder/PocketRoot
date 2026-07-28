@@ -173,7 +173,10 @@ class ReleaseComplianceTests < Minitest::Test
     assert_includes source, "HostViewController(runtimeOwner: appDelegate)"
     assert_includes source, "private unowned let runtimeOwner: HostAppDelegate"
     assert_includes source, "func sceneDidDisconnect(_ scene: UIScene)"
-    assert_includes source, "hostViewController.closeActiveTerminal()"
+    assert_includes(
+      source,
+      "hostViewController.closeActiveInteractiveSurfaces()"
+    )
     assert_includes source, "override func viewDidAppear(_ animated: Bool)"
     refute_includes source, "override func viewWillAppear(_ animated: Bool)"
     assert_match(
@@ -217,6 +220,7 @@ class ReleaseComplianceTests < Minitest::Test
     assert_includes ui_test, "terminal.typeText("
     assert_includes ui_test, "PocketRootFiles.preview"
     assert_includes ui_test, "testPTYLifecycleAndShutdown"
+    assert_includes ui_test, "testWorkspaceKeepsPTYAliveAcrossFilesTab"
     assert_includes ui_test, "PocketRootHost.shutdown"
     assert_includes runner, "-test-timeouts-enabled YES"
     assert_includes device_runner, "build-for-testing"

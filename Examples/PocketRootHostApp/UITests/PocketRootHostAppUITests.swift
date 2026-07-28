@@ -177,6 +177,71 @@ final class PocketRootHostAppUITests: XCTestCase {
         XCTAssertFalse(shutdownButton.isEnabled)
     }
 
+    func testWorkspaceKeepsPTYAliveAcrossFilesTab() {
+        let app = launchAndBoot()
+        let workspaceButton = app.buttons["PocketRootHost.workspace"]
+        XCTAssertTrue(workspaceButton.waitForExistence(timeout: 10))
+        workspaceButton.tap()
+
+        var terminal = terminalElement(in: app)
+        XCTAssertTrue(terminal.waitForExistence(timeout: 30))
+        terminal.tap()
+        terminal.typeText(
+            "rm -f /root/pocketroot-workspace-smoke.txt; "
+                + "printf 'workspace tab persistence\\n' "
+                + "> /root/pocketroot-workspace-smoke.txt; "
+                + "printf '__WORKSPACE_SESSION_ALIVE__\\n'\n"
+        )
+        wait(
+            for: NSPredicate(
+                format: "value CONTAINS %@",
+                "__WORKSPACE_SESSION_ALIVE__"
+            ),
+            evaluatedWith: terminal,
+            timeout: 30
+        )
+
+        dismissKeyboard(in: app)
+
+        let filesSurface = app.segmentedControls.buttons["Files"]
+        XCTAssertTrue(filesSurface.waitForExistence(timeout: 10))
+        filesSurface.tap()
+
+        let file = app.descendants(matching: .any)[
+            "PocketRootFiles.entry./root/pocketroot-workspace-smoke.txt"
+        ]
+        XCTAssertTrue(file.waitForExistence(timeout: 30))
+        file.tap()
+        let preview = app.staticTexts["PocketRootFiles.preview"]
+        XCTAssertTrue(preview.waitForExistence(timeout: 30))
+        XCTAssertEqual(preview.label, "workspace tab persistence\n")
+
+        let terminalSurface = app.segmentedControls.buttons["Terminal"]
+        XCTAssertTrue(terminalSurface.waitForExistence(timeout: 10))
+        terminalSurface.tap()
+        terminal = terminalElement(in: app)
+        XCTAssertTrue(terminal.waitForExistence(timeout: 30))
+        wait(
+            for: NSPredicate(
+                format: "value CONTAINS %@",
+                "__WORKSPACE_SESSION_ALIVE__"
+            ),
+            evaluatedWith: terminal,
+            timeout: 10
+        )
+
+        tapBackButton(in: app)
+        XCTAssertTrue(workspaceButton.waitForExistence(timeout: 30))
+        wait(
+            for: NSPredicate(
+                format: "enabled == true AND value == %@",
+                "Session Closed"
+            ),
+            evaluatedWith: workspaceButton,
+            timeout: 30
+        )
+    }
+
     private func launchAndBoot() -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments += [
@@ -228,6 +293,26 @@ final class PocketRootHostAppUITests: XCTestCase {
 
     private func allowTerminalToDrain() {
         RunLoop.current.run(until: Date().addingTimeInterval(1))
+    }
+
+    private func dismissKeyboard(in app: XCUIApplication) {
+        let keyboard = app.keyboards.element
+        for _ in 0..<3 where keyboard.exists {
+            let continueButton = app.buttons["Continue"]
+            if continueButton.exists {
+                continueButton.tap()
+            } else {
+                let hideKeyboardButton = app.buttons["hide keyboard"]
+                XCTAssertTrue(
+                    hideKeyboardButton.waitForExistence(timeout: 10)
+                )
+                hideKeyboardButton.tap()
+            }
+            RunLoop.current.run(
+                until: Date().addingTimeInterval(0.5)
+            )
+        }
+        XCTAssertFalse(keyboard.exists)
     }
 
     private func queryTerminalSize(

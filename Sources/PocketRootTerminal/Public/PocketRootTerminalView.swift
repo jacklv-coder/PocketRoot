@@ -15,6 +15,8 @@ public struct PocketRootTerminalView: UIViewControllerRepresentable {
     private let backend: Backend
     private let configuration: PocketRootTerminalConfiguration
     private let theme: PocketRootTerminalTheme
+    private let onSessionEnded:
+        ((PocketRootTerminalSessionEndReason) -> Void)?
 
     fileprivate struct HostSignature: Equatable {
         enum BackendSignature: Equatable {
@@ -36,7 +38,9 @@ public struct PocketRootTerminalView: UIViewControllerRepresentable {
         system: PocketRootSystem,
         sessionConfiguration: PocketRootSessionConfiguration? = nil,
         configuration: PocketRootTerminalConfiguration = .interactive(),
-        theme: PocketRootTerminalTheme = .dark
+        theme: PocketRootTerminalTheme = .dark,
+        onSessionEnded:
+            ((PocketRootTerminalSessionEndReason) -> Void)? = nil
     ) {
         backend = .interactive(
             system,
@@ -46,17 +50,21 @@ public struct PocketRootTerminalView: UIViewControllerRepresentable {
         )
         self.configuration = configuration
         self.theme = theme
+        self.onSessionEnded = onSessionEnded
     }
 
     /// Creates the bounded one-shot command fallback.
     public init(
         commandExecutor: any PocketRootTerminalCommandExecutor,
         configuration: PocketRootTerminalConfiguration = .commandLine(),
-        theme: PocketRootTerminalTheme = .dark
+        theme: PocketRootTerminalTheme = .dark,
+        onSessionEnded:
+            ((PocketRootTerminalSessionEndReason) -> Void)? = nil
     ) {
         backend = .command(commandExecutor)
         self.configuration = configuration
         self.theme = theme
+        self.onSessionEnded = onSessionEnded
     }
 
     public func makeUIViewController(
@@ -64,7 +72,8 @@ public struct PocketRootTerminalView: UIViewControllerRepresentable {
     ) -> UIViewController {
         PocketRootTerminalHostingController(
             signature: hostSignature,
-            terminalController: makeTerminalViewController()
+            terminalController: makeTerminalViewController(),
+            onSessionEnded: onSessionEnded
         )
     }
 
@@ -79,11 +88,15 @@ public struct PocketRootTerminalView: UIViewControllerRepresentable {
         }
         let signature = hostSignature
         if viewController.signature == signature {
-            viewController.apply(theme: theme)
+            viewController.apply(
+                theme: theme,
+                onSessionEnded: onSessionEnded
+            )
         } else {
             viewController.replace(
                 signature: signature,
-                terminalController: makeTerminalViewController()
+                terminalController: makeTerminalViewController(),
+                onSessionEnded: onSessionEnded
             )
         }
     }
@@ -142,11 +155,14 @@ private final class PocketRootTerminalHostingController: UIViewController {
 
     init(
         signature: PocketRootTerminalView.HostSignature,
-        terminalController: PocketRootTerminalViewController
+        terminalController: PocketRootTerminalViewController,
+        onSessionEnded:
+            ((PocketRootTerminalSessionEndReason) -> Void)?
     ) {
         self.signature = signature
         self.terminalController = terminalController
         super.init(nibName: nil, bundle: nil)
+        terminalController.onSessionEnded = onSessionEnded
     }
 
     required init?(coder: NSCoder) {
@@ -158,13 +174,20 @@ private final class PocketRootTerminalHostingController: UIViewController {
         install(terminalController)
     }
 
-    fileprivate func apply(theme: PocketRootTerminalTheme) {
+    fileprivate func apply(
+        theme: PocketRootTerminalTheme,
+        onSessionEnded:
+            ((PocketRootTerminalSessionEndReason) -> Void)?
+    ) {
+        terminalController.onSessionEnded = onSessionEnded
         terminalController.apply(theme: theme)
     }
 
     fileprivate func replace(
         signature: PocketRootTerminalView.HostSignature,
-        terminalController: PocketRootTerminalViewController
+        terminalController: PocketRootTerminalViewController,
+        onSessionEnded:
+            ((PocketRootTerminalSessionEndReason) -> Void)?
     ) {
         let previous = self.terminalController
         previous.closeSession()
@@ -175,6 +198,7 @@ private final class PocketRootTerminalHostingController: UIViewController {
         }
         self.signature = signature
         self.terminalController = terminalController
+        terminalController.onSessionEnded = onSessionEnded
         if isViewLoaded {
             install(terminalController)
         }

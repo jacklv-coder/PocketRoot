@@ -463,7 +463,30 @@ session 权威退出、关闭并注销后，才会关闭 guest PID 1 和 kernel�
 
 ## 9. 接入终端与文件夹页面
 
-准备并 boot 完 `system` 后，UIKit 可以直接打开 SwiftTerm PTY：
+准备并 boot 完 `system` 后，最小接入可以直接打开一个同时包含持续 PTY 和文件浏览的
+Workspace。切换页面不会重建终端 session：
+
+```swift
+import PocketRootTerminal
+
+let workspace = PocketRootWorkspaceViewController(
+    system: system,
+    configuration: .init(
+        terminalConfiguration: .interactive(
+            initialWorkingDirectory: "/root"
+        ),
+        initialFilePath: "/root"
+    )
+)
+navigationController?.pushViewController(workspace, animated: true)
+```
+
+宿主只注入已经 ready 的 system；Workspace 不负责安装 RootFS、boot 或 shutdown。
+页面退出时会关闭其 PTY，宿主主动关闭 runtime 时也可以先调用
+`workspace.closeSession(completion:)`。UIKit 顶部分段控件和底部 Tab 都可以在不销毁
+子页面的情况下切换 Terminal/Files。
+
+如果只需要单独的终端页面，UIKit 也可以直接打开 SwiftTerm PTY：
 
 ```swift
 import PocketRootTerminal
@@ -500,7 +523,7 @@ let filesViewController = PocketRootFileBrowserViewController(
 navigationController?.pushViewController(filesViewController, animated: true)
 ```
 
-SwiftUI 对应写法：
+SwiftUI 的组合入口更简洁：
 
 ```swift
 import PocketRootTerminal
@@ -510,14 +533,10 @@ struct LinuxTerminalScreen: View {
     let system: PocketRootSystem
 
     var body: some View {
-        TabView {
-            PocketRootTerminalView(system: system)
-                .tabItem { Label("Terminal", systemImage: "terminal") }
-            NavigationStack {
-                PocketRootFileBrowserView(system: system, initialPath: "/root")
-            }
-            .tabItem { Label("Files", systemImage: "folder") }
-        }
+        PocketRootWorkspaceView(
+            system: system,
+            configuration: .init(initialFilePath: "/root")
+        )
     }
 }
 ```

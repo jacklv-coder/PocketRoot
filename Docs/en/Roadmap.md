@@ -188,6 +188,10 @@ Completed in this closure:
 8. A repository-owned physical Host App runner that validates physical iOS,
    development signing and entitlements, reuses the same lifecycle UI test,
    and fails closed when the device OS exceeds Xcode's support range.
+9. Public UIKit/SwiftUI Workspace surfaces that keep one PTY alive while
+   switching between Terminal and Files, close it on removal, and are covered
+   by the Host App Simulator file-creation, preview, and session-persistence
+   UI closure.
 
 The remaining iPhone gate is execution under an Xcode whose device-support
 range includes the selected signed device. Jack iPhone currently runs iOS 26.6
