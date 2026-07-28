@@ -176,6 +176,10 @@ public final class PocketRootTerminalViewController: UIViewController {
         terminal.nativeForegroundColor = theme.foregroundColor
         terminal.caretColor = theme.foregroundColor
         terminal.accessibilityLabel = "PocketRoot Terminal"
+        terminal.accessibilityIdentifier = "PocketRootTerminal.pty"
+        if !configuration.cursorBlinkEnabled {
+            terminal.getTerminal().setCursorStyle(.steadyBlock)
+        }
         if !configuration.allowsInput {
             terminal.accessibilityHint = "Read-only terminal"
         }

@@ -13,6 +13,7 @@ final class PocketRootTerminalTests: XCTestCase {
         XCTAssertEqual(configuration.initialWorkingDirectory, "/root")
         XCTAssertEqual(configuration.commandTimeout, .seconds(30))
         XCTAssertEqual(configuration.maximumTranscriptCharacters, 1_048_576)
+        XCTAssertTrue(configuration.cursorBlinkEnabled)
     }
 
     func testCustomConfigurationPreservesValues() {
@@ -23,7 +24,8 @@ final class PocketRootTerminalTests: XCTestCase {
             showsAccessoryView: false,
             initialWorkingDirectory: "/work",
             commandTimeout: .seconds(12),
-            maximumTranscriptCharacters: 4_096
+            maximumTranscriptCharacters: 4_096,
+            cursorBlinkEnabled: false
         )
 
         XCTAssertEqual(configuration.placeholderText, "Waiting for runtime")
@@ -33,6 +35,7 @@ final class PocketRootTerminalTests: XCTestCase {
         XCTAssertEqual(configuration.initialWorkingDirectory, "/work")
         XCTAssertEqual(configuration.commandTimeout, .seconds(12))
         XCTAssertEqual(configuration.maximumTranscriptCharacters, 4_096)
+        XCTAssertFalse(configuration.cursorBlinkEnabled)
     }
 
     func testCommandLineConfigurationEnablesBoundedInput() {
@@ -49,13 +52,15 @@ final class PocketRootTerminalTests: XCTestCase {
 
     func testInteractiveConfigurationSuppliesPTYWorkingDirectoryByDefault() {
         let configuration = PocketRootTerminalConfiguration.interactive(
-            initialWorkingDirectory: "/workspace"
+            initialWorkingDirectory: "/workspace",
+            cursorBlinkEnabled: false
         )
 
         let resolved = configuration
             .resolvingInteractiveSessionConfiguration(nil)
 
         XCTAssertEqual(resolved.workingDirectory, "/workspace")
+        XCTAssertFalse(configuration.cursorBlinkEnabled)
     }
 
     func testExplicitPTYSessionConfigurationTakesPrecedence() {

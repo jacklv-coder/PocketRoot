@@ -43,6 +43,9 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   between SwiftTerm PTY and guest Files using only Swift Package APIs. CI
   builds the host and verifies its Debug RootFS while Release remains
   payload-free.
+- An iOS 18 Simulator Host App UI smoke that creates a file through real
+  SwiftTerm PTY input, navigates through Files, and verifies the preview.
+  Cursor blinking is configurable for deterministic UI automation.
 - Process ownership, serial native execution, and lifecycle reentrancy protection.
 - One-shot cwd, environment, stderr merge, exit, signal, timeout, and stream mapping.
 - A default post-boot identity gate using a fixed command and NUL framing; ready now requires matching guest architecture, Alpine identity, optional version, and working directory.

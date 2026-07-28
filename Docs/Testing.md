@@ -15,6 +15,7 @@ PocketRoot 把验证分成宿主逻辑、真实 RootFS、iOS 构建、完整原�
 | 工程 App/archive 扫描 | `ruby Scripts/scan-release-artifact.rb` | macOS + 外部 `.app`/`.xcarchive` | 确定性文件摘要、Mach-O、签名/entitlement 风险信号与文件级 SPDX | 最终导出制品、依赖许可证完备性或分发授权 |
 | development-signed archive 门禁 | `./Scripts/build-signed-engineering-archive.sh` | macOS + Xcode 账号/开发签名 | 标准 `.xcarchive`、development entitlement、clean 风险信号、复验与 SPDX schema | IPA/export、发行签名、安装、上传或分发授权 |
 | Simulator 原生 smoke | `./Scripts/run-runtime-smoke.sh` | Apple Silicon + iOS 18 Simulator + archive | prepare、boot、命令边界和 soft shutdown 返回 | 其他工具链、真机或发行可用 |
+| Host App UI smoke | `./Scripts/run-host-app-ui-smoke.sh` | Apple Silicon + iOS 18 Simulator + archive | 公开宿主 Boot、SwiftTerm PTY 输入创建文件、Files 导航与预览闭环 | 真机键盘、iPad 或发行可用 |
 | 物理设备原生 smoke | `./Scripts/run-runtime-device-smoke.sh` | 签名 iOS 18+ iPhone/iPad + archive | 同一 17 项检查、可选进程暂停/恢复、UIKit 前后台、强制重启持久化、受限存储故障或有界内存警告恢复，development entitlement 与 shutdown 返回 | 真实 storage/memory pressure、断电、jetsam、iPad 或发行可用 |
 | 文档检查 | `./Scripts/check-docs.sh` | macOS/Linux shell | 中英文成对、中文覆盖和相对链接 | 技术实现正确 |
 
@@ -486,8 +487,9 @@ RootFS。这只是兼容性证据，不授权 RootFS 分发，也不改变正式
     `MAP_JIT` 或无效签名信号，再用同一固定 schema 校验；App 和证据均不上传。
 
 最低工具链 job 另外固定选择 Xcode 16.0 / iOS 18.0 SDK，验证真实 RootFS install、
-安装 iOS 18.0 Simulator runtime、完成 Simulator/device final-link，并执行 17 项原生
-smoke。CI 的 Simulator 结果不证明签名真机或发行可用。
+安装 iOS 18.0 Simulator runtime、完成 Simulator/device final-link，执行 17 项原生
+smoke，并运行 Host App 的 PTY 输入、文件创建、Files 导航与预览 UI 闭环。CI 的
+Simulator 结果不证明签名真机或发行可用。
 
 ## 9. 改动与最小验证矩阵
 
@@ -501,7 +503,7 @@ smoke。CI 的 Simulator 结果不证明签名真机或发行可用。
 | project.yml 或 Demo | regenerate + Demo build |
 | smoke App/runner | shell syntax + Simulator smoke + 可用时 signed device smoke |
 | terminal/file browser | terminal tests + strict iOS build + Demo build |
-| PTY/SwiftTerm | session/runtime unit + final-link + Simulator + signed iPhone/iPad lifecycle |
+| PTY/SwiftTerm | session/runtime unit + final-link + Host App UI smoke + signed iPhone/iPad lifecycle |
 | 文档 | `./Scripts/check-docs.sh` |
 | 发行组成或合规证据 | 生成器测试 + `--check` + 固定 SPDX schema 校验 |
 | 制品扫描器或 CI 扫描门禁 | Ruby fixture 安全/漂移测试 + 真实 unsigned device App 生成/复验 + 固定 SPDX schema 校验 |

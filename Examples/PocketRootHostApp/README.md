@@ -36,6 +36,17 @@ POCKETROOT_DEVELOPMENT_ROOTFS_ARCHIVE=/absolute/path/to/fs.tar.gz \
 注入脚本只接受固定 v0.3.3 的精确字节数和 SHA-256。Release 构建始终跳过 RootFS；
 本示例不是发行授权。
 
+从仓库根目录可运行真实模拟器 UI 闭环：
+
+```bash
+POCKETROOT_ROOTFS_ARCHIVE=/absolute/path/to/fs.tar.gz \
+  ./Scripts/run-host-app-ui-smoke.sh
+```
+
+该测试在临时 iOS 18 Simulator 中 Boot，向 SwiftTerm PTY 输入命令创建文件，再从
+Files 页面进入目录并核对文件预览。可用
+`POCKETROOT_HOST_UI_SMOKE_DEVICE=<Simulator-UDID>` 复用已有模拟器。
+
 ## English
 
 This standalone iOS host proves that a consumer can validate and install a
@@ -45,3 +56,14 @@ SwiftTerm PTY, and browse `/root` using only the public `PocketRoot` and
 `project.yml` with XcodeGen. The commands above configure the reviewed
 development RootFS or provide it to one Debug build. Release builds always
 skip RootFS injection; this example is not distribution authorization.
+
+From the repository root, run:
+
+```bash
+POCKETROOT_ROOTFS_ARCHIVE=/absolute/path/to/fs.tar.gz \
+  ./Scripts/run-host-app-ui-smoke.sh
+```
+
+This runs the real Simulator UI closure: boot, type a file-creation command
+into the SwiftTerm PTY, navigate through Files, and verify the preview. Set
+`POCKETROOT_HOST_UI_SMOKE_DEVICE` to reuse an existing Simulator.

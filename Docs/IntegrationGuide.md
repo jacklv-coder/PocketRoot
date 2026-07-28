@@ -487,6 +487,8 @@ navigationController?.pushViewController(
 省略 `sessionConfiguration` 时，PTY 使用
 `configuration.initialWorkingDirectory`；如需自定义 shell、环境或终端尺寸，可以显式
 传入 `sessionConfiguration`，此时该完整会话配置优先。
+`cursorBlinkEnabled` 默认为 `true`；无动画截图或 UI 自动化可将它设为 `false`，不影响
+PTY 输入、输出和会话生命周期。
 
 文件夹页面使用同一个 system，并通过 NUL-framed 目录协议安全处理空格和换行文件名：
 

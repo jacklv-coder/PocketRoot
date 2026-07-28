@@ -61,9 +61,11 @@ public struct PocketRootFileBrowserView: View {
                 } label: {
                     PocketRootFileEntryRow(entry: entry)
                 }
+                .accessibilityIdentifier("PocketRootFiles.entry.\(entry.path)")
                 .disabled(entry.kind == .other)
             }
         }
+        .accessibilityIdentifier("PocketRootFiles.list")
         .navigationTitle(model.displayName)
         .navigationBarTitleDisplayMode(.inline)
         .refreshable {
@@ -191,6 +193,7 @@ private struct PocketRootFilePreviewView: View {
                         Text(text)
                             .font(.system(.body, design: .monospaced))
                             .textSelection(.enabled)
+                            .accessibilityIdentifier("PocketRootFiles.preview")
                             .frame(maxWidth: .infinity, alignment: .topLeading)
                             .padding()
                     }

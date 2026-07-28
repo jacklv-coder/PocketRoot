@@ -6,6 +6,7 @@ ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 PARSER="$ROOT_DIR/Scripts/select-ios18-simulator-runtime.awk"
 SIMULATOR_RUNNER="$ROOT_DIR/Scripts/run-runtime-smoke.sh"
 DEVICE_RUNNER="$ROOT_DIR/Scripts/run-runtime-device-smoke.sh"
+HOST_UI_RUNNER="$ROOT_DIR/Scripts/run-host-app-ui-smoke.sh"
 PROJECT_SPEC="$ROOT_DIR/project.yml"
 SMOKE_APP="$ROOT_DIR/Spikes/PocketRootIshRuntimeSmoke/PocketRootIshRuntimeSmoke.swift"
 
@@ -38,6 +39,16 @@ assert_runtime "" \
 
 bash -n "$SIMULATOR_RUNNER"
 bash -n "$DEVICE_RUNNER"
+bash -n "$HOST_UI_RUNNER"
+
+if ! grep -Fq -- 'POCKETROOT_HOST_UI_SMOKE_DEVICE' "$HOST_UI_RUNNER" \
+  || ! grep -Fq -- 'PocketRootHostAppUITests' "$HOST_UI_RUNNER" \
+  || ! grep -Fq -- 'POCKETROOT_DEVELOPMENT_ROOTFS_ARCHIVE="$ARCHIVE_PATH"' "$HOST_UI_RUNNER" \
+  || ! grep -Fq -- '-test-timeouts-enabled YES' "$HOST_UI_RUNNER" \
+  || ! grep -Fq -- 'xcrun simctl delete "$DEVICE_UDID"' "$HOST_UI_RUNNER"; then
+    echo "Host App UI smoke runner is missing deterministic inputs or cleanup." >&2
+    exit 1
+fi
 
 if ! grep -Fq -- 'POCKETROOT_ROOTFS_CANDIDATE' "$SIMULATOR_RUNNER" \
   || ! grep -Fq -- 'prepare-rootfs-smoke-manifest.rb' "$SIMULATOR_RUNNER" \
