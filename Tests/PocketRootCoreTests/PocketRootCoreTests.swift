@@ -126,6 +126,23 @@ final class PocketRootCoreTests: XCTestCase {
         XCTAssertEqual(state, .failed("Synthetic unconfirmed guest exit."))
     }
 
+    func testSystemStateReadObservesAsynchronousRuntimeFailure() async throws {
+        let runtime = AsynchronouslyFailingRuntime()
+        let system = PocketRootSystem(runtime: runtime)
+
+        try await system.boot()
+        let readyState = await system.state
+        XCTAssertEqual(readyState, .ready)
+
+        await runtime.failAfterSessionCreation()
+
+        let failedState = await system.state
+        XCTAssertEqual(
+            failedState,
+            .failed("Synthetic asynchronous PTY failure.")
+        )
+    }
+
     func testReentrantExecuteDoesNotPublishTransientBootState() async throws {
         let bootStarted = expectation(description: "boot entered its suspension")
         let bootGate = TestAsyncGate()
@@ -302,6 +319,35 @@ private actor FailingExecuteRuntime: LinuxRuntime {
 }
 
 @available(macOS 13.0, *)
+private actor AsynchronouslyFailingRuntime: LinuxRuntime {
+    private(set) var state: PocketRootRuntimeState = .idle
+
+    func boot(configuration: PocketRootConfiguration) async throws {
+        state = .ready
+    }
+
+    func execute(
+        _ request: PocketRootCommandRequest
+    ) async throws -> PocketRootCommandResult {
+        throw PocketRootError.unsupportedOperation("Not used by this test.")
+    }
+
+    func makeSession(
+        configuration: PocketRootSessionConfiguration
+    ) async throws -> any PocketRootSession {
+        StubSession(configuration: configuration)
+    }
+
+    func shutdown() async throws {
+        state = .terminated
+    }
+
+    func failAfterSessionCreation() {
+        state = .failed("Synthetic asynchronous PTY failure.")
+    }
+}
+
+@available(macOS 13.0, *)
 private actor SuspendingBootRuntime: LinuxRuntime {
     private(set) var state: PocketRootRuntimeState = .idle
 
@@ -428,6 +474,12 @@ private struct StubSession: PocketRootSession {
     }
 
     func write(_ data: Data) async throws {}
+
+    func resize(to size: PocketRootTerminalSize) async throws {}
+
+    func sendSignal(_ signal: Int32) async throws {}
+
+    func closeInput() async throws {}
 
     func terminate() async {}
 }

@@ -66,7 +66,10 @@ Code, `Package.resolved`, committed manifests, and the designated source-of-trut
   distribution.
 - iOS 18.2 arm64 Simulator: repository native smoke passed.
 - Default boot identity gate: ready now requires matching `aarch64`, Alpine identity, optional version, and guest working directory.
-- The signed iPhone one-shot, minimum-Xcode 16, and soft-shutdown baselines passed; iPad, complete physical-device lifecycle, PTY, and public distribution remain open or blocked.
+- Interactive PTY, SwiftTerm, and guest files are implemented and have unit
+  plus Simulator compile coverage. Signed iPhone one-shot, minimum-Xcode 16,
+  and soft-shutdown baselines passed; new PTY device lifecycle, iPad, and
+  public distribution remain open or blocked.
 
 See the [roadmap](Roadmap.md) for the current status.
 

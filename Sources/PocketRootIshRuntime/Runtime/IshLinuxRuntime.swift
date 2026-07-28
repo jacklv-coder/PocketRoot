@@ -11,6 +11,8 @@ package actor IshLinuxRuntime: LinuxRuntime {
     private let rootFSValidator: @Sendable (URL) throws -> Void
     private var ownsProcess = false
     private var commandInFlight = false
+    private var sessionCreationsInFlight = 0
+    private var activeSessions: [UUID: IshPocketRootSession] = [:]
     private var runtimeState: PocketRootRuntimeState = .idle
 
     package init(configuration: PocketRootIshRuntimeConfiguration) {
@@ -225,9 +227,78 @@ package actor IshLinuxRuntime: LinuxRuntime {
     package func makeSession(
         configuration: PocketRootSessionConfiguration
     ) async throws -> any PocketRootSession {
-        throw PocketRootError.unsupportedOperation(
-            "Interactive IshEmbed sessions are planned after the one-shot command gate."
+        guard case .ready = runtimeState else {
+            if case .terminated = runtimeState {
+                throw PocketRootError.restartRequired
+            }
+            throw PocketRootError.runtimeNotBooted
+        }
+        try validateSessionConfiguration(configuration)
+
+        let request = IshDriverSessionRequest(
+            arguments: [configuration.shell] + configuration.shellArguments,
+            workingDirectory: configuration.workingDirectory,
+            environment: Self.sessionEnvironment(
+                overriding: configuration.environment,
+                shell: configuration.shell
+            ),
+            initialTerminalSize: configuration.initialTerminalSize
         )
+
+        // Reserve creation before the first suspension. Shutdown observes this
+        // counter and cannot pass an unregistered native session.
+        sessionCreationsInFlight += 1
+        defer {
+            sessionCreationsInFlight -= 1
+        }
+
+        do {
+            try await processGate.requireOwnership(for: ownerID)
+            let driverSession = try await executor.perform { [driver] in
+                try driver.makeSession(request)
+            }
+            do {
+                try Task.checkCancellation()
+            } catch {
+                _ = try? await executor.performCleanup {
+                    driverSession.close()
+                }
+                throw CancellationError()
+            }
+            let id = UUID()
+            let session = IshPocketRootSession(
+                id: id,
+                configuration: configuration,
+                driverSession: driverSession,
+                executor: executor,
+                onClosed: { [weak self] sessionID in
+                    await self?.sessionDidClose(sessionID)
+                },
+                onFailure: { [weak self] sessionID, error in
+                    await self?.sessionDidFail(sessionID, error: error)
+                }
+            )
+            activeSessions[id] = session
+            await session.start()
+            do {
+                try Task.checkCancellation()
+            } catch {
+                await session.cancelCreation()
+                throw CancellationError()
+            }
+            return session
+        } catch {
+            if error is CancellationError {
+                throw CancellationError()
+            }
+            if let driverError = error as? IshRuntimeDriverError,
+               driverError.requiresRuntimeRestart
+            {
+                await processGate.markTerminated(for: ownerID)
+                runtimeState = .failed(error.localizedDescription)
+            }
+            throw map(error)
+        }
     }
 
     package func shutdown() async throws {
@@ -252,11 +323,28 @@ package actor IshLinuxRuntime: LinuxRuntime {
                 "Wait for the active one-shot command to finish before shutting down."
             )
         }
+        guard sessionCreationsInFlight == 0 else {
+            throw PocketRootError.runtimeFailure(
+                "Wait for interactive terminal session creation to finish before shutting down."
+            )
+        }
         // Close the lifecycle before awaiting the process gate or native queue.
         runtimeState = .shuttingDown
 
         do {
             try await processGate.requireOwnership(for: ownerID)
+            let sessions = Array(activeSessions.values)
+            for session in sessions {
+                await session.terminate()
+            }
+            // A session failure is reported back into this actor before its
+            // terminate call completes. Never enter native shutdown unless
+            // every guest produced an authoritative EXITED event and closed.
+            guard case .shuttingDown = runtimeState,
+                  activeSessions.isEmpty
+            else {
+                throw PocketRootError.restartRequired
+            }
             // v0.4.0-abi.6 returns after supervisor exit, kernel soft-halt, and
             // a bounded pthread join. The process-global runtime remains
             // single-lifecycle, so successful shutdown is terminal.
@@ -322,6 +410,92 @@ package actor IshLinuxRuntime: LinuxRuntime {
                 "meta.db must be a real regular file and data must be a real directory."
             )
         }
+    }
+
+    private func validateSessionConfiguration(
+        _ configuration: PocketRootSessionConfiguration
+    ) throws {
+        let arguments = [configuration.shell] + configuration.shellArguments
+        guard !configuration.shell.isEmpty,
+              arguments.allSatisfy({ !$0.contains("\0") })
+        else {
+            throw PocketRootError.invalidCommandRequest(
+                "shell and shell arguments must not be empty or contain NUL bytes."
+            )
+        }
+        guard !configuration.workingDirectory.isEmpty,
+              !configuration.workingDirectory.contains("\0")
+        else {
+            throw PocketRootError.invalidCommandRequest(
+                "working directory must not be empty or contain a NUL byte."
+            )
+        }
+        guard configuration.environment.allSatisfy({ key, value in
+            !key.isEmpty && !key.contains("=") && !key.contains("\0")
+                && !value.contains("\0")
+        }) else {
+            throw PocketRootError.invalidCommandRequest(
+                "environment keys must be nonempty and contain neither '=' nor NUL; "
+                    + "environment values must not contain NUL."
+            )
+        }
+    }
+
+    private static func sessionEnvironment(
+        overriding customEnvironment: [String: String],
+        shell: String
+    ) -> [String: String] {
+        var environment = [
+            "COLORTERM": "truecolor",
+            "HOME": "/root",
+            "LOGNAME": "root",
+            "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+            "SHELL": shell,
+            "TERM": "xterm-256color",
+            "USER": "root"
+        ]
+        environment.merge(customEnvironment) { _, customValue in
+            customValue
+        }
+        return environment
+    }
+
+    private func sessionDidClose(_ id: UUID) {
+        activeSessions[id] = nil
+    }
+
+    private func sessionDidFail(
+        _ failedSessionID: UUID,
+        error: IshRuntimeDriverError
+    ) async {
+        guard error.requiresRuntimeRestart else {
+            return
+        }
+        guard case .failed = runtimeState else {
+            // Publish the failed state before any suspension so no new command
+            // or session can be admitted while peer cleanup is running.
+            runtimeState = .failed(error.localizedDescription)
+            await processGate.markTerminated(for: ownerID)
+
+            // A fatal transport failure invalidates the process-global native
+            // owner, not only the session that observed it. Terminate every
+            // peer while excluding the reporting session, whose controller is
+            // already in its own close path and is waiting for this callback.
+            let peerSessions = activeSessions.compactMap { id, session in
+                id == failedSessionID ? nil : session
+            }
+            await withTaskGroup(of: Void.self) { group in
+                for session in peerSessions {
+                    group.addTask {
+                        await session.terminate()
+                    }
+                }
+            }
+            return
+        }
+        // A peer can report its own cleanup failure while the first fatal
+        // callback is awaiting termination. The original callback already
+        // owns the all-session cleanup pass, so avoid recursively starting it.
     }
 
     private func map(_ error: Error) -> PocketRootError {

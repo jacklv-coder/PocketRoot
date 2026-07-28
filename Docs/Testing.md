@@ -102,7 +102,9 @@ swift test
 
 - RootFS/runtime configuration 对齐；
 - prepare 不自动 boot；
-- terminal placeholder 配置、theme、transcript 与 clear 行为。
+- PTY create/event/input/resize/signal/EOF/terminate 与 shutdown 前 close 顺序；
+- file-browser NUL framing、路径引用、排序和 preview 上限；
+- fallback command-terminal 的 cwd、marker、非法/并发输入，以及 theme/transcript。
 
 普通 `swift test` 没有 `POCKETROOT_ROOTFS_ARCHIVE` 时，会 skip 精确 release archive 用例；这不是失败。安装复用、替换、回滚和并发路径由合成 fixture 测试覆盖。
 
@@ -494,8 +496,8 @@ smoke。CI 的 Simulator 结果不证明签名真机或发行可用。
 | Package.swift 或 native dependency | `swift test` + Demo build + 两个 arm64 final-link + native smoke |
 | project.yml 或 Demo | regenerate + Demo build |
 | smoke App/runner | shell syntax + Simulator smoke + 可用时 signed device smoke |
-| terminal placeholder | terminal tests + Demo build |
-| PTY/SwiftTerm（未来） | unit + final-link + Simulator + signed iPhone/iPad lifecycle |
+| terminal/file browser | terminal tests + strict iOS build + Demo build |
+| PTY/SwiftTerm | session/runtime unit + final-link + Simulator + signed iPhone/iPad lifecycle |
 | 文档 | `./Scripts/check-docs.sh` |
 | 发行组成或合规证据 | 生成器测试 + `--check` + 固定 SPDX schema 校验 |
 | 制品扫描器或 CI 扫描门禁 | Ruby fixture 安全/漂移测试 + 真实 unsigned device App 生成/复验 + 固定 SPDX schema 校验 |

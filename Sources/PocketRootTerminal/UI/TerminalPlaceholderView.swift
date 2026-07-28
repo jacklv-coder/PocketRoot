@@ -21,6 +21,8 @@ final class TerminalPlaceholderView: UIView {
         textView.textColor = theme.foregroundColor
         textView.font = theme.font
         backgroundColor = theme.backgroundColor
+        let end = NSRange(location: textView.text.utf16.count, length: 0)
+        textView.scrollRangeToVisible(end)
     }
 
     private func setUpView() {

@@ -1,6 +1,7 @@
 #if os(iOS) && arch(arm64) && canImport(IshEmbed)
 import Foundation
 import IshEmbed
+import PocketRootCore
 
 struct IshEmbedDriver: IshRuntimeDriver {
     // The supervisor grants SIGTERM 1.5 seconds before SIGKILL and may spend
@@ -224,6 +225,43 @@ struct IshEmbedDriver: IshRuntimeDriver {
         }
     }
 
+    func makeSession(
+        _ request: IshDriverSessionRequest
+    ) throws -> any IshRuntimeDriverSession {
+        let size = request.initialTerminalSize
+        do {
+            let session = try IshInstance.shared.spawn(
+                .init(
+                    argv: request.arguments,
+                    cwd: request.workingDirectory,
+                    env: request.environment,
+                    allocateTTY: true,
+                    mergeStderrIntoStdout: true,
+                    // Any positive timeout selects IshEmbed's bounded,
+                    // asynchronous lifecycle-control path. Use the largest
+                    // representable admission window so long-lived shells do
+                    // not inherit the legacy synchronous terminate behavior.
+                    timeout: TimeInterval(UInt32.max - 1) / 1_000,
+                    initialWindowSize: (
+                        rows: size.rows,
+                        cols: size.columns,
+                        xpixel: size.pixelWidth,
+                        ypixel: size.pixelHeight
+                    )
+                )
+            )
+            return IshEmbedRuntimeSession(session: session)
+        } catch IshError.raw(let code, let message) {
+            if let terminalFailure = IshRuntimeTransportPolicy.terminalSpawnFailure(
+                code: code,
+                message: message
+            ) {
+                throw terminalFailure
+            }
+            throw IshError.raw(code, message)
+        }
+    }
+
     private func timedOutResult(
         standardOutput: Data = Data(),
         standardError: Data = Data()
@@ -344,6 +382,107 @@ struct IshEmbedDriver: IshRuntimeDriver {
         // kernel, joins its pthread, and returns to Swift. The underlying iSH
         // process-global state still permits only one boot/shutdown lifecycle.
         try IshInstance.shared.shutdown()
+    }
+}
+
+private final class IshEmbedRuntimeSession: IshRuntimeDriverSession, @unchecked Sendable {
+    private let session: IshSession
+
+    init(session: IshSession) {
+        self.session = session
+    }
+
+    func read(timeout: TimeInterval) throws -> IshDriverSessionEvent? {
+        do {
+            switch try session.read(timeout: timeout) {
+            case .data(let data, kind: .stdout, seq: _):
+                return .standardOutput(data)
+            case .data(let data, kind: .stderr, seq: _):
+                return .standardError(data)
+            case .exited(let exitCode, let signal):
+                try IshRuntimeTransportPolicy.validateAuthoritativeExit(
+                    exitCode: exitCode,
+                    signal: signal
+                )
+                return .exited(exitCode: exitCode, signal: signal)
+            }
+        } catch IshError.raw(let code, _) where code == -12 {
+            return nil
+        } catch IshError.raw(let code, let message) where code == -15 {
+            throw IshRuntimeDriverError.supervisorCommandRejected(
+                "IshError \(code): \(message)"
+            )
+        } catch IshError.raw(let code, _) where code == -18 {
+            throw IshRuntimeDriverError.nativeOutputLimitExceeded(
+                maximumBytes: 4 * 1_024 * 1_024,
+                maximumFrames: 4_096
+            )
+        } catch IshError.raw(let code, let message) {
+            if let terminalFailure = IshRuntimeTransportPolicy.terminalSpawnFailure(
+                code: code,
+                message: message
+            ) {
+                throw terminalFailure
+            }
+            throw IshError.raw(code, message)
+        }
+    }
+
+    func write(_ data: Data) throws {
+        try withTransportMapping {
+            try session.write(data)
+        }
+    }
+
+    func resize(to size: PocketRootTerminalSize) throws {
+        try withTransportMapping {
+            try session.resize(
+                rows: size.rows,
+                cols: size.columns,
+                xpixel: size.pixelWidth,
+                ypixel: size.pixelHeight
+            )
+        }
+    }
+
+    func sendSignal(_ signal: Int32) throws {
+        try withTransportMapping {
+            try session.signal(signal)
+        }
+    }
+
+    func closeInput() throws {
+        try withTransportMapping {
+            try session.closeStdin()
+        }
+    }
+
+    func terminate() throws {
+        try withTransportMapping {
+            try session.terminate()
+        }
+    }
+
+    func close() {
+        session.close()
+    }
+
+    private func withTransportMapping<T>(
+        _ operation: () throws -> T
+    ) throws -> T {
+        do {
+            return try operation()
+        } catch IshError.raw(let code, let message) {
+            if let terminalFailure =
+                IshRuntimeTransportPolicy.terminalSessionOperationFailure(
+                    code: code,
+                    message: message
+                )
+            {
+                throw terminalFailure
+            }
+            throw IshError.raw(code, message)
+        }
     }
 }
 #endif

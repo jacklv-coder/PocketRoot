@@ -156,25 +156,36 @@ orchestration into `PocketRootCore` and does not install Codex CLI in the RootFS
 
 ## Milestone 4: Interactive terminal
 
-Status: **Not started**.
+Status: **First PTY/files closure implemented; device and iPad gates remain**.
 
-Implement in order:
+A low-cost precursor now works without the Agent Loop, PTY, or SwiftTerm:
 
-1. Public interactive session entry.
-2. Process-wide live-session registry.
-3. Bounded native PTY reads.
-4. stdin write/close.
-5. output and exit events.
-6. size and resize.
-7. signal, EOF, and cancellation.
-8. idempotent close.
-9. close-all-before-shutdown.
-10. physical-device lifecycle tests.
-11. Pin SwiftTerm.
-12. TerminalBridge/UIKit integration.
-13. Accessibility, keyboard, and iPad layout.
+- `PocketRootCommandTerminalSession` carries the current working directory
+  across bounded one-shot commands.
+- Ordinary `ls`, `cd`, `mkdir`, `touch`, and redirected file creation can be
+  submitted consecutively.
+- UIKit and SwiftUI hosts can inject an already-booted `PocketRootSystem`.
+- Every command retains the existing timeout, cancellation, output-limit, and
+  runtime fail-close behavior.
 
-Do not adopt the high-level upstream terminal wrapper or SwiftTerm before native pointer ownership, read cancellation, and close order are proven.
+The facade starts a new `/bin/sh -lc` for every submission and is not a PTY.
+Shell variables, aliases, and background jobs do not persist, and interactive
+programs such as `vim` and `top` remain unsupported.
+
+Completed in this closure:
+
+1. Public `PocketRootSystem.makeSession` and live-session registry.
+2. 100 ms bounded reads and fixed Swift event backlog.
+3. stdin/output/exit, resize, signal, EOF, idempotent termination, and
+   close-all-before-shutdown.
+4. SwiftTerm pinned at `dd2fb8ac…` with UIKit and SwiftUI bridges.
+5. NUL-framed guest directory browsing and bounded file preview.
+6. Session/runtime/file-browser tests and strict-concurrency iOS compilation.
+
+Remaining gates are interactive lifecycle coverage on an available signed iPhone,
+background/foreground and sustained output, plus iPad keyboard, rotation,
+layout, and VoiceOver verification. The implementation retains direct low-level
+`IshSession` ownership and does not use the upstream high-level terminal wrapper.
 
 Acceptance requires predictable session lifecycle, ownership across app transitions, no use-after-free or unbounded reads, shutdown behind all sessions, usable device keyboards/resize/VoiceOver, and recoverable errors.
 

@@ -30,6 +30,23 @@ final class BlockingIshExecutor: @unchecked Sendable {
         }
     }
 
+    /// Runs lifecycle cleanup on the native serial queue even when the calling
+    /// task has already been canceled.
+    @available(macOS 13.0, *)
+    func performCleanup<T: Sendable>(
+        _ operation: @escaping @Sendable () throws -> T
+    ) async throws -> T {
+        try await withCheckedThrowingContinuation { continuation in
+            queue.async {
+                do {
+                    continuation.resume(returning: try operation())
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+    }
+
     @available(macOS 13.0, *)
     func performCancellable<T: Sendable>(
         _ operation: @escaping @Sendable (IshCommandCancellation) throws -> T

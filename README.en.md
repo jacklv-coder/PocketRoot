@@ -5,7 +5,8 @@
 PocketRoot provides embeddable ARM64 Linux runtime, terminal, and upper-layer
 lightweight-agent foundations for iOS. Its Swift Package modules can securely
 install a verified Alpine fakefs and, through the Experimental iSH/IshEmbed
-adapter, execute bounded one-shot shell commands inside the iOS sandbox.
+adapter, execute bounded commands, expose a persistent SwiftTerm PTY, and
+browse the guest filesystem inside the iOS sandbox.
 
 > [!WARNING]
 > Native iSH integration is **Experimental**. Pinned `v0.4.0-abi.6` has a soft shutdown that returns to Swift, but each host process still permits only one valid boot/shutdown lifecycle. iPad, sustained-load, and distribution gates remain open. This version is not approved for production, TestFlight, or public binary distribution.
@@ -18,9 +19,10 @@ adapter, execute bounded one-shot shell commands inside the iOS sandbox.
 | UIKit Demo shell | Available | System, Terminal, Commands, and Diagnostics entry points |
 | RootFS verification and safe install | Available | Fixed digest, secure extraction, journal-protected same-volume promotion, reuse, recovery |
 | iSH boot and one-shot commands | Experimental | `iOS + arm64`; one-shot cancellation confirms guest exit |
+| Terminal and file browser | Embeddable / Experimental | UIKit/SwiftUI inject a booted system; persistent SwiftTerm PTY plus bounded guest directory and preview pages |
 | Lightweight agent loop | Core, OpenAI transport, and approval-gated command tool available | Agent and Runtime Tools are explicit opt-ins; no Codex CLI install or automatic shell approval |
-| Interactive PTY and SwiftTerm | Not implemented | Session input, resize, signal, and safe close remain planned |
-| Physical devices and distribution | Partially passed / blocked | Multiple iPhone runtime gates and the unsigned engineering App file/Mach-O/entitlement scan passed; real storage pressure, iPad, jetsam/power-cut, final signed/exported-artifact scanning and its complete SBOM, license/NOTICE/corresponding-source, and App Store gates remain |
+| Interactive PTY and SwiftTerm | Implemented; broader device validation pending | Public sessions, bounded reads, input, resize, signal/EOF, registry, and close-before-shutdown are connected |
+| Physical devices and distribution | Partially passed / blocked | One-shot iPhone gates and unsigned engineering App scanning passed; the new PTY still needs device lifecycle coverage, plus storage pressure, iPad, jetsam/power-cut, final artifact, and compliance gates |
 
 The default `PocketRoot` product includes neither the agent loop nor native
 iSH and never bundles or downloads a RootFS. Agent applications explicitly
@@ -38,8 +40,8 @@ flowchart LR
     C --> D["PocketRootIshRuntimeIntegration composes a system"]
     D --> E["PocketRootIshRuntime boots IshEmbed"]
     E --> F["Validate aarch64, Alpine identity, and cwd"]
-    F --> G["/bin/sh -lc executes a bounded command"]
-    G --> H["exit, signal, stdout, stderr, timeout"]
+    F --> G["Bounded command or persistent PTY session"]
+    G --> H["SwiftTerm / guest files / bounded result"]
 ```
 
 Design principles:
@@ -47,7 +49,8 @@ Design principles:
 - The RootFS payload is not committed; the library performs no network download.
 - Source, XCFramework, and RootFS inputs are pinned by immutable revision or digest.
 - Extraction occurs in private same-volume staging. After validation, the installer persists the candidate tree, then performs recoverable promotion through a durable journal, synchronized rename parents, and atomic durable `current.json`. The sequence is still not one atomic operation, but explicit file/directory ordering plus power-loss cut-point recovery can infer commit or rollback; physical-device forced-power-cut evidence remains a separate gate.
-- IshEmbed is process-global: one native owner and one in-flight command.
+- IshEmbed is process-global: one native owner, one in-flight one-shot command,
+  and a registry of all live PTY sessions.
 - Synchronous native work runs on a serial blocking executor away from the main and Swift cooperative executors.
 - Cancelling a one-shot command terminates its native session and returns only
   after guest `EXITED`; success keeps the runtime reusable, while unconfirmed
@@ -90,7 +93,11 @@ open PocketRootDemo.xcodeproj
 
 `bootstrap.sh` resolves packages and generates the project with XcodeGen. The generated project is ignored; `project.yml` is authoritative.
 
-The current Demo is a UI/public-API shell, not an Alpine-running app. System and Commands use the placeholder shared system, Terminal has no PTY, and Diagnostics exposes future seams. Native validation uses dedicated compile and smoke targets.
+The current Demo is a UI/public-API shell, not an Alpine-running app. System and
+Commands use the placeholder shared system, and the Demo does not inject a real
+runtime into Terminal. The library provides ready-to-present SwiftTerm PTY and
+guest Files pages for application-owned prepared systems. Native validation
+uses dedicated compile and smoke targets.
 
 See [Getting Started](Docs/en/GettingStarted.md).
 

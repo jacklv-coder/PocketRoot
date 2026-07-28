@@ -15,6 +15,17 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
 - 建立纯 UIKit Demo，包含 System、Terminal、Commands、Diagnostics。
 - 加入 XcodeGen `project.yml`、工程生成、测试和构建脚本。
 - 加入 placeholder runtime、terminal API 基础与单元测试。
+- 加入不依赖 Agent Loop 或 PTY 的轻量命令终端：在有界一次性命令之间保存
+  working directory，支持连续 `ls`、`cd` 和文件操作，提供可注入
+  `PocketRootSystem` 的 fallback API、命令串行化、取消和 transcript 上限。
+- 加入完整交互入口 `PocketRootSystem.makeSession`：真实 IshEmbed PTY、bounded read、
+  输入、resize、signal/EOF、幂等终止、live-session registry 与
+  close-all-before-shutdown；session 创建与 shutdown 互锁，致命 transport failure
+  会同步失败关闭 runtime，有限 native admission 避免终止控制无界阻塞；Swift 输出
+  缓冲以 16 KiB 分块限制到 4 MiB 并保留终态，native shutdown 只在权威退出后执行；
+  取消创建会关闭未返回的 native session，可恢复的 supervisor/EOF 错误只关闭当前会话。
+- 固定 SwiftTerm `dd2fb8ac…`，提供 UIKit/SwiftUI 终端页面；加入 NUL-framed guest
+  文件夹页面和最多 512 KiB 的有界文本/二进制预览。
 - 统一 package、Demo、tests 和 CI 的 iOS 18.0 deployment baseline。
 - 固定 Experimental `PocketRootIshRuntime` 到 IshEmbed release revision `38d25d6f8726145e7e988172f12000020d89a638` 与 `v0.4.0-abi.6` XCFramework。
 - 加入 Experimental `PocketRootIshRuntimeIntegration`，组合调用方本地 RootFS 与原生 runtime。
@@ -130,6 +141,10 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
 
 ### Changed
 
+- SwiftTerm 加入后，发行组合生成器与 SPDX SBOM 同步覆盖直接 pin、解析得到但未链接的
+  `swift-argument-parser`、SwiftTerm MIT notice 和 Terminal target 图；PTY 现在严格
+  执行 `allowsInput=false`，SwiftUI 在 backend/session/terminal configuration 变化时
+  关闭旧会话并重建控制器，theme-only 更新保持原会话。
 - `README.md` 改为中文主入口，并提供完整产品状态、实现概览、接入示例、RootFS 策略和文档导航。
 - 现有 Architecture、Roadmap、Upstream、ADR、Contributing、Changelog 改为中文主文档与英文镜像。
 - 明确文档事实源：Roadmap 管动态状态，Upstream 管 revision/hash，Testing 管证据，ADR 管冻结决策。

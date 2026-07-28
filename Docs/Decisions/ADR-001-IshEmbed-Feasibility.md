@@ -4,7 +4,7 @@
 
 - 状态：**已接受，仅限实验性集成**
 - 日期：2026-07-21
-- 修订：2026-07-24，固定自托管 `v0.4.0-abi.6` control-path deadline 维护制品
+- 修订：2026-07-28，在固定 `v0.4.0-abi.6` 上完成低层 PTY ownership 与 SwiftTerm 接入
 - 基线：iOS 18.0、arm64
 - 决策范围：runtime 可行性、供应链固定方式和发行门禁
 
@@ -16,7 +16,7 @@ PocketRoot 需要一个可嵌入的 ARM64 Linux runtime：
 
 - 启动 Alpine fakefs；
 - 执行一次性命令；
-- 未来提供交互式 PTY；
+- 提供受实验门禁约束的交互式 PTY；
 - 能被 Swift Package 消费；
 - 能在 iOS 18 沙箱内运行；
 - 供应链和发行风险可审计。
@@ -234,7 +234,9 @@ Experimental 产品加入默认 umbrella。
 - close all sessions before shutdown；
 - native pointer ownership tests。
 
-在这些条件满足前，不采用上游高层 `IshTerminal`，也不连接 SwiftTerm。
+这些低层条件现已通过 session/runtime 单测与 Simulator smoke 闭环，因此 PocketRoot
+直接持有低层 `IshSession` 并连接固定 SwiftTerm；仍不采用上游高层 `IshTerminal`。
+签名目标 iPhone、iPad、后台/前台、持续输出和辅助功能生命周期仍是动态门禁。
 
 ## RootFS 与发行约束
 
@@ -267,7 +269,7 @@ Alpine `apk` 可下载并执行新代码，因此“把固定 RootFS 打入 App�
 - 多一个 binary supply-chain dependency；
 - arm64-only native test 环境；
 - 当前关闭不可逆；
-- PTY 和 Demo 实际集成推迟；
+- PTY/SwiftTerm 已以实验方式接入，真机与 iPad 生命周期验证仍未闭环；
 - 合规工作量显著；
 - production 与 distribution 保持阻塞。
 

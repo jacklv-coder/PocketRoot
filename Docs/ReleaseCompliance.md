@@ -30,7 +30,8 @@ PocketRoot 的实验性 iSH runtime、XCFramework 和候选 RootFS 当前仅用�
 4. iSH 派生源码及 nested submodule；
 5. Alpine fakefs archive；
 6. guest 内安装的 GPL、Apache、MPL、MIT、BSD、Zlib 等组件；
-7. 应用自己的下载、缓存、命令和 UI 逻辑。
+7. iOS terminal UI 中静态链接的 MIT SwiftTerm；
+8. 应用自己的下载、缓存、命令和 UI 逻辑。
 
 合规评审必须覆盖整个组合，不能只检查根目录 `LICENSE`。
 
@@ -110,6 +111,18 @@ tree；除缺少上游 MIT grant/版权声明的 `alpine-keys` 外，其余 7 �
 候选材料工程项均已关闭。修改披露已进入 5 单元交付 inventory，但固定发布归档
 的精确重建、实际 bundle、源码提供方式和法律审查仍未完成，不能视为完整 NOTICE、
 源码提供承诺或已批准的对应源码交付。
+
+### SwiftTerm
+
+终端 UI 固定到 SwiftTerm revision
+`dd2fb8ac5b861e7bf617c872895e338f38165648`（tag `v1.15.0`）。上游为 MIT，
+版权与授权全文保存在
+`ThirdPartyNotices/SwiftTerm-LICENSE.txt`。该副本关闭源码仓库内的 notice 追踪项，
+但最终 App/SDK 仍必须确认把版权与授权文本随分发物交付，并重新生成完整制品 SBOM。
+SwiftTerm manifest 还使 SwiftPM 固定解析 Apache-2.0
+`swift-argument-parser` `1.8.2`（revision
+`6a52f3251125d74daf04fcbd5e6f08a75d074382`）；PocketRoot 选择的 SwiftTerm
+library target 不链接其 `ArgumentParser` product，但源码组合清单和 SBOM 仍显式记录该 pin。
 
 ## 当前仓库保护
 

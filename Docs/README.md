@@ -67,7 +67,9 @@
   license/NOTICE、源码提供/交付与法律批准仍阻塞发行。
 - iOS 18.2 arm64 Simulator：原生 smoke 已通过。
 - 默认 boot identity gate：已验证 `aarch64`、Alpine 身份、可选版本与 guest 工作目录后才 ready。
-- signed iPhone 一次性命令、Xcode 16 最低工具链和 soft shutdown 基线已通过；iPad、完整真机生命周期、PTY 和公开发行仍未完成或被阻塞。
+- 交互 PTY、SwiftTerm 与 guest 文件浏览已实现并通过单元/Simulator 编译；signed iPhone
+  一次性命令、Xcode 16 和 soft shutdown 基线已通过，新增 PTY 的真机生命周期、iPad
+  和公开发行仍未完成或被阻塞。
 
 最新动态状态只在[路线图](Roadmap.md)维护。
 

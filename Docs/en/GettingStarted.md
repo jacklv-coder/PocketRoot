@@ -63,7 +63,9 @@ open PocketRootDemo.xcodeproj
 The UIKit Demo contains System, Terminal, Commands, and Diagnostics tabs. It is currently a UI and public-API shell:
 
 - System and Commands use the placeholder `PocketRootSystem.shared`.
-- Terminal has no PTY.
+- The Demo does not inject a runtime into Terminal; the library exposes
+  ready-to-present SwiftTerm PTY and guest Files pages for an
+  application-owned prepared system.
 - Diagnostics describes future integration points.
 - The Demo target links the safe `PocketRoot` umbrella, not the Experimental integration product.
 

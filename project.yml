@@ -61,6 +61,8 @@ targets:
         product: PocketRootIshRuntimeIntegration
       - package: PocketRoot
         product: PocketRootResources
+      - package: PocketRoot
+        product: PocketRootTerminal
 
     settings:
       base:

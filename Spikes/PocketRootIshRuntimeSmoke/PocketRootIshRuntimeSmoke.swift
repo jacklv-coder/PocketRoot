@@ -3,6 +3,7 @@ import Foundation
 import PocketRootCore
 @_spi(PocketRootRuntimeSmoke) import PocketRootIshRuntimeIntegration
 import PocketRootResources
+import PocketRootTerminal
 import UIKit
 
 private struct PocketRootSmokeCheck: Codable, Sendable {
@@ -161,6 +162,55 @@ private struct PocketRootSmokeFailure: LocalizedError {
 
     var errorDescription: String? {
         message
+    }
+}
+
+private actor PocketRootSmokePTYCollector {
+    private static let maximumBytes = 1 * 1_024 * 1_024
+
+    private var output = Data()
+    private var failure: String?
+
+    func consume(_ event: PocketRootSessionEvent) {
+        switch event {
+        case .started, .exited:
+            break
+        case .standardOutput(let data), .standardError(let data):
+            let availableBytes = max(0, Self.maximumBytes - output.count)
+            output.append(data.prefix(availableBytes))
+            if data.count > availableBytes {
+                failure = "PTY smoke output exceeded one MiB."
+            }
+        case .failed(let message):
+            failure = message
+        }
+    }
+
+    func waitFor(_ marker: String, timeout: Duration = .seconds(5)) async throws {
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: timeout)
+        let markerData = Data(marker.utf8)
+        while clock.now < deadline {
+            if let failure {
+                throw PocketRootSmokeFailure(
+                    message: "PTY session failed: \(failure)"
+                )
+            }
+            if output.range(of: markerData) != nil {
+                return
+            }
+            try await Task.sleep(for: .milliseconds(25))
+        }
+        throw PocketRootSmokeFailure(
+            message: "PTY output did not contain \(marker.debugDescription)."
+        )
+    }
+
+    func transcript() throws -> String {
+        if let failure {
+            throw PocketRootSmokeFailure(message: "PTY session failed: \(failure)")
+        }
+        return String(decoding: output, as: UTF8.self)
     }
 }
 
@@ -558,6 +608,73 @@ private enum PocketRootRuntimeSmokeRunner {
                 PocketRootSmokeCheck(
                     name: "cancellation",
                     detail: "native termination confirmed, runtime ready"
+                )
+            )
+
+            writeProgress("running-interactive-pty-check")
+            let terminal = try await prepared.system.makeSession(
+                configuration: PocketRootSessionConfiguration(
+                    workingDirectory: "/root",
+                    initialTerminalSize: .init(rows: 24, columns: 80)
+                )
+            )
+            let collector = PocketRootSmokePTYCollector()
+            let reader = Task {
+                for await event in terminal.events {
+                    await collector.consume(event)
+                }
+            }
+            try await terminal.resize(to: .init(rows: 33, columns: 101))
+            try await terminal.write(
+                Data(
+                    """
+                    cd /root && mkdir -p pocketroot-pty-smoke && cd pocketroot-pty-smoke && \
+                    printf 'created-by-pty\\n' > created.txt && pwd && stty size && \
+                    printf 'POCKETROOT_PTY_%s\\n' READY\r
+                    """.utf8
+                )
+            )
+            try await collector.waitFor("POCKETROOT_PTY_READY")
+            try await terminal.write(Data("sleep 30\r".utf8))
+            try await Task.sleep(for: .milliseconds(300))
+            try await terminal.sendSignal(2)
+            try await terminal.write(
+                Data("printf 'POCKETROOT_PTY_SIGNAL_%s\\n' OK\r".utf8)
+            )
+            try await collector.waitFor("POCKETROOT_PTY_SIGNAL_OK")
+            await terminal.terminate()
+            await reader.value
+
+            let ptyTranscript = try await collector.transcript()
+            try require(
+                ptyTranscript.contains("/root/pocketroot-pty-smoke"),
+                "PTY did not preserve its working directory."
+            )
+            try require(
+                ptyTranscript.contains("33 101"),
+                "PTY resize did not reach stty."
+            )
+            let browser = PocketRootFileBrowser(executor: prepared.system)
+            let directoryEntries = try await browser.listDirectory(
+                at: "/root/pocketroot-pty-smoke"
+            )
+            try require(
+                directoryEntries.contains {
+                    $0.name == "created.txt" && $0.kind == .file
+                },
+                "Guest file browser did not list the PTY-created file."
+            )
+            let preview = try await browser.previewFile(
+                at: "/root/pocketroot-pty-smoke/created.txt"
+            )
+            try require(
+                preview.text == "created-by-pty\n" && !preview.isTruncated,
+                "Guest file preview did not preserve PTY-created content."
+            )
+            checks.append(
+                PocketRootSmokeCheck(
+                    name: "interactive-pty-files",
+                    detail: "cwd, create, resize 33x101, SIGINT, close, list, preview"
                 )
             )
 

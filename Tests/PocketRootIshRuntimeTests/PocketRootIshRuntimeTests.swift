@@ -1170,6 +1170,23 @@ final class PocketRootIshRuntimeTests: XCTestCase {
         )
     }
 
+    func testBrokenPipeIsSessionLocalAfterSpawn() {
+        XCTAssertNil(
+            IshRuntimeTransportPolicy.terminalSessionOperationFailure(
+                code: -17,
+                message: "stdin is already closed"
+            )
+        )
+        for code in [-9, -11] as [Int32] {
+            XCTAssertNotNil(
+                IshRuntimeTransportPolicy.terminalSessionOperationFailure(
+                    code: code,
+                    message: "synthetic transport loss"
+                )
+            )
+        }
+    }
+
     func testBootRejectsSymlinkedMetadataBeforeConsumingProcessSlot() async throws {
         let rootFSURL = try makeFakeFSFixture()
         let metadataURL = rootFSURL.appendingPathComponent("meta.db")
@@ -1203,6 +1220,372 @@ final class PocketRootIshRuntimeTests: XCTestCase {
         #if os(macOS)
         XCTAssertFalse(PocketRootIshRuntimeFactory.isAvailable)
         #endif
+    }
+
+    func testInteractiveSessionStreamsPTYAndForwardsControls() async throws {
+        let rootFSURL = try makeFakeFSFixture()
+        let driverSession = FakeInteractiveDriverSession()
+        let driver = FakeInteractiveDriver(session: driverSession)
+        let runtime = IshLinuxRuntime(
+            configuration: .init(rootFSURL: rootFSURL),
+            driver: driver,
+            processGate: IshProcessGate()
+        )
+        try await runtime.boot(configuration: PocketRootConfiguration())
+
+        let configuration = PocketRootSessionConfiguration(
+            shell: "/bin/ash",
+            shellArguments: ["-il"],
+            workingDirectory: "/root/project",
+            environment: ["CUSTOM": "value"],
+            initialTerminalSize: .init(rows: 40, columns: 120)
+        )
+        let session = try await runtime.makeSession(configuration: configuration)
+        var events = session.events.makeAsyncIterator()
+        let startedEvent = await events.next()
+        XCTAssertEqual(startedEvent, .started)
+
+        driverSession.enqueue(.standardOutput(Data("ready".utf8)))
+        let outputEvent = await events.next()
+        XCTAssertEqual(
+            outputEvent,
+            .standardOutput(Data("ready".utf8))
+        )
+
+        try await session.write(Data("ls\r".utf8))
+        try await session.resize(to: .init(rows: 30, columns: 90))
+        try await session.sendSignal(2)
+        try await session.closeInput()
+        await session.terminate()
+
+        let exitEvent = await events.next()
+        let finishedEvent = await events.next()
+        XCTAssertEqual(exitEvent, .exited(0))
+        XCTAssertNil(finishedEvent)
+        let request = try XCTUnwrap(driver.sessionRequest)
+        XCTAssertEqual(request.arguments, ["/bin/ash", "-il"])
+        XCTAssertEqual(request.workingDirectory, "/root/project")
+        XCTAssertEqual(request.environment["CUSTOM"], "value")
+        XCTAssertEqual(request.environment["SHELL"], "/bin/ash")
+        XCTAssertEqual(request.environment["TERM"], "xterm-256color")
+        XCTAssertEqual(request.initialTerminalSize, .init(rows: 40, columns: 120))
+
+        let snapshot = driverSession.snapshot
+        XCTAssertEqual(snapshot.writes, [Data("ls\r".utf8)])
+        XCTAssertEqual(snapshot.sizes, [.init(rows: 30, columns: 90)])
+        XCTAssertEqual(snapshot.signals, [2])
+        XCTAssertTrue(snapshot.didCloseInput)
+        XCTAssertTrue(snapshot.didTerminate)
+        XCTAssertTrue(snapshot.didClose)
+    }
+
+    func testShutdownTerminatesInteractiveSessionsBeforeNativeShutdown() async throws {
+        let rootFSURL = try makeFakeFSFixture()
+        let driverSession = FakeInteractiveDriverSession()
+        let driver = FakeInteractiveDriver(session: driverSession)
+        let runtime = IshLinuxRuntime(
+            configuration: .init(rootFSURL: rootFSURL),
+            driver: driver,
+            processGate: IshProcessGate()
+        )
+        try await runtime.boot(configuration: PocketRootConfiguration())
+        _ = try await runtime.makeSession(configuration: .init())
+
+        try await runtime.shutdown()
+
+        XCTAssertTrue(driverSession.snapshot.didTerminate)
+        XCTAssertTrue(driverSession.snapshot.didClose)
+        XCTAssertTrue(driver.didShutdown)
+        XCTAssertTrue(driver.shutdownObservedClosedSession)
+        let state = await runtime.state
+        XCTAssertEqual(state, .terminated)
+    }
+
+    func testShutdownAbortsWhenInteractiveExitIsUnconfirmed() async throws {
+        let rootFSURL = try makeFakeFSFixture()
+        let driverSession = FakeInteractiveDriverSession(
+            terminationError: .sessionTerminationUnconfirmed(
+                "synthetic missing EXITED event"
+            )
+        )
+        let driver = FakeInteractiveDriver(session: driverSession)
+        let runtime = IshLinuxRuntime(
+            configuration: .init(rootFSURL: rootFSURL),
+            driver: driver,
+            processGate: IshProcessGate()
+        )
+        try await runtime.boot(configuration: PocketRootConfiguration())
+        _ = try await runtime.makeSession(configuration: .init())
+
+        do {
+            try await runtime.shutdown()
+            XCTFail("Native shutdown must not run without an authoritative session exit.")
+        } catch let error as PocketRootError {
+            XCTAssertEqual(error, .restartRequired)
+        }
+
+        XCTAssertFalse(driver.didShutdown)
+        XCTAssertTrue(driverSession.snapshot.didClose)
+        guard case .failed = await runtime.state else {
+            return XCTFail("An unconfirmed terminal exit must fail the runtime closed.")
+        }
+    }
+
+    func testInteractiveOutputBufferIsByteBoundedAndPreservesFailure() async throws {
+        let rootFSURL = try makeFakeFSFixture()
+        let driverSession = FakeInteractiveDriverSession()
+        let driver = FakeInteractiveDriver(session: driverSession)
+        let runtime = IshLinuxRuntime(
+            configuration: .init(rootFSURL: rootFSURL),
+            driver: driver,
+            processGate: IshProcessGate()
+        )
+        try await runtime.boot(configuration: PocketRootConfiguration())
+        let session = try await runtime.makeSession(configuration: .init())
+
+        let nativeFrame = Data(repeating: 0x61, count: 1_024 * 1_024)
+        for _ in 0..<5 {
+            driverSession.enqueue(.standardOutput(nativeFrame))
+        }
+
+        for _ in 0..<200 {
+            if case .failed = await runtime.state {
+                break
+            }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        guard case .failed = await runtime.state else {
+            return XCTFail("A full PTY event buffer must fail the session closed.")
+        }
+
+        var iterator = session.events.makeAsyncIterator()
+        var retainedOutputBytes = 0
+        var maximumChunkBytes = 0
+        var sawFailure = false
+        while let event = await iterator.next() {
+            switch event {
+            case .standardOutput(let data), .standardError(let data):
+                retainedOutputBytes += data.count
+                maximumChunkBytes = max(maximumChunkBytes, data.count)
+            case .failed:
+                sawFailure = true
+            case .started, .exited:
+                break
+            }
+        }
+
+        XCTAssertLessThanOrEqual(retainedOutputBytes, 4 * 1_024 * 1_024)
+        XCTAssertLessThanOrEqual(maximumChunkBytes, 16 * 1_024)
+        XCTAssertTrue(sawFailure)
+        XCTAssertTrue(driverSession.snapshot.didClose)
+    }
+
+    func testInteractiveTransportFailureFailsRuntimeClosed() async throws {
+        let rootFSURL = try makeFakeFSFixture()
+        let driverSession = FakeInteractiveDriverSession()
+        let driver = FakeInteractiveDriver(session: driverSession)
+        let runtime = IshLinuxRuntime(
+            configuration: .init(rootFSURL: rootFSURL),
+            driver: driver,
+            processGate: IshProcessGate()
+        )
+        try await runtime.boot(configuration: PocketRootConfiguration())
+        let session = try await runtime.makeSession(configuration: .init())
+        var events = session.events.makeAsyncIterator()
+        let startedEvent = await events.next()
+        XCTAssertEqual(startedEvent, .started)
+
+        driverSession.failRead(
+            IshRuntimeDriverError.nativeOutputLimitExceeded(
+                maximumBytes: 4 * 1_024 * 1_024,
+                maximumFrames: 4_096
+            )
+        )
+
+        guard case .failed = await events.next() else {
+            return XCTFail("Expected the PTY stream to fail.")
+        }
+        guard case .failed = await runtime.state else {
+            return XCTFail("A terminal transport failure must fail the runtime closed.")
+        }
+        XCTAssertTrue(driverSession.snapshot.didClose)
+    }
+
+    func testFatalInteractiveFailureTerminatesEveryPeerSession() async throws {
+        let rootFSURL = try makeFakeFSFixture()
+        let failingSession = FakeInteractiveDriverSession()
+        let peerSession = FakeInteractiveDriverSession()
+        let driver = FakeInteractiveDriver(
+            sessions: [failingSession, peerSession]
+        )
+        let runtime = IshLinuxRuntime(
+            configuration: .init(rootFSURL: rootFSURL),
+            driver: driver,
+            processGate: IshProcessGate()
+        )
+        try await runtime.boot(configuration: PocketRootConfiguration())
+        let failed = try await runtime.makeSession(configuration: .init())
+        _ = try await runtime.makeSession(configuration: .init())
+        var failedEvents = failed.events.makeAsyncIterator()
+        let started = await failedEvents.next()
+        XCTAssertEqual(started, .started)
+
+        failingSession.failRead(
+            IshRuntimeDriverError.nativeOutputLimitExceeded(
+                maximumBytes: 4 * 1_024 * 1_024,
+                maximumFrames: 4_096
+            )
+        )
+
+        guard case .failed = await failedEvents.next() else {
+            return XCTFail("Expected the first PTY stream to fail.")
+        }
+        guard case .failed = await runtime.state else {
+            return XCTFail("A fatal PTY failure must fail the runtime closed.")
+        }
+        XCTAssertTrue(failingSession.snapshot.didClose)
+        XCTAssertTrue(peerSession.snapshot.didTerminate)
+        XCTAssertTrue(peerSession.snapshot.didClose)
+    }
+
+    func testInteractiveSupervisorRejectionClosesOnlyTheSession() async throws {
+        let rootFSURL = try makeFakeFSFixture()
+        let driverSession = FakeInteractiveDriverSession()
+        let driver = FakeInteractiveDriver(session: driverSession)
+        let runtime = IshLinuxRuntime(
+            configuration: .init(rootFSURL: rootFSURL),
+            driver: driver,
+            processGate: IshProcessGate()
+        )
+        try await runtime.boot(configuration: PocketRootConfiguration())
+        let session = try await runtime.makeSession(configuration: .init())
+        var events = session.events.makeAsyncIterator()
+        let started = await events.next()
+        XCTAssertEqual(started, .started)
+
+        driverSession.failRead(
+            IshRuntimeDriverError.supervisorCommandRejected(
+                "synthetic session rejection"
+            )
+        )
+
+        guard case .failed = await events.next() else {
+            return XCTFail("Expected the rejected PTY session to close.")
+        }
+        let state = await runtime.state
+        XCTAssertEqual(state, .ready)
+        XCTAssertTrue(driverSession.snapshot.didClose)
+
+        try await runtime.shutdown()
+        XCTAssertTrue(driver.didShutdown)
+    }
+
+    func testInteractiveSpawnFailureFailsRuntimeClosed() async throws {
+        let rootFSURL = try makeFakeFSFixture()
+        let driver = FakeInteractiveDriver(
+            session: FakeInteractiveDriverSession(),
+            makeSessionError: .sessionTerminationUnconfirmed(
+                "synthetic spawn transport failure"
+            )
+        )
+        let runtime = IshLinuxRuntime(
+            configuration: .init(rootFSURL: rootFSURL),
+            driver: driver,
+            processGate: IshProcessGate()
+        )
+        try await runtime.boot(configuration: PocketRootConfiguration())
+
+        do {
+            _ = try await runtime.makeSession(configuration: .init())
+            XCTFail("Expected the synthetic PTY spawn failure.")
+        } catch let error as PocketRootError {
+            guard case .runtimeFailure = error else {
+                return XCTFail("Unexpected PocketRoot error: \(error)")
+            }
+        }
+        guard case .failed = await runtime.state else {
+            return XCTFail("A PTY spawn transport failure must fail the runtime closed.")
+        }
+    }
+
+    func testShutdownRejectsConcurrentInteractiveSessionCreation() async throws {
+        let rootFSURL = try makeFakeFSFixture()
+        let creationGate = BlockingSessionCreationGate()
+        let driverSession = FakeInteractiveDriverSession()
+        let driver = FakeInteractiveDriver(
+            session: driverSession,
+            creationGate: creationGate
+        )
+        let runtime = IshLinuxRuntime(
+            configuration: .init(rootFSURL: rootFSURL),
+            driver: driver,
+            processGate: IshProcessGate()
+        )
+        try await runtime.boot(configuration: PocketRootConfiguration())
+
+        let creation = Task {
+            try await runtime.makeSession(configuration: .init())
+        }
+        await creationGate.waitUntilStarted()
+        defer {
+            creationGate.release()
+        }
+
+        do {
+            try await runtime.shutdown()
+            XCTFail("Shutdown must not pass an unregistered native session.")
+        } catch let error as PocketRootError {
+            guard case .runtimeFailure(let message) = error else {
+                return XCTFail("Unexpected PocketRoot error: \(error)")
+            }
+            XCTAssertTrue(message.contains("session creation"))
+        }
+        XCTAssertFalse(driver.didShutdown)
+
+        creationGate.release()
+        let session = try await creation.value
+        await session.terminate()
+        try await runtime.shutdown()
+        XCTAssertTrue(driver.didShutdown)
+    }
+
+    func testCanceledInteractiveCreationClosesUnreturnedNativeSession() async throws {
+        let rootFSURL = try makeFakeFSFixture()
+        let creationGate = BlockingSessionCreationGate()
+        let driverSession = FakeInteractiveDriverSession()
+        let driver = FakeInteractiveDriver(
+            session: driverSession,
+            creationGate: creationGate
+        )
+        let runtime = IshLinuxRuntime(
+            configuration: .init(rootFSURL: rootFSURL),
+            driver: driver,
+            executor: BlockingIshExecutor(
+                label: "PocketRootIshRuntimeTests.cancelSessionCreation"
+            ),
+            processGate: IshProcessGate()
+        )
+        try await runtime.boot(configuration: PocketRootConfiguration())
+
+        let creation = Task {
+            try await runtime.makeSession(configuration: .init())
+        }
+        await creationGate.waitUntilStarted()
+        creation.cancel()
+        creationGate.release()
+
+        do {
+            _ = try await creation.value
+            XCTFail("Canceled PTY creation must not return a live session.")
+        } catch is CancellationError {
+            // The native spawn completed, then was closed before cancellation
+            // propagated to the caller.
+        }
+
+        XCTAssertTrue(driverSession.snapshot.didClose)
+        try await runtime.shutdown()
+        XCTAssertTrue(driver.didShutdown)
+        XCTAssertTrue(driver.shutdownObservedClosedSession)
     }
 
     private func makeFakeFSFixture() throws -> URL {
@@ -1430,5 +1813,230 @@ private enum FakeIshRuntimeError: LocalizedError {
         case .rootFSReadFailed:
             return "Synthetic RootFS attribute read failure."
         }
+    }
+}
+
+private final class FakeInteractiveDriver: IshRuntimeDriver, @unchecked Sendable {
+    private let lock = NSLock()
+    private let sessions: [FakeInteractiveDriverSession]
+    private let creationGate: BlockingSessionCreationGate?
+    private let makeSessionError: IshRuntimeDriverError?
+    private var nextSessionIndex = 0
+    private(set) var sessionRequest: IshDriverSessionRequest?
+    private(set) var didShutdown = false
+    private(set) var shutdownObservedClosedSession = false
+
+    init(
+        session: FakeInteractiveDriverSession,
+        creationGate: BlockingSessionCreationGate? = nil,
+        makeSessionError: IshRuntimeDriverError? = nil
+    ) {
+        sessions = [session]
+        self.creationGate = creationGate
+        self.makeSessionError = makeSessionError
+    }
+
+    init(
+        sessions: [FakeInteractiveDriverSession],
+        creationGate: BlockingSessionCreationGate? = nil,
+        makeSessionError: IshRuntimeDriverError? = nil
+    ) {
+        precondition(!sessions.isEmpty)
+        self.sessions = sessions
+        self.creationGate = creationGate
+        self.makeSessionError = makeSessionError
+    }
+
+    func boot(_ options: IshDriverBootOptions) throws {}
+
+    func execute(_ request: IshDriverCommandRequest) throws -> IshDriverCommandResult {
+        IshDriverCommandResult(
+            exitCode: 0,
+            signal: 0,
+            standardOutput: Data(
+                (["aarch64", "ID=alpine\nVERSION_ID=3.19.1", "/", "/"]
+                    .joined(separator: "\0") + "\0").utf8
+            ),
+            standardError: Data(),
+            timedOut: false
+        )
+    }
+
+    func makeSession(
+        _ request: IshDriverSessionRequest
+    ) throws -> any IshRuntimeDriverSession {
+        creationGate?.block()
+        if let makeSessionError {
+            throw makeSessionError
+        }
+        lock.lock()
+        sessionRequest = request
+        let session = sessions[min(nextSessionIndex, sessions.count - 1)]
+        nextSessionIndex += 1
+        lock.unlock()
+        return session
+    }
+
+    func shutdown() throws {
+        lock.lock()
+        didShutdown = true
+        shutdownObservedClosedSession = sessions.allSatisfy {
+            $0.snapshot.didClose
+        }
+        lock.unlock()
+    }
+}
+
+private final class FakeInteractiveDriverSession:
+    IshRuntimeDriverSession,
+    @unchecked Sendable
+{
+    struct Snapshot {
+        let writes: [Data]
+        let sizes: [PocketRootTerminalSize]
+        let signals: [Int32]
+        let didCloseInput: Bool
+        let didTerminate: Bool
+        let didClose: Bool
+    }
+
+    private let condition = NSCondition()
+    private let terminationError: IshRuntimeDriverError?
+    private var events: [IshDriverSessionEvent] = []
+    private var readError: Error?
+    private var writes: [Data] = []
+    private var sizes: [PocketRootTerminalSize] = []
+    private var signals: [Int32] = []
+    private var didCloseInput = false
+    private var didTerminate = false
+    private var didClose = false
+
+    init(terminationError: IshRuntimeDriverError? = nil) {
+        self.terminationError = terminationError
+    }
+
+    var snapshot: Snapshot {
+        condition.lock()
+        defer { condition.unlock() }
+        return Snapshot(
+            writes: writes,
+            sizes: sizes,
+            signals: signals,
+            didCloseInput: didCloseInput,
+            didTerminate: didTerminate,
+            didClose: didClose
+        )
+    }
+
+    func enqueue(_ event: IshDriverSessionEvent) {
+        condition.lock()
+        events.append(event)
+        condition.signal()
+        condition.unlock()
+    }
+
+    func failRead(_ error: Error) {
+        condition.lock()
+        readError = error
+        condition.signal()
+        condition.unlock()
+    }
+
+    func read(timeout: TimeInterval) throws -> IshDriverSessionEvent? {
+        condition.lock()
+        defer { condition.unlock() }
+        let deadline = Date(timeIntervalSinceNow: timeout)
+        while events.isEmpty, readError == nil, !didClose, Date() < deadline {
+            condition.wait(until: deadline)
+        }
+        if let readError {
+            self.readError = nil
+            throw readError
+        }
+        return events.isEmpty ? nil : events.removeFirst()
+    }
+
+    func write(_ data: Data) throws {
+        condition.lock()
+        writes.append(data)
+        condition.unlock()
+    }
+
+    func resize(to size: PocketRootTerminalSize) throws {
+        condition.lock()
+        sizes.append(size)
+        condition.unlock()
+    }
+
+    func sendSignal(_ signal: Int32) throws {
+        condition.lock()
+        signals.append(signal)
+        condition.unlock()
+    }
+
+    func closeInput() throws {
+        condition.lock()
+        didCloseInput = true
+        condition.unlock()
+    }
+
+    func terminate() throws {
+        condition.lock()
+        if let terminationError {
+            condition.unlock()
+            throw terminationError
+        }
+        guard !didTerminate else {
+            condition.unlock()
+            return
+        }
+        didTerminate = true
+        events.append(.exited(exitCode: 0, signal: 15))
+        condition.signal()
+        condition.unlock()
+    }
+
+    func close() {
+        condition.lock()
+        didClose = true
+        condition.broadcast()
+        condition.unlock()
+    }
+}
+
+private final class BlockingSessionCreationGate: @unchecked Sendable {
+    private let condition = NSCondition()
+    private var didStart = false
+    private var isReleased = false
+
+    func block() {
+        condition.lock()
+        didStart = true
+        condition.broadcast()
+        while !isReleased {
+            condition.wait()
+        }
+        condition.unlock()
+    }
+
+    func waitUntilStarted() async {
+        await Task.detached { [self] in
+            waitUntilStartedBlocking()
+        }.value
+    }
+
+    private func waitUntilStartedBlocking() {
+        condition.lock()
+        while !didStart {
+            condition.wait()
+        }
+        condition.unlock()
+    }
+
+    func release() {
+        condition.lock()
+        isReleased = true
+        condition.broadcast()
+        condition.unlock()
     }
 }

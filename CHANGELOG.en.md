@@ -15,6 +15,22 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 - Programmatic UIKit Demo with System, Terminal, Commands, and Diagnostics.
 - XcodeGen project source, generation, test, and build scripts.
 - Placeholder runtime, terminal API foundations, and unit tests.
+- A lightweight command terminal that does not depend on the Agent Loop or a
+  PTY. It carries the working directory across bounded one-shot commands for
+  consecutive `ls`, `cd`, and file operations, exposes UIKit and SwiftUI UI
+  backed by an injected `PocketRootSystem`, serializes and cancels commands,
+  and bounds transcript size.
+- Full `PocketRootSystem.makeSession` support with a real IshEmbed PTY,
+  bounded reads, input, resize, signal/EOF, idempotent termination,
+  live-session registry, and close-all-before-shutdown. Session creation is
+  interlocked with shutdown, fatal transport failures fail the runtime closed,
+  finite native admission prevents unbounded termination controls, Swift output
+  is chunked into a 4 MiB cap while preserving terminal events, and native
+  shutdown requires authoritative session exits. Canceled creation closes any
+  unreturned native session, while recoverable supervisor/EOF errors remain
+  session-local.
+- SwiftTerm pinned at `dd2fb8ac…` with UIKit/SwiftUI terminal pages, plus a
+  NUL-framed guest folder page and bounded text/binary previews up to 512 KiB.
 - Unified iOS 18 deployment baseline.
 - Experimental `PocketRootIshRuntime` pinned to IshEmbed release revision `38d25d6f8726145e7e988172f12000020d89a638` and the `v0.4.0-abi.6` XCFramework.
 - Experimental `PocketRootIshRuntimeIntegration` composing caller-local RootFS installation and native runtime.
@@ -153,6 +169,12 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 
 ### Changed
 
+- Release-composition generation and the SPDX SBOM now cover the direct
+  SwiftTerm pin, its resolved-but-unlinked `swift-argument-parser` dependency,
+  the MIT notice, and the Terminal target graph. PTY strictly honors
+  `allowsInput=false`; SwiftUI closes and recreates the hosted session when its
+  backend/session/terminal configuration changes, while theme-only updates stay
+  in place.
 - `README.md` is the Chinese primary entry with status, implementation, usage, RootFS policy, and navigation; `README.en.md` is its English mirror.
 - Architecture, Roadmap, Upstream, ADR, Contributing, and Changelog now have Chinese primary and English mirror documents.
 - Roadmap owns dynamic status, Upstream owns pins/hashes, Testing owns evidence, and ADRs own frozen decisions.

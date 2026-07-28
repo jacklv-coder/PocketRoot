@@ -93,7 +93,9 @@ PocketRootIshRuntimeFactory.isAvailable
 
 ## 默认 Demo 报 “Runtime is not installed yet”
 
-这是当前预期行为。Demo 只依赖安全伞形 `PocketRoot`，System 和 Commands 使用 placeholder `PocketRootSystem.shared`，Terminal 没有 PTY。
+这是当前预期行为。Demo 只依赖安全伞形 `PocketRoot`，System 和 Commands 使用
+placeholder `PocketRootSystem.shared`，也没有向 Terminal 注入真实 runtime。库提供的
+SwiftTerm PTY 与 Files 页面必须接收已经 prepare、boot 的 application-owned system。
 
 不要通过向默认 bundle 随意加入 RootFS 解决。真实应用接入流程见[应用接入指南](IntegrationGuide.md)。
 
@@ -227,7 +229,8 @@ adapter 会终止当前 session 并抛 typed error。解决方向：
 
 当前 runtime 每次只允许一个一次性命令。并发调用中只有一个可进入 native session。
 
-在应用层使用单个命令队列，或在 UI 中禁用重复提交。交互式多 session 尚未实现。
+在应用层使用单个一次性命令队列，或在 UI 中禁用重复提交。交互 PTY session 可以并存，
+并由 runtime registry 在 shutdown 前统一关闭；这不放宽 one-shot 限制。
 
 ## shutdown 提示 active command
 
