@@ -145,30 +145,20 @@
     "targets": [
       {
         "name": "PocketRootCore",
-        "dependencies": [
-
-        ],
-        "resources": [
-
-        ]
+        "dependencies": [],
+        "resources": []
       },
       {
         "name": "PocketRootTerminal",
         "dependencies": [
           "target:PocketRootCore"
         ],
-        "resources": [
-
-        ]
+        "resources": []
       },
       {
         "name": "CPocketRootArchiveSupport",
-        "dependencies": [
-
-        ],
-        "resources": [
-
-        ]
+        "dependencies": [],
+        "resources": []
       },
       {
         "name": "PocketRootResources",
@@ -185,9 +175,7 @@
           "target:PocketRootCore",
           "product:IshEmbed@ish-arm64-pkg[iOS]"
         ],
-        "resources": [
-
-        ]
+        "resources": []
       },
       {
         "name": "PocketRootIshRuntimeIntegration",
@@ -196,18 +184,12 @@
           "target:PocketRootResources",
           "target:PocketRootIshRuntime"
         ],
-        "resources": [
-
-        ]
+        "resources": []
       },
       {
         "name": "PocketRootAgent",
-        "dependencies": [
-
-        ],
-        "resources": [
-
-        ]
+        "dependencies": [],
+        "resources": []
       },
       {
         "name": "PocketRootAgentRuntimeTools",
@@ -215,9 +197,7 @@
           "target:PocketRootAgent",
           "target:PocketRootCore"
         ],
-        "resources": [
-
-        ]
+        "resources": []
       },
       {
         "name": "PocketRoot",
@@ -226,9 +206,7 @@
           "target:PocketRootTerminal",
           "target:PocketRootResources"
         ],
-        "resources": [
-
-        ]
+        "resources": []
       }
     ],
     "testTargets": [
@@ -237,27 +215,21 @@
         "dependencies": [
           "target:PocketRootCore"
         ],
-        "resources": [
-
-        ]
+        "resources": []
       },
       {
         "name": "PocketRootTerminalTests",
         "dependencies": [
           "target:PocketRootTerminal"
         ],
-        "resources": [
-
-        ]
+        "resources": []
       },
       {
         "name": "PocketRootResourcesTests",
         "dependencies": [
           "target:PocketRootResources"
         ],
-        "resources": [
-
-        ]
+        "resources": []
       },
       {
         "name": "PocketRootIshRuntimeTests",
@@ -265,9 +237,7 @@
           "target:PocketRootCore",
           "target:PocketRootIshRuntime"
         ],
-        "resources": [
-
-        ]
+        "resources": []
       },
       {
         "name": "PocketRootIshRuntimeIntegrationTests",
@@ -276,18 +246,14 @@
           "target:PocketRootResources",
           "target:PocketRootIshRuntimeIntegration"
         ],
-        "resources": [
-
-        ]
+        "resources": []
       },
       {
         "name": "PocketRootAgentTests",
         "dependencies": [
           "target:PocketRootAgent"
         ],
-        "resources": [
-
-        ]
+        "resources": []
       },
       {
         "name": "PocketRootAgentRuntimeToolsTests",
@@ -296,9 +262,7 @@
           "target:PocketRootAgentRuntimeTools",
           "target:PocketRootCore"
         ],
-        "resources": [
-
-        ]
+        "resources": []
       }
     ]
   },
@@ -330,9 +294,7 @@
             "path": "Spikes/PocketRootIshRuntimeCompileSpike"
           }
         ],
-        "resources": [
-
-        ],
+        "resources": [],
         "dependencies": [
           {
             "package": "PocketRoot",
@@ -363,9 +325,7 @@
             "path": "Spikes/PocketRootIshRuntimeSmoke"
           }
         ],
-        "resources": [
-
-        ],
+        "resources": [],
         "dependencies": [
           {
             "package": "PocketRoot",
@@ -420,17 +380,14 @@
         "type": "bundle.unit-test",
         "platform": "iOS",
         "deploymentTarget": "18.0",
-        "settings": {
-        },
+        "settings": {},
         "sources": [
           {
             "path": "Tests/PocketRootDemoTests",
             "optional": true
           }
         ],
-        "resources": [
-
-        ],
+        "resources": [],
         "dependencies": [
           {
             "target": "PocketRootDemo"

@@ -31,6 +31,54 @@ class ReleaseComplianceTests < Minitest::Test
     assert PocketRootReleaseCompliance.check
   end
 
+  def test_json_formatting_is_independent_of_json_gem_pretty_defaults
+    document = {
+      "emptyArray" => [],
+      "emptyObject" => {},
+      "nested" => [
+        {"value" => "line\n\t\"\\\u0001雪"}
+      ],
+      "flag" => false,
+      "count" => 7,
+      "fraction" => 1.25,
+      "exponent" => 1.0e+20,
+      "negativeZero" => -0.0,
+      "nothing" => nil
+    }
+    expected = <<~'JSON'
+      {
+        "emptyArray": [],
+        "emptyObject": {},
+        "nested": [
+          {
+            "value": "line\n\t\"\\\u0001雪"
+          }
+        ],
+        "flag": false,
+        "count": 7,
+        "fraction": 1.25,
+        "exponent": 1.0e+20,
+        "negativeZero": -0.0,
+        "nothing": null
+      }
+    JSON
+
+    rendered = PocketRootReleaseCompliance.pretty_json(document)
+
+    assert_equal expected, rendered
+    assert_equal document, JSON.parse(rendered)
+  end
+
+  def test_json_formatting_rejects_non_finite_numbers
+    [Float::NAN, Float::INFINITY, -Float::INFINITY].each do |number|
+      error = assert_raises(PocketRootReleaseCompliance::ComplianceError) do
+        PocketRootReleaseCompliance.pretty_json({"number" => number})
+      end
+
+      assert_includes error.message, "must be finite"
+    end
+  end
+
   def test_full_graph_has_exact_packages_relationships_and_closed_gates
     outputs = PocketRootReleaseCompliance.build_outputs
     composition = JSON.parse(outputs.fetch("COMPOSITION.json"))
