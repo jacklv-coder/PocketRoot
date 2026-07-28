@@ -564,6 +564,9 @@ class ReleaseArtifactScannerTests < Minitest::Test
     hidden.mkpath
     hidden.join("Hidden").binwrite(mach_o_fixture)
     hidden.chmod(0o000)
+    if hidden.readable? && hidden.executable?
+      skip "current privileges bypass directory permission bits"
+    end
 
     error = assert_raises(Scanner::ScanError) do
       Scanner.build_inventory("app", app, runner: @runner)
