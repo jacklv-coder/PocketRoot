@@ -32,6 +32,10 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
 - 统一 package、Demo、tests 和 CI 的 iOS 18.0 deployment baseline。
 - 固定 Experimental `PocketRootIshRuntime` 到 IshEmbed release revision `38d25d6f8726145e7e988172f12000020d89a638` 与 `v0.4.0-abi.6` XCFramework。
 - 加入 Experimental `PocketRootIshRuntimeIntegration`，组合调用方本地 RootFS 与原生 runtime。
+- 加入公开 `PocketRootIshRuntimeController` 和独立
+  `Examples/PocketRootHostApp`：业务 App 只通过 Swift Package API 即可共享 boot 后
+  system，打开 SwiftTerm PTY 与 guest 文件页面；CI 编译宿主并核对 Debug RootFS，
+  Release 继续保持不注入。
 - 加入 process-wide ownership、serial native execution、lifecycle reentrancy protection。
 - 加入一次性命令的 cwd、environment、stderr merge、exit、signal、timeout 和 stream mapping。
 - 加入默认 post-boot identity gate；使用固定命令和 NUL framing，在 `ready` 前验证 guest 架构、Alpine 身份、可选版本与工作目录。

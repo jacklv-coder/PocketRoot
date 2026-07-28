@@ -114,12 +114,7 @@ App Bundle，首次点击 Boot 时再由 installer 校验并安装。未配置�
 ```swift
 import Foundation
 import PocketRoot
-import PocketRootIshRuntime
 import PocketRootIshRuntimeIntegration
-
-guard PocketRootIshRuntimeFactory.isAvailable else {
-    fatalError("The native runtime requires an arm64 iOS build.")
-}
 
 let applicationSupportURL = try FileManager.default.url(
     for: .applicationSupportDirectory,
@@ -128,14 +123,16 @@ let applicationSupportURL = try FileManager.default.url(
     create: true
 )
 
-let prepared = try await PocketRootIshSystemFactory.prepareSystem(
-    archiveURL: localReviewedArchiveURL,
-    applicationSupportURL: applicationSupportURL
+let runtimeController = PocketRootIshRuntimeController(
+    configuration: PocketRootIshRuntimeControllerConfiguration(
+        archiveURL: localReviewedArchiveURL,
+        applicationSupportURL: applicationSupportURL
+    )
 )
 
-try await prepared.system.boot()
+_ = try await runtimeController.boot()
 
-let result = try await prepared.system.execute(
+let result = try await runtimeController.execute(
     PocketRootCommandRequest(
         command: "/bin/uname -m",
         workingDirectory: "/",
@@ -151,7 +148,7 @@ print("stderr:", result.stderr)
 这个流程具有以下语义：
 
 1. `archiveURL` 必须指向调用方已经获得并完成授权审查的本地普通文件。
-2. `prepareSystem` 只校验、安装并组合系统；它不会下载 RootFS，也不会启动运行时。
+2. `runtimeController.boot()` 依次完成校验、安装、组合与显式 boot；它不会下载 RootFS。
 3. 安装器在 `applicationSupportURL/rootfs/<version>` 下直接保存 `meta.db`、`data/` 和 `.pocketroot-rootfs.json`，不会再保留一层 `fs/`。版本目录和安装记录有效时即可复用；`current.json` 缺失或不匹配会在复用时修复。
 4. `boot()` 必须显式调用；它会在同一原生串行队列执行默认健康门禁，内置 v0.3.3 RootFS 清单只有观察到 `aarch64`、Alpine `3.19.1` 和配置的 guest 工作目录后才返回 `ready`。
 5. 命令通过 `/bin/sh -lc` 执行，所以 `command` 是 shell 字符串，而不是无 shell 解析的 argv API。
@@ -159,7 +156,9 @@ print("stderr:", result.stderr)
 7. 真实 `shutdown()` 会 soft-halt 并 join 原生 kernel 后返回；成功后状态为 `.terminated`，同一宿主进程不能再次 boot。
 8. 公共调用结束后只发布稳定 state；失败关闭会公开 `.failed`，重入调用不会泄漏 runtime 内部过渡态，旧的异步快照也不能覆盖较新的失败状态。
 
-完整的依赖选择、错误处理和生命周期约束见[应用接入指南](Docs/IntegrationGuide.md)。
+可直接编译的独立宿主见
+[`Examples/PocketRootHostApp`](Examples/PocketRootHostApp)；完整依赖选择、错误处理和
+生命周期约束见[应用接入指南](Docs/IntegrationGuide.md)。
 
 ## RootFS 策略
 

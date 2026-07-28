@@ -142,7 +142,7 @@ jobs:
             "$spdx_schema" \
             Compliance/Release/experimental-v0.1.0/SBOM.spdx.json
           echo "POCKETROOT_SPDX_SCHEMA=$spdx_schema" >> "$GITHUB_ENV"
-          echo "POCKETROOT_DEMO_ROOTFS_ARCHIVE=$archive" >> "$GITHUB_ENV"
+          echo "POCKETROOT_DEVELOPMENT_ROOTFS_ARCHIVE=$archive" >> "$GITHUB_ENV"
 
       - name: Install XcodeGen
         env:
@@ -162,6 +162,10 @@ jobs:
         run: |
           xcodegen version
           xcodegen generate --spec project.yml
+          (
+            cd Examples/PocketRootHostApp
+            xcodegen generate --spec project.yml
+          )
 
       - name: Build for generic iOS Simulator
         run: |
@@ -172,11 +176,27 @@ jobs:
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath "$RUNNER_TEMP/PocketRootDerivedData" \
             CODE_SIGNING_ALLOWED=NO \
-            POCKETROOT_DEMO_ROOTFS_ARCHIVE="$POCKETROOT_DEMO_ROOTFS_ARCHIVE" \
+            POCKETROOT_DEVELOPMENT_ROOTFS_ARCHIVE="$POCKETROOT_DEVELOPMENT_ROOTFS_ARCHIVE" \
             build
           demo_rootfs="$RUNNER_TEMP/PocketRootDerivedData/Build/Products/Debug-iphonesimulator/PocketRootDemo.app/pocketroot-fs-v0.3.3.tar.gz"
           test "$(stat -f '%z' "$demo_rootfs")" = "6581376"
           echo "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4  $demo_rootfs" \
+            | shasum -a 256 --check
+
+      - name: Build standalone Host App integration example
+        run: |
+          xcodebuild \
+            -project Examples/PocketRootHostApp/PocketRootHostApp.xcodeproj \
+            -scheme PocketRootHostApp \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/PocketRootHostAppDerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            POCKETROOT_DEVELOPMENT_ROOTFS_ARCHIVE="$POCKETROOT_DEVELOPMENT_ROOTFS_ARCHIVE" \
+            build
+          host_rootfs="$RUNNER_TEMP/PocketRootHostAppDerivedData/Build/Products/Debug-iphonesimulator/PocketRootHostApp.app/pocketroot-fs-v0.3.3.tar.gz"
+          test "$(stat -f '%z' "$host_rootfs")" = "6581376"
+          echo "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4  $host_rootfs" \
             | shasum -a 256 --check
 
       - name: Compile Demo unit tests
@@ -188,7 +208,7 @@ jobs:
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath "$RUNNER_TEMP/PocketRootDerivedData" \
             CODE_SIGNING_ALLOWED=NO \
-            POCKETROOT_DEMO_ROOTFS_ARCHIVE="$POCKETROOT_DEMO_ROOTFS_ARCHIVE" \
+            POCKETROOT_DEVELOPMENT_ROOTFS_ARCHIVE="$POCKETROOT_DEVELOPMENT_ROOTFS_ARCHIVE" \
             build-for-testing
 
       - name: Final-link iSH runtime app for arm64 iOS Simulator

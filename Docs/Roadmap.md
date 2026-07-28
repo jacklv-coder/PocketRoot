@@ -100,7 +100,7 @@
 | RootFS 安全安装与恢复 | 已通过 | 保持真实资产、snapshot、容量预检、rollback 和 recovery coverage |
 | RootFS/runtime composition | 已通过 | 保持 caller-controlled、no-download、no-auto-boot |
 | 默认 post-boot identity gate | 已通过 | `aarch64`、Alpine identity、可选 version 与 command context 通过后才 ready；保持失败占用槽位回归 |
-| Demo 真实 runtime 注入 | 未开始 | 一个 prepared system 注入 System/Commands/Diagnostics，不打包未审查 RootFS |
+| Demo 与外部宿主 runtime 接入 | 已通过 | Demo 和独立 Host App 共用公开 controller；Debug 只注入精确校验的仓库外 RootFS，Release 保持不注入 |
 | 进程安全 soft shutdown | 已通过 | v0.4.0-abi.6 soft-halt/join 返回 Swift；同进程仍只允许一次 lifecycle |
 | 签名 iPhone | 已通过 | v0.4.0-abi.6 完成 17 项 one-shot/soft-shutdown/peak-memory smoke；runtime 变更后继续重跑 |
 | 签名 iPad | 阻塞 | physical boot 与 command smoke |

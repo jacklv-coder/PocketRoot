@@ -14,6 +14,7 @@ class ReleaseComplianceTests < Minitest::Test
     "Package.resolved",
     "Package.swift",
     "project.yml",
+    "Examples/PocketRootHostApp/project.yml",
     "Scripts/inject-demo-rootfs.sh",
     "ThirdPartyNotices/SwiftTerm-LICENSE.txt",
     "Compliance/RootFS/v0.3.3/EVIDENCE.json",
@@ -134,6 +135,57 @@ class ReleaseComplianceTests < Minitest::Test
       "externalComponents",
       "rootFS",
       "downloadedByLibrary"
+    )
+  end
+
+  def test_standalone_host_profile_uses_only_public_integration_products
+    composition =
+      JSON.parse(
+        PocketRootReleaseCompliance.build_outputs.fetch("COMPOSITION.json")
+      )
+    host_profile =
+      composition.fetch("profiles").find do |profile|
+        profile.fetch("id") == "standalone-host-example"
+      end
+
+    assert_equal "PocketRootHostApp", host_profile.fetch("rootTarget")
+    assert_equal(
+      ["PocketRoot", "PocketRootIshRuntimeIntegration"],
+      host_profile.fetch("swiftProducts")
+    )
+    assert host_profile.fetch("includesIshRuntime")
+    assert host_profile.fetch("requiresExternalRootFS")
+    refute host_profile.fetch("artifactBuiltAndScanned")
+  end
+
+  def test_standalone_host_retains_runtime_across_scene_recreation
+    source =
+      REPOSITORY_ROOT
+        .join("Examples/PocketRootHostApp/Sources/HostApp.swift")
+        .binread
+
+    assert_match(
+      /final class HostAppDelegate:.*?var runtimeController:/m,
+      source
+    )
+    assert_includes source, "HostViewController(runtimeOwner: appDelegate)"
+    assert_includes source, "private unowned let runtimeOwner: HostAppDelegate"
+    assert_includes source, "func sceneDidDisconnect(_ scene: UIScene)"
+    assert_includes source, "hostViewController.closeActiveTerminal()"
+    assert_includes source, "override func viewDidAppear(_ animated: Bool)"
+    refute_includes source, "override func viewWillAppear(_ animated: Bool)"
+    assert_match(
+      /viewDidAppear.*?await runtimeController\.refreshRuntimeState\(\)/m,
+      source
+    )
+
+    info =
+      REPOSITORY_ROOT
+        .join("Examples/PocketRootHostApp/Sources/Info.plist")
+        .binread
+    assert_match(
+      /<key>UIApplicationSupportsMultipleScenes<\/key>\s*<false\/>/,
+      info
     )
   end
 

@@ -29,8 +29,10 @@ Use `PocketRoot` for stable models and UI. Add `PocketRootAgent` explicitly for
 the agent loop and optional OpenAI Responses transport. Add
 `PocketRootAgentRuntimeTools` only when exposing a prepared system through the
 approval-gated command adapter documented in [Lightweight Agent Loop](Agent.md).
-A real guest requires the explicit integration product. The repository has no stable
-release tag yet; pin a reviewed full commit:
+A real guest requires the explicit integration product. Add
+`PocketRootIshRuntime` only when calling the lower-level runtime factory
+directly; the recommended host controller does not require the App to import
+it. The repository has no stable release tag yet; pin a reviewed full commit:
 
 ```swift
 dependencies: [
@@ -44,12 +46,6 @@ targets: [
         name: "YourAppFeature",
         dependencies: [
             .product(name: "PocketRoot", package: "PocketRoot"),
-            .product(name: "PocketRootAgent", package: "PocketRoot"),
-            .product(
-                name: "PocketRootAgentRuntimeTools",
-                package: "PocketRoot"
-            ),
-            .product(name: "PocketRootIshRuntime", package: "PocketRoot"),
             .product(
                 name: "PocketRootIshRuntimeIntegration",
                 package: "PocketRoot"
@@ -61,8 +57,8 @@ targets: [
 
 In Xcode, choose **File → Add Package Dependencies**, enter the repository
 URL, select the **Commit** rule with a reviewed full SHA, add `PocketRoot` for
-the safe API, and explicitly add both native products only for Experimental
-runtime work.
+the safe API, and explicitly add `PocketRootIshRuntimeIntegration` for
+Experimental runtime work.
 
 Local development may use `.package(path: "../PocketRoot")`. Do not use a floating branch or `from: "0.1.0"` before a release tag exists.
 
@@ -171,6 +167,54 @@ installer repairs that index before returning.
 See [RootFS security](RootFS.md) for the storage and recovery algorithm.
 
 ## 4. Boot
+
+### Recommended: one host controller for the minimal loop
+
+Retain one `PocketRootIshRuntimeController` for the App lifetime. It owns RootFS
+preparation, process-global lifecycle, phase notifications, and authoritative
+state reconciliation. Terminal and Files must share the same returned system:
+
+```swift
+import PocketRoot
+import PocketRootIshRuntimeIntegration
+
+let runtimeController = PocketRootIshRuntimeController(
+    configuration: PocketRootIshRuntimeControllerConfiguration(
+        archiveURL: localReviewedArchiveURL,
+        applicationSupportURL: applicationSupportURL,
+        workDirectory: "/"
+    )
+)
+
+runtimeController.onPhaseChange = { phase in
+    // Update Boot, Terminal, and Files controls on the main actor.
+}
+
+let system = try await runtimeController.boot()
+
+let terminal = PocketRootTerminalViewController(
+    system: system,
+    configuration: .interactive(initialWorkingDirectory: "/root"),
+    theme: .dark
+)
+let files = PocketRootFileBrowserViewController(
+    system: system,
+    initialPath: "/root"
+)
+```
+
+Open Terminal or Files only while `runtimeController.readySystem` is non-nil.
+Call `closeSession()` when leaving a PTY screen, and call
+`await runtimeController.refreshRuntimeState()` after a fatal session end.
+Do not prepare or boot separate systems for the two screens. The standalone
+[`Examples/PocketRootHostApp`](../../Examples/PocketRootHostApp) XcodeGen App
+uses only public Swift Package products. CI builds it and verifies its injected
+RootFS.
+
+### Lower-level manual lifecycle
+
+Products that need direct prepared-system ownership may continue to use the
+composition factory:
 
 ```swift
 let system = prepared.system

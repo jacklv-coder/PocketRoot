@@ -38,6 +38,11 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 - Unified iOS 18 deployment baseline.
 - Experimental `PocketRootIshRuntime` pinned to IshEmbed release revision `38d25d6f8726145e7e988172f12000020d89a638` and the `v0.4.0-abi.6` XCFramework.
 - Experimental `PocketRootIshRuntimeIntegration` composing caller-local RootFS installation and native runtime.
+- A public `PocketRootIshRuntimeController` and standalone
+  `Examples/PocketRootHostApp`, allowing a consumer to share one booted system
+  between SwiftTerm PTY and guest Files using only Swift Package APIs. CI
+  builds the host and verifies its Debug RootFS while Release remains
+  payload-free.
 - Process ownership, serial native execution, and lifecycle reentrancy protection.
 - One-shot cwd, environment, stderr merge, exit, signal, timeout, and stream mapping.
 - A default post-boot identity gate using a fixed command and NUL framing; ready now requires matching guest architecture, Alpine identity, optional version, and working directory.

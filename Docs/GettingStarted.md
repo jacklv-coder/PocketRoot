@@ -106,7 +106,7 @@ System 点击 **Prepare and Boot Runtime**。状态达到 `Ready` 后，Terminal
 也可只对一次命令行构建显式传入：
 
 ```bash
-POCKETROOT_DEMO_ROOTFS_ARCHIVE=/absolute/path/to/fs.tar.gz \
+POCKETROOT_DEVELOPMENT_ROOTFS_ARCHIVE=/absolute/path/to/fs.tar.gz \
   ./Scripts/build.sh
 ```
 

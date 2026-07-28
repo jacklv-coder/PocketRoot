@@ -1,12 +1,182 @@
 import Darwin
 import Foundation
-import PocketRootCore
 import PocketRootResources
 import XCTest
+@testable import PocketRootCore
 @_spi(PocketRootRuntimeSmoke) @testable import PocketRootIshRuntimeIntegration
 
 @available(macOS 13.0, *)
 final class PocketRootIshRuntimeIntegrationTests: XCTestCase {
+    @MainActor
+    func testControllerRejectsUnavailableRuntime() async throws {
+        let configuration = makeControllerConfiguration()
+        let controller = PocketRootIshRuntimeController(
+            configuration: configuration,
+            runtimeAvailable: false,
+            prepareSystem: { _ in
+                XCTFail("Unavailable runtime must fail before RootFS preparation.")
+                throw CocoaError(.fileReadUnknown)
+            }
+        )
+
+        XCTAssertEqual(controller.phase, .unavailable)
+        XCTAssertFalse(controller.canBoot)
+        do {
+            _ = try await controller.boot()
+            XCTFail("Unavailable runtime unexpectedly booted.")
+        } catch let error as PocketRootIshRuntimeControllerError {
+            XCTAssertEqual(error, .runtimeUnavailable)
+        }
+    }
+
+    @MainActor
+    func testControllerPreparationFailureIsObservableAndRetryable() async {
+        let expectedError = CocoaError(.fileReadCorruptFile)
+        let controller = PocketRootIshRuntimeController(
+            configuration: makeControllerConfiguration(),
+            runtimeAvailable: true,
+            prepareSystem: { _ in
+                throw expectedError
+            }
+        )
+        var observedPhases: [PocketRootIshRuntimePhase] = []
+        controller.onPhaseChange = {
+            observedPhases.append($0)
+        }
+
+        do {
+            _ = try await controller.boot()
+            XCTFail("The injected preparation failure unexpectedly booted.")
+        } catch {
+            XCTAssertEqual(
+                (error as NSError).code,
+                (expectedError as NSError).code
+            )
+        }
+
+        XCTAssertEqual(observedPhases.first, .preparingRootFS)
+        guard case .failed = controller.phase else {
+            return XCTFail("Preparation failure was not published.")
+        }
+        XCTAssertTrue(controller.canBoot)
+        XCTAssertNil(controller.system)
+        XCTAssertNil(controller.readySystem)
+    }
+
+    @MainActor
+    func testControllerMapsAuthoritativeRuntimeStates() {
+        XCTAssertEqual(
+            PocketRootIshRuntimeController.phase(for: .idle),
+            .idle
+        )
+        XCTAssertEqual(
+            PocketRootIshRuntimeController.phase(
+                for: .idle,
+                fallbackFailure: "retry later"
+            ),
+            .failed("retry later")
+        )
+        XCTAssertEqual(
+            PocketRootIshRuntimeController.phase(for: .ready),
+            .ready
+        )
+        XCTAssertEqual(
+            PocketRootIshRuntimeController.phase(for: .failed("transport")),
+            .failed("transport")
+        )
+        XCTAssertEqual(
+            PocketRootIshRuntimeController.phase(for: .terminated),
+            .terminated
+        )
+    }
+
+    @MainActor
+    func testRefreshCannotOverwriteReentrantShutdownPhase() async throws {
+        let runtime = RefreshRaceLinuxRuntime()
+        let system = PocketRootSystem(runtime: runtime)
+        let controller = PocketRootIshRuntimeController(
+            configuration: makeControllerConfiguration(),
+            runtimeAvailable: true,
+            prepareSystem: { _ in
+                PocketRootPreparedIshSystem(
+                    system: system,
+                    installation: PocketRootRootFSInstallation(
+                        version: "fixture-v1",
+                        rootFSURL: URL(fileURLWithPath: "/tmp/fixture-rootfs"),
+                        reusedExistingInstallation: false
+                    )
+                )
+            }
+        )
+
+        _ = try await controller.boot()
+        XCTAssertEqual(controller.phase, .ready)
+
+        await runtime.suspendNextStateReads(1)
+        let refreshTask = Task {
+            await controller.refreshRuntimeState()
+        }
+        await runtime.waitForStateReadToSuspend(0)
+
+        let shutdownTask = Task {
+            try await controller.shutdown()
+        }
+        await runtime.waitForShutdownToSuspend()
+        XCTAssertEqual(controller.phase, .shuttingDown)
+
+        await runtime.resumeStateRead(0)
+        await refreshTask.value
+        XCTAssertEqual(controller.phase, .shuttingDown)
+        XCTAssertNil(controller.readySystem)
+        XCTAssertFalse(controller.canShutdown)
+
+        await runtime.resumeShutdown()
+        try await shutdownTask.value
+        XCTAssertEqual(controller.phase, .terminated)
+    }
+
+    @MainActor
+    func testNewerRefreshWinsWhenStateReadsCompleteOutOfOrder() async throws {
+        let runtime = RefreshRaceLinuxRuntime()
+        let system = PocketRootSystem(runtime: runtime)
+        let controller = PocketRootIshRuntimeController(
+            configuration: makeControllerConfiguration(),
+            runtimeAvailable: true,
+            prepareSystem: { _ in
+                PocketRootPreparedIshSystem(
+                    system: system,
+                    installation: PocketRootRootFSInstallation(
+                        version: "fixture-v1",
+                        rootFSURL: URL(fileURLWithPath: "/tmp/fixture-rootfs"),
+                        reusedExistingInstallation: false
+                    )
+                )
+            }
+        )
+
+        _ = try await controller.boot()
+        await runtime.suspendNextStateReads(2)
+
+        let olderRefresh = Task {
+            await controller.refreshRuntimeState()
+        }
+        await runtime.waitForStateReadToSuspend(0)
+
+        await runtime.setState(.failed("session transport failed"))
+        let newerRefresh = Task {
+            await controller.refreshRuntimeState()
+        }
+        await runtime.waitForStateReadToSuspend(1)
+
+        await runtime.resumeStateRead(0)
+        await olderRefresh.value
+        XCTAssertEqual(controller.phase, .ready)
+
+        await runtime.resumeStateRead(1)
+        await newerRefresh.value
+        XCTAssertEqual(controller.phase, .failed("session transport failed"))
+    }
+
     func testFactoryDerivesHealthDefaultFromManifest() {
         XCTAssertEqual(
             PocketRootIshSystemFactory.defaultHealthCheck(for: .ishEmbedV0_3_3),
@@ -166,6 +336,18 @@ final class PocketRootIshRuntimeIntegrationTests: XCTestCase {
         return (directoryURL, archiveURL, applicationSupportURL, manifest)
     }
 
+    private func makeControllerConfiguration()
+        -> PocketRootIshRuntimeControllerConfiguration
+    {
+        PocketRootIshRuntimeControllerConfiguration(
+            archiveURL: URL(fileURLWithPath: "/tmp/reviewed-rootfs.tar.gz"),
+            applicationSupportURL: URL(
+                fileURLWithPath: "/tmp/PocketRootHostTests",
+                isDirectory: true
+            )
+        )
+    }
+
     private func assertNoInstallerResidue(in applicationSupportURL: URL) throws {
         let rootFSURL = applicationSupportURL.appendingPathComponent(
             "rootfs",
@@ -183,4 +365,101 @@ final class PocketRootIshRuntimeIntegrationTests: XCTestCase {
 
     private static let archiveBase64 =
         "H4sIAAAAAAAC/+3VMQ6CMBiG4R6FE0ArtD1PDRAHjImtice3MAnK4PA3MbzPUoYmDG/4GGOjpOnMW7uc2fb88uzafL2yqoBHTOGeX6mOaYzNdUih7s+y/V3X7fc32/7eaaMqTX9xc/w+pKBw1O9/zi/6E/h9//3JOfa/ZP/LME23Oj2T1P5/dn9rbtf9TWbZ/xKW7swgAAAAAAAAAAAAAPy9F8wBBB8AKAAA"
+}
+
+@available(macOS 13.0, *)
+private actor RefreshRaceLinuxRuntime: LinuxRuntime {
+    private var currentState: PocketRootRuntimeState = .idle
+    private var suspendedStateReadsRemaining = 0
+    private var nextStateReadID = 0
+    private var suspendedStateReadIDs: Set<Int> = []
+    private var stateReadStartedContinuations: [
+        Int: CheckedContinuation<Void, Never>
+    ] = [:]
+    private var stateReadContinuations: [
+        Int: CheckedContinuation<Void, Never>
+    ] = [:]
+    private var shutdownIsSuspended = false
+    private var shutdownStartedContinuation: CheckedContinuation<Void, Never>?
+    private var shutdownContinuation: CheckedContinuation<Void, Never>?
+
+    var state: PocketRootRuntimeState {
+        get async {
+            let snapshot = currentState
+            guard suspendedStateReadsRemaining > 0 else {
+                return snapshot
+            }
+            suspendedStateReadsRemaining -= 1
+            let stateReadID = nextStateReadID
+            nextStateReadID += 1
+            suspendedStateReadIDs.insert(stateReadID)
+            stateReadStartedContinuations.removeValue(forKey: stateReadID)?.resume()
+            await withCheckedContinuation { continuation in
+                stateReadContinuations[stateReadID] = continuation
+            }
+            return snapshot
+        }
+    }
+
+    func boot(configuration: PocketRootConfiguration) async throws {
+        currentState = .ready
+    }
+
+    func execute(
+        _ request: PocketRootCommandRequest
+    ) async throws -> PocketRootCommandResult {
+        throw PocketRootError.unsupportedOperation("Not used by this test.")
+    }
+
+    func makeSession(
+        configuration: PocketRootSessionConfiguration
+    ) async throws -> any PocketRootSession {
+        throw PocketRootError.unsupportedOperation("Not used by this test.")
+    }
+
+    func shutdown() async throws {
+        currentState = .shuttingDown
+        shutdownIsSuspended = true
+        shutdownStartedContinuation?.resume()
+        shutdownStartedContinuation = nil
+        await withCheckedContinuation { continuation in
+            shutdownContinuation = continuation
+        }
+        currentState = .terminated
+    }
+
+    func suspendNextStateReads(_ count: Int) {
+        suspendedStateReadsRemaining = count
+    }
+
+    func waitForStateReadToSuspend(_ stateReadID: Int) async {
+        guard !suspendedStateReadIDs.contains(stateReadID) else {
+            return
+        }
+        await withCheckedContinuation { continuation in
+            stateReadStartedContinuations[stateReadID] = continuation
+        }
+    }
+
+    func resumeStateRead(_ stateReadID: Int) {
+        stateReadContinuations.removeValue(forKey: stateReadID)?.resume()
+    }
+
+    func setState(_ state: PocketRootRuntimeState) {
+        currentState = state
+    }
+
+    func waitForShutdownToSuspend() async {
+        guard !shutdownIsSuspended else {
+            return
+        }
+        await withCheckedContinuation { continuation in
+            shutdownStartedContinuation = continuation
+        }
+    }
+
+    func resumeShutdown() {
+        shutdownContinuation?.resume()
+        shutdownContinuation = nil
+    }
 }
