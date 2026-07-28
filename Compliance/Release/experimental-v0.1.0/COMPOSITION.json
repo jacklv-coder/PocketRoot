@@ -62,7 +62,7 @@
     "Sources/PocketRootIshRuntime/Runtime/IshLinuxRuntime.swift": "9983bbb79e39ce7189facbf455469dbde58234c195dc3442179f1f684142d87b",
     "Sources/PocketRootIshRuntime/Runtime/IshPocketRootSession.swift": "14c32193691080ad4ea7bbe0a31fbf5b99d1cf2c0662a8d608cda38ae6792cc4",
     "Sources/PocketRootIshRuntime/Runtime/IshRuntimeHealthCheck.swift": "24022112d1d37e64bcf9d61fd907632d454a4b630c555164bc7a4a27ea364fbd",
-    "Sources/PocketRootIshRuntimeIntegration/PocketRootIshRuntimeController.swift": "8f29efbebf796c2695dacad34f410188fa866829a8b7f3db5751020ef360adad",
+    "Sources/PocketRootIshRuntimeIntegration/PocketRootIshRuntimeController.swift": "96c9747b3752c9262ee8ee11f91e805cb5e54a4366aeca82457b6452f1b167ac",
     "Sources/PocketRootIshRuntimeIntegration/PocketRootIshSystemFactory.swift": "6eb2a3dee601cdddb4327ff447a81bcb47c16e13aa5a99d99ac5d706a94d53fe",
     "Sources/PocketRootResources/BundledRootFSProvider.swift": "8bac007da6251dd8dcaf25fbe791687a847ee93bbf5bf3b705bbe600b62e17bc",
     "Sources/PocketRootResources/Resources/.gitkeep": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",

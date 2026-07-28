@@ -100,6 +100,7 @@ public final class PocketRootIshRuntimeController {
     private let runtimeAvailable: Bool
     private let prepareSystem: SystemPreparer
     private var retryAllowed = true
+    private var phaseGeneration: UInt64 = 0
 
     public init(
         configuration: PocketRootIshRuntimeControllerConfiguration
@@ -215,7 +216,13 @@ public final class PocketRootIshRuntimeController {
         default:
             break
         }
-        publish(Self.phase(for: await system.state))
+        phaseGeneration &+= 1
+        let refreshGeneration = phaseGeneration
+        let state = await system.state
+        guard refreshGeneration == phaseGeneration else {
+            return
+        }
+        publish(Self.phase(for: state))
     }
 
     /// Performs bounded native shutdown. Success means this host process must
@@ -270,6 +277,7 @@ public final class PocketRootIshRuntimeController {
     }
 
     private func publish(_ phase: PocketRootIshRuntimePhase) {
+        phaseGeneration &+= 1
         self.phase = phase
         onPhaseChange?(phase)
     }
