@@ -70,7 +70,7 @@ git remote -v
 ```
 
 - `test.sh` 执行所有 Swift Package 宿主测试。没有设置 RootFS 环境变量时，真实 release asset 用例会 skip；安装复用等路径仍由合成 fixture 测试覆盖。
-- `build.sh` 构建默认 `PocketRootDemo` scheme，目标是 generic iOS Simulator，不执行原生 guest。
+- `build.sh` 构建 arm64 `PocketRootDemo` scheme；未配置 RootFS 时只完成最终链接，不启动 guest。
 
 打开工程：
 
@@ -80,20 +80,39 @@ open PocketRootDemo.xcodeproj
 
 在 Xcode 中选择 `PocketRootDemo` scheme 和任意 iOS 18 Simulator 后运行。
 
-## 5. 理解当前 Demo
+## 5. 运行真实 Demo
 
 Demo 使用 AppDelegate、SceneDelegate、UIWindow、纯 UIKit 和 Auto Layout，包含四个 tab：
 
 | 页面 | 当前用途 |
 | --- | --- |
-| System | 展示 `PocketRootSystem.shared` 的占位启动/关闭状态 |
-| Terminal | Demo 尚未注入真实 runtime；库已提供可注入 system 的 SwiftTerm PTY |
-| Commands | 展示命令请求界面，但默认 shared system 没有真实 runtime |
-| Diagnostics | 展示 RootFS 与实验 runtime 集成位置 |
+| System | 校验、安装固定 RootFS，启动/检查/关闭实验 runtime |
+| Terminal | 使用 SwiftTerm 打开持续 PTY；Files 入口浏览 `/root` |
+| Commands | 对同一个已启动 system 执行有界一次性命令 |
+| Diagnostics | 动态显示 RootFS、iSH Runtime 与 SwiftTerm 状态 |
 
-因此看到 “Runtime is not installed yet” 或占位错误是当前设计，而不是构建失败。Demo target 只依赖安全的 `PocketRoot` 伞形产品，不依赖实验性的 `PocketRootIshRuntimeIntegration`。
+先把经过审核且匹配内置 v0.3.3 manifest 的归档配置到仓库外开发目录：
 
-若要在自己的 App 中运行真实命令，请继续阅读[应用接入指南](IntegrationGuide.md)。Demo 的真实运行时注入仍在[路线图](Roadmap.md)中。
+```bash
+./Scripts/inject-demo-rootfs.sh \
+  --install-development-archive /absolute/path/to/fs.tar.gz
+```
+
+该命令要求普通非符号链接文件、精确 `6,581,376` 字节和固定 SHA-256，并原子复制到
+`~/Library/Application Support/PocketRootDevelopment/RootFS/`。随后重新构建并在
+System 点击 **Prepare and Boot Runtime**。状态达到 `Ready` 后，Terminal 可执行
+`ls`、`cd` 和文件创建；右上角 Files 可浏览并预览 guest 文件。
+
+也可只对一次命令行构建显式传入：
+
+```bash
+POCKETROOT_DEMO_ROOTFS_ARCHIVE=/absolute/path/to/fs.tar.gz \
+  ./Scripts/build.sh
+```
+
+RootFS 缺失时 Demo 仍可编译，但显示 `RootFS Missing` 且禁用 Boot。注入仅允许
+Debug；Release、TestFlight 和 App Store 分发仍由合规门禁阻止。自己的 App 接入方式
+见[应用接入指南](IntegrationGuide.md)。
 
 ## 6. 验证实验性原生依赖图
 

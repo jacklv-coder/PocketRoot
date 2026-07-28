@@ -91,12 +91,19 @@ open PocketRootDemo.xcodeproj
 
 `bootstrap.sh` 会解析 Swift Package 并通过 XcodeGen 生成工程。`PocketRootDemo.xcodeproj` 不提交到 Git；`project.yml` 才是工程事实源。
 
-当前 Demo 是 UI 和公共 API 演示外壳，不会直接启动 Alpine：
+Demo 已接通实验性 iSH、SwiftTerm PTY、Commands 和 Files 页面。RootFS 不提交到
+仓库；首次运行前把固定归档配置为本机 Debug 开发资产：
 
-- System 与 Commands 页面连接的是占位 `PocketRootSystem.shared`。
-- Terminal 页面尚未注入真实 runtime；库已提供可直接注入应用自有 system 的 SwiftTerm PTY 与 Files 页面。
-- Diagnostics 展示后续集成位置。
-- 原生运行时验证使用独立的 compile spike 与 smoke App。
+```bash
+./Scripts/inject-demo-rootfs.sh \
+  --install-development-archive /absolute/path/to/fs.tar.gz
+./Scripts/build.sh
+open PocketRootDemo.xcodeproj
+```
+
+注入脚本严格校验 v0.3.3 的 `6,581,376` 字节与固定 SHA-256。Debug 构建把它复制到
+App Bundle，首次点击 Boot 时再由 installer 校验并安装。未配置时 Demo 仍可构建并
+明确显示 `RootFS Missing`；Release 不注入 RootFS，分发门禁保持关闭。
 
 完整开发步骤见[快速开始](Docs/GettingStarted.md)。
 

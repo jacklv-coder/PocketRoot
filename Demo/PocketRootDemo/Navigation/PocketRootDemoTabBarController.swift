@@ -2,28 +2,39 @@ import UIKit
 
 @MainActor
 final class PocketRootDemoTabBarController: UITabBarController {
+    private let runtimeStore: DemoRuntimeStore
+
+    init(runtimeStore: DemoRuntimeStore = .shared) {
+        self.runtimeStore = runtimeStore
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) is unavailable")
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
         viewControllers = [
             navigationController(
-                root: SystemViewController(),
+                root: SystemViewController(runtimeStore: runtimeStore),
                 title: "System",
                 symbolName: "cpu"
             ),
             navigationController(
-                root: TerminalDemoViewController(),
+                root: TerminalDemoViewController(runtimeStore: runtimeStore),
                 title: "Terminal",
                 symbolName: "terminal"
             ),
             navigationController(
-                root: CommandsViewController(),
+                root: CommandsViewController(runtimeStore: runtimeStore),
                 title: "Commands",
                 symbolName: "chevron.left.forwardslash.chevron.right"
             ),
             navigationController(
-                root: DiagnosticsViewController(),
+                root: DiagnosticsViewController(runtimeStore: runtimeStore),
                 title: "Diagnostics",
                 symbolName: "stethoscope"
             )

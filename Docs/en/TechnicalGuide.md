@@ -421,8 +421,9 @@ The goal is to understand why experimental success is not production readiness.
 
 1. Follow [Getting Started](GettingStarted.md) to check Xcode, Swift, Homebrew, and XcodeGen, then run `./Scripts/bootstrap.sh` and `./Scripts/test.sh`. `bootstrap.sh` may install XcodeGen through Homebrew when it is missing.
 2. Trace `PocketRootSystem.shared` to `PlaceholderLinuxRuntime`.
-3. Run the Demo and observe placeholder state.
-4. Read `Package.swift` and confirm that the default product has no iSH dependency.
+3. Read `Package.swift` and confirm that the default product has no iSH dependency.
+4. Note that the repository Demo is an explicit Experimental integration
+   target, not part of the safe-default product path.
 
 ### Step three: learn RootFS handling
 

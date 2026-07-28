@@ -6,7 +6,8 @@ smoke 与全部 Swift products；`SBOM.spdx.json` 汇总 PocketRoot、固定 ABI
 IshEmbed/XCFramework、精确 iSH gitlink、静态 supervisor 使用的 musl source、
 固定 SwiftTerm 与其解析依赖，以及调用方提供的外部 RootFS 和其中 15 个 Alpine 包。
 
-默认 Demo 不包含 IshEmbed 或 RootFS。RootFS 不由库下载，也不进入默认 App。
+默认 Demo 显式链接 IshEmbed，但仓库不包含 RootFS；只有本地 Debug 构建可把
+精确固定的仓库外资产注入 App，Release 明确跳过。RootFS 不由库下载。
 顶层许可证、完整 LICENSE/NOTICE、对应源码交付、App Store 2.5.2、法律审查和
 发行授权仍未完成。由于没有最终 archive，本目录明确保持
 `completeReleaseArtifactSBOM=false`、`distributionAuthorized=false`。
@@ -28,9 +29,10 @@ the exact iSH gitlink, the musl source snapshot used by the static guest
 supervisor, pinned SwiftTerm and its resolved dependency, and the
 caller-provided external RootFS with its 15 Alpine packages.
 
-The default Demo contains neither IshEmbed nor a RootFS. The library does
-not download the RootFS or place it in the default App. The top-level
-license, complete LICENSE/NOTICE set, corresponding-source delivery,
+The default Demo explicitly links IshEmbed, but the repository contains
+no RootFS. Only a local Debug build may inject the exact pinned external
+asset; Release skips it. The library never downloads the RootFS. The
+top-level license, complete LICENSE/NOTICE set, corresponding-source delivery,
 App Store 2.5.2 disposition, legal review, and distribution authorization
 remain open. Because no final archive was scanned, this evidence keeps
 `completeReleaseArtifactSBOM=false` and `distributionAuthorized=false`.

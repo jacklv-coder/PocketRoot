@@ -33,7 +33,8 @@ IshEmbed XCFramework 没有 macOS 或 x86_64 Simulator 切片。macOS fallback �
 
 ```mermaid
 flowchart TB
-    Demo["PocketRootDemo<br/>UIKit 演示外壳"] --> Umbrella["PocketRoot<br/>安全伞形产品"]
+    Demo["PocketRootDemo<br/>Debug 集成演示"] --> Umbrella["PocketRoot<br/>安全伞形产品"]
+    Demo --> Integration
     Umbrella --> Core["PocketRootCore"]
     Umbrella --> Terminal["PocketRootTerminal"]
     Umbrella --> Resources["PocketRootResources"]
@@ -64,7 +65,8 @@ flowchart TB
 - `PocketRootIshRuntime` 依赖 Core 和仅 iOS 条件下的 IshEmbed。
 - `PocketRootIshRuntimeIntegration` 是 Resources 与 runtime 的唯一公共组合入口。
 - `PocketRoot` 只导出 Core、Terminal、Resources。
-- 默认 Demo 只依赖 `PocketRoot`；compile spike 和 smoke 才依赖实验组合。
+- 默认 Swift Package 伞形产品仍不导出 iSH；仓库内 Demo、compile spike 和 smoke
+  显式依赖实验组合。Demo 只在 Debug 构建注入仓库外固定 RootFS。
 
 ## 4. 模块职责
 
@@ -200,7 +202,10 @@ UIKit/SwiftUI UI：
 
 源码：`Demo/PocketRootDemo/`
 
-使用 AppDelegate、SceneDelegate、UIWindow、UIKit 和 Auto Layout，包含 System、Terminal、Commands、Diagnostics 四个 navigation stack。Demo 只演示公共 API 和页面边界，不含 runtime 实现或 RootFS 资产。
+使用 AppDelegate、SceneDelegate、UIWindow、UIKit 和 Auto Layout，包含
+System、Terminal、Commands、Diagnostics 四个 navigation stack。共享
+`DemoRuntimeStore` 组合仓库外固定 RootFS、实验 runtime、SwiftTerm PTY 与 Files；
+RootFS 不进入源码树，只能在 Debug 构建阶段经过固定大小/hash 校验后注入。
 
 ## 5. 端到端数据流
 

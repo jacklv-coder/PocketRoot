@@ -397,8 +397,8 @@ POCKETROOT_ROOTFS_ARCHIVE=/absolute/path/to/fs.tar.gz \
 
 1. 按[快速开始](GettingStarted.md)先检查 Xcode、Swift、Homebrew 与 XcodeGen，再运行 `./Scripts/bootstrap.sh` 和 `./Scripts/test.sh`；`bootstrap.sh` 在缺少 XcodeGen 时可能通过 Homebrew 安装它；
 2. 从 `PocketRootSystem.shared` 追到 `PlaceholderLinuxRuntime`；
-3. 运行 Demo，观察 placeholder 状态；
-4. 阅读 `Package.swift`，确认默认产品没有 iSH 依赖。
+3. 阅读 `Package.swift`，确认默认产品没有 iSH 依赖；
+4. 注意仓库内 Demo 是显式实验集成目标，不属于安全默认产品路径。
 
 ### 第三步：学习 RootFS
 

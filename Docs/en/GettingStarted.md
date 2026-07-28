@@ -56,20 +56,43 @@ Do not edit `project.pbxproj` manually. The generated project is ignored; `proje
 open PocketRootDemo.xcodeproj
 ```
 
-`test.sh` runs host Swift Package tests. The real release-asset test skips unless `POCKETROOT_ROOTFS_ARCHIVE` is set; synthetic fixtures still cover installer reuse and related paths. `build.sh` builds the default Demo for a generic iOS Simulator and does not boot the native guest.
+`test.sh` runs host Swift Package tests. The real release-asset test skips unless `POCKETROOT_ROOTFS_ARCHIVE` is set; synthetic fixtures still cover installer reuse and related paths. `build.sh` final-links the arm64 Demo; without a configured RootFS it does not boot a guest.
 
-## 5. Demo behavior
+## 5. Run the real Demo
 
-The UIKit Demo contains System, Terminal, Commands, and Diagnostics tabs. It is currently a UI and public-API shell:
+The UIKit Demo contains System, Terminal, Commands, and Diagnostics tabs:
 
-- System and Commands use the placeholder `PocketRootSystem.shared`.
-- The Demo does not inject a runtime into Terminal; the library exposes
-  ready-to-present SwiftTerm PTY and guest Files pages for an
-  application-owned prepared system.
-- Diagnostics describes future integration points.
-- The Demo target links the safe `PocketRoot` umbrella, not the Experimental integration product.
+- System verifies and installs the fixed RootFS, then boots, checks, or shuts
+  down the Experimental runtime.
+- Terminal presents the persistent SwiftTerm PTY and a Files entry for `/root`.
+- Commands executes bounded one-shot commands against the same booted system.
+- Diagnostics reports live RootFS, iSH Runtime, and SwiftTerm status.
 
-“Runtime is not installed yet” is expected. Use the [integration guide](IntegrationGuide.md) for real runtime setup.
+Configure a reviewed archive matching the built-in v0.3.3 manifest outside the
+repository:
+
+```bash
+./Scripts/inject-demo-rootfs.sh \
+  --install-development-archive /absolute/path/to/fs.tar.gz
+```
+
+The command requires a regular non-symlink, the exact 6,581,376-byte size, and
+the pinned SHA-256, then atomically copies it under
+`~/Library/Application Support/PocketRootDevelopment/RootFS/`. Rebuild and tap
+**Prepare and Boot Runtime** in System. At `Ready`, Terminal supports `ls`,
+`cd`, and file creation, while Files browses and previews guest files.
+
+For a single command-line build, pass the input directly:
+
+```bash
+POCKETROOT_DEMO_ROOTFS_ARCHIVE=/absolute/path/to/fs.tar.gz \
+  ./Scripts/build.sh
+```
+
+Without a RootFS the Demo still compiles, reports `RootFS Missing`, and
+disables Boot. Injection is Debug-only; Release, TestFlight, and App Store
+distribution remain compliance-blocked. See the [integration
+guide](IntegrationGuide.md) for host-App integration.
 
 ## 6. Final-link the native graph
 

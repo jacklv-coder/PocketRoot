@@ -13,6 +13,10 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 - A native OpenAI Responses API transport for `PocketRootAgent` with host-owned bearer credentials, strict function-schema preflight, continuation mapping, sanitized failures, and bounded HTTP request/response bodies.
 - An explicit opt-in `PocketRootAgentRuntimeTools` product whose Linux commands require whole-batch tool preflight, host allow/deny policy, and per-call approval, with cwd, environment, timeout, and model-visible output bounds.
 - Programmatic UIKit Demo with System, Terminal, Commands, and Diagnostics.
+- A real Demo composition connecting Experimental iSH, SwiftTerm PTY,
+  Commands, and Files, with Debug-only size/digest-verified external RootFS
+  injection, shared runtime lifecycle, and dynamic Diagnostics; Release never
+  injects the asset.
 - XcodeGen project source, generation, test, and build scripts.
 - Placeholder runtime, terminal API foundations, and unit tests.
 - A lightweight command terminal that does not depend on the Agent Loop or a

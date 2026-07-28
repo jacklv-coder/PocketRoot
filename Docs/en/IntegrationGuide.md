@@ -317,6 +317,10 @@ let terminalViewController = PocketRootTerminalViewController(
     configuration: .interactive(initialWorkingDirectory: "/root"),
     theme: .dark
 )
+terminalViewController.onSessionEnded = { [weak terminalViewController] _ in
+    // Dismiss the page or offer a new terminal after shell exit or PTY failure.
+    terminalViewController?.navigationController?.popViewController(animated: true)
+}
 navigationController?.pushViewController(
     terminalViewController,
     animated: true
@@ -379,6 +383,8 @@ is applied in place.
 - Caller-owned regular RootFS file matching the manifest.
 - Ordered preparation, built-in boot identity gate, and application-specific health checks.
 - Terminal and Files share the same application-owned, booted system.
+- UIKit handles shell exit and PTY failure through `onSessionEnded`, then
+  dismisses the terminal or offers a new session.
 - Read-only terminals set `allowsInput: false`; backend/configuration changes
   intentionally rebuild the SwiftUI-hosted session.
 - Positive command timeout and handling for exit, signal, timeout, and output limits.

@@ -93,11 +93,21 @@ open PocketRootDemo.xcodeproj
 
 `bootstrap.sh` resolves packages and generates the project with XcodeGen. The generated project is ignored; `project.yml` is authoritative.
 
-The current Demo is a UI/public-API shell, not an Alpine-running app. System and
-Commands use the placeholder shared system, and the Demo does not inject a real
-runtime into Terminal. The library provides ready-to-present SwiftTerm PTY and
-guest Files pages for application-owned prepared systems. Native validation
-uses dedicated compile and smoke targets.
+The Demo now connects the Experimental iSH runtime, SwiftTerm PTY, Commands,
+and Files pages. The RootFS is not committed. Configure the pinned archive as a
+local Debug development asset before running:
+
+```bash
+./Scripts/inject-demo-rootfs.sh \
+  --install-development-archive /absolute/path/to/fs.tar.gz
+./Scripts/build.sh
+open PocketRootDemo.xcodeproj
+```
+
+The script requires the exact v0.3.3 byte count and SHA-256. Debug builds copy
+that reviewed local input into the App Bundle; first Boot verifies and installs
+it again. Without the asset the Demo still builds and reports `RootFS Missing`.
+Release builds never inject it, and distribution gates remain closed.
 
 See [Getting Started](Docs/en/GettingStarted.md).
 

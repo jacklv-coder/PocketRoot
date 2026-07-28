@@ -8,7 +8,11 @@ This document records the current release boundary and exit criteria; it is not 
 
 The Experimental iSH runtime, XCFramework, and candidate RootFS are for local development and controlled technical validation only.
 
-Production, TestFlight, App Store, public/private binary SDK distribution, RootFS bundling, unreviewed artifact mirroring, and claims of completed license/NOTICE/source/SBOM obligations remain blocked.
+Production, TestFlight, App Store, public/private binary SDK distribution,
+RootFS inclusion in any Release/distributed bundle, unreviewed artifact
+mirroring, and claims of completed license/NOTICE/source/SBOM obligations
+remain blocked. A local Debug Demo may inject only the exact pinned external
+archive; this is engineering use, not distribution authorization.
 
 ## Distribution composition
 
@@ -24,7 +28,9 @@ composition inventory and SPDX 2.3 JSON SBOM under
 It distinguishes the default Demo, native-runtime smoke, and all Swift products,
 and covers pinned ABI.6 IshEmbed/XCFramework, the iSH gitlink, supervisor musl
 source, the caller-provided external RootFS, and its 15 Alpine packages. The
-default Demo contains neither IshEmbed nor a RootFS. This evidence does not scan
+Demo now links IshEmbed, but the repository still contains no RootFS; only a
+local Debug build may inject the exact external asset, and Release skips it.
+This evidence does not scan
 a final archive and explicitly keeps `completeReleaseArtifactSBOM=false` and
 `distributionAuthorized=false`; it is not a release-artifact SBOM or
 distribution authorization.

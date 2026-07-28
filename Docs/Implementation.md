@@ -305,7 +305,10 @@ terminate/EXITED 流程后才返回。清理错误优先于 `CancellationError`�
 
 ## 8. Demo 与 smoke 为什么分开
 
-默认 Demo 只依赖安全伞形产品，适合展示 UI、API 和 future injection seam。它故意不接真实 RootFS 和 IshEmbed。
+Demo 现在显式链接实验组合，但 RootFS 仍保持仓库外。Debug build phase 只接受精确匹配
+v0.3.3 大小/hash 的普通文件；未配置时删除旧 bundle 输出并保持可编译，Release
+构建不注入。`DemoRuntimeStore` 在用户点击 Boot 后执行
+`prepare → boot`，并把同一个 system 注入 System、Terminal、Commands 和 Files。
 
 compile spike 只证明完整实验图能够最终链接。
 
@@ -319,7 +322,8 @@ native smoke 负责行为证据：
 6. 最后调用 shutdown；
 7. host 确认 shutdown 返回、report 已更新且 App 仍存活到主动结束。
 
-这种分离避免默认 Demo 无意包含尚未完成合规审查的资产或原生能力。
+这种分离让人工 Demo 闭环可用，同时仍由独立 smoke 提供自动化行为证据，并防止
+RootFS 进入源码仓库或 Release bundle。
 
 ## 9. 关键不变量
 

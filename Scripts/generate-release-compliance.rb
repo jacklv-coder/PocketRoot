@@ -207,7 +207,9 @@ module PocketRootReleaseCompliance
     "Package.swift" =>
       "fff762dc74981f136159838d480f1d28deb292100e74ebdcd2589885366c3a4f",
     "project.yml" =>
-      "350c47fe286e7e743759125099762b953ee5b0350d4cca6f86f7dd6bd46ad1eb",
+      "dde326aa375b5c63362e3696402e52e023c9d1f88a26c751a652d42fa24a2800",
+    "Scripts/inject-demo-rootfs.sh" =>
+      "209408853e25550e11701e3d08286c3a3592abff3b087a3539ec63fac12f8b51",
     "ThirdPartyNotices/SwiftTerm-LICENSE.txt" =>
       "1c34c11581e20feb2b7ea122146a6690261dae94b2c8444e8cff902e567df6ae"
   }.freeze
@@ -707,7 +709,8 @@ module PocketRootReleaseCompliance
             "package" => "PocketRoot",
             "product" => "PocketRootIshRuntimeIntegration"
           }
-        ]
+        ],
+        "postBuildScripts" => []
       },
       "PocketRootIshRuntimeSmoke" => {
         "type" => "application",
@@ -739,7 +742,8 @@ module PocketRootReleaseCompliance
           },
           {"package" => "PocketRoot", "product" => "PocketRootResources"},
           {"package" => "PocketRoot", "product" => "PocketRootTerminal"}
-        ]
+        ],
+        "postBuildScripts" => []
       },
       "PocketRootDemo" => {
         "type" => "application",
@@ -749,6 +753,14 @@ module PocketRootReleaseCompliance
           "base" => {
             "PRODUCT_BUNDLE_IDENTIFIER" => "com.jacklv.PocketRootDemo",
             "PRODUCT_NAME" => "PocketRootDemo",
+            "ARCHS" => "arm64",
+            "EXCLUDED_ARCHS[sdk=iphonesimulator*]" => "x86_64",
+            "ONLY_ACTIVE_ARCH" => true,
+            "SUPPORTS_MACCATALYST" => false,
+            "ENABLE_DEBUG_DYLIB" => false,
+            "ENABLE_USER_SCRIPT_SANDBOXING" => false,
+            "SWIFT_STRICT_CONCURRENCY" => "complete",
+            "SWIFT_TREAT_WARNINGS_AS_ERRORS" => true,
             "INFOPLIST_KEY_UIApplicationSceneManifest_Generation" => true,
             "INFOPLIST_KEY_UILaunchScreen_Generation" => true,
             "INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents" => true
@@ -764,21 +776,40 @@ module PocketRootReleaseCompliance
           {"path" => "Demo/PocketRootDemo/Resources"}
         ],
         "dependencies" => [
-          {"package" => "PocketRoot", "product" => "PocketRoot"}
+          {"package" => "PocketRoot", "product" => "PocketRoot"},
+          {"package" => "PocketRoot", "product" => "PocketRootIshRuntime"},
+          {
+            "package" => "PocketRoot",
+            "product" => "PocketRootIshRuntimeIntegration"
+          }
+        ],
+        "postBuildScripts" => [
+          {
+            "name" => "Inject reviewed development RootFS",
+            "script" => "\"$SRCROOT/Scripts/inject-demo-rootfs.sh\"\n",
+            "basedOnDependencyAnalysis" => false
+          }
         ]
       },
       "PocketRootDemoTests" => {
         "type" => "bundle.unit-test",
         "platform" => "iOS",
         "deploymentTarget" => "18.0",
-        "settings" => {},
+        "settings" => {
+          "base" => {
+            "ARCHS" => "arm64",
+            "EXCLUDED_ARCHS[sdk=iphonesimulator*]" => "x86_64",
+            "ONLY_ACTIVE_ARCH" => true
+          }
+        },
         "sources" => [
           {"path" => "Tests/PocketRootDemoTests", "optional" => true}
         ],
         "resources" => [],
         "dependencies" => [
           {"target" => "PocketRootDemo"}
-        ]
+        ],
+        "postBuildScripts" => []
       }
     }
     actual_composition = targets.to_h do |name, target|
@@ -791,7 +822,8 @@ module PocketRootReleaseCompliance
           "settings" => target.fetch("settings", {}),
           "sources" => target.fetch("sources", []),
           "resources" => target.fetch("resources", []),
-          "dependencies" => target.fetch("dependencies", [])
+          "dependencies" => target.fetch("dependencies", []),
+          "postBuildScripts" => target.fetch("postBuildScripts", [])
         }
       ]
     end
@@ -901,6 +933,11 @@ module PocketRootReleaseCompliance
       load_json(root.join("Package.resolved"), "Package.resolved")
     project_bytes = read_regular(root.join("project.yml"), "project.yml")
     license_bytes = read_regular(root.join("LICENSE"), "LICENSE")
+    demo_rootfs_injection_bytes =
+      read_regular(
+        root.join("Scripts/inject-demo-rootfs.sh"),
+        "Demo RootFS injection script"
+      )
     swiftterm_notice_bytes =
       read_regular(
         root.join(SWIFTTERM.fetch("noticePath")),
@@ -935,6 +972,8 @@ module PocketRootReleaseCompliance
       "Package.resolved" => Digest::SHA256.hexdigest(package_resolved_bytes),
       "Package.swift" => Digest::SHA256.hexdigest(package_swift),
       "project.yml" => Digest::SHA256.hexdigest(project_bytes),
+      "Scripts/inject-demo-rootfs.sh" =>
+        Digest::SHA256.hexdigest(demo_rootfs_injection_bytes),
       SWIFTTERM.fetch("noticePath") =>
         Digest::SHA256.hexdigest(swiftterm_notice_bytes)
     }
@@ -981,9 +1020,13 @@ module PocketRootReleaseCompliance
         {
           "id" => "default-demo",
           "rootTarget" => "PocketRootDemo",
-          "swiftProducts" => ["PocketRoot"],
-          "includesIshRuntime" => false,
-          "requiresExternalRootFS" => false,
+          "swiftProducts" => %w[
+            PocketRoot
+            PocketRootIshRuntime
+            PocketRootIshRuntimeIntegration
+          ],
+          "includesIshRuntime" => true,
+          "requiresExternalRootFS" => true,
           "artifactBuiltAndScanned" => false
         },
         {
@@ -1372,7 +1415,8 @@ module PocketRootReleaseCompliance
       IshEmbed/XCFramework、精确 iSH gitlink、静态 supervisor 使用的 musl source、
       固定 SwiftTerm 与其解析依赖，以及调用方提供的外部 RootFS 和其中 15 个 Alpine 包。
 
-      默认 Demo 不包含 IshEmbed 或 RootFS。RootFS 不由库下载，也不进入默认 App。
+      默认 Demo 显式链接 IshEmbed，但仓库不包含 RootFS；只有本地 Debug 构建可把
+      精确固定的仓库外资产注入 App，Release 明确跳过。RootFS 不由库下载。
       顶层许可证、完整 LICENSE/NOTICE、对应源码交付、App Store 2.5.2、法律审查和
       发行授权仍未完成。由于没有最终 archive，本目录明确保持
       `completeReleaseArtifactSBOM=false`、`distributionAuthorized=false`。
@@ -1394,9 +1438,10 @@ module PocketRootReleaseCompliance
       supervisor, pinned SwiftTerm and its resolved dependency, and the
       caller-provided external RootFS with its 15 Alpine packages.
 
-      The default Demo contains neither IshEmbed nor a RootFS. The library does
-      not download the RootFS or place it in the default App. The top-level
-      license, complete LICENSE/NOTICE set, corresponding-source delivery,
+      The default Demo explicitly links IshEmbed, but the repository contains
+      no RootFS. Only a local Debug build may inject the exact pinned external
+      asset; Release skips it. The library never downloads the RootFS. The
+      top-level license, complete LICENSE/NOTICE set, corresponding-source delivery,
       App Store 2.5.2 disposition, legal review, and distribution authorization
       remain open. Because no final archive was scanned, this evidence keeps
       `completeReleaseArtifactSBOM=false` and `distributionAuthorized=false`.
