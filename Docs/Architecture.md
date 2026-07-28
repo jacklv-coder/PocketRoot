@@ -13,7 +13,7 @@ PocketRoot 把可复用 Linux 能力与 UIKit Demo 分离，并把高风险的�
 - RootFS 输入、安装和恢复独立于 runtime 生命周期。
 - 原生同步调用不阻塞主线程或 Swift cooperative executor。
 - iSH 的进程级单例约束在 Swift 层可见且可测试。
-- 终端 UI 在 PTY 生命周期证明安全后再接入。
+- 终端 UI 只通过已登记、bounded-read、close-before-shutdown 的 PTY 生命周期接入。
 - 外部源码和制品均可追溯到不可变输入。
 
 ## 2. 支持基线
@@ -39,6 +39,7 @@ flowchart TB
     Umbrella --> Resources["PocketRootResources"]
 
     Terminal --> Core
+    Terminal --> SwiftTerm["SwiftTerm<br/>iOS only"]
     Resources --> Archive["CPocketRootArchiveSupport<br/>zlib streaming"]
     Agent["PocketRootAgent<br/>有界模型/工具循环"]
     AgentTools["PocketRootAgentRuntimeTools<br/>审批命令 adapter"] --> Agent
@@ -56,7 +57,7 @@ flowchart TB
 依赖方向文字说明：
 
 - `PocketRootCore` 位于底层，不依赖 UIKit、Resources 或 IshEmbed。
-- `PocketRootTerminal` 只依赖 Core。
+- `PocketRootTerminal` 依赖 Core，并仅在 iOS 链接固定 SwiftTerm revision。
 - `PocketRootResources` 通过私有 C target 使用 zlib，不依赖 runtime。
 - `PocketRootAgent` 是安全伞形产品外的纯 Swift loop 与可选 OpenAI transport，不依赖 runtime。
 - `PocketRootAgentRuntimeTools` 显式依赖 Agent 与 Core，以 policy、逐次审批和资源边界组合命令。
@@ -176,12 +177,15 @@ tar 解析、路径策略和 fakefs 校验仍由 Swift 层负责。
 
 源码：`Sources/PocketRootTerminal/`
 
-提供 terminal configuration、theme 和 UIKit view controller。当前实现是占位 UI：
+提供 terminal configuration、theme、fallback command facade、guest 文件浏览，以及
+UIKit/SwiftUI UI：
 
 - 可追加/清空 transcript；
-- 建立 UIKit 嵌入契约；
-- 没有 SwiftTerm 依赖；
-- 没有 PTY、实时输入、resize 或 signal。
+- 可把已 boot 的 system 注入 SwiftTerm-backed PTY；
+- 输入保持顺序，输出流式 feed，并同步 resize、signal 与 EOF；
+- NUL-framed 目录枚举和最多 512 KiB 文件预览；
+- fallback facade 用 `pwd -P` 读取 shell 的真实物理目录，而不信任可修改的
+  `$PWD`，并保存为下一次工作目录。
 
 所有 UIKit 类型和 UI mutation 都隔离到 `MainActor`。
 
@@ -257,6 +261,7 @@ IshEmbed 暴露同步、进程级 API。adapter 使用：
 - `BlockingIshExecutor`：所有 native call 在共享 serial DispatchQueue 上执行；
 - actor 状态：在第一次 suspension 前关闭 boot/shutdown reentrancy window；
 - `commandInFlight`：同一 runtime 只允许一个 one-shot；
+- `activeSessions`：登记所有 PTY session，shutdown 先逐一 terminate/close；
 - `IshCommandCancellation`：把 Swift Task 取消传入同步 driver，确认 `EXITED` 后才完成；
 - bounded poll：native read 最长约 250 ms 后回到 deadline 检查；
 - stdout/stderr limits：超限终止 session。
@@ -273,7 +278,13 @@ smoke 跨越 backlog 并逐字节验证，证明持续消费路径；完整 Simu
 shutdown 后读取 `ru_maxrss`，要求生命周期峰值不超过 256 MiB。该门禁不证明真机 jetsam。
 deadline 到期后的 terminate 与权威 `EXITED` 确认使用独立的固定有界清理窗口；
 真机持续负载与 jetsam 仍是开放门禁。一次性命令的 Swift Task 取消已终止并确认
-guest 退出；交互 session 的 read/close 取消仍属于后续 PTY 生命周期。
+guest 退出。交互 session 以 100 ms read poll、16 KiB 分块和最多 4 MiB 的
+256-event Swift backlog 控制内存；`bufferingNewest` 为 `.failed/.exited` 保留可观察
+终态。六秒终止确认窗口与 finite native admission 让 terminate 不会退回同步无界控制路径。
+session 创建在第一次 suspension 前登记 in-flight，shutdown 不会越过尚未注册的 native
+handle；consumer 丢弃、致命 transport 错误或确认超时会关闭 session，并同步把 runtime
+与 process gate 标记为需要重启。只有全部 session 权威退出并注销后才允许 native
+shutdown。
 
 ## 7. 生命周期
 
@@ -296,7 +307,7 @@ stateDiagram-v2
 
 - `execute` 只在 `ready` 接受。
 - boot 失败但已经占用全局进程时，通常必须重启宿主 App。
-- active command 存在时拒绝 shutdown。
+- active one-shot 存在时拒绝 shutdown；live PTY session 会先被有界关闭。
 - 固定 native shutdown 返回 `.terminated`；同进程仍不能再次 boot。
 - “shutdown 后 boot” 不是当前能力。
 - 默认 placeholder 的 shutdown 只保持 idle，不代表 native shutdown 语义。
@@ -354,13 +365,13 @@ journal-only/backup/candidate 断电切点验证旧版本回滚或候选提交�
 
 CI 与测试职责见[测试与验证](Testing.md)。动态完成状态见[路线图](Roadmap.md)。
 
-## 10. 未来集成缝隙
+## 10. 已建立与后续集成缝隙
 
-- `PocketRootSession`：长运行进程 I/O 抽象。
-- live session registry：native 指针所有权与 close 顺序。
-- bounded PTY reads：让取消和 shutdown 可观察。
-- `TerminalBridge`：在 PTY 契约稳定后连接固定 SwiftTerm。
+- `PocketRootSession`：已实现长运行 PTY I/O 抽象。
+- live session registry 与 bounded reads：已保证 shutdown 的 close 顺序。
+- `PTYTerminalBridge`：已连接固定 SwiftTerm，默认拒绝 OSC 52 剪贴板访问。
+- `PocketRootFileBrowser`：已建立 guest 目录和有界预览页面。
 - 应用专属 post-boot health：在基础 identity gate 之后验证业务工具、网络和数据。
-- soft-shutdown IshEmbed build：关闭 kernel thread 而不是宿主进程。
+- 后续仍需 iPad、VoiceOver、background/foreground 和持续负载实机硬化。
 
 完整源码调用链见[实现原理](Implementation.md)。

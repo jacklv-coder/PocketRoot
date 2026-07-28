@@ -161,25 +161,37 @@
 
 ## 里程碑 4：交互式终端
 
-状态：**未开始**。
+状态：**首个 PTY/文件浏览闭环已实现；真机与 iPad 门禁进行中**。
 
-按顺序实现：
+已完成一个不依赖 Agent Loop、PTY 或 SwiftTerm 的低成本前置闭环：
 
-1. public `PocketRootSystem` interactive session entry point；
+- `PocketRootCommandTerminalSession` 在有界一次性命令之间保存当前工作目录；
+- `ls`、`cd`、`mkdir`、`touch` 和重定向创建文件等普通 shell 操作可连续执行；
+- UIKit 与 SwiftUI 宿主可把已经 boot 的 `PocketRootSystem` 直接注入终端 UI；
+- 单次命令仍继承现有 timeout、取消、输出上限和 runtime fail-close 语义。
+
+这个 facade 每次启动新的 `/bin/sh -lc`，不是 PTY；shell variable、alias 和后台 job
+不会跨命令保存，`vim`、`top` 等交互程序不在当前声明范围。
+
+本轮已完成：
+
+1. public `PocketRootSystem.makeSession`；
 2. process-wide live session registry；
-3. bounded native PTY reads；
-4. stdin write 与 close；
-5. stdout/stderr/exit event；
-6. terminal size 与 resize；
-7. signal、EOF 与 cancellation；
-8. close idempotency；
-9. close-all-before-shutdown；
-10. physical-device lifecycle tests；
-11. 固定 SwiftTerm revision；
-12. `TerminalBridge` 与 UIKit integration；
-13. accessibility、keyboard 和 iPad layout。
+3. 100 ms bounded native PTY reads 和固定 Swift event backlog；
+4. stdin write/close、stdout/stderr/exit event；
+5. terminal size/resize、signal/EOF；
+6. 幂等 terminate、close-all-before-shutdown；
+7. 固定 SwiftTerm `dd2fb8ac…` 并完成 UIKit/SwiftUI bridge；
+8. NUL-framed guest 目录浏览与有界文件预览；
+9. session/runtime/file-browser 单元测试与 iOS strict-concurrency 编译。
 
-在 session 指针所有权、read pump 取消和 close 顺序证明安全前，不使用上游高层 `IshTerminal` wrapper，也不加入 SwiftTerm。
+未完成门禁：
+
+- 当前可用 signed iPhone 上持续输入、交互程序、resize、关闭/重开页面和 shutdown 顺序；
+- background/foreground、内存压力和长时间输出；
+- iPad 键盘、旋转、layout 和 VoiceOver 实机验证。
+
+实现直接使用低层 `IshSession` 所有权，不使用上游高层 `IshTerminal` wrapper。
 
 验收：
 

@@ -56,7 +56,10 @@ Coverage includes the following relevant boundaries:
   and terminated/`restartRequired`.
 - Agent tests cover direct final text, response/call ID continuation, structured unknown-tool and ordinary-tool failures, repeated response/call IDs, whole-batch validation before side effects, turn/call/input/model/identifier/name/argument/output limits, rejection of concurrent runs and unfinishable last-turn tools, plus configuration, name, and object-schema validation. OpenAI transport tests cover initial and continuation request mapping, text/function-call/refusal/incomplete/malformed response decoding, strict schema preflight, HTTPS and body limits, credential sanitization, and non-2xx errors without token exposure.
 - Agent runtime-tool tests cover the strict command schema, unknown-field rejection, policy and approval no-side-effect paths, normalized final approval requests, whole-batch tool-specific preflight, command/cwd/environment/timeout/output bounds, UTF-8/Base64 result encoding and truncation, plus cancellation after non-cooperative approval and execution.
-- Integration and Terminal tests cover preparation/configuration alignment and the placeholder terminal configuration, theme, transcript, and clear behavior.
+- Integration and Terminal tests cover preparation/configuration alignment,
+  PTY creation/events/input/resize/signal/EOF/termination and close-before-
+  shutdown, NUL-framed file browsing and preview bounds, plus fallback
+  command-terminal cwd/marker/input and theme/transcript behavior.
 
 The real release-asset test skips when `POCKETROOT_ROOTFS_ARCHIVE` is unset. Reuse, replacement, rollback, and concurrency are covered by synthetic fixtures.
 

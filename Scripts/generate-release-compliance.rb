@@ -52,6 +52,22 @@ module PocketRootReleaseCompliance
       "muslLicenseDeclared" => "MIT"
     }
   }.freeze
+  SWIFTTERM = {
+    "repository" => "https://github.com/migueldeicaza/SwiftTerm.git",
+    "revision" => "dd2fb8ac5b861e7bf617c872895e338f38165648",
+    "release" => "v1.15.0",
+    "licenseDeclared" => "MIT",
+    "noticePath" => "ThirdPartyNotices/SwiftTerm-LICENSE.txt",
+    "noticeSha256" =>
+      "1c34c11581e20feb2b7ea122146a6690261dae94b2c8444e8cff902e567df6ae"
+  }.freeze
+  SWIFT_ARGUMENT_PARSER = {
+    "repository" => "https://github.com/apple/swift-argument-parser",
+    "revision" => "6a52f3251125d74daf04fcbd5e6f08a75d074382",
+    "release" => "1.8.2",
+    "licenseDeclared" => "Apache-2.0",
+    "resolvedOnly" => true
+  }.freeze
   ROOTFS = {
     "version" => "v0.3.3",
     "guestVersion" => "3.19.1",
@@ -85,7 +101,10 @@ module PocketRootReleaseCompliance
       "resources" => []
     },
     "PocketRootTerminal" => {
-      "dependencies" => ["target:PocketRootCore"],
+      "dependencies" => [
+        "target:PocketRootCore",
+        "product:SwiftTerm@SwiftTerm[iOS]"
+      ],
       "resources" => []
     },
     "CPocketRootArchiveSupport" => {
@@ -184,11 +203,13 @@ module PocketRootReleaseCompliance
     "LICENSE" =>
       "9858dd8b44db130c423cb772ec04d1a16fceb4fa57c679b27e301b9f76861bba",
     "Package.resolved" =>
-      "3ed8fb9402ec802b88cd33c6353a60ee2f805dc94724476721d57e198bac424c",
+      "0af53a967822dfe3ad3aca7c5c319c5d0922c3f0ab57bbda19a92baac0aa273a",
     "Package.swift" =>
-      "4b1bbde562422157c581e5df0b309eb25d14d520fb39b77175416b1d7b8e1697",
+      "fff762dc74981f136159838d480f1d28deb292100e74ebdcd2589885366c3a4f",
     "project.yml" =>
-      "e3c35541c7b86aaf198169f7eb0a463253aa478badebde92ae6f83a387fcc967"
+      "350c47fe286e7e743759125099762b953ee5b0350d4cca6f86f7dd6bd46ad1eb",
+    "ThirdPartyNotices/SwiftTerm-LICENSE.txt" =>
+      "1c34c11581e20feb2b7ea122146a6690261dae94b2c8444e8cff902e567df6ae"
   }.freeze
   IMPLEMENTATION_ROOTS = %w[
     Sources
@@ -548,13 +569,17 @@ module PocketRootReleaseCompliance
         ".package",
         "Package.swift dependencies"
       )
-    expected_dependency = dependency_bodies.length == 1 &&
-      dependency_bodies.fetch(0).match?(
-        /\A\s*url:\s*"#{Regexp.escape(ISHEMBED.fetch("repository"))}"\s*,\s*/m
-      ) &&
-      dependency_bodies.fetch(0).match?(
-        /revision:\s*"#{Regexp.escape(ISHEMBED.fetch("revision"))}"\s*\z/m
-      )
+    expected_direct_dependencies = [ISHEMBED, SWIFTTERM]
+    expected_dependency =
+      dependency_bodies.length == expected_direct_dependencies.length &&
+      dependency_bodies.zip(expected_direct_dependencies).all? do |body, expected|
+        body.match?(
+          /\A\s*url:\s*"#{Regexp.escape(expected.fetch("repository"))}"\s*,\s*/m
+        ) &&
+          body.match?(
+            /revision:\s*"#{Regexp.escape(expected.fetch("revision"))}"\s*\z/m
+          )
+      end
     unparsed_dependencies = dependency_source.dup
     dependency_bodies.each do |body|
       unparsed_dependencies.sub!(".package(#{body})", "")
@@ -562,7 +587,7 @@ module PocketRootReleaseCompliance
     unless expected_dependency &&
       unparsed_dependencies.gsub(/[,\s]/, "").empty?
       raise ComplianceError,
-        "Package.swift external dependency declarations do not match IshEmbed"
+        "Package.swift external dependency declarations do not match the pins"
     end
     {
       "name" => "PocketRoot",
@@ -585,19 +610,33 @@ module PocketRootReleaseCompliance
       raise ComplianceError, "Package.resolved has an unsupported schema"
     end
     pins = document.fetch("pins")
-    unless pins.is_a?(Array) && pins.length == 1
-      raise ComplianceError, "Package.resolved must contain one external pin"
+    expected_pins = [
+      {
+        "identity" => "ish-arm64-pkg",
+        "kind" => "remoteSourceControl",
+        "location" => ISHEMBED.fetch("repository"),
+        "state" => {"revision" => ISHEMBED.fetch("revision")}
+      },
+      {
+        "identity" => "swift-argument-parser",
+        "kind" => "remoteSourceControl",
+        "location" => SWIFT_ARGUMENT_PARSER.fetch("repository"),
+        "state" => {
+          "revision" => SWIFT_ARGUMENT_PARSER.fetch("revision"),
+          "version" => SWIFT_ARGUMENT_PARSER.fetch("release")
+        }
+      },
+      {
+        "identity" => "swiftterm",
+        "kind" => "remoteSourceControl",
+        "location" => SWIFTTERM.fetch("repository"),
+        "state" => {"revision" => SWIFTTERM.fetch("revision")}
+      }
+    ]
+    unless pins == expected_pins
+      raise ComplianceError, "Package.resolved external pins drifted"
     end
-    pin = pins.fetch(0)
-    unless pin == {
-      "identity" => "ish-arm64-pkg",
-      "kind" => "remoteSourceControl",
-      "location" => ISHEMBED.fetch("repository"),
-      "state" => {"revision" => ISHEMBED.fetch("revision")}
-    }
-      raise ComplianceError, "Package.resolved IshEmbed pin drifted"
-    end
-    pin
+    pins
   rescue KeyError, TypeError => error
     raise ComplianceError, "Package.resolved is incomplete: #{error.message}"
   end
@@ -698,7 +737,8 @@ module PocketRootReleaseCompliance
             "package" => "PocketRoot",
             "product" => "PocketRootIshRuntimeIntegration"
           },
-          {"package" => "PocketRoot", "product" => "PocketRootResources"}
+          {"package" => "PocketRoot", "product" => "PocketRootResources"},
+          {"package" => "PocketRoot", "product" => "PocketRootTerminal"}
         ]
       },
       "PocketRootDemo" => {
@@ -861,6 +901,11 @@ module PocketRootReleaseCompliance
       load_json(root.join("Package.resolved"), "Package.resolved")
     project_bytes = read_regular(root.join("project.yml"), "project.yml")
     license_bytes = read_regular(root.join("LICENSE"), "LICENSE")
+    swiftterm_notice_bytes =
+      read_regular(
+        root.join(SWIFTTERM.fetch("noticePath")),
+        "SwiftTerm license notice"
+      )
     implementation_files = implementation_file_sha256(root)
     resource_files = validate_resource_files(root)
     rootfs_directory = root.join("Compliance/RootFS/v0.3.3")
@@ -889,7 +934,9 @@ module PocketRootReleaseCompliance
       "LICENSE" => Digest::SHA256.hexdigest(license_bytes),
       "Package.resolved" => Digest::SHA256.hexdigest(package_resolved_bytes),
       "Package.swift" => Digest::SHA256.hexdigest(package_swift),
-      "project.yml" => Digest::SHA256.hexdigest(project_bytes)
+      "project.yml" => Digest::SHA256.hexdigest(project_bytes),
+      SWIFTTERM.fetch("noticePath") =>
+        Digest::SHA256.hexdigest(swiftterm_notice_bytes)
     }
     unless file_sha256 == EXPECTED_REPOSITORY_FILES
       raise ComplianceError,
@@ -964,6 +1011,8 @@ module PocketRootReleaseCompliance
       ],
       "externalComponents" => {
         "ishEmbed" => ISHEMBED,
+        "swiftTerm" => SWIFTTERM,
+        "swiftArgumentParser" => SWIFT_ARGUMENT_PARSER,
         "rootFS" => ROOTFS.merge(
           "deliveryModel" => "caller-provided-local-input",
           "bundledByDefault" => false,
@@ -1094,6 +1143,51 @@ module PocketRootReleaseCompliance
         ]
       ),
       spdx_package(
+        id: "SPDXRef-Package-SwiftTerm",
+        name: "SwiftTerm",
+        version: SWIFTTERM.fetch("release"),
+        download:
+          "https://github.com/migueldeicaza/SwiftTerm/tree/" \
+          "#{SWIFTTERM.fetch("revision")}",
+        license_declared: SWIFTTERM.fetch("licenseDeclared"),
+        purpose: "LIBRARY",
+        source_info:
+          "Pinned Git revision #{SWIFTTERM.fetch("revision")}; the complete " \
+          "upstream MIT notice is tracked at #{SWIFTTERM.fetch("noticePath")}.",
+        external_refs: [
+          {
+            "referenceCategory" => "PACKAGE-MANAGER",
+            "referenceType" => "purl",
+            "referenceLocator" =>
+              "pkg:github/migueldeicaza/SwiftTerm@" \
+              "#{SWIFTTERM.fetch("revision")}"
+          }
+        ]
+      ),
+      spdx_package(
+        id: "SPDXRef-Package-Swift-Argument-Parser",
+        name: "swift-argument-parser",
+        version: SWIFT_ARGUMENT_PARSER.fetch("release"),
+        download:
+          "https://github.com/apple/swift-argument-parser/tree/" \
+          "#{SWIFT_ARGUMENT_PARSER.fetch("revision")}",
+        license_declared: SWIFT_ARGUMENT_PARSER.fetch("licenseDeclared"),
+        purpose: "LIBRARY",
+        source_info:
+          "Resolved through the pinned SwiftTerm package manifest. The selected " \
+          "SwiftTerm library product does not link the Termcast executable or " \
+          "ArgumentParser product.",
+        external_refs: [
+          {
+            "referenceCategory" => "PACKAGE-MANAGER",
+            "referenceType" => "purl",
+            "referenceLocator" =>
+              "pkg:github/apple/swift-argument-parser@" \
+              "#{SWIFT_ARGUMENT_PARSER.fetch("revision")}"
+          }
+        ]
+      ),
+      spdx_package(
         id: "SPDXRef-Package-IshKernel-XCFramework",
         name: "libIshKernel.xcframework",
         version: ISHEMBED.fetch("release"),
@@ -1193,6 +1287,22 @@ module PocketRootReleaseCompliance
           "Only the opt-in PocketRootIshRuntime product uses this dependency."
       },
       {
+        "spdxElementId" => "SPDXRef-Package-PocketRoot",
+        "relationshipType" => "DEPENDS_ON",
+        "relatedSpdxElement" => "SPDXRef-Package-SwiftTerm",
+        "comment" =>
+          "Only PocketRootTerminal on iOS selects the SwiftTerm library product."
+      },
+      {
+        "spdxElementId" => "SPDXRef-Package-SwiftTerm",
+        "relationshipType" => "DEPENDS_ON",
+        "relatedSpdxElement" =>
+          "SPDXRef-Package-Swift-Argument-Parser",
+        "comment" =>
+          "The package resolver records this manifest dependency, but the " \
+          "selected SwiftTerm library target does not link ArgumentParser."
+      },
+      {
         "spdxElementId" => "SPDXRef-Package-IshEmbed",
         "relationshipType" => "DEPENDS_ON",
         "relatedSpdxElement" => "SPDXRef-Package-IshKernel-XCFramework"
@@ -1259,8 +1369,8 @@ module PocketRootReleaseCompliance
       此目录记录 `#{RELEASE_VERSION}` 源码树可复现的**最大实验组合**，不是已构建、
       已扫描或获准发行的 App 制品。`COMPOSITION.json` 区分默认 Demo、原生 runtime
       smoke 与全部 Swift products；`SBOM.spdx.json` 汇总 PocketRoot、固定 ABI.6
-      IshEmbed/XCFramework、精确 iSH gitlink、静态 supervisor 使用的 musl source
-      snapshot，以及调用方提供的外部 RootFS 和其中 15 个 Alpine 包。
+      IshEmbed/XCFramework、精确 iSH gitlink、静态 supervisor 使用的 musl source、
+      固定 SwiftTerm 与其解析依赖，以及调用方提供的外部 RootFS 和其中 15 个 Alpine 包。
 
       默认 Demo 不包含 IshEmbed 或 RootFS。RootFS 不由库下载，也不进入默认 App。
       顶层许可证、完整 LICENSE/NOTICE、对应源码交付、App Store 2.5.2、法律审查和
@@ -1281,8 +1391,8 @@ module PocketRootReleaseCompliance
       default Demo, native-runtime smoke, and all Swift products.
       `SBOM.spdx.json` combines PocketRoot, pinned ABI.6 IshEmbed/XCFramework,
       the exact iSH gitlink, the musl source snapshot used by the static guest
-      supervisor, and the caller-provided external RootFS with its 15 Alpine
-      packages.
+      supervisor, pinned SwiftTerm and its resolved dependency, and the
+      caller-provided external RootFS with its 15 Alpine packages.
 
       The default Demo contains neither IshEmbed nor a RootFS. The library does
       not download the RootFS or place it in the default App. The top-level
@@ -1364,7 +1474,7 @@ module PocketRootReleaseCompliance
       document.fetch("documentNamespace").end_with?(
         "/#{expected_namespace_digest}"
       ) &&
-      packages.length == 22 &&
+      packages.length == 24 &&
       ids.uniq.length == ids.length &&
       ids.all? { |id| id.match?(/\ASPDXRef-[A-Za-z0-9.-]+\z/) }
       raise ComplianceError, "release SPDX document or package set drifted"

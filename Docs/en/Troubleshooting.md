@@ -32,7 +32,11 @@ The upstream package has no macOS XCFramework slice despite its manifest declara
 
 ## Default Demo says runtime is not installed
 
-Expected. It uses the placeholder shared system and has no PTY or RootFS. Follow the [integration guide](IntegrationGuide.md); do not add an unreviewed archive to the default bundle.
+Expected. The Demo uses the placeholder shared system and injects no real
+runtime into Terminal. The library's SwiftTerm PTY and Files pages require an
+application-owned prepared and booted system. Follow the
+[integration guide](IntegrationGuide.md); do not add an unreviewed archive to
+the default bundle.
 
 ## Runtime not booted
 

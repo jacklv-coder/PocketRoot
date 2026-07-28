@@ -1,4 +1,5 @@
 import Foundation
+import PocketRootCore
 
 struct IshDriverBootOptions: Sendable, Equatable {
     let rootFSPath: String
@@ -25,6 +26,29 @@ struct IshDriverCommandResult: Sendable, Equatable {
     let timedOut: Bool
 }
 
+struct IshDriverSessionRequest: Sendable, Equatable {
+    let arguments: [String]
+    let workingDirectory: String
+    let environment: [String: String]
+    let initialTerminalSize: PocketRootTerminalSize
+}
+
+enum IshDriverSessionEvent: Sendable, Equatable {
+    case standardOutput(Data)
+    case standardError(Data)
+    case exited(exitCode: Int32, signal: Int32)
+}
+
+protocol IshRuntimeDriverSession: Sendable {
+    func read(timeout: TimeInterval) throws -> IshDriverSessionEvent?
+    func write(_ data: Data) throws
+    func resize(to size: PocketRootTerminalSize) throws
+    func sendSignal(_ signal: Int32) throws
+    func closeInput() throws
+    func terminate() throws
+    func close()
+}
+
 protocol IshRuntimeDriver: Sendable {
     func boot(_ options: IshDriverBootOptions) throws
     func execute(_ request: IshDriverCommandRequest) throws -> IshDriverCommandResult
@@ -32,6 +56,9 @@ protocol IshRuntimeDriver: Sendable {
         _ request: IshDriverCommandRequest,
         cancellation: IshCommandCancellation
     ) throws -> IshDriverCommandResult
+    func makeSession(
+        _ request: IshDriverSessionRequest
+    ) throws -> any IshRuntimeDriverSession
     func shutdown() throws
 }
 
@@ -44,6 +71,18 @@ extension IshRuntimeDriver {
         let result = try execute(request)
         try cancellation.check()
         return result
+    }
+
+    func makeSession(
+        _ request: IshDriverSessionRequest
+    ) throws -> any IshRuntimeDriverSession {
+        throw IshRuntimeSessionUnsupportedError()
+    }
+}
+
+private struct IshRuntimeSessionUnsupportedError: LocalizedError {
+    var errorDescription: String? {
+        "This IshEmbed driver does not provide interactive sessions."
     }
 }
 
@@ -80,6 +119,7 @@ enum IshRuntimeDriverError: LocalizedError, Equatable {
 
 enum IshRuntimeTransportPolicy {
     private static let terminalSpawnErrorCodes: Set<Int32> = [-9, -11, -17]
+    private static let terminalSessionOperationErrorCodes: Set<Int32> = [-9, -11]
 
     static func terminalSpawnFailure(
         code: Int32,
@@ -90,6 +130,19 @@ enum IshRuntimeTransportPolicy {
         }
         return .sessionTerminationUnconfirmed(
             "spawning the guest command failed because the native transport "
+                + "is no longer trustworthy (IshError \(code): \(message))"
+        )
+    }
+
+    static func terminalSessionOperationFailure(
+        code: Int32,
+        message: String
+    ) -> IshRuntimeDriverError? {
+        guard terminalSessionOperationErrorCodes.contains(code) else {
+            return nil
+        }
+        return .sessionTerminationUnconfirmed(
+            "the guest session operation failed because the native transport "
                 + "is no longer trustworthy (IshError \(code): \(message))"
         )
     }

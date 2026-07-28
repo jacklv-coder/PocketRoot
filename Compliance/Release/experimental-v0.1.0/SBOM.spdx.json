@@ -3,7 +3,7 @@
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "PocketRoot experimental full-graph composition 0.1.0",
-  "documentNamespace": "https://github.com/jacklv-coder/PocketRoot/sbom/release/experimental-v0.1.0/5dc709c19fa12429a2f68eb9578c578e3d5575c0795c9d77860736a3d4359b59",
+  "documentNamespace": "https://github.com/jacklv-coder/PocketRoot/sbom/release/experimental-v0.1.0/28f70091edefb9739f00e49e564159daf25f577820df6eed9757a5a3d1ad55d6",
   "creationInfo": {
     "created": "2026-07-28T00:00:00Z",
     "creators": [
@@ -45,6 +45,46 @@
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
           "referenceLocator": "pkg:github/jacklv-coder/ish-arm64-pkg@38d25d6f8726145e7e988172f12000020d89a638"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-SwiftTerm",
+      "name": "SwiftTerm",
+      "versionInfo": "v1.15.0",
+      "supplier": "NOASSERTION",
+      "downloadLocation": "https://github.com/migueldeicaza/SwiftTerm/tree/dd2fb8ac5b861e7bf617c872895e338f38165648",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "copyrightText": "NOASSERTION",
+      "primaryPackagePurpose": "LIBRARY",
+      "sourceInfo": "Pinned Git revision dd2fb8ac5b861e7bf617c872895e338f38165648; the complete upstream MIT notice is tracked at ThirdPartyNotices/SwiftTerm-LICENSE.txt.",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:github/migueldeicaza/SwiftTerm@dd2fb8ac5b861e7bf617c872895e338f38165648"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-Swift-Argument-Parser",
+      "name": "swift-argument-parser",
+      "versionInfo": "1.8.2",
+      "supplier": "NOASSERTION",
+      "downloadLocation": "https://github.com/apple/swift-argument-parser/tree/6a52f3251125d74daf04fcbd5e6f08a75d074382",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "Apache-2.0",
+      "copyrightText": "NOASSERTION",
+      "primaryPackagePurpose": "LIBRARY",
+      "sourceInfo": "Resolved through the pinned SwiftTerm package manifest. The selected SwiftTerm library product does not link the Termcast executable or ArgumentParser product.",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:github/apple/swift-argument-parser@6a52f3251125d74daf04fcbd5e6f08a75d074382"
         }
       ]
     },
@@ -471,6 +511,18 @@
       "relationshipType": "DEPENDS_ON",
       "relatedSpdxElement": "SPDXRef-Package-IshEmbed",
       "comment": "Only the opt-in PocketRootIshRuntime product uses this dependency."
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-PocketRoot",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-SwiftTerm",
+      "comment": "Only PocketRootTerminal on iOS selects the SwiftTerm library product."
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-SwiftTerm",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-Swift-Argument-Parser",
+      "comment": "The package resolver records this manifest dependency, but the selected SwiftTerm library target does not link ArgumentParser."
     },
     {
       "spdxElementId": "SPDXRef-Package-IshEmbed",

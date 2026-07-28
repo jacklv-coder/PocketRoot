@@ -169,10 +169,11 @@ The default Demo stays asset-free and placeholder-backed. The compile spike prov
 - One-shot commands have positive time and finite output.
 - Shutdown cannot overtake an active command.
 - Native shutdown returns `.terminated`, and the same process cannot boot again.
-- SwiftTerm waits for proven PTY ownership.
+- SwiftTerm only attaches through registered, bounded-read PTY ownership with
+  close-before-shutdown ordering.
 
 ## Open implementation
 
-Public interactive sessions, session registry, bounded PTY reads,
-input/resize/signal/EOF, Demo injection, and new-artifact
-physical-device hardening remain open. See the [roadmap](Roadmap.md).
+Prepared-system Demo injection, currently available signed-iPhone PTY lifecycle and sustained-output
+coverage, iPad keyboard/rotation/layout, VoiceOver, and app-transition
+hardening remain open. See the [roadmap](Roadmap.md).

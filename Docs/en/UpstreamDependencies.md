@@ -6,7 +6,7 @@ This is the sole source of truth for immutable revisions, nested gitlinks,
 artifact URLs, sizes, and SHA-256 values used by the Experimental runtime.
 Branches, moving tags, unverified release aliases, and local caches are not pins.
 
-Audit date: 2026-07-27
+Audit date: 2026-07-28
 
 ## 1. IshEmbed Swift package
 
@@ -84,7 +84,22 @@ SwiftPM validates the zip checksum. The release transaction also verified:
 
 This release contains **no RootFS**.
 
-## 4. Separately pinned Alpine RootFS
+## 4. SwiftTerm
+
+| Field | Audited value |
+| --- | --- |
+| Repository | `https://github.com/migueldeicaza/SwiftTerm.git` |
+| Exact revision | `dd2fb8ac5b861e7bf617c872895e338f38165648` |
+| Corresponding tag | `v1.15.0` |
+| Swift product | `SwiftTerm` |
+| License | MIT |
+| License copy | `ThirdPartyNotices/SwiftTerm-LICENSE.txt` |
+
+`PocketRootTerminal` links this product only on iOS. SwiftTerm's manifest also
+resolves `swift-argument-parser`, but the library target consumed by PocketRoot
+does not depend on or link that product.
+
+## 5. Separately pinned Alpine RootFS
 
 PocketRoot's built-in RootFS manifest still pins the parent v0.3.3 Alpine
 3.19.1 aarch64 `fs.tar.gz`. Updating the runtime does not silently replace the
@@ -107,7 +122,7 @@ explicitly install them as general guest packages. Codex CLI is not part of
 the mobile architecture, and IshEmbed has no installation, provisioning, or
 configuration path for it.
 
-## 5. Current behavior and validation boundary
+## 6. Current behavior and validation boundary
 
 The pinned artifact provides:
 
@@ -134,8 +149,7 @@ The pinned artifact provides:
 PocketRoot remains Experimental. Open gates include:
 
 - physical iPad execution;
-- interactive-session read/close cancellation;
-- complete PTY, resize, signal, and interactive-session lifecycle;
+- physical-device interactive read/close, resize, signal, and page lifecycle;
 - sustained workload, peak memory, and jetsam behavior;
 - generated RootFS package inventory, SPDX SBOM, source locators, and default
   configuration are present, while the complete license/NOTICE and
@@ -145,7 +159,7 @@ PocketRoot remains Experimental. Open gates include:
   recorded here, while no final App archive has been scanned; and
 - an App Store Review Guideline 2.5.2 decision.
 
-## 6. Update procedure
+## 7. Update procedure
 
 Every upstream update must:
 

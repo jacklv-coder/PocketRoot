@@ -2,7 +2,7 @@
 
 [简体中文](README.md) | [English](README.en.md)
 
-PocketRoot 是面向 iOS 的可嵌入 ARM64 Linux 运行时、终端与上层轻量 agent 基础设施。项目使用 Swift Package 提供模块化 API，以 iSH/IshEmbed 作为实验性运行时，在 iOS 沙箱中安装经过校验的 Alpine fakefs，并执行有边界的一次性 shell 命令。
+PocketRoot 是面向 iOS 的可嵌入 ARM64 Linux 运行时、终端与上层轻量 agent 基础设施。项目使用 Swift Package 提供模块化 API，以 iSH/IshEmbed 作为实验性运行时，在 iOS 沙箱中安装经过校验的 Alpine fakefs，执行有界命令，并通过 SwiftTerm 提供持续 PTY 与 guest 文件浏览。
 
 > [!WARNING]
 > 真实 iSH 集成目前仍是 **实验性（Experimental）** 能力。固定的
@@ -18,9 +18,10 @@ PocketRoot 是面向 iOS 的可嵌入 ARM64 Linux 运行时、终端与上层轻
 | UIKit Demo 外壳 | 可用 | 展示 System、Terminal、Commands、Diagnostics 四个入口 |
 | RootFS 校验与安全安装 | 可用 | 固定大小和 SHA-256、安全解包、journal 保护的同卷 promotion、复用与中断恢复 |
 | iSH 启动与一次性命令 | 实验性 | 仅 `iOS + arm64`；支持确认 guest 退出的一次性命令取消 |
+| 终端与文件浏览 | 可接入 / 实验性 | UIKit/SwiftUI 注入已 boot system；SwiftTerm 持续 PTY 支持输入、resize、signal/EOF，文件页支持目录与有界预览 |
 | 轻量 agent loop | 核心、OpenAI transport 与审批命令工具可用 | Agent 与 Runtime Tools 均显式 opt-in；不安装 Codex CLI，不自动批准 shell |
-| 交互式 PTY 与 SwiftTerm | 未实现 | 会话、输入、resize、signal 和安全关闭仍在规划中 |
-| 真机与公开发行 | 部分通过 / 阻塞 | iPhone 多项 runtime 门禁与 unsigned 工程 App 文件/Mach-O/entitlement 扫描已通过；仍需真实 storage pressure、iPad、jetsam/断电、最终签名/导出制品扫描与完整发行物 SBOM、许可证/NOTICE/对应源码和 App Store 审查 |
+| 交互式 PTY 与 SwiftTerm | 已实现，待扩大真机验证 | public session、bounded read、输入、resize、signal/EOF、registry 与 close-before-shutdown 已接通 |
+| 真机与公开发行 | 部分通过 / 阻塞 | iPhone 一次性命令门禁与 unsigned 工程 App 扫描已通过；新增 PTY 仍需真机生命周期，另需真实 storage pressure、iPad、jetsam/断电、最终制品与合规门禁 |
 
 默认 `PocketRoot` 产品不会带入 agent loop 或真实 iSH 运行时，也不会打包或下载 RootFS。
 需要 agent 的应用显式依赖 `PocketRootAgent`；只有需要审批命令 adapter 时才额外依赖
@@ -36,8 +37,8 @@ flowchart LR
     C --> D["PocketRootIshRuntimeIntegration 组合系统"]
     D --> E["PocketRootIshRuntime 启动 IshEmbed"]
     E --> F["校验 aarch64、Alpine 身份与工作目录"]
-    F --> G["通过 /bin/sh -lc 执行一次性命令"]
-    G --> H["返回 exit code、signal、stdout、stderr 与 timeout"]
+    F --> G["一次性命令或持续 PTY session"]
+    G --> H["SwiftTerm 终端 / guest 文件浏览 / 有界结果"]
 ```
 
 关键设计原则：
@@ -45,7 +46,7 @@ flowchart LR
 - RootFS 二进制不提交到仓库，库本身不执行网络下载。
 - 上游源码、XCFramework 和 RootFS 都固定到不可变 revision 或 SHA-256。
 - RootFS 在私有、同卷 staging 中解包；校验通过后先持久化候选树，再通过已持久化 journal、逐次目录同步和原子 `current.json` 完成可恢复、可回滚的 promotion。整个替换仍不是一次整体原子操作，但明确的文件/目录同步顺序和断电切点恢复矩阵保证可推断 commit 或 rollback；真机强制断电实证仍是独立门禁。
-- IshEmbed 是进程级单例；PocketRoot 只允许一个原生运行时所有者和一个在途命令。
+- IshEmbed 是进程级单例；PocketRoot 只允许一个原生运行时所有者和一个在途一次性命令，并登记所有 live PTY session。
 - 同步原生调用在串行阻塞队列中执行，不阻塞主线程和 Swift cooperative executor。
 - 取消一次性命令会终止 native session，确认 guest `EXITED` 后才返回；成功后 runtime
   可继续使用，无法确认清理则失败关闭。取消不回滚此前副作用。
@@ -93,7 +94,7 @@ open PocketRootDemo.xcodeproj
 当前 Demo 是 UI 和公共 API 演示外壳，不会直接启动 Alpine：
 
 - System 与 Commands 页面连接的是占位 `PocketRootSystem.shared`。
-- Terminal 页面尚未接入 PTY。
+- Terminal 页面尚未注入真实 runtime；库已提供可直接注入应用自有 system 的 SwiftTerm PTY 与 Files 页面。
 - Diagnostics 展示后续集成位置。
 - 原生运行时验证使用独立的 compile spike 与 smoke App。
 

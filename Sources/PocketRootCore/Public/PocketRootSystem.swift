@@ -3,9 +3,20 @@ public actor PocketRootSystem {
     public static let shared = PocketRootSystem()
 
     public let configuration: PocketRootConfiguration
-    public private(set) var state: PocketRootRuntimeState = .idle
+    /// The latest stable runtime state.
+    ///
+    /// Each read reconciles with the runtime so failures reported by a
+    /// persistent session after `makeSession()` returns are visible without
+    /// requiring another system operation.
+    public var state: PocketRootRuntimeState {
+        get async {
+            await refreshPublishedStableState()
+            return publishedState
+        }
+    }
 
     private let coordinator: RuntimeCoordinator
+    private var publishedState: PocketRootRuntimeState = .idle
     private var stateRefreshGeneration: UInt64 = 0
 
     public init(configuration: PocketRootConfiguration = PocketRootConfiguration()) {
@@ -44,6 +55,25 @@ public actor PocketRootSystem {
         }
     }
 
+    /// Creates a persistent interactive shell session backed by the runtime PTY.
+    ///
+    /// The system must be booted before this method is called. The returned
+    /// session remains owned by the runtime until it exits or is terminated.
+    public func makeSession(
+        configuration: PocketRootSessionConfiguration = .init()
+    ) async throws -> any PocketRootSession {
+        do {
+            let session = try await coordinator.makeSession(
+                configuration: configuration
+            )
+            await refreshPublishedStableState()
+            return session
+        } catch {
+            await refreshPublishedStableState()
+            throw error
+        }
+    }
+
     public func shutdown() async throws {
         do {
             try await coordinator.shutdown()
@@ -68,7 +98,7 @@ public actor PocketRootSystem {
 
         switch currentState {
         case .idle, .ready, .terminated, .failed:
-            state = currentState
+            publishedState = currentState
         case .preparingRootFS, .booting, .shuttingDown:
             // A lifecycle call can be suspended while this actor admits a
             // reentrant command. Keep transient runtime states internal; the

@@ -15,7 +15,10 @@ Use the [Roadmap](Roadmap.md) for dynamic completion status and [Upstream Depend
 
 ## 1. PocketRoot in one sentence
 
-PocketRoot is a modular Swift project targeting iOS 18 and later. It installs a hash-pinned ARM64 Linux fakefs inside the iOS sandbox, uses an experimental native iSH runtime to execute bounded one-shot shell commands, and preserves clean boundaries for a future interactive terminal.
+PocketRoot is a modular Swift project targeting iOS 18 and later. It installs
+a hash-pinned ARM64 Linux fakefs inside the iOS sandbox, uses an experimental
+native iSH runtime for bounded one-shot commands and persistent PTY sessions,
+and provides SwiftTerm terminal and guest-file pages.
 
 It is not:
 
@@ -123,7 +126,7 @@ copies and the ABI.2 `/proc` lifecycle-lock fix.
 | `Sources/CPocketRootArchiveSupport/` | Narrow zlib streaming C interface | The Swift/C boundary and expanded-size ceiling |
 | `Sources/PocketRootIshRuntime/` | iSH adapter, driver, serial execution, and ownership | How blocking native APIs enter Swift Concurrency |
 | `Sources/PocketRootIshRuntimeIntegration/` | Factory that combines RootFS and runtime | The application-facing `prepareSystem` entry point |
-| `Sources/PocketRootTerminal/` | Terminal configuration and placeholder UIKit UI | Why no PTY is connected yet |
+| `Sources/PocketRootTerminal/` | SwiftTerm PTY, guest files, and fallback facade | How UI connects registered sessions within fixed bounds |
 | `Demo/PocketRootDemo/` | Safe-default UIKit demo | Separation between UI and experimental runtime |
 | `Spikes/` | Final-link and native smoke applications | The difference between compiling and running the real runtime |
 | `Tests/` | Swift unit and integration tests | State, bounds, recovery, and error semantics |
@@ -136,7 +139,8 @@ copies and the ABI.2 `/proc` lifecycle-lock fix.
 
 - `PocketRootCore` defines `PocketRootSystem`, commands, results, states, errors, and the runtime protocol.
 - `PocketRootResources` handles only a caller-provided local RootFS and does not start a runtime.
-- `PocketRootTerminal` currently provides a UIKit shell and does not own a PTY.
+- `PocketRootTerminal` provides a SwiftTerm-backed PTY, guest file pages, and
+  an optional cwd-carrying one-shot fallback.
 - `PocketRoot` re-exports those three safe modules.
 
 `PocketRootSystem.shared` uses `PlaceholderLinuxRuntime`. An application depending only on `PocketRoot` therefore does not link the experimental native binary merely by importing the module.
@@ -293,7 +297,11 @@ Two details matter:
 1. Actors may re-enter at `await`, so lifecycle state must change before the first suspension.
 2. `PocketRootSystem.state` is a public snapshot after an operation completes, not a live stream of native boot or shutdown progress.
 
-The fact that the lower IshEmbed layer can express multiple sessions does not mean PocketRoot exposes interactive sessions. `IshLinuxRuntime.makeSession` currently returns unsupported, `IshEmbedDriver.execute` does not set `chrootPath`, and PocketRoot still permits only one in-flight one-shot command. A VM is a chroot directory tree inside one iSH kernel and fakefs, not another kernel or a hardened boundary for untrusted code.
+PocketRoot now exposes IshEmbed PTYs through `PocketRootSystem.makeSession` and
+registers every live session, while still allowing only one in-flight one-shot
+command. Sessions share one iSH kernel and fakefs. A VM remains a chroot tree
+inside that kernel, not another kernel or a hardened boundary for untrusted
+code; interactive sessions currently do not set `chrootPath`.
 
 ## 7. RootFS is not an ordinary extracted directory
 

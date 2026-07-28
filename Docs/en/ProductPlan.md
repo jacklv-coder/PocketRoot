@@ -46,13 +46,14 @@ PocketRoot is not a full iSH app fork or a general virtualization platform. It s
 - A default post-boot guest identity gate.
 - Secure RootFS installation and recovery.
 - Experimental final-link and Simulator smoke validation.
+- Persistent `PocketRootSession`, SwiftTerm PTY, and guest file browsing.
 
 ### Planned
 
 - Application-specific guest tool, network, and data health checks.
 - Real runtime injection into the Demo.
-- Interactive `PocketRootSession`, PTY, and SwiftTerm.
 - Sustained lifecycle and fault-injection validation for soft shutdown.
+- Physical-device and iPad hardening for PTY and SwiftTerm.
 - Physical-device lifecycle, memory, performance, and fault testing.
 - Controlled distribution after all compliance gates are satisfied.
 

@@ -48,6 +48,10 @@ let package = Package(
         .package(
             url: "https://github.com/jacklv-coder/ish-arm64-pkg.git",
             revision: "38d25d6f8726145e7e988172f12000020d89a638"
+        ),
+        .package(
+            url: "https://github.com/migueldeicaza/SwiftTerm.git",
+            revision: "dd2fb8ac5b861e7bf617c872895e338f38165648"
         )
     ],
     targets: [
@@ -57,7 +61,12 @@ let package = Package(
         .target(
             name: "PocketRootTerminal",
             dependencies: [
-                "PocketRootCore"
+                "PocketRootCore",
+                .product(
+                    name: "SwiftTerm",
+                    package: "SwiftTerm",
+                    condition: .when(platforms: [.iOS])
+                )
             ]
         ),
         .target(

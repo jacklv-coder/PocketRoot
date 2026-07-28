@@ -17,7 +17,7 @@ PocketRoot 暴露八个产品：
 | --- | --- | --- |
 | `PocketRootCore` | 状态、配置、命令、结果和错误模型 | 否 |
 | `PocketRootResources` | RootFS 清单、校验、解包和安装 | 否 |
-| `PocketRootTerminal` | UIKit 终端占位 UI | 否 |
+| `PocketRootTerminal` | UIKit/SwiftUI SwiftTerm PTY、guest 文件浏览与命令 fallback | 否 |
 | `PocketRootAgent` | provider-agnostic 有界 agent loop 与 OpenAI Responses transport | 否 |
 | `PocketRootAgentRuntimeTools` | 审批与策略保护的 Linux command adapter | 否 |
 | `PocketRoot` | 默认伞形产品，重新导出 Core、Resources 与 Terminal | 否 |
@@ -297,9 +297,9 @@ print(result.stderr)
 
 ### 状态
 
-下表描述 runtime 状态机。当前公开的 `PocketRootSystem.state` 在
-`boot()`、`shutdown()`、`execute()` 返回或抛错后只发布稳定状态；调用仍在执行时，
-外部轮询可能继续看到操作前的值，不能把它当作实时进度流。
+下表描述 runtime 状态机。每次读取 `PocketRootSystem.state` 都会与底层 runtime
+对账，因此 `makeSession()` 返回后异步发生的 PTY 致命失败也能被观察到。它只发布稳定
+状态；调用仍在执行时，外部轮询可能继续看到操作前的值，不能把它当作实时进度流。
 命令若因无法确认 guest 退出而失败关闭，`execute()` 抛错前的内部 `.failed` 会在抛错时
 同步到公开 state。
 底层 `IshLinuxRuntime` 会在 suspension 前更新自己的 `.booting` / `.shuttingDown`
@@ -372,41 +372,67 @@ assert(await system.state == .terminated)
 - 不要在 background、scene disconnect 或 ViewController 生命周期里无意自动调用。
 - shutdown 返回后可以完成宿主资源清理，但若还需要 Linux runtime，必须新建宿主进程。
 
-## 8. 尚未支持的会话 API
+## 8. 交互式 PTY 会话
 
-`PocketRootSession`、`PocketRootSessionConfiguration` 和 `PocketRootSessionEvent` 目前只是 API 基础。真实 iSH driver 的 session 创建仍返回 unsupported；公共 `PocketRootSystem` 也尚未暴露交互 session 创建入口。
+已经 boot 的 `PocketRootSystem` 可创建持续存在的 PTY shell：
 
-当前不可宣称支持：
+```swift
+let session = try await system.makeSession(
+    configuration: PocketRootSessionConfiguration(
+        shell: "/bin/sh",
+        shellArguments: ["-il"],
+        workingDirectory: "/root"
+    )
+)
 
-- PTY shell；
-- 持续输入和输出；
-- resize；
-- signal/EOF；
-- SwiftTerm 连接；
-- session cancellation；
-- 多 session registry；
-- close-before-shutdown 保证。
+let outputTask = Task {
+    for await event in session.events {
+        switch event {
+        case .standardOutput(let data), .standardError(let data):
+            print(String(decoding: data, as: UTF8.self), terminator: "")
+        case .exited(let code):
+            print("exit: \(code)")
+        case .failed(let message):
+            print("failed: \(message)")
+        case .started:
+            break
+        }
+    }
+}
 
-## 9. 使用 Terminal 占位 UI
+try await session.write(Data("mkdir -p demo && cd demo\r".utf8))
+try await session.resize(to: .init(rows: 32, columns: 100))
+try await session.sendSignal(2) // SIGINT; TTY 路径转换成 Ctrl+C
+try await session.closeInput() // EOF
+await session.terminate()
+_ = await outputTask.value
+```
 
-`PocketRootTerminal` 当前可作为 UIKit 展示组件使用，但它不是 PTY：
+会话使用 IshEmbed 分配的真实 PTY，shell 状态、`cd`、环境变量和前台 job 在会话内持续
+存在。native read 每 100 ms 有界轮询；Swift 事件流把输出切成 16 KiB，最多缓冲
+4 MiB，并确保 `.failed/.exited` 终态不会被满缓冲丢弃；consumer 跟不上时会失败关闭，
+而不是无界增长。默认 `SHELL` 与配置的 shell executable 一致，调用方显式
+环境值优先。`terminate()` 使用有限 native admission、幂等并等待权威退出；session 创建
+期间 shutdown 会明确拒绝而不会越过未登记的 native handle。致命 transport failure 会
+同步让 runtime 进入 failed/restart-required。`system.shutdown()` 只有在全部 live
+session 权威退出、关闭并注销后，才会关闭 guest PID 1 和 kernel。取消中的 session
+创建会关闭已经生成但尚未返回的 native handle；可恢复的 supervisor 拒绝和 EOF 后操作
+只结束或报错当前 session，不会把整个 runtime 误标为 restart-required。
+
+`PocketRootCommandTerminalSession` 仍保留为不需要 PTY 的一次性命令 fallback，但不是
+默认终端路径。
+
+## 9. 接入终端与文件夹页面
+
+准备并 boot 完 `system` 后，UIKit 可以直接打开 SwiftTerm PTY：
 
 ```swift
 import PocketRootTerminal
 
 let terminalViewController = PocketRootTerminalViewController(
-    configuration: PocketRootTerminalConfiguration(
-        placeholderText: "Linux terminal is not connected.",
-        prompt: "$ ",
-        allowsInput: true,
-        showsAccessoryView: true
-    ),
+    system: system,
+    configuration: .interactive(initialWorkingDirectory: "/root"),
     theme: .dark
-)
-
-terminalViewController.appendOutput("Preparing local environment…")
-terminalViewController.apply(
-    theme: PocketRootTerminalTheme(palette: .dark, fontSize: 16)
 )
 
 navigationController?.pushViewController(
@@ -415,10 +441,51 @@ navigationController?.pushViewController(
 )
 ```
 
-这些 UIKit 操作在 `MainActor` 上执行。`appendOutput` 只更新 transcript，
-`clearOutput()` 清空显示。即使 `allowsInput == true`，当前 accessory view 也
-只回显输入并提示 runtime 尚未安装，不会把命令发送给 guest。真正 terminal
-必须等待 `PocketRootSession`、PTY 和 SwiftTerm gate。
+省略 `sessionConfiguration` 时，PTY 使用
+`configuration.initialWorkingDirectory`；如需自定义 shell、环境或终端尺寸，可以显式
+传入 `sessionConfiguration`，此时该完整会话配置优先。
+
+文件夹页面使用同一个 system，并通过 NUL-framed 目录协议安全处理空格和换行文件名：
+
+```swift
+let filesViewController = PocketRootFileBrowserViewController(
+    system: system,
+    initialPath: "/root"
+)
+navigationController?.pushViewController(filesViewController, animated: true)
+```
+
+SwiftUI 对应写法：
+
+```swift
+import PocketRootTerminal
+import SwiftUI
+
+struct LinuxTerminalScreen: View {
+    let system: PocketRootSystem
+
+    var body: some View {
+        TabView {
+            PocketRootTerminalView(system: system)
+                .tabItem { Label("Terminal", systemImage: "terminal") }
+            NavigationStack {
+                PocketRootFileBrowserView(system: system, initialPath: "/root")
+            }
+            .tabItem { Label("Files", systemImage: "folder") }
+        }
+    }
+}
+```
+
+SwiftTerm 负责 ANSI/VT、软键盘、选择、滚动和辅助功能语义；bridge 按序转发按键，
+同步字符行列 resize，并把 guest 输出流送入 terminal。guest 的 OSC 52 剪贴板读写默认
+拒绝，HTTP/HTTPS 链接只有在用户点击后才交给系统打开。文件页支持目录导航和最多
+512 KiB 的有界文本/二进制预览，不提供宿主 App 沙箱浏览。
+
+自定义 configuration 使用 `allowsInput: false` 时，PTY 仍显示和持续接收 guest 输出，
+但 bridge 会丢弃键盘、粘贴等所有 host-to-guest 输入，也不会自动拉起键盘。SwiftUI
+包装层以 system/executor 引用、session configuration 和 terminal configuration 作为
+展示身份；这些输入变化时会先关闭旧会话并重建控制器，只有 theme 变化时原地更新。
 
 ## 10. 接入检查表
 
@@ -429,7 +496,10 @@ navigationController?.pushViewController(
 - [ ] RootFS 是本地普通文件，大小和 SHA-256 与清单匹配。
 - [ ] RootFS 获取、许可和存储策略由 App 明确负责。
 - [ ] `prepareSystem`、内置 boot identity gate 和业务专属健康检查按顺序执行。
+- [ ] Terminal 与 Files 页面注入的是同一个已 boot、由应用持有的 system。
 - [ ] 每个命令有正数 timeout，并处理非零 exit、signal、timeout 和输出超限。
+- [ ] 页面永久移除时调用 `closeSession()`，或由 SwiftUI dismantle 自动回收 PTY。
+- [ ] 只读页面明确设置 `allowsInput: false`，并接受切换 backend/configuration 会重建会话。
 - [ ] 产品接受 shutdown 后同一宿主进程不能再次 boot 的单 lifecycle 契约。
 - [ ] 没有把 Simulator 结果当作真机或发行结论。
 - [ ] 发布前完成[发行与合规](ReleaseCompliance.md)中的全部阻塞项。

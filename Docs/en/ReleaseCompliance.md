@@ -12,7 +12,11 @@ Production, TestFlight, App Store, public/private binary SDK distribution, RootF
 
 ## Distribution composition
 
-A native-enabled app may contain PocketRoot source, ish-arm64-pkg source, a static IshKernel XCFramework, iSH-derived source and submodules, an Alpine fakefs archive, guest packages under multiple licenses, and application download/command/UI policy. Review must cover the whole combination.
+A native-enabled app may contain PocketRoot source, ish-arm64-pkg source, a
+static IshKernel XCFramework, iSH-derived source and submodules, an Alpine
+fakefs archive, guest packages under multiple licenses, the statically linked
+MIT SwiftTerm UI, and application download/command/UI policy. Review must cover
+the whole combination.
 
 The repository now commits a reproducible maximal Experimental engineering
 composition inventory and SPDX 2.3 JSON SBOM under
@@ -88,6 +92,17 @@ invocations and four total builds. Its five-unit source-delivery inventory is
 complete, while the materialized bundle, source offer, legal review, and
 delivery approval remain open. The output is neither a complete NOTICE set, a source offer, nor
 approved corresponding-source delivery.
+
+SwiftTerm is pinned at revision
+`dd2fb8ac5b861e7bf617c872895e338f38165648` (tag `v1.15.0`) under MIT.
+Its complete copyright and permission text is tracked at
+`ThirdPartyNotices/SwiftTerm-LICENSE.txt`. Final App/SDK distribution must still
+deliver that notice and regenerate the complete artifact SBOM.
+SwiftTerm's manifest also makes SwiftPM resolve Apache-2.0
+`swift-argument-parser` `1.8.2` at revision
+`6a52f3251125d74daf04fcbd5e6f08a75d074382`. The SwiftTerm library target
+selected by PocketRoot does not link its `ArgumentParser` product, but the
+source-composition inventory and SBOM still record the pin explicitly.
 
 ## Repository safeguards
 

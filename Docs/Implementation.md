@@ -334,15 +334,13 @@ native smoke 负责行为证据：
 - 一次性命令必须有正 timeout 和有限输出。
 - active command 不能被 shutdown 越过。
 - 真实 shutdown 返回 `.terminated`，且同一进程不可再次 boot。
-- 未完成 PTY ownership 前不连接 SwiftTerm。
+- SwiftTerm 只能通过已登记、bounded-read、close-before-shutdown 的 PTY session 连接。
 
 ## 10. 尚待实现
 
-- interactive session public entry point；
-- live session registry；
-- bounded PTY read、input、resize、signal、EOF；
-- close-all-before-shutdown；
 - Demo prepared-system dependency injection；
-- 真机生命周期与性能硬化。
+- 当前可用 signed iPhone 的 PTY 页面生命周期与长输出验证；
+- iPad keyboard/rotation/layout 与 VoiceOver；
+- background/foreground、内存压力与性能硬化。
 
 状态与顺序见[路线图](Roadmap.md)。

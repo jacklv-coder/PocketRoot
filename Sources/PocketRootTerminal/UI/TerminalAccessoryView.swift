@@ -20,9 +20,13 @@ final class TerminalAccessoryView: UIView {
 
     func configure(prompt: String, isInputEnabled: Bool) {
         textField.placeholder = prompt + "command"
-        textField.isEnabled = isInputEnabled
-        sendButton.isEnabled = isInputEnabled
-        alpha = isInputEnabled ? 1 : 0.6
+        setInputEnabled(isInputEnabled)
+    }
+
+    func setInputEnabled(_ isEnabled: Bool) {
+        textField.isEnabled = isEnabled
+        sendButton.isEnabled = isEnabled
+        alpha = isEnabled ? 1 : 0.6
     }
 
     private func setUpView() {

@@ -59,6 +59,7 @@ PocketRoot 希望让 iOS 应用能够以明确、安全、可审核的方式嵌�
 - UIKit 演示外壳。
 - 本地、调用方提供的固定 RootFS 归档。
 - iSH 启动和一次性 shell 命令。
+- 持续 `PocketRootSession`、SwiftTerm PTY 和 guest 文件浏览。
 - provider-agnostic、有 turn/tool/input/output 边界的 `PocketRootAgent` loop。
 - 默认 post-boot guest identity gate。
 - 安全 RootFS 安装与恢复。
@@ -68,9 +69,8 @@ PocketRoot 希望让 iOS 应用能够以明确、安全、可审核的方式嵌�
 
 - 应用专属 guest 工具、网络和数据健康检查。
 - Demo 的真实运行时依赖注入。
-- 交互式 `PocketRootSession` 与 PTY 生命周期。
-- SwiftTerm bridge。
 - soft shutdown 的持续生命周期与故障注入验证。
+- PTY/SwiftTerm 的真机与 iPad 生命周期硬化。
 - 真机生命周期、内存、性能和故障注入。
 - 满足许可证与发行要求后的受控分发。
 

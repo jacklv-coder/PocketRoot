@@ -15,7 +15,7 @@
 
 ## 1. 一句话理解 PocketRoot
 
-PocketRoot 是一个最低支持 iOS 18 的 Swift 模块化工程：它在 iOS 沙箱内安装经过固定哈希校验的 ARM64 Linux fakefs，通过实验性的 iSH 原生运行时执行有超时和输出上限的一次性 shell 命令，并为未来的交互式终端保留稳定边界。
+PocketRoot 是一个最低支持 iOS 18 的 Swift 模块化工程：它在 iOS 沙箱内安装经过固定哈希校验的 ARM64 Linux fakefs，通过实验性的 iSH 原生运行时执行有界一次性命令和持久 PTY，并提供 SwiftTerm 终端与 guest 文件浏览页面。
 
 它不是：
 
@@ -116,7 +116,7 @@ SIGUSR1 屏蔽，使 guest signal 可打断阻塞中的宿主 syscall；它同�
 | `Sources/CPocketRootArchiveSupport/` | zlib 流式解压窄 C 接口 | Swift/C 边界和展开大小限制 |
 | `Sources/PocketRootIshRuntime/` | iSH adapter、driver、串行执行与所有权 | 阻塞原生 API 如何接入 Swift Concurrency |
 | `Sources/PocketRootIshRuntimeIntegration/` | RootFS 与 runtime 的组合 factory | 应用真正使用的 `prepareSystem` 入口 |
-| `Sources/PocketRootTerminal/` | Terminal 配置与 UIKit 占位 UI | 为什么当前没有直接接 PTY |
+| `Sources/PocketRootTerminal/` | SwiftTerm PTY、guest 文件浏览和 fallback facade | UI 如何连接已登记 session 并保持资源边界 |
 | `Demo/PocketRootDemo/` | 安全默认的 UIKit 演示 | UI 与实验运行时保持分离 |
 | `Spikes/` | 最终链接与原生 smoke App | 编译成功和真实运行成功的区别 |
 | `Tests/` | Swift 单元与集成测试 | 状态、边界、恢复和错误语义 |
@@ -129,7 +129,8 @@ SIGUSR1 屏蔽，使 guest signal 可打断阻塞中的宿主 syscall；它同�
 
 - `PocketRootCore`：定义 `PocketRootSystem`、命令、结果、状态、错误和 runtime protocol。
 - `PocketRootResources`：只处理调用方提供的本地 RootFS，不启动 runtime。
-- `PocketRootTerminal`：当前提供 UIKit 终端外壳，不拥有 PTY。
+- `PocketRootTerminal`：提供 SwiftTerm-backed PTY、guest 文件浏览页面，以及跨一次性命令
+  保存 cwd 的 fallback facade。
 - `PocketRoot`：重新导出以上三个安全模块。
 
 `PocketRootSystem.shared` 使用 `PlaceholderLinuxRuntime`。因此普通应用仅依赖 `PocketRoot` 时，不会因为一次 import 就链接实验性原生二进制。
@@ -273,7 +274,10 @@ idle → booting → ready → shuttingDown → terminated
 1. actor 在 `await` 处可重入，所以生命周期状态必须在第一次 suspension 前更新。
 2. `PocketRootSystem.state` 是操作完成后的公共快照，不是 native boot/shutdown 的实时进度流。
 
-底层 IshEmbed 能表达多个 session，不代表 PocketRoot 已经公开交互会话。当前 `IshLinuxRuntime.makeSession` 明确返回未支持，`IshEmbedDriver.execute` 也没有设置 `chrootPath`；PocketRoot 仍只允许一个在途 one-shot。所谓 VM 只是同一 iSH kernel 和 fakefs 下的 chroot 目录树，不是独立 kernel，也不是针对不可信代码的强隔离边界。
+PocketRoot 已通过 `PocketRootSystem.makeSession` 公开 IshEmbed PTY，并在 runtime 中登记
+live session；仍只允许一个在途 one-shot。所有 session 共享同一 iSH kernel 和 fakefs。
+所谓 VM 只是该 kernel 内的 chroot 目录树，不是独立 kernel，也不是针对不可信代码的强
+隔离边界；当前交互 session 也没有设置 `chrootPath`。
 
 ## 7. RootFS 不是普通解压目录
 

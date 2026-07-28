@@ -5,7 +5,7 @@
 本文是 PocketRoot 实验性 runtime 的不可变 revision、nested gitlink、制品 URL、大小和
 SHA-256 的唯一事实源。branch、moving tag、未验证 release alias 和本地缓存都不是有效 pin。
 
-审核日期：2026-07-27
+审核日期：2026-07-28
 
 ## 1. IshEmbed Swift Package
 
@@ -78,7 +78,21 @@ XCFramework 只有 `ios-arm64` 和 `ios-arm64-simulator` 两个 arm64 slice，mi
 
 本 Release **不包含 RootFS**。
 
-## 4. 单独固定的 Alpine RootFS
+## 4. SwiftTerm
+
+| 字段 | 审核值 |
+| --- | --- |
+| 仓库 | `https://github.com/migueldeicaza/SwiftTerm.git` |
+| 完整 revision | `dd2fb8ac5b861e7bf617c872895e338f38165648` |
+| 对应 tag | `v1.15.0` |
+| Swift product | `SwiftTerm` |
+| 许可证 | MIT |
+| 许可证副本 | `ThirdPartyNotices/SwiftTerm-LICENSE.txt` |
+
+`PocketRootTerminal` 只在 iOS 链接该产品。SwiftTerm manifest 还解析
+`swift-argument-parser`，但 PocketRoot 使用的 library target 不依赖或链接它。
+
+## 5. 单独固定的 Alpine RootFS
 
 PocketRoot 的内置 RootFS manifest 仍固定 parent `v0.3.3` 的 Alpine 3.19.1 aarch64
 `fs.tar.gz`；更新 runtime/XCFramework 不会隐式替换 guest 文件系统：
@@ -97,7 +111,7 @@ PocketRoot 的内置 RootFS manifest 仍固定 parent `v0.3.3` 的 Alpine 3.19.1
 Node.js/npm 不在 runtime 或 RootFS 中默认预装，但可作为调用方明确安装的通用 guest
 package。Codex CLI 不属于手机端架构，IshEmbed 不提供其安装、provision 或配置路径。
 
-## 5. 当前行为与验证边界
+## 6. 当前行为与验证边界
 
 新制品已经进入 PocketRoot pin，并提供：
 
@@ -119,8 +133,7 @@ package。Codex CLI 不属于手机端架构，IshEmbed 不提供其安装、pro
 PocketRoot 仍保持 Experimental。尚未闭环的门禁：
 
 - physical iPad execution；
-- interactive session 的 read/close 取消契约；
-- 完整 PTY、resize、signal、interactive session 生命周期；
+- interactive session 在真机上的 read/close、resize、signal 与页面生命周期；
 - sustained workload、峰值内存与 jetsam；
 - RootFS 已生成 package inventory、SPDX SBOM、source locator 和默认配置证据，
   但完整 license/NOTICE 与对应源码 bundle 仍未完成；
@@ -128,7 +141,7 @@ PocketRoot 仍保持 Experimental。尚未闭环的门禁：
   gitlink、supervisor musl source 和外部 RootFS；尚无最终 App archive 扫描；
 - App Store Review Guideline 2.5.2 结论。
 
-## 6. 依赖更新流程
+## 7. 依赖更新流程
 
 任何上游变化都必须：
 

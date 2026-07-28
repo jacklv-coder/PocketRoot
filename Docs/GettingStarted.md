@@ -87,9 +87,9 @@ Demo 使用 AppDelegate、SceneDelegate、UIWindow、纯 UIKit 和 Auto Layout�
 | 页面 | 当前用途 |
 | --- | --- |
 | System | 展示 `PocketRootSystem.shared` 的占位启动/关闭状态 |
-| Terminal | 展示终端 UI 外壳，尚未连接 PTY |
+| Terminal | Demo 尚未注入真实 runtime；库已提供可注入 system 的 SwiftTerm PTY |
 | Commands | 展示命令请求界面，但默认 shared system 没有真实 runtime |
-| Diagnostics | 展示 RootFS、iSH 和 SwiftTerm 后续集成位置 |
+| Diagnostics | 展示 RootFS 与实验 runtime 集成位置 |
 
 因此看到 “Runtime is not installed yet” 或占位错误是当前设计，而不是构建失败。Demo target 只依赖安全的 `PocketRoot` 伞形产品，不依赖实验性的 `PocketRootIshRuntimeIntegration`。
 

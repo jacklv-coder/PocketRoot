@@ -18,7 +18,7 @@ complete local-RootFS to one-shot-result flow.
 | --- | --- | --- |
 | `PocketRootCore` | State, configuration, command, result, and error model | No |
 | `PocketRootResources` | RootFS manifest, validation, extraction, and install | No |
-| `PocketRootTerminal` | UIKit terminal placeholder UI | No |
+| `PocketRootTerminal` | UIKit/SwiftUI SwiftTerm PTY, guest files, and command fallback | No |
 | `PocketRootAgent` | Provider-agnostic bounded agent loop and OpenAI Responses transport | No |
 | `PocketRootAgentRuntimeTools` | Approval- and policy-gated Linux command adapter | No |
 | `PocketRoot` | Safe umbrella exporting Core, Resources, and Terminal | No |
@@ -240,11 +240,11 @@ The result exposes exit code, signal, raw Data streams, UTF-8 convenience string
 ## 6. States and errors
 
 The runtime state machine contains `idle`, `preparingRootFS`, `booting`,
-`ready`, `shuttingDown`, `terminated`, and `failed(String)`. The public
-`PocketRootSystem.state` publishes only a stable state after `boot()`,
-`shutdown()`, or `execute()` returns or throws;
-polling during an in-flight call can still show the previous value and is not a
-progress stream. A command that fails closed publishes the
+`ready`, `shuttingDown`, `terminated`, and `failed(String)`. Each read of
+`PocketRootSystem.state` reconciles with the underlying runtime, so an
+asynchronous PTY failure after `makeSession()` returns is observable. It
+publishes only stable states; polling during an in-flight call can still show
+the previous value and is not a progress stream. A command that fails closed publishes the
 runtime's `.failed` state as `execute()` throws. Native terminated/restart behavior is normally
 not observable because current shutdown exits the process.
 
@@ -270,31 +270,52 @@ Swift, and publishes `.terminated`. The same host process cannot boot again.
 Do not trigger this terminal lifecycle transition accidentally from ordinary UI
 cleanup.
 
-## 8. Interactive sessions are not implemented
+## 8. Interactive PTY sessions
 
-`PocketRootSession` types are API foundations only. PTY input/output, resize, signal/EOF, SwiftTerm, cancellation, session registry, and safe close-before-shutdown remain unavailable.
+An already-booted system can create a persistent PTY shell:
 
-## 9. Use the placeholder terminal UI
+```swift
+let session = try await system.makeSession(
+    configuration: PocketRootSessionConfiguration(
+        shell: "/bin/sh",
+        shellArguments: ["-il"],
+        workingDirectory: "/root"
+    )
+)
 
-`PocketRootTerminal` is currently usable as a UIKit presentation component,
-not as a PTY:
+try await session.write(Data("mkdir -p demo && cd demo\r".utf8))
+try await session.resize(to: .init(rows: 32, columns: 100))
+try await session.sendSignal(2)
+try await session.closeInput()
+await session.terminate()
+```
+
+The shell, cwd, environment, and foreground jobs persist inside the real PTY.
+Reads poll with a 100 ms bound. Output is split into 16 KiB chunks and the
+event stream retains at most 4 MiB while preserving terminal `.failed` and
+`.exited` events when full.
+`SHELL` defaults to the configured executable unless explicitly overridden.
+Terminate uses finite native admission and remains idempotent. Shutdown rejects
+an in-flight session creation instead of passing an unregistered native handle,
+and fatal transport failures make the runtime restart-required. Runtime shutdown
+stops PID 1 and the kernel only after every registered live session has produced
+an authoritative exit, closed, and unregistered. Canceled creation closes a
+native handle that was spawned but not returned. Recoverable supervisor
+rejections and post-EOF operations remain session-local instead of poisoning
+the runtime.
+`PocketRootCommandTerminalSession` remains an optional one-shot fallback.
+
+## 9. Embed Terminal and Files
+
+After preparation and boot, UIKit can open the SwiftTerm PTY directly:
 
 ```swift
 import PocketRootTerminal
 
 let terminalViewController = PocketRootTerminalViewController(
-    configuration: PocketRootTerminalConfiguration(
-        placeholderText: "Linux terminal is not connected.",
-        prompt: "$ ",
-        allowsInput: true,
-        showsAccessoryView: true
-    ),
+    system: system,
+    configuration: .interactive(initialWorkingDirectory: "/root"),
     theme: .dark
-)
-
-terminalViewController.appendOutput("Preparing local environment…")
-terminalViewController.apply(
-    theme: PocketRootTerminalTheme(palette: .dark, fontSize: 16)
 )
 navigationController?.pushViewController(
     terminalViewController,
@@ -302,11 +323,54 @@ navigationController?.pushViewController(
 )
 ```
 
-Run these UIKit operations on `MainActor`. `appendOutput` updates the
-transcript and `clearOutput()` removes it. Even with input enabled, the current
-accessory only echoes input and reports that the runtime is not installed; it
-does not send commands to a guest. A real terminal waits for the session, PTY,
-and SwiftTerm gates.
+When `sessionConfiguration` is omitted, the PTY uses
+`configuration.initialWorkingDirectory`. Pass an explicit session configuration
+to customize the shell, environment, or terminal size; that complete session
+configuration takes precedence.
+
+The guest file browser is another ready-to-present page:
+
+```swift
+let filesViewController = PocketRootFileBrowserViewController(
+    system: system,
+    initialPath: "/root"
+)
+navigationController?.pushViewController(filesViewController, animated: true)
+```
+
+SwiftUI can expose both:
+
+```swift
+import PocketRootTerminal
+import SwiftUI
+
+struct LinuxTerminalScreen: View {
+    let system: PocketRootSystem
+
+    var body: some View {
+        TabView {
+            PocketRootTerminalView(system: system)
+            NavigationStack {
+                PocketRootFileBrowserView(system: system)
+            }
+        }
+    }
+}
+```
+
+SwiftTerm handles ANSI/VT rendering, keyboard input, selection, scrolling, and
+accessibility semantics. The bridge preserves input order, forwards character
+size changes, and streams guest output. Guest OSC 52 clipboard access is denied
+by default. The Files page uses NUL-framed listings and bounded previews of up
+to 512 KiB.
+
+With a custom configuration whose `allowsInput` is `false`, the PTY remains
+visible and continues receiving guest output, but the bridge drops every
+keyboard or paste write and does not automatically show the keyboard. The
+SwiftUI wrapper keys its hosted controller by the system/executor reference,
+session configuration, and terminal configuration. Changing any of those
+inputs closes the old session and rebuilds the controller; a theme-only update
+is applied in place.
 
 ## 10. Integration checklist
 
@@ -314,6 +378,9 @@ and SwiftTerm gates.
 - Reviewed full PocketRoot commit and explicit Experimental products.
 - Caller-owned regular RootFS file matching the manifest.
 - Ordered preparation, built-in boot identity gate, and application-specific health checks.
+- Terminal and Files share the same application-owned, booted system.
+- Read-only terminals set `allowsInput: false`; backend/configuration changes
+  intentionally rebuild the SwiftUI-hosted session.
 - Positive command timeout and handling for exit, signal, timeout, and output limits.
 - Acceptance of the single-lifecycle contract: no reboot in the same host process after shutdown.
 - No claim that Simulator evidence proves physical-device or distribution readiness.

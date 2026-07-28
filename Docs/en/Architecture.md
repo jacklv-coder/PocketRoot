@@ -30,6 +30,7 @@ flowchart TB
     Umbrella --> Terminal["PocketRootTerminal"]
     Umbrella --> Resources["PocketRootResources"]
     Terminal --> Core
+    Terminal --> SwiftTerm["SwiftTerm<br/>iOS only"]
     Resources --> Archive["CPocketRootArchiveSupport"]
     Agent["PocketRootAgent<br/>Bounded model/tool loop"]
     AgentTools["PocketRootAgentRuntimeTools<br/>Approval command adapter"] --> Agent
@@ -43,7 +44,7 @@ flowchart TB
 ```
 
 - Core has no UIKit, Resources, or IshEmbed dependency.
-- Terminal depends on Core.
+- Terminal depends on Core and links the pinned SwiftTerm revision on iOS only.
 - Resources uses a private zlib C target and no runtime.
 - Agent is a pure-Swift loop plus optional OpenAI transport outside the safe umbrella, with no runtime dependency.
 - AgentRuntimeTools explicitly depends on Agent and Core to compose commands behind policy, per-call approval, and resource bounds.
@@ -95,7 +96,10 @@ single-lifecycle soft shutdown.
 
 ### PocketRootTerminal
 
-A MainActor-isolated UIKit placeholder contract. It has no SwiftTerm or PTY implementation.
+A SwiftTerm-backed persistent PTY, a NUL-framed guest file browser with bounded
+preview, and an optional one-shot fallback that carries the physical `pwd -P`
+result instead of trusting mutable `$PWD`. UIKit and SwiftUI presentation
+remains MainActor-isolated.
 
 ### PocketRoot
 
@@ -165,8 +169,14 @@ entry and covers finite SPAWN, stdin close, and event reads. Termination plus
 authoritative `EXITED` confirmation after expiry has a separate fixed bounded
 cleanup window. One-shot
 Swift Task cancellation now terminates the guest and confirms exit before
-returning; interactive-session read/close cancellation remains part of the
-future PTY lifecycle. An 8 MiB byte-exact binary-stdout smoke crosses the
+returning. Interactive sessions use 100 ms read polls, 16 KiB chunks, and a
+256-event Swift backlog capped at 4 MiB; newest buffering preserves terminal
+`.failed`/`.exited` events. They also use finite native control admission and
+bounded termination. Creation is
+reserved before its first suspension so shutdown cannot pass an unregistered
+native handle. Fatal transport failures close the session and fail the runtime
+and process gate closed. Native shutdown is admitted only after every registered
+session has produced an authoritative exit and unregistered. An 8 MiB byte-exact binary-stdout smoke crosses the
 native backlog and proves continuous consumption. After shutdown, the complete
 Simulator smoke reads `ru_maxrss` and requires a lifecycle peak at or below
 256 MiB. Physical sustained-load and jetsam behavior remain open.
@@ -189,7 +199,8 @@ stateDiagram-v2
     terminated --> [*]: restart host
 ```
 
-Execution requires ready. Active commands block shutdown. Pinned native
+Execution requires ready. Active one-shot commands block shutdown; live PTY
+sessions are terminated and closed first. Pinned native
 shutdown returns `.terminated`; process-global iSH state prevents another boot
 in the same host process.
 
@@ -254,8 +265,11 @@ reuse; the installer rewrites it before returning.
 
 See [testing](Testing.md) and the [roadmap](Roadmap.md).
 
-## Future seams
+## Established and future seams
 
-`PocketRootSession`, live-session ownership, bounded PTY reads, `TerminalBridge` to pinned SwiftTerm, application-specific post-boot health, and integration of a soft-shutdown IshEmbed artifact.
+`PocketRootSession`, live-session ownership, bounded PTY reads, pinned
+SwiftTerm bridging, and bounded guest file browsing are implemented.
+Application-specific post-boot health plus iPad, VoiceOver, app-transition, and
+sustained-device hardening remain.
 
 See [implementation](Implementation.md) for the source-level call paths.

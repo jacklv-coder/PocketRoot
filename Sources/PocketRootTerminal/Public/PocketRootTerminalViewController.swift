@@ -1,23 +1,27 @@
 import Foundation
 import PocketRootCore
 
-#if canImport(UIKit)
+#if canImport(UIKit) && canImport(SwiftTerm)
+import SwiftTerm
 import UIKit
 
-/// A UIKit terminal host that presents a placeholder until SwiftTerm and the
-/// Linux runtime are integrated.
+/// A UIKit terminal that can host a real PocketRoot PTY through SwiftTerm.
 @MainActor
 public final class PocketRootTerminalViewController: UIViewController {
     public let configuration: PocketRootTerminalConfiguration
     public private(set) var theme: PocketRootTerminalTheme
 
+    /// Transcript support is retained for the lightweight command fallback.
+    /// Interactive PTY screen state is owned by SwiftTerm.
     public var transcript: String {
         outputLines.joined(separator: "\n")
     }
 
-    private let terminalView = TerminalPlaceholderView()
+    private let placeholderView = TerminalPlaceholderView()
     private let accessoryView = TerminalAccessoryView()
-    private let bridge = TerminalBridge()
+    private let commandBridge: TerminalBridge
+    private let ptyBridge: PTYTerminalBridge?
+    private var ptyTerminalView: TerminalView?
     private var outputLines: [String]
 
     public init(
@@ -26,6 +30,54 @@ public final class PocketRootTerminalViewController: UIViewController {
     ) {
         self.configuration = configuration
         self.theme = theme
+        commandBridge = TerminalBridge()
+        ptyBridge = nil
+        outputLines = [configuration.placeholderText]
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    /// Creates a persistent interactive shell using the system's PTY session.
+    /// When `sessionConfiguration` is `nil`, the terminal configuration's
+    /// `initialWorkingDirectory` supplies the PTY working directory.
+    public init(
+        system: PocketRootSystem,
+        sessionConfiguration: PocketRootSessionConfiguration? = nil,
+        configuration: PocketRootTerminalConfiguration = .interactive(),
+        theme: PocketRootTerminalTheme = .dark
+    ) {
+        let resolvedSessionConfiguration =
+            configuration.resolvingInteractiveSessionConfiguration(
+                sessionConfiguration
+            )
+        self.configuration = configuration
+        self.theme = theme
+        commandBridge = TerminalBridge()
+        ptyBridge = PTYTerminalBridge(allowsInput: configuration.allowsInput) {
+            try await system.makeSession(
+                configuration: resolvedSessionConfiguration
+            )
+        }
+        outputLines = []
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    /// Creates the bounded one-shot command fallback. Prefer the `system`
+    /// initializer when a full PTY terminal is required.
+    public init(
+        commandExecutor: any PocketRootTerminalCommandExecutor,
+        configuration: PocketRootTerminalConfiguration = .commandLine(),
+        theme: PocketRootTerminalTheme = .dark
+    ) {
+        self.configuration = configuration
+        self.theme = theme
+        commandBridge = TerminalBridge(
+            session: PocketRootCommandTerminalSession(
+                executor: commandExecutor,
+                workingDirectory: configuration.initialWorkingDirectory,
+                timeout: configuration.commandTimeout
+            )
+        )
+        ptyBridge = nil
         outputLines = [configuration.placeholderText]
         super.init(nibName: nil, bundle: nil)
     }
@@ -34,15 +86,30 @@ public final class PocketRootTerminalViewController: UIViewController {
         let configuration = PocketRootTerminalConfiguration()
         self.configuration = configuration
         theme = .system
+        commandBridge = TerminalBridge()
+        ptyBridge = nil
         outputLines = [configuration.placeholderText]
         super.init(coder: coder)
     }
 
     public override func viewDidLoad() {
         super.viewDidLoad()
-        setUpView()
-        connectBridge()
-        render()
+        title = "Terminal"
+        view.backgroundColor = theme.backgroundColor
+        if let ptyBridge {
+            setUpInteractiveTerminal(with: ptyBridge)
+        } else {
+            setUpCommandTerminal()
+            connectCommandBridge()
+            renderTranscript()
+        }
+    }
+
+    public override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        if configuration.allowsInput {
+            _ = ptyTerminalView?.becomeFirstResponder()
+        }
     }
 
     public func apply(theme: PocketRootTerminalTheme) {
@@ -50,70 +117,151 @@ public final class PocketRootTerminalViewController: UIViewController {
         guard isViewLoaded else {
             return
         }
-        render()
+        view.backgroundColor = theme.backgroundColor
+        if let ptyTerminalView {
+            ptyTerminalView.font = theme.font
+            ptyTerminalView.nativeBackgroundColor = theme.backgroundColor
+            ptyTerminalView.nativeForegroundColor = theme.foregroundColor
+            ptyTerminalView.caretColor = theme.foregroundColor
+        } else {
+            renderTranscript()
+        }
     }
 
     public func appendOutput(_ output: String) {
         outputLines.append(output)
-        guard isViewLoaded else {
+        trimTranscriptIfNeeded()
+        guard isViewLoaded, ptyTerminalView == nil else {
             return
         }
-        render()
+        renderTranscript()
     }
 
     public func clearOutput() {
         outputLines.removeAll()
-        guard isViewLoaded else {
+        guard isViewLoaded, ptyTerminalView == nil else {
             return
         }
-        render()
+        renderTranscript()
     }
 
-    private func setUpView() {
-        title = "Terminal"
-        view.backgroundColor = .systemBackground
+    public func cancelActiveCommand() {
+        commandBridge.cancelActiveCommand()
+    }
 
+    /// Explicitly releases the guest PTY. Call this when the host permanently
+    /// removes the terminal controller. The command fallback also cancels its
+    /// active task and disconnects its callbacks.
+    public func closeSession() {
+        commandBridge.detach()
+        ptyBridge?.detach()
+    }
+
+    private func setUpInteractiveTerminal(with bridge: PTYTerminalBridge) {
+        let terminal = TerminalView(frame: .zero, font: theme.font)
+        terminal.translatesAutoresizingMaskIntoConstraints = false
+        terminal.nativeBackgroundColor = theme.backgroundColor
+        terminal.nativeForegroundColor = theme.foregroundColor
+        terminal.caretColor = theme.foregroundColor
+        terminal.accessibilityLabel = "PocketRoot Terminal"
+        if !configuration.allowsInput {
+            terminal.accessibilityHint = "Read-only terminal"
+        }
+        view.addSubview(terminal)
+        NSLayoutConstraint.activate([
+            terminal.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            terminal.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            terminal.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            terminal.bottomAnchor.constraint(equalTo: view.keyboardLayoutGuide.topAnchor)
+        ])
+        ptyTerminalView = terminal
+        bridge.titleHandler = { [weak self] title in
+            self?.title = title.isEmpty ? "Terminal" : title
+        }
+        bridge.attach(to: terminal)
+    }
+
+    private func setUpCommandTerminal() {
+        view.backgroundColor = .systemBackground
         accessoryView.configure(
             prompt: configuration.prompt,
             isInputEnabled: configuration.allowsInput
         )
         accessoryView.isHidden = !configuration.showsAccessoryView
 
-        let stackView = UIStackView(arrangedSubviews: [terminalView, accessoryView])
+        let stackView = UIStackView(
+            arrangedSubviews: [placeholderView, accessoryView]
+        )
         stackView.translatesAutoresizingMaskIntoConstraints = false
         stackView.axis = .vertical
         stackView.spacing = 12
 
         view.addSubview(stackView)
         NSLayoutConstraint.activate([
-            stackView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
-            stackView.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor),
-            stackView.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor),
-            stackView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16)
+            stackView.topAnchor.constraint(
+                equalTo: view.safeAreaLayoutGuide.topAnchor,
+                constant: 16
+            ),
+            stackView.leadingAnchor.constraint(
+                equalTo: view.layoutMarginsGuide.leadingAnchor
+            ),
+            stackView.trailingAnchor.constraint(
+                equalTo: view.layoutMarginsGuide.trailingAnchor
+            ),
+            stackView.bottomAnchor.constraint(
+                equalTo: view.safeAreaLayoutGuide.bottomAnchor,
+                constant: -16
+            )
         ])
     }
 
-    private func connectBridge() {
-        bridge.attach { [weak self] output in
-            self?.appendOutput(output)
-        }
+    private func connectCommandBridge() {
+        commandBridge.attach(
+            outputHandler: { [weak self] output in
+                self?.appendOutput(output)
+            },
+            inputStateHandler: { [weak self] isEnabled in
+                guard let self else {
+                    return
+                }
+                accessoryView.setInputEnabled(
+                    configuration.allowsInput && isEnabled
+                )
+            }
+        )
         accessoryView.onSubmit = { [weak self] command in
             guard let self else {
                 return
             }
-            bridge.submit(command, prompt: configuration.prompt)
+            commandBridge.submit(command, prompt: configuration.prompt)
         }
     }
 
-    private func render() {
-        terminalView.render(text: transcript, theme: theme)
+    private func renderTranscript() {
+        placeholderView.render(text: transcript, theme: theme)
+    }
+
+    private func trimTranscriptIfNeeded() {
+        let limit = configuration.maximumTranscriptCharacters
+        let renderedTranscript = transcript
+        guard renderedTranscript.count > limit else {
+            return
+        }
+        let notice = "[Earlier terminal output removed]\n"
+        guard limit > notice.count else {
+            outputLines = [String(notice.prefix(limit))]
+            return
+        }
+        outputLines = [
+            String(notice.dropLast()),
+            String(renderedTranscript.suffix(limit - notice.count))
+        ]
     }
 }
 
 #else
 
-/// A host-build stand-in for the UIKit controller. The package supports iOS,
-/// while this definition keeps `swift test` useful on non-UIKit build hosts.
+/// A host-build stand-in for the UIKit terminal controller.
 @MainActor
 public final class PocketRootTerminalViewController {
     public let configuration: PocketRootTerminalConfiguration
@@ -129,21 +277,41 @@ public final class PocketRootTerminalViewController {
         transcript = configuration.placeholderText
     }
 
+    public init(
+        system _: PocketRootSystem,
+        sessionConfiguration _: PocketRootSessionConfiguration? = nil,
+        configuration: PocketRootTerminalConfiguration = .interactive(),
+        theme: PocketRootTerminalTheme = .dark
+    ) {
+        self.configuration = configuration
+        self.theme = theme
+        transcript = configuration.placeholderText
+    }
+
+    public init(
+        commandExecutor _: any PocketRootTerminalCommandExecutor,
+        configuration: PocketRootTerminalConfiguration = .commandLine(),
+        theme: PocketRootTerminalTheme = .dark
+    ) {
+        self.configuration = configuration
+        self.theme = theme
+        transcript = configuration.placeholderText
+    }
+
     public func apply(theme: PocketRootTerminalTheme) {
         self.theme = theme
     }
 
     public func appendOutput(_ output: String) {
-        if transcript.isEmpty {
-            transcript = output
-        } else {
-            transcript += "\n" + output
-        }
+        transcript = transcript.isEmpty ? output : transcript + "\n" + output
     }
 
     public func clearOutput() {
         transcript = ""
     }
+
+    public func cancelActiveCommand() {}
+    public func closeSession() {}
 }
 
 #endif

@@ -14,6 +14,7 @@ class ReleaseComplianceTests < Minitest::Test
     "Package.resolved",
     "Package.swift",
     "project.yml",
+    "ThirdPartyNotices/SwiftTerm-LICENSE.txt",
     "Compliance/RootFS/v0.3.3/EVIDENCE.json",
     "Compliance/RootFS/v0.3.3/SBOM.spdx.json"
   ].freeze
@@ -84,7 +85,16 @@ class ReleaseComplianceTests < Minitest::Test
     composition = JSON.parse(outputs.fetch("COMPOSITION.json"))
     sbom = JSON.parse(outputs.fetch("SBOM.spdx.json"))
 
-    assert_equal 22, sbom.fetch("packages").length
+    assert_equal 24, sbom.fetch("packages").length
+    assert_equal(
+      "dd2fb8ac5b861e7bf617c872895e338f38165648",
+      composition.dig("externalComponents", "swiftTerm", "revision")
+    )
+    assert composition.dig(
+      "externalComponents",
+      "swiftArgumentParser",
+      "resolvedOnly"
+    )
     rootfs_package = sbom.fetch("packages").find do |package|
       package.fetch("SPDXID") == "SPDXRef-Package-External-RootFS"
     end
@@ -136,7 +146,23 @@ class ReleaseComplianceTests < Minitest::Test
       PocketRootReleaseCompliance.build_outputs(root)
     end
 
-    assert_includes error.message, "Package.resolved IshEmbed pin drifted"
+    assert_includes error.message, "Package.resolved external pins drifted"
+  end
+
+  def test_rejects_package_resolved_swiftterm_revision_drift
+    root = input_fixture
+    mutate_json(root.join("Package.resolved")) do |document|
+      pin = document.fetch("pins").find do |candidate|
+        candidate.fetch("identity") == "swiftterm"
+      end
+      pin.fetch("state")["revision"] = "0" * 40
+    end
+
+    error = assert_raises(PocketRootReleaseCompliance::ComplianceError) do
+      PocketRootReleaseCompliance.build_outputs(root)
+    end
+
+    assert_includes error.message, "Package.resolved external pins drifted"
   end
 
   def test_rejects_package_resolved_origin_hash_drift

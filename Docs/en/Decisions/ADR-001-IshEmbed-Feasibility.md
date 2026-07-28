@@ -4,7 +4,7 @@
 
 - Status: Accepted for Experimental integration only
 - Date: 2026-07-21
-- Amended: 2026-07-24 to pin the self-hosted `v0.4.0-abi.6` control-path deadline maintenance artifact
+- Amended: 2026-07-28 to complete low-level PTY ownership and SwiftTerm integration on pinned `v0.4.0-abi.6`
 - Baseline: iOS 18.0, arm64
 - Scope: runtime feasibility, supply-chain pinning, and release gates
 
@@ -12,7 +12,8 @@ This ADR records the decision and evidence snapshot. Dynamic completion belongs 
 
 ## Context
 
-PocketRoot needs an embeddable ARM64 Linux runtime that boots an Alpine fakefs, executes one-shot commands, and may later provide PTY sessions.
+PocketRoot needs an embeddable ARM64 Linux runtime that boots an Alpine fakefs,
+executes one-shot commands, and provides Experimental PTY sessions.
 
 The audited candidate is the user's `ish-arm64-pkg` fork. It combines Swift/C source, a prebuilt static XCFramework, a separate RootFS, a pinned iSH submodule, and further nested dependencies. It is young, pre-1.0, and does not yet provide one complete source/binary/RootFS distribution record.
 
@@ -97,7 +98,13 @@ same host process. The new source, binary, checksum,
 corresponding-source, Simulator, and minimum-Xcode gates passed; signed-device
 and sustained-lifecycle work remains.
 
-PTY support is deferred because native session pointer ownership and high-level terminal read/close races are not yet proven. A live registry, bounded reads, input/resize/signal/EOF, interactive read/close cancellation, idempotent close, and close-before-shutdown are prerequisites.
+Those low-level prerequisites are now covered by session/runtime tests and the
+Simulator smoke: a live registry, bounded reads, input/resize/signal/EOF,
+cancellation, idempotent termination, and close-before-shutdown. PocketRoot
+therefore owns low-level `IshSession` handles directly and connects the pinned
+SwiftTerm instead of adopting the upstream high-level `IshTerminal`. Signed
+target-iPhone, iPad, background/foreground, sustained-output, and accessibility
+lifecycle evidence remain dynamic gates.
 
 ## Distribution constraints
 
@@ -109,7 +116,7 @@ Distribution remains blocked. See [release and compliance](../ReleaseCompliance.
 
 The project gains real evidence behind a narrow adapter while default clients
 stay safe. It accepts an additional binary supply chain, arm64-only native
-validation, a single-lifecycle soft shutdown, deferred PTY/Demo integration,
-and substantial compliance work.
+validation, a single-lifecycle soft shutdown, Experimental PTY/SwiftTerm
+integration with open device gates, and substantial compliance work.
 
 Revisit this decision when changing pins/artifacts/RootFS, adding soft shutdown or PTY/SwiftTerm, exporting Experimental products by default, or enabling any external distribution. Dynamic gates remain in the [roadmap](../Roadmap.md).
