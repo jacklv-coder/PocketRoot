@@ -91,10 +91,7 @@ public final class PocketRootWorkspaceViewController:
 
     public override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
-        guard isMovingFromParent
-                || isBeingDismissed
-                || navigationController?.isBeingDismissed == true
-        else {
+        guard isPermanentlyLeavingHierarchy else {
             return
         }
         requestAutomaticClose()
@@ -151,6 +148,17 @@ public final class PocketRootWorkspaceViewController:
             return
         }
         closeSession()
+    }
+
+    private var isPermanentlyLeavingHierarchy: Bool {
+        var controller: UIViewController? = self
+        while let current = controller {
+            if current.isMovingFromParent || current.isBeingDismissed {
+                return true
+            }
+            controller = current.parent
+        }
+        return false
     }
 
     private func retireTerminalSurface() {

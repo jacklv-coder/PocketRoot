@@ -85,7 +85,7 @@
     "Sources/PocketRootTerminal/Public/PocketRootTerminalViewController.swift": "54d57b9f7dc6a2945fb30170c8de5fd12997ccbecfeded08dae36999dd53ab2c",
     "Sources/PocketRootTerminal/Public/PocketRootWorkspaceConfiguration.swift": "3076207e57396bfb04c4617e058d27de0fbfb2ce99dee9bfb634bf3b39914348",
     "Sources/PocketRootTerminal/Public/PocketRootWorkspaceView.swift": "5c8eedb4ba11cf022ce9e381f5b09daf1e487a3cc015308cbaec7f3cb3526faf",
-    "Sources/PocketRootTerminal/Public/PocketRootWorkspaceViewController.swift": "824692f11bd189c1e3f0089e3532ed3e26ea3e288bbe902ebab093d0984f707a",
+    "Sources/PocketRootTerminal/Public/PocketRootWorkspaceViewController.swift": "773afe01d8e5826f56f9b237235c9745543895a71f2190dfb5539ce1d01af736",
     "Sources/PocketRootTerminal/UI/TerminalAccessoryView.swift": "bc9f2d56534e7b34cd3bcbf2e165daa7623cfb2e4d8956de1aea205a88697e0e",
     "Sources/PocketRootTerminal/UI/TerminalPlaceholderView.swift": "2781166fb44b8a86e6c1dc9aa087e0b70fef683695096cbbb17b096ee5400b0d",
     "Demo/PocketRootDemo/Application/AppDelegate.swift": "3a94c7b05345b7b57d2bfdad01ea25bccf49bfd86c564b3f43e04581ab2f4d7b",

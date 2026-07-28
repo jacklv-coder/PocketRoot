@@ -177,6 +177,16 @@ class ReleaseComplianceTests < Minitest::Test
       source,
       "hostViewController.closeActiveInteractiveSurfaces()"
     )
+    workspace_source =
+      REPOSITORY_ROOT
+        .join(
+          "Sources/PocketRootTerminal/Public/" \
+          "PocketRootWorkspaceViewController.swift"
+        )
+        .binread
+    assert_includes workspace_source, "controller = current.parent"
+    assert_includes workspace_source, "current.isMovingFromParent"
+    assert_includes workspace_source, "current.isBeingDismissed"
     assert_includes source, "override func viewDidAppear(_ animated: Bool)"
     refute_includes source, "override func viewWillAppear(_ animated: Bool)"
     assert_match(
