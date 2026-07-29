@@ -224,7 +224,8 @@ let pocketRootHost = PocketRootIshWorkspaceHost(
         terminalConfiguration: .interactive(
             initialWorkingDirectory: "/root"
         ),
-        initialFilePath: "/root"
+        initialFilePath: "/root",
+        allowsFileOperations: true
     )
 )
 
@@ -233,6 +234,10 @@ navigationController?.pushViewController(
     animated: true
 )
 ```
+
+若整个 Workspace 的 Files tab 只允许浏览和预览，在
+`PocketRootWorkspaceConfiguration` 中设置 `allowsFileOperations: false`；
+SwiftUI 与 UIKit Workspace 会使用同一个只读边界。
 
 页面首次展示时自动 boot；移除页面只关闭该页面 PTY，runtime 仍可供之后重新打开。
 宿主明确结束 Linux 能力时调用 `try await pocketRootHost.shutdown()`，它会先等待该 host

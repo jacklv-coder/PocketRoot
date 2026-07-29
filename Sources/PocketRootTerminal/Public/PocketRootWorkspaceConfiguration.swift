@@ -17,18 +17,21 @@ public struct PocketRootWorkspaceConfiguration: Sendable, Equatable {
     public let terminalTheme: PocketRootTerminalTheme
     public let initialFilePath: String
     public let initialSurface: PocketRootWorkspaceSurface
+    public let allowsFileOperations: Bool
 
     public init(
         terminalConfiguration: PocketRootTerminalConfiguration = .interactive(),
         terminalSessionConfiguration: PocketRootSessionConfiguration? = nil,
         terminalTheme: PocketRootTerminalTheme = .dark,
         initialFilePath: String = "/root",
-        initialSurface: PocketRootWorkspaceSurface = .terminal
+        initialSurface: PocketRootWorkspaceSurface = .terminal,
+        allowsFileOperations: Bool = true
     ) {
         self.terminalConfiguration = terminalConfiguration
         self.terminalSessionConfiguration = terminalSessionConfiguration
         self.terminalTheme = terminalTheme
         self.initialFilePath = initialFilePath
         self.initialSurface = initialSurface
+        self.allowsFileOperations = allowsFileOperations
     }
 }

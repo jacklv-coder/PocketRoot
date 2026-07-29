@@ -189,7 +189,8 @@ let pocketRootHost = PocketRootIshWorkspaceHost(
         terminalConfiguration: .interactive(
             initialWorkingDirectory: "/root"
         ),
-        initialFilePath: "/root"
+        initialFilePath: "/root",
+        allowsFileOperations: true
     )
 )
 
@@ -198,6 +199,11 @@ navigationController?.pushViewController(
     animated: true
 )
 ```
+
+Set `allowsFileOperations: false` on
+`PocketRootWorkspaceConfiguration` when the entire Workspace Files tab must be
+browse-and-preview only. The SwiftUI and UIKit workspace wrappers enforce the
+same read-only boundary.
 
 Retain one `PocketRootIshWorkspaceHost` in the App or scene owner. The first
 screen presentation coalesces concurrent boot requests, prepares the

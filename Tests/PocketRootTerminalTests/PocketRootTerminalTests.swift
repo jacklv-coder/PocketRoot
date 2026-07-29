@@ -96,6 +96,7 @@ final class PocketRootTerminalTests: XCTestCase {
         XCTAssertEqual(configuration.terminalTheme, .dark)
         XCTAssertEqual(configuration.initialFilePath, "/root")
         XCTAssertEqual(configuration.initialSurface, .terminal)
+        XCTAssertTrue(configuration.allowsFileOperations)
         XCTAssertEqual(
             PocketRootWorkspaceSurface.allCases,
             [.terminal, .files]
@@ -119,7 +120,8 @@ final class PocketRootTerminalTests: XCTestCase {
                 fontSize: 17
             ),
             initialFilePath: "/workspace",
-            initialSurface: .files
+            initialSurface: .files,
+            allowsFileOperations: false
         )
 
         XCTAssertEqual(
@@ -132,6 +134,7 @@ final class PocketRootTerminalTests: XCTestCase {
         XCTAssertEqual(configuration.terminalTheme.fontSize, 17)
         XCTAssertEqual(configuration.initialFilePath, "/workspace")
         XCTAssertEqual(configuration.initialSurface, .files)
+        XCTAssertFalse(configuration.allowsFileOperations)
     }
 
     func testControllerMaintainsTranscriptWithoutLoadingUI() async {
