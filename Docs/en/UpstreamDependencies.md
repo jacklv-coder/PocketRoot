@@ -6,16 +6,16 @@ This is the sole source of truth for immutable revisions, nested gitlinks,
 artifact URLs, sizes, and SHA-256 values used by the Experimental runtime.
 Branches, moving tags, unverified release aliases, and local caches are not pins.
 
-Audit date: 2026-07-29
+Audit date: 2026-07-30
 
 ## 1. IshEmbed Swift package
 
 | Field | Audited value |
 | --- | --- |
 | Repository | `https://github.com/jacklv-coder/ish-arm64-pkg.git` |
-| Exact wrapper revision | `37231ab667b380eb86a5fbcf961e31af4d50cebb` |
-| Release | `v0.4.0-abi.7` prerelease |
-| Tag peeled commit | `37231ab667b380eb86a5fbcf961e31af4d50cebb` |
+| Exact wrapper revision | `2419f736b271beb52a699b2f780027cf280472b8` |
+| Release | `v0.4.0-abi.9` prerelease |
+| Tag peeled commit | `2419f736b271beb52a699b2f780027cf280472b8` |
 | Swift product | `IshEmbed` |
 | Manifest platform | iOS 18.0 |
 | Native slices | iOS arm64 device and arm64 Simulator |
@@ -26,14 +26,14 @@ Both `Package.swift` and `Package.resolved` pin the full revision:
 ```swift
 .package(
     url: "https://github.com/jacklv-coder/ish-arm64-pkg.git",
-    revision: "37231ab667b380eb86a5fbcf961e31af4d50cebb"
+    revision: "2419f736b271beb52a699b2f780027cf280472b8"
 )
 ```
 
-Consumed revision `37231ab667b380eb86a5fbcf961e31af4d50cebb` is the ABI.7
-release commit. It contains ABI.6's unified deadline fixes and adds atomic guest
-`RENAME_NOREPLACE` C/Swift APIs, while `Package.swift`
-pins the public, independently verified ABI.7 asset built from that source by
+Consumed revision `2419f736b271beb52a699b2f780027cf280472b8` is the ABI.9
+release commit. It contains ABI.7's atomic guest `RENAME_NOREPLACE` C/Swift
+APIs and makes finite-session stdin write/close reuse one SPAWN absolute
+deadline, while `Package.swift` pins the public, independently verified ABI.9 asset built from that source by
 URL/checksum. The peeled tag, Release target, and consumed package revision are
 identical. The package repository keeps an absolute SSH-over-443 submodule URL;
 GitHub CI without an SSH private key applies a public read-only HTTPS rewrite
@@ -52,15 +52,15 @@ The corresponding-source archive records the parent package revision, this
 gitlink, Zig 0.16.0, and the musl source used by the static supervisor.
 Recursive branch checkout is not a substitute for these exact identities.
 
-## 3. v0.4.0-abi.7 assets
+## 3. v0.4.0-abi.9 assets
 
 Release:
-`https://github.com/jacklv-coder/ish-arm64-pkg/releases/tag/v0.4.0-abi.7`
+`https://github.com/jacklv-coder/ish-arm64-pkg/releases/tag/v0.4.0-abi.9`
 
 | Artifact | Size | SHA-256 | Use |
 | --- | ---: | --- | --- |
-| `libIshKernel.xcframework.zip` | 2,457,982 bytes | `98b02f42de7f62b82bdbbbfad7db8599bd881c879dabff787f78830d6971639b` | SwiftPM binary target |
-| `IshEmbed-corresponding-source.tar.gz` | 2,388,002 bytes | `2715c66dcad63e1a849ff1a79cfe28b4fcde9b1f844b97c212af698b88b67ecf` | Corresponding source |
+| `libIshKernel.xcframework.zip` | 2,460,178 bytes | `c68f47587686000cf125105ac25eaf4d79de6dbd1715d39838bfb7d35abc72f8` | SwiftPM binary target |
+| `IshEmbed-corresponding-source.tar.gz` | 2,391,682 bytes | `8e5d3d56056ece402c09e5f1b3cbdaad75f2f8697ed0e41eaeecd7c403f26557` | Corresponding source |
 
 The XCFramework contains only `ios-arm64` and `ios-arm64-simulator`, both
 arm64 with an iOS 18.0 minimum. It has no x86_64 Simulator or macOS slice.
@@ -159,7 +159,7 @@ PocketRoot remains Experimental. Open gates include:
   configuration are present, while the complete license/NOTICE and
   corresponding-source bundles remain open;
 - the maximal Experimental engineering-composition inventory/SPDX SBOM binds
-  the ABI.7 assets, iSH gitlink, supervisor musl source, and external RootFS
+  the ABI.9 assets, iSH gitlink, supervisor musl source, and external RootFS
   recorded here, while no final App archive has been scanned; and
 - an App Store Review Guideline 2.5.2 decision.
 

@@ -100,7 +100,8 @@ single-lifecycle soft shutdown.
 ### PocketRootTerminal
 
 A SwiftTerm-backed persistent PTY, a NUL-framed guest file browser with bounded
-preview and fail-closed create/delete operations, and an optional
+preview, bounded host ↔ guest import/export, fail-closed create/delete
+operations, and an optional
 one-shot fallback that carries the physical `pwd -P` result instead of trusting
 mutable `$PWD`. UIKit and SwiftUI presentation remains MainActor-isolated.
 Atomic no-replace rename remains gated on an iSH ABI equivalent to
@@ -173,7 +174,7 @@ recoverable; native backlog overflow closes the PocketRoot process gate because
 the void close ABI cannot prove whether cleanup escalated to instance
 fail-close. Native limits include a 4 MiB/4096 frame backlog per session and a
 4 MiB/256 frame total control budget. One PocketRoot deadline starts at driver
-entry and covers finite SPAWN, stdin close, and event reads. Termination plus
+entry and covers finite SPAWN, stdin writes/close, and event reads. Termination plus
 authoritative `EXITED` confirmation after expiry has a separate fixed bounded
 cleanup window. One-shot
 Swift Task cancellation now terminates the guest and confirms exit before

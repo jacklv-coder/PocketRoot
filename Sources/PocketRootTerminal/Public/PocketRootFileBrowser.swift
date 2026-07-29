@@ -7,6 +7,10 @@ public struct PocketRootFileEntry: Sendable, Equatable, Hashable, Identifiable {
         case file
         case symbolicLink
         case other
+
+        var allowsOpening: Bool {
+            self == .directory || self == .file
+        }
     }
 
     public let name: String
@@ -29,11 +33,18 @@ public struct PocketRootFilePreview: Sendable, Equatable {
     }
 }
 
+public struct PocketRootFileExport: Sendable, Equatable {
+    public let path: String
+    public let suggestedFilename: String
+    public let data: Data
+}
+
 public enum PocketRootFileBrowserError: LocalizedError, Sendable, Equatable {
     case invalidPath
     case invalidName
     case protectedPath
     case renameUnavailable
+    case transferTooLarge(maximumBytes: Int)
     case destinationExists(String)
     case commandFailed(path: String, message: String)
     case invalidDirectoryResponse
@@ -48,6 +59,8 @@ public enum PocketRootFileBrowserError: LocalizedError, Sendable, Equatable {
             return "The guest root directory cannot be deleted."
         case .renameUnavailable:
             return "This file browser was not configured with native rename support."
+        case .transferTooLarge(let maximumBytes):
+            return "File transfer is limited to \(maximumBytes) bytes."
         case .destinationExists(let path):
             return "An item already exists at \(path)."
         case .commandFailed(let path, let message):
@@ -61,6 +74,7 @@ public enum PocketRootFileBrowserError: LocalizedError, Sendable, Equatable {
 /// A bounded, NUL-safe file browser for the PocketRoot guest filesystem.
 @available(macOS 13.0, *)
 public actor PocketRootFileBrowser {
+    public static let maximumTransferBytes = 1 * 1_024 * 1_024
     private static let maximumPreviewBytes = 512 * 1_024
 
     private let executor: any PocketRootTerminalCommandExecutor
@@ -135,7 +149,7 @@ public actor PocketRootFileBrowser {
         let blockSize = 4_096
         let blockCount = maximumBytes / blockSize + 1
         let command = """
-        if [ ! -f \(Self.shellQuote(path)) ]; then
+        if [ -L \(Self.shellQuote(path)) ] || [ ! -f \(Self.shellQuote(path)) ]; then
           printf 'Not a regular file.\\n' >&2
           exit 64
         fi
@@ -153,6 +167,133 @@ public actor PocketRootFileBrowser {
             path: path,
             data: Data(result.standardOutput.prefix(maximumBytes)),
             isTruncated: result.standardOutput.count > maximumBytes
+        )
+    }
+
+    /// Imports bounded bytes into a guest directory without replacing an item.
+    ///
+    /// Bytes are streamed through command stdin into a private staging file,
+    /// then committed with the runtime's atomic no-replace rename capability.
+    @discardableResult
+    public func importFile(
+        data: Data,
+        named name: String,
+        in directoryPath: String
+    ) async throws -> String {
+        guard data.count <= Self.maximumTransferBytes else {
+            throw PocketRootFileBrowserError.transferTooLarge(
+                maximumBytes: Self.maximumTransferBytes
+            )
+        }
+        let directoryPath = try Self.validate(directoryPath)
+        let targetPath = try Self.childPath(name: name, parent: directoryPath)
+        guard let renameExecutor else {
+            throw PocketRootFileBrowserError.renameUnavailable
+        }
+        let stagingPath = try Self.childPath(
+            name: ".pocketroot-import-\(UUID().uuidString.lowercased()).tmp",
+            parent: directoryPath
+        )
+        let command = """
+        if [ ! -d \(Self.shellQuote(directoryPath)) ]; then
+          printf 'Parent directory does not exist.\\n' >&2
+          exit 66
+        fi
+        if [ -e \(Self.shellQuote(targetPath)) ] || [ -L \(Self.shellQuote(targetPath)) ]; then
+          printf 'An item with that name already exists.\\n' >&2
+          exit 73
+        fi
+        if [ -e \(Self.shellQuote(stagingPath)) ] || [ -L \(Self.shellQuote(stagingPath)) ]; then
+          printf 'Unable to reserve staging file.\\n' >&2
+          exit 73
+        fi
+        umask 077
+        set -C
+        cat > \(Self.shellQuote(stagingPath)) || exit $?
+        [ "$(stat -c %s -- \(Self.shellQuote(stagingPath)))" = "\(data.count)" ] || {
+          printf 'Imported byte count did not match.\\n' >&2
+          exit 74
+        }
+        """
+        do {
+            let result = try await executor.execute(
+                .init(
+                    command: command,
+                    workingDirectory: "/",
+                    environment: ["LC_ALL": "C"],
+                    timeout: timeout,
+                    standardInput: data
+                )
+            )
+            if result.exitCode == 73 {
+                throw PocketRootFileBrowserError.destinationExists(targetPath)
+            }
+            try Self.validate(result, path: targetPath)
+            do {
+                try await renameExecutor.renameItem(
+                    at: stagingPath,
+                    to: targetPath,
+                    timeout: timeout
+                )
+            } catch PocketRootError.fileDestinationExists(_) {
+                throw PocketRootFileBrowserError.destinationExists(targetPath)
+            }
+            return targetPath
+        } catch {
+            await removeStagingFile(at: stagingPath)
+            throw error
+        }
+    }
+
+    /// Reads a regular guest file into a bounded host-side payload.
+    public func exportFile(
+        at path: String,
+        maximumBytes: Int = PocketRootFileBrowser.maximumTransferBytes
+    ) async throws -> PocketRootFileExport {
+        let path = try Self.validate(path)
+        let maximumBytes = min(
+            max(1, maximumBytes),
+            Self.maximumTransferBytes
+        )
+        let command = """
+        if [ -L \(Self.shellQuote(path)) ] || [ ! -f \(Self.shellQuote(path)) ]; then
+          printf 'Not a regular file.\\n' >&2
+          exit 64
+        fi
+        size=$(stat -c %s -- \(Self.shellQuote(path))) || exit $?
+        if [ "$size" -gt "\(maximumBytes)" ]; then
+          printf 'File exceeds the transfer limit.\\n' >&2
+          exit 75
+        fi
+        # Bound the read itself as well as the preceding size check. Another
+        # guest process may grow or replace the file after stat; one extra byte
+        # is sufficient for the host-side post-read limit check to reject it.
+        head -c \(maximumBytes + 1) -- \(Self.shellQuote(path))
+        """
+        let result = try await executor.execute(
+            .init(
+                command: command,
+                workingDirectory: "/",
+                environment: ["LC_ALL": "C"],
+                timeout: timeout
+            )
+        )
+        if result.exitCode == 75 {
+            throw PocketRootFileBrowserError.transferTooLarge(
+                maximumBytes: maximumBytes
+            )
+        }
+        try Self.validate(result, path: path)
+        guard result.standardOutput.count <= maximumBytes else {
+            throw PocketRootFileBrowserError.transferTooLarge(
+                maximumBytes: maximumBytes
+            )
+        }
+        return PocketRootFileExport(
+            path: path,
+            suggestedFilename: path.split(separator: "/").last.map(String.init)
+                ?? "PocketRoot Export",
+            data: result.standardOutput
         )
     }
 
@@ -269,6 +410,19 @@ public actor PocketRootFileBrowser {
             )
         )
         try Self.validate(result, path: path)
+    }
+
+    private func removeStagingFile(at path: String) async {
+        let executor = executor
+        let request = PocketRootCommandRequest(
+            command: "rm -f -- \(Self.shellQuote(path))",
+            workingDirectory: "/",
+            environment: ["LC_ALL": "C"],
+            timeout: timeout
+        )
+        _ = await Task.detached {
+            try? await executor.execute(request)
+        }.value
     }
 
     private static func parseDirectory(

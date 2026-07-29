@@ -16,6 +16,7 @@ final class PocketRootHostAppUITests: XCTestCase {
         waitForEnabled(actions)
 
         actions.tap()
+        XCTAssertTrue(app.buttons["Import File"].waitForExistence(timeout: 10))
         app.buttons["New File"].tap()
         let nameField = app.textFields["Name"]
         XCTAssertTrue(nameField.waitForExistence(timeout: 10))
@@ -28,6 +29,9 @@ final class PocketRootHostAppUITests: XCTestCase {
         XCTAssertTrue(file.waitForExistence(timeout: 30))
         waitForEnabled(file)
         file.press(forDuration: 1)
+        XCTAssertTrue(
+            app.buttons["Share / Export"].waitForExistence(timeout: 10)
+        )
         app.buttons["Rename"].tap()
         let renameAlert = app.alerts["Rename"]
         XCTAssertTrue(renameAlert.waitForExistence(timeout: 10))

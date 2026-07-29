@@ -8,6 +8,7 @@ final class PocketRootCoreTests: XCTestCase {
         let request = PocketRootCommandRequest(command: "uname -m")
 
         XCTAssertEqual(request.command, "uname -m")
+        XCTAssertTrue(request.standardInput.isEmpty)
         XCTAssertEqual(request.workingDirectory, "/root")
         XCTAssertEqual(request.environment, [:])
         XCTAssertEqual(request.timeout, .seconds(30))

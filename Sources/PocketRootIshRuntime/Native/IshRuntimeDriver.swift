@@ -14,6 +14,7 @@ struct IshDriverCommandRequest: Sendable, Equatable {
     let environment: [String: String]?
     let timeout: TimeInterval
     let mergeStandardError: Bool
+    let standardInput: Data
     let maximumStandardOutputBytes: Int
     let maximumStandardErrorBytes: Int
 }

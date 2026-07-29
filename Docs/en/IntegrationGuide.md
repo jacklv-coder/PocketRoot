@@ -7,7 +7,7 @@ default, explicit agent, and Experimental native products, and covers the
 complete local-RootFS to one-shot-result flow.
 
 > [!CAUTION]
-> Pinned `v0.4.0-abi.7` soft-halts and joins the embedded kernel, then
+> Pinned `v0.4.0-abi.9` soft-halts and joins the embedded kernel, then
 > `prepared.system.shutdown()` returns to Swift. The same host process cannot
 > boot again after success. Do not trigger it accidentally from view, scene,
 > deinit, or routine cleanup paths.
@@ -437,8 +437,10 @@ Tapping the folder icon or name instead navigates to a dedicated directory page.
 Both interactions use the same bounded command protocol and path validation;
 neither reads the RootFS storage layout directly from the host App sandbox. The
 top-right action menu creates empty files or folders, while long-press and swipe
-actions rename or delete entries. Folder deletion requires recursive deletion
-confirmation. Pass `allowsFileOperations: false` for a read-only surface.
+actions rename, delete, or share-export regular files. `Import File` in the
+same menu uses the system document picker. Folder deletion requires recursive
+deletion confirmation. Pass `allowsFileOperations: false` for a read-only
+surface.
 
 Hosts that do not use the ready-made page can call the same actor directly:
 
@@ -447,6 +449,12 @@ let files = PocketRootFileBrowser(system: system)
 try await files.createFile(named: "notes.txt", in: "/root")
 try await files.createDirectory(named: "Sources", in: "/root")
 try await files.renameItem(at: "/root/notes.txt", to: "README.txt")
+try await files.importFile(
+    data: Data("hello\n".utf8),
+    named: "imported.txt",
+    in: "/root"
+)
+let exported = try await files.exportFile(at: "/root/imported.txt")
 try await files.deleteItem(at: "/root/Sources", recursively: true)
 ```
 
@@ -454,8 +462,14 @@ Names must occupy 1–255 UTF-8 bytes and cannot be `.`, `..`, or contain `/` or
 NUL. Guest arguments are validated; create and rename never replace an existing
 item; `/` cannot be renamed or deleted; and non-empty directory deletion
 requires explicit `recursively: true`. Rename uses IshEmbed
-`v0.4.0-abi.7`'s atomic `RENAME_NOREPLACE` equivalent, not a racy shell
-check-then-move sequence.
+the atomic `RENAME_NOREPLACE` equivalent in `v0.4.0-abi.9`, not a racy shell
+check-then-move sequence. Import and export default to a 1 MiB maximum. Import
+bytes travel through `PocketRootCommandRequest.standardInput`, never shell
+text, into a random mode-`0600` staging file in the destination directory;
+the same native no-replace rename commits it. Existing destinations are never
+replaced, and write, cancellation, or commit failures perform bounded
+best-effort cleanup. Export accepts regular files only and checks the limit
+both with guest `stat` and after Swift receives the bytes.
 
 SwiftUI has the same composed entry point:
 
@@ -479,8 +493,9 @@ SwiftTerm handles ANSI/VT rendering, keyboard input, selection, scrolling, and
 accessibility semantics. The bridge preserves input order, forwards character
 size changes, and streams guest output. Guest OSC 52 clipboard access is denied
 by default. The Files page uses NUL-framed listings and bounded previews of up
-to 512 KiB, plus basic guest file management. It never browses the host App
-sandbox.
+to 512 KiB, plus basic guest file management. Only explicit import/export
+crosses the host/guest boundary through the system document picker/share
+sheet; the browser never exposes arbitrary host App sandbox paths.
 
 With a custom configuration whose `allowsInput` is `false`, the PTY remains
 visible and continues receiving guest output, but the bridge drops every

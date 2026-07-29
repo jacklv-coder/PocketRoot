@@ -36,6 +36,7 @@ public struct PocketRootIshRuntimeConfiguration: Sendable, Equatable {
     public let workDirectory: String
     public let supervisorGuestPath: String?
     public let kernelLogFileDescriptor: Int32
+    public let maximumStandardInputBytes: Int
     public let maximumStandardOutputBytes: Int
     public let maximumStandardErrorBytes: Int
     public let healthCheck: PocketRootIshRuntimeHealthCheckConfiguration
@@ -45,6 +46,7 @@ public struct PocketRootIshRuntimeConfiguration: Sendable, Equatable {
         workDirectory: String = "/",
         supervisorGuestPath: String? = nil,
         kernelLogFileDescriptor: Int32 = -1,
+        maximumStandardInputBytes: Int = 1 * 1_024 * 1_024,
         maximumStandardOutputBytes: Int = 8 * 1_024 * 1_024,
         maximumStandardErrorBytes: Int = 4 * 1_024 * 1_024,
         healthCheck: PocketRootIshRuntimeHealthCheckConfiguration = .alpineARM64
@@ -53,6 +55,7 @@ public struct PocketRootIshRuntimeConfiguration: Sendable, Equatable {
         self.workDirectory = workDirectory
         self.supervisorGuestPath = supervisorGuestPath
         self.kernelLogFileDescriptor = kernelLogFileDescriptor
+        self.maximumStandardInputBytes = maximumStandardInputBytes
         self.maximumStandardOutputBytes = maximumStandardOutputBytes
         self.maximumStandardErrorBytes = maximumStandardErrorBytes
         self.healthCheck = healthCheck

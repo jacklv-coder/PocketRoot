@@ -179,7 +179,8 @@ tar 解析、路径策略和 fakefs 校验仍由 Swift 层负责。
 
 源码：`Sources/PocketRootTerminal/`
 
-提供 terminal configuration、theme、fallback command facade、guest 文件浏览，以及
+提供 terminal configuration、theme、fallback command facade、guest 文件浏览、受限
+host ↔ guest 文件导入导出，以及
 UIKit/SwiftUI UI：
 
 - 可追加/清空 transcript；
@@ -270,13 +271,13 @@ IshEmbed 暴露同步、进程级 API。adapter 使用：
 - `IshCommandCancellation`：把 Swift Task 取消传入同步 driver，确认 `EXITED` 后才完成；
 - bounded poll：native read 最长约 250 ms 后回到 deadline 检查；
 - stdout/stderr limits：超限终止 session。
-- 退出确认：session 建立后的 stdin/read/timeout/产品超限错误先终止并确认可信
+- 退出确认：session 建立后的 stdin write/close、read、timeout、产品超限错误先终止并确认可信
   `EXITED`；无法确认时失败关闭整个进程 gate。v4 supervisor rejection 是可恢复的
   类型化 terminal error；native backlog overflow 虽会请求有界清理，但 void close 无法
   证明是否升级为 instance fail-close，因此 PocketRoot 会保守关闭 process gate。
 
 这些机制避免并发 boot、命令越过 shutdown，并以 driver 入口建立的统一 deadline
-限制 finite SPAWN、stdin close 和 event-read wait，同时限制 Swift 结果、
+限制 finite SPAWN、stdin write/close 和 event-read wait，同时限制 Swift 结果、
 每 session 4 MiB/4096 帧 native backlog 和 4 MiB/256 帧 control 总预算。spawn 直接
 返回 not-running、protocol 或 broken-pipe 会关闭 process gate。8 MiB 二进制 stdout
 smoke 跨越 backlog 并逐字节验证，证明持续消费路径；完整 Simulator smoke 还在

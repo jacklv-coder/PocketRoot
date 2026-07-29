@@ -147,11 +147,26 @@ package actor IshLinuxRuntime: LinuxRuntime {
         // Clamp valid tiny durations to one ms. ABI.6 preserves that finite
         // timeout through streaming SPAWN and later control admission.
         let nativeTimeout = max(requestedTimeout, 0.001)
-        guard configuration.maximumStandardOutputBytes > 0,
+        guard configuration.maximumStandardInputBytes > 0,
+              configuration.maximumStandardOutputBytes > 0,
               configuration.maximumStandardErrorBytes > 0
         else {
             throw PocketRootError.invalidCommandRequest(
-                "runtime output limits must be greater than zero."
+                "runtime input and output limits must be greater than zero."
+            )
+        }
+        guard configuration.maximumStandardInputBytes <= 1 * 1_024 * 1_024 else {
+            throw PocketRootError.invalidCommandRequest(
+                "runtime standard input limit exceeds the native "
+                    + "1 MiB per-session queue budget."
+            )
+        }
+        guard request.standardInput.count
+            <= configuration.maximumStandardInputBytes
+        else {
+            throw PocketRootError.invalidCommandRequest(
+                "standard input exceeds the runtime limit of "
+                    + "\(configuration.maximumStandardInputBytes) bytes."
             )
         }
         guard !request.command.contains("\0") else {
@@ -192,6 +207,7 @@ package actor IshLinuxRuntime: LinuxRuntime {
             environment: request.environment.isEmpty ? nil : request.environment,
             timeout: nativeTimeout,
             mergeStandardError: request.mergeStandardError,
+            standardInput: request.standardInput,
             maximumStandardOutputBytes: configuration.maximumStandardOutputBytes,
             maximumStandardErrorBytes: configuration.maximumStandardErrorBytes
         )
