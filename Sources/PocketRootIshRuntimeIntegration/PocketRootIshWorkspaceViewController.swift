@@ -88,7 +88,10 @@ public final class PocketRootIshWorkspaceViewController: UIViewController {
             return
         }
         render(phase)
-        if phase == .ready, let system = host.readySystem {
+        if phase == .ready,
+           host.canOpenWorkspace,
+           let system = host.readySystem
+        {
             installWorkspaceIfNeeded(system: system)
         }
     }
@@ -138,6 +141,9 @@ public final class PocketRootIshWorkspaceViewController: UIViewController {
             statusStack.centerYAnchor.constraint(
                 equalTo: view.safeAreaLayoutGuide.centerYAnchor
             ),
+            statusStack.centerXAnchor.constraint(
+                equalTo: view.safeAreaLayoutGuide.centerXAnchor
+            ),
             statusStack.leadingAnchor.constraint(
                 greaterThanOrEqualTo: view.layoutMarginsGuide.leadingAnchor
             ),
@@ -149,6 +155,10 @@ public final class PocketRootIshWorkspaceViewController: UIViewController {
 
     private func startIfNeeded() {
         guard !isDetached else {
+            return
+        }
+        guard host.canOpenWorkspace else {
+            render(host.phase)
             return
         }
         if let system = host.readySystem {
@@ -183,7 +193,11 @@ public final class PocketRootIshWorkspaceViewController: UIViewController {
     }
 
     private func installWorkspaceIfNeeded(system: PocketRootSystem) {
-        guard workspaceController == nil, !isDetached else {
+        guard workspaceController == nil,
+              !isDetached,
+              host.canOpenWorkspace,
+              host.readySystem === system
+        else {
             return
         }
         let workspace = PocketRootWorkspaceViewController(

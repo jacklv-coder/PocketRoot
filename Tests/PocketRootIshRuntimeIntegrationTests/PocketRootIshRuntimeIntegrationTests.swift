@@ -156,11 +156,38 @@ final class PocketRootIshRuntimeIntegrationTests: XCTestCase {
             [.preparingRootFS, .booting, .ready]
         )
 
-        try await host.shutdown()
+        XCTAssertTrue(host.canOpenWorkspace)
+        let shutdownPhaseStart = observedPhases.count
+        await runtime.suspendNextShutdown()
+        let shutdownTask = Task {
+            try await host.shutdown()
+        }
+        await runtime.waitUntilShutdownEntered()
+        XCTAssertEqual(host.phase, .shuttingDown)
+        XCTAssertNil(host.readySystem)
+        XCTAssertFalse(host.canOpenWorkspace)
+        XCTAssertFalse(host.canShutdown)
+
+        let lateBoot = Task {
+            try await host.boot()
+        }
+        await Task.yield()
+        await runtime.resumeShutdown()
+        try await shutdownTask.value
+        do {
+            _ = try await lateBoot.value
+            XCTFail("A boot admitted after shutdown should fail.")
+        } catch let error as PocketRootIshRuntimeControllerError {
+            XCTAssertEqual(error, .lifecycleInProgress(.terminated))
+        }
+
         try await host.shutdown()
         let shutdownCount = await runtime.shutdownCount
         XCTAssertEqual(shutdownCount, 1)
         XCTAssertEqual(host.phase, .terminated)
+        XCTAssertFalse(
+            observedPhases[shutdownPhaseStart...].contains(.ready)
+        )
         XCTAssertFalse(host.canBoot)
         XCTAssertFalse(host.canShutdown)
     }
@@ -479,6 +506,10 @@ private actor WorkspaceHostLinuxRuntime: LinuxRuntime {
     private var currentState: PocketRootRuntimeState = .idle
     private(set) var bootCount = 0
     private(set) var shutdownCount = 0
+    private var shouldSuspendShutdown = false
+    private var shutdownEntered = false
+    private var shutdownEnteredWaiter: CheckedContinuation<Void, Never>?
+    private var shutdownResumeWaiter: CheckedContinuation<Void, Never>?
 
     var state: PocketRootRuntimeState {
         currentState
@@ -503,7 +534,34 @@ private actor WorkspaceHostLinuxRuntime: LinuxRuntime {
 
     func shutdown() async throws {
         shutdownCount += 1
+        if shouldSuspendShutdown {
+            shouldSuspendShutdown = false
+            shutdownEntered = true
+            shutdownEnteredWaiter?.resume()
+            shutdownEnteredWaiter = nil
+            await withCheckedContinuation { continuation in
+                shutdownResumeWaiter = continuation
+            }
+        }
         currentState = .terminated
+    }
+
+    func suspendNextShutdown() {
+        shouldSuspendShutdown = true
+    }
+
+    func waitUntilShutdownEntered() async {
+        guard !shutdownEntered else {
+            return
+        }
+        await withCheckedContinuation { continuation in
+            shutdownEnteredWaiter = continuation
+        }
+    }
+
+    func resumeShutdown() {
+        shutdownResumeWaiter?.resume()
+        shutdownResumeWaiter = nil
     }
 }
 

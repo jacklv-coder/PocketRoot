@@ -407,7 +407,10 @@ final class HostViewController: UIViewController {
         filesButton.isEnabled = isReady
         workspaceButton.isEnabled = isReady && !isClosingWorkspace
         integratedWorkspaceButton.isEnabled =
-            phase != .shuttingDown && phase != .terminated
+            workspaceHost?.canOpenWorkspace
+                ?? (phase != .unavailable
+                    && phase != .shuttingDown
+                    && phase != .terminated)
         shutdownButton.isEnabled =
             isReady
                 && !isClosingTerminal

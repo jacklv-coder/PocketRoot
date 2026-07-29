@@ -61,11 +61,17 @@ public final class PocketRootIshWorkspaceHost {
     }
 
     public var phase: PocketRootIshRuntimePhase {
-        runtimeController.phase
+        if shutdownTask != nil, runtimeController.phase != .terminated {
+            return .shuttingDown
+        }
+        return runtimeController.phase
     }
 
     public var readySystem: PocketRootSystem? {
-        runtimeController.readySystem
+        guard shutdownTask == nil else {
+            return nil
+        }
+        return runtimeController.readySystem
     }
 
     public var installation: PocketRootRootFSInstallation? {
@@ -78,6 +84,19 @@ public final class PocketRootIshWorkspaceHost {
 
     public var canShutdown: Bool {
         shutdownTask == nil && runtimeController.canShutdown
+    }
+
+    /// Whether a new integrated screen may boot or attach a Workspace.
+    public var canOpenWorkspace: Bool {
+        guard shutdownTask == nil else {
+            return false
+        }
+        switch runtimeController.phase {
+        case .unavailable, .shuttingDown, .terminated:
+            return false
+        default:
+            return true
+        }
     }
 
     /// Prepares and boots the runtime, joining an existing boot when one is
@@ -110,7 +129,12 @@ public final class PocketRootIshWorkspaceHost {
     public func execute(
         _ request: PocketRootCommandRequest
     ) async throws -> PocketRootCommandResult {
-        try await runtimeController.execute(request)
+        guard shutdownTask == nil else {
+            throw PocketRootIshRuntimeControllerError.lifecycleInProgress(
+                .shuttingDown
+            )
+        }
+        return try await runtimeController.execute(request)
     }
 
     public func refreshRuntimeState() async {
@@ -150,20 +174,28 @@ public final class PocketRootIshWorkspaceHost {
             try await runtimeController.shutdown()
         }
         shutdownTask = task
+        publish(.shuttingDown)
         defer {
             shutdownTask = nil
+            if runtimeController.phase != .terminated {
+                publish(runtimeController.phase)
+            }
         }
         try await task.value
     }
 
     private func bindRuntimeController() {
-        runtimeController.onPhaseChange = { [weak self] phase in
+        runtimeController.onPhaseChange = { [weak self] _ in
             guard let self else {
                 return
             }
-            onPhaseChange?(phase)
-            notifyWorkspaceControllers(of: phase)
+            publish(self.phase)
         }
+    }
+
+    private func publish(_ phase: PocketRootIshRuntimePhase) {
+        onPhaseChange?(phase)
+        notifyWorkspaceControllers(of: phase)
     }
 
     #if canImport(SwiftUI) && canImport(UIKit)
