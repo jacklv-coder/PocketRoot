@@ -57,7 +57,7 @@ final class PocketRootHostAppUITests: XCTestCase {
         waitForEnabled(renamedFile)
         renamedFile.press(forDuration: 1)
         app.buttons["Delete"].tap()
-        app.buttons["Delete \(renamedFileName)"].tap()
+        confirmDeletion(of: renamedFileName, in: app)
         wait(
             for: NSPredicate(format: "exists == false"),
             evaluatedWith: renamedFile,
@@ -101,7 +101,7 @@ final class PocketRootHostAppUITests: XCTestCase {
         XCTAssertTrue(nestedFile.waitForExistence(timeout: 30))
         folder.press(forDuration: 1)
         app.buttons["Delete"].tap()
-        app.buttons["Delete \(folderName)"].tap()
+        confirmDeletion(of: folderName, in: app)
         wait(
             for: NSPredicate(format: "exists == false"),
             evaluatedWith: folder,
@@ -471,6 +471,15 @@ final class PocketRootHostAppUITests: XCTestCase {
 
     private func terminalElement(in app: XCUIApplication) -> XCUIElement {
         app.descendants(matching: .any)["PocketRootTerminal.pty"]
+    }
+
+    private func confirmDeletion(
+        of itemName: String,
+        in app: XCUIApplication
+    ) {
+        let alert = app.alerts["Delete Item?"]
+        XCTAssertTrue(alert.waitForExistence(timeout: 10))
+        alert.buttons["Delete \(itemName)"].tap()
     }
 
     private func tapBackButton(in app: XCUIApplication) {

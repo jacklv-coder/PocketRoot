@@ -6,6 +6,8 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd -P)"
 HOST_APP_DIR="$ROOT_DIR/Examples/PocketRootHostApp"
 ARCHIVE_PATH="${1:-${POCKETROOT_ROOTFS_ARCHIVE:-}}"
 DEVICE_UDID="${POCKETROOT_HOST_UI_SMOKE_DEVICE:-}"
+SIMULATOR_DEVICE_TYPE="${POCKETROOT_HOST_UI_DEVICE_TYPE:-com.apple.CoreSimulator.SimDeviceType.iPhone-16}"
+SIMULATOR_NAME="${POCKETROOT_HOST_UI_DEVICE_NAME:-PocketRoot-Host-UI-Smoke-$$}"
 CREATED_DEVICE="false"
 DERIVED_DATA_ROOT="$(
     mktemp -d "${TMPDIR:-/tmp}/PocketRootHostAppUISmoke.XXXXXX"
@@ -20,7 +22,11 @@ cleanup() {
         xcrun simctl shutdown "$DEVICE_UDID" >/dev/null 2>&1 || true
         xcrun simctl delete "$DEVICE_UDID" >/dev/null 2>&1 || true
     fi
-    rm -rf "$DERIVED_DATA_ROOT"
+    if [[ "${POCKETROOT_KEEP_UI_RESULT:-0}" == "1" ]]; then
+        echo "PocketRoot Host App UI artifacts retained at $DERIVED_DATA_ROOT"
+    else
+        rm -rf "$DERIVED_DATA_ROOT"
+    fi
 }
 trap cleanup EXIT
 
@@ -47,8 +53,8 @@ if [[ -z "$DEVICE_UDID" ]]; then
         exit 2
     fi
     DEVICE_UDID="$(xcrun simctl create \
-      "PocketRoot-Host-UI-Smoke-$$" \
-      com.apple.CoreSimulator.SimDeviceType.iPhone-16 \
+      "$SIMULATOR_NAME" \
+      "$SIMULATOR_DEVICE_TYPE" \
       "$RUNTIME_ID")"
     CREATED_DEVICE="true"
 fi

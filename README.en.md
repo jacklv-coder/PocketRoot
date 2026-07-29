@@ -38,7 +38,7 @@ an existing iOS App. Start with the
 [integration guide](Docs/en/IntegrationGuide.md).
 
 > [!WARNING]
-> Native iSH integration is **Experimental**. Pinned `v0.4.0-abi.9` has a soft shutdown that returns to Swift, atomic no-replace rename, and bounded stdin writes, but each host process still permits only one valid boot/shutdown lifecycle. iPad, sustained-load, and distribution gates remain open. This version is not approved for production, TestFlight, or public binary distribution.
+> Native iSH integration is **Experimental**. Pinned `v0.4.0-abi.9` has a soft shutdown that returns to Swift, atomic no-replace rename, and bounded stdin writes, but each host process still permits only one valid boot/shutdown lifecycle. Physical iPad, sustained-load, and distribution gates remain open. This version is not approved for production, TestFlight, or public binary distribution.
 
 ## Capability status
 
@@ -50,8 +50,8 @@ an existing iOS App. Start with the
 | iSH boot and one-shot commands | Experimental | `iOS + arm64`; one-shot cancellation confirms guest exit |
 | Terminal and file browser | Embeddable / Experimental | UIKit/SwiftUI inject a booted system; persistent SwiftTerm PTY plus inline tree expansion, navigation, bounded previews, safe mutations, and 1 MiB-capped document import/share export |
 | Lightweight agent loop | Core, OpenAI transport, and approval-gated command tool available | Agent and Runtime Tools are explicit opt-ins; no Codex CLI install or automatic shell approval |
-| Interactive PTY and SwiftTerm | Implemented; broader device validation pending | Public sessions, bounded reads, input, resize, signal/EOF, registry, and close-before-shutdown are connected; Simulator passes the boot → PTY file creation → Files preview UI closure |
-| Physical devices and distribution | Partially passed / blocked | One-shot iPhone gates and unsigned engineering App scanning passed; the new PTY still needs device lifecycle coverage, plus storage pressure, iPad, jetsam/power-cut, final artifact, and compliance gates |
+| Interactive PTY and SwiftTerm | Implemented; broader device validation pending | Public sessions, bounded reads, input, resize, signal/EOF, registry, and close-before-shutdown are connected; iPhone/iPad Simulators pass sustained PTY, lifecycle, rotation, Files, Workspace, and ordered-shutdown UI coverage |
+| Physical devices and distribution | Partially passed / blocked | One-shot iPhone gates and unsigned engineering App scanning passed; the new PTY still needs device lifecycle coverage, plus storage pressure, physical iPad, jetsam/power-cut, final artifact, and compliance gates |
 
 The default `PocketRoot` product includes neither the agent loop nor native
 iSH and never bundles or downloads a RootFS. Agent applications explicitly

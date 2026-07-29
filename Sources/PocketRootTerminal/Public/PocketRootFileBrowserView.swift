@@ -230,18 +230,18 @@ public struct PocketRootFileBrowserView: View {
         } message: {
             Text(nameAction?.message ?? "")
         }
-        .confirmationDialog(
+        .alert(
             "Delete Item?",
             isPresented: isShowingDeleteConfirmation,
             presenting: pendingDeletion
         ) { entry in
             Button("Delete \(entry.name)", role: .destructive) {
-                pendingDeletion = nil
                 Task {
                     await performOperation {
                         try await model.delete(entry)
                     }
                 }
+                pendingDeletion = nil
             }
             Button("Cancel", role: .cancel) {
                 pendingDeletion = nil

@@ -335,3 +335,10 @@ jobs:
 
       - name: Run Host App PTY and Files UI smoke with Xcode 16.0
         run: ./Scripts/run-host-app-ui-smoke.sh
+
+      - name: Run Host App iPad UI smoke with Xcode 16.0
+        env:
+          POCKETROOT_HOST_UI_DEVICE_TYPE: >-
+            com.apple.CoreSimulator.SimDeviceType.iPad-10th-generation
+          POCKETROOT_HOST_UI_DEVICE_NAME: PocketRoot-Host-iPad-UI-Smoke
+        run: ./Scripts/run-host-app-ui-smoke.sh

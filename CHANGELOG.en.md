@@ -73,7 +73,10 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 - An iOS 18 Simulator Host App UI smoke covering real SwiftTerm PTY file
   creation and sustained output, background/foreground, rotation resize,
   terminal close/reopen, persistent Files preview, and ordered shutdown.
-  Cursor blinking is configurable for deterministic UI automation.
+  Cursor blinking is configurable for deterministic UI automation. The runner
+  can select iPhone or iPad device types, CI executes the same complete suite
+  on iPhone 16 and iPad (10th generation), and Files deletion uses an alert
+  that is stable across size classes.
 - A development-signed physical Host App UI runner that validates physical
   iOS, the device/Xcode support range, signing, and entitlements before reusing
   the same lifecycle test, with App and diagnostic cleanup by default.
