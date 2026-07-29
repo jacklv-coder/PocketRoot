@@ -32,6 +32,9 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
 - 加入公开 UIKit/SwiftUI Workspace 组合入口：一个已 boot system 可直接打开持续
   Terminal 与 Files，跨页面不重建 PTY，退出时关闭 session；Host App UI smoke
   验证终端创建文件、Files 预览和切回后的同一会话。
+- 加入进程级 `PocketRootIshWorkspaceHost` 与 UIKit/SwiftUI 一体化入口：调用方提供
+  本地 RootFS 与 Application Support 即可自动 prepare、boot 和打开 Workspace；
+  并发 boot 合并，页面退出只关闭 PTY，显式 shutdown 先关闭全部 host Workspace。
 - 统一 package、Demo、tests 和 CI 的 iOS 18.0 deployment baseline。
 - 固定 Experimental `PocketRootIshRuntime` 到 IshEmbed release revision `38d25d6f8726145e7e988172f12000020d89a638` 与 `v0.4.0-abi.6` XCFramework。
 - 加入 Experimental `PocketRootIshRuntimeIntegration`，组合调用方本地 RootFS 与原生 runtime。

@@ -101,7 +101,8 @@ let package = Package(
             dependencies: [
                 "PocketRootCore",
                 "PocketRootResources",
-                "PocketRootIshRuntime"
+                "PocketRootIshRuntime",
+                "PocketRootTerminal"
             ]
         ),
         .target(

@@ -206,45 +206,54 @@ let prepared = try await PocketRootIshSystemFactory.prepareSystem(
 
 ### 推荐：一个宿主控制器完成最小闭环
 
-业务 App 应长期保留一个 `PocketRootIshRuntimeController`。它负责 RootFS
-准备、进程级生命周期、状态通知和失败后的权威状态对账；终端页面与文件页面必须共享
-它返回的同一个 `PocketRootSystem`：
+业务 App 应在 App/Scene owner 中长期保留一个 `PocketRootIshWorkspaceHost`。宿主只需
+提供本地已审核 RootFS 归档和 Application Support 目录；它会合并并发 boot，自动完成
+RootFS 准备与 runtime boot，并创建保持同一 PTY 的 Terminal/Files 页面：
 
 ```swift
 import PocketRoot
 import PocketRootIshRuntimeIntegration
 
-let runtimeController = PocketRootIshRuntimeController(
-    configuration: PocketRootIshRuntimeControllerConfiguration(
+let pocketRootHost = PocketRootIshWorkspaceHost(
+    runtimeConfiguration: PocketRootIshRuntimeControllerConfiguration(
         archiveURL: localReviewedArchiveURL,
         applicationSupportURL: applicationSupportURL,
         workDirectory: "/"
+    ),
+    workspaceConfiguration: PocketRootWorkspaceConfiguration(
+        terminalConfiguration: .interactive(
+            initialWorkingDirectory: "/root"
+        ),
+        initialFilePath: "/root"
     )
 )
 
-runtimeController.onPhaseChange = { phase in
-    // 在主线程更新 Boot、Terminal 与 Files 控件。
-}
-
-let system = try await runtimeController.boot()
-
-let terminal = PocketRootTerminalViewController(
-    system: system,
-    configuration: .interactive(initialWorkingDirectory: "/root"),
-    theme: .dark
-)
-let files = PocketRootFileBrowserViewController(
-    system: system,
-    initialPath: "/root"
+navigationController?.pushViewController(
+    pocketRootHost.makeViewController(),
+    animated: true
 )
 ```
 
-只有 `runtimeController.readySystem` 非空时才打开终端或文件页面。PTY 页面离开时调用
-`closeSession()`；若收到致命 session 结束原因，则调用
-`await runtimeController.refreshRuntimeState()`。不要为两个页面分别 prepare 或 boot。
+页面首次展示时自动 boot；移除页面只关闭该页面 PTY，runtime 仍可供之后重新打开。
+宿主明确结束 Linux 能力时调用 `try await pocketRootHost.shutdown()`，它会先等待该 host
+创建的全部 Workspace 关闭 PTY，再 shutdown process-global runtime。不要在 SwiftUI
+`body` 中反复创建 host；SwiftUI 使用长期保留的同一个 host：
+
+```swift
+PocketRootIshWorkspaceView(host: pocketRootHost)
+```
+
+Host 不会下载或选择 RootFS，也不会安装 Node.js、npm、Codex CLI 或 Agent Loop。
 完整的独立 XcodeGen 宿主位于
 [`Examples/PocketRootHostApp`](../Examples/PocketRootHostApp)，只依赖公开 Swift Package
 产品，不读取 Demo 内部代码。CI 会真实编译它并核对注入的 RootFS。
+
+### 较低层宿主生命周期
+
+需要分别组织 Boot、Terminal 和 Files 控件的 App 可继续长期保留
+`PocketRootIshRuntimeController`，在 `readySystem` 非空后把同一个 system 传入各页面；
+PTY 页面离开时调用 `closeSession()`，致命 session 失败后调用
+`await runtimeController.refreshRuntimeState()`。
 
 ### 底层手动生命周期
 
@@ -463,8 +472,8 @@ session 权威退出、关闭并注销后，才会关闭 guest PID 1 和 kernel�
 
 ## 9. 接入终端与文件夹页面
 
-准备并 boot 完 `system` 后，最小接入可以直接打开一个同时包含持续 PTY 和文件浏览的
-Workspace。切换页面不会重建终端 session：
+如果宿主已经自行准备并 boot 完 `system`，可以使用更低层 Workspace 直接打开持续 PTY
+和文件浏览；切换页面不会重建终端 session：
 
 ```swift
 import PocketRootTerminal

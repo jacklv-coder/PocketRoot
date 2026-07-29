@@ -167,7 +167,7 @@ class ReleaseComplianceTests < Minitest::Test
         .binread
 
     assert_match(
-      /final class HostAppDelegate:.*?var runtimeController:/m,
+      /final class HostAppDelegate:.*?var workspaceHost:/m,
       source
     )
     assert_includes source, "HostViewController(runtimeOwner: appDelegate)"
@@ -176,6 +176,28 @@ class ReleaseComplianceTests < Minitest::Test
     assert_includes(
       source,
       "hostViewController.closeActiveInteractiveSurfaces()"
+    )
+    integrated_host_source =
+      REPOSITORY_ROOT
+        .join(
+          "Sources/PocketRootIshRuntimeIntegration/" \
+          "PocketRootIshWorkspaceHost.swift"
+        )
+        .binread
+    integrated_workspace_source =
+      REPOSITORY_ROOT
+        .join(
+          "Sources/PocketRootIshRuntimeIntegration/" \
+          "PocketRootIshWorkspaceViewController.swift"
+        )
+        .binread
+    assert_includes(
+      integrated_host_source,
+      "let controllers = workspaceControllerSnapshot()"
+    )
+    assert_includes(
+      integrated_workspace_source,
+      "closeSession { [self, host] in"
     )
     workspace_source =
       REPOSITORY_ROOT
@@ -190,7 +212,7 @@ class ReleaseComplianceTests < Minitest::Test
     assert_includes source, "override func viewDidAppear(_ animated: Bool)"
     refute_includes source, "override func viewWillAppear(_ animated: Bool)"
     assert_match(
-      /viewDidAppear.*?await runtimeController\.refreshRuntimeState\(\)/m,
+      /viewDidAppear.*?await workspaceHost\.refreshRuntimeState\(\)/m,
       source
     )
 
@@ -215,6 +237,10 @@ class ReleaseComplianceTests < Minitest::Test
           "Examples/PocketRootHostApp/UITests/PocketRootHostAppUITests.swift"
         )
         .binread
+    host_source =
+      REPOSITORY_ROOT
+        .join("Examples/PocketRootHostApp/Sources/HostApp.swift")
+        .binread
     runner =
       REPOSITORY_ROOT
         .join("Scripts/run-host-app-ui-smoke.sh")
@@ -231,6 +257,12 @@ class ReleaseComplianceTests < Minitest::Test
     assert_includes ui_test, "PocketRootFiles.preview"
     assert_includes ui_test, "testPTYLifecycleAndShutdown"
     assert_includes ui_test, "testWorkspaceKeepsPTYAliveAcrossFilesTab"
+    assert_includes(
+      ui_test,
+      "testIntegratedWorkspaceBootsAndOwnsShutdownOrdering"
+    )
+    assert_includes host_source, "PocketRootIshWorkspaceHost("
+    assert_includes host_source, "workspaceHost.makeViewController()"
     assert_includes ui_test, "PocketRootHost.shutdown"
     assert_includes runner, "-test-timeouts-enabled YES"
     assert_includes device_runner, "build-for-testing"

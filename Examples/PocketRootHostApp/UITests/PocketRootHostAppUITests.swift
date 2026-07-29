@@ -242,6 +242,82 @@ final class PocketRootHostAppUITests: XCTestCase {
         )
     }
 
+    func testIntegratedWorkspaceBootsAndOwnsShutdownOrdering() {
+        let app = XCUIApplication()
+        app.launchArguments += [
+            "-AppleLanguages", "(en)",
+            "-AppleLocale", "en_US",
+            "-PocketRootUITesting"
+        ]
+        app.launch()
+
+        let hostStatus = app.staticTexts["PocketRootHost.status"]
+        XCTAssertTrue(hostStatus.waitForExistence(timeout: 10))
+        XCTAssertEqual(hostStatus.label, "Runtime: Ready to Boot")
+
+        let integratedButton =
+            app.buttons["PocketRootHost.integratedWorkspace"]
+        XCTAssertTrue(integratedButton.waitForExistence(timeout: 10))
+        integratedButton.tap()
+
+        let integratedWorkspace = app.descendants(matching: .any)[
+            "PocketRootIshWorkspace"
+        ]
+        XCTAssertTrue(integratedWorkspace.waitForExistence(timeout: 10))
+
+        let terminal = terminalElement(in: app)
+        XCTAssertTrue(terminal.waitForExistence(timeout: 90))
+        terminal.tap()
+        terminal.typeText(
+            "rm -f /root/pocketroot-integrated-smoke.txt; "
+                + "printf 'integrated workspace\\n' "
+                + "> /root/pocketroot-integrated-smoke.txt; "
+                + "printf '__INTEGRATED_WORKSPACE_READY__\\n'\n"
+        )
+        wait(
+            for: NSPredicate(
+                format: "value CONTAINS %@",
+                "__INTEGRATED_WORKSPACE_READY__"
+            ),
+            evaluatedWith: terminal,
+            timeout: 30
+        )
+
+        dismissKeyboard(in: app)
+        let filesSurface = app.segmentedControls.buttons["Files"]
+        XCTAssertTrue(filesSurface.waitForExistence(timeout: 10))
+        filesSurface.tap()
+
+        let file = app.descendants(matching: .any)[
+            "PocketRootFiles.entry./root/pocketroot-integrated-smoke.txt"
+        ]
+        XCTAssertTrue(file.waitForExistence(timeout: 30))
+        file.tap()
+        let preview = app.staticTexts["PocketRootFiles.preview"]
+        XCTAssertTrue(preview.waitForExistence(timeout: 30))
+        XCTAssertEqual(preview.label, "integrated workspace\n")
+
+        returnToHost(in: app)
+        wait(
+            for: NSPredicate(format: "label == %@", "Runtime: Ready"),
+            evaluatedWith: hostStatus,
+            timeout: 30
+        )
+
+        let shutdownButton = app.buttons["PocketRootHost.shutdown"]
+        XCTAssertTrue(shutdownButton.isEnabled)
+        shutdownButton.tap()
+        wait(
+            for: NSPredicate(
+                format: "label == %@",
+                "Runtime: Restart App"
+            ),
+            evaluatedWith: hostStatus,
+            timeout: 30
+        )
+        XCTAssertFalse(integratedButton.isEnabled)
+    }
+
     private func launchAndBoot() -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments += [
