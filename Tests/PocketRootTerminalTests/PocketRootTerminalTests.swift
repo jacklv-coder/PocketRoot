@@ -353,6 +353,155 @@ final class PocketRootTerminalTests: XCTestCase {
         XCTAssertEqual(preview.text, "aaaaaaaa")
     }
 
+    func testFileBrowserImportsBinaryDataThroughStdinAndAtomicRename() async throws {
+        let payload = Data([0x00, 0xff, 0x0a, 0x41])
+        let executor = TerminalExecutorStub { _ in
+            PocketRootCommandResult(exitCode: 0)
+        }
+        let renamer = FileRenameExecutorStub()
+        let browser = PocketRootFileBrowser(
+            executor: executor,
+            renameExecutor: renamer,
+            timeout: .seconds(9)
+        )
+
+        let path = try await browser.importFile(
+            data: payload,
+            named: "it's binary.dat",
+            in: "/root/project"
+        )
+
+        XCTAssertEqual(path, "/root/project/it's binary.dat")
+        let requests = await executor.recordedRequests
+        XCTAssertEqual(requests.count, 1)
+        XCTAssertEqual(requests[0].standardInput, payload)
+        XCTAssertTrue(requests[0].command.contains("cat >"))
+        XCTAssertTrue(requests[0].command.contains(
+            "'/root/project/it'\"'\"'s binary.dat'"
+        ))
+        XCTAssertFalse(requests[0].command.contains(payload.base64EncodedString()))
+        let calls = await renamer.calls
+        XCTAssertEqual(calls.count, 1)
+        XCTAssertTrue(calls[0].sourcePath.hasPrefix(
+            "/root/project/.pocketroot-import-"
+        ))
+        XCTAssertEqual(calls[0].destinationPath, path)
+        XCTAssertEqual(calls[0].timeout, .seconds(9))
+    }
+
+    func testFileBrowserRejectsOversizedImportBeforeExecution() async {
+        let executor = TerminalExecutorStub { _ in
+            XCTFail("Oversized data must not reach the executor.")
+            return PocketRootCommandResult(exitCode: 0)
+        }
+        let browser = PocketRootFileBrowser(
+            executor: executor,
+            renameExecutor: FileRenameExecutorStub()
+        )
+
+        do {
+            _ = try await browser.importFile(
+                data: Data(
+                    repeating: 0x61,
+                    count: PocketRootFileBrowser.maximumTransferBytes + 1
+                ),
+                named: "large.bin",
+                in: "/root"
+            )
+            XCTFail("Expected the transfer limit to reject the import.")
+        } catch let error as PocketRootFileBrowserError {
+            XCTAssertEqual(
+                error,
+                .transferTooLarge(
+                    maximumBytes: PocketRootFileBrowser.maximumTransferBytes
+                )
+            )
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+        let requests = await executor.recordedRequests
+        XCTAssertTrue(requests.isEmpty)
+    }
+
+    func testFileBrowserCleansStagingAfterImportCollision() async {
+        let executor = TerminalExecutorStub { request in
+            if request.command.contains("cat >") {
+                return PocketRootCommandResult(
+                    exitCode: 73,
+                    standardError: Data("already exists".utf8)
+                )
+            }
+            return PocketRootCommandResult(exitCode: 0)
+        }
+        let renamer = FileRenameExecutorStub()
+        let browser = PocketRootFileBrowser(
+            executor: executor,
+            renameExecutor: renamer
+        )
+
+        do {
+            _ = try await browser.importFile(
+                data: Data("new".utf8),
+                named: "existing.txt",
+                in: "/root"
+            )
+            XCTFail("An existing destination must reject import.")
+        } catch let error as PocketRootFileBrowserError {
+            XCTAssertEqual(error, .destinationExists("/root/existing.txt"))
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+
+        let requests = await executor.recordedRequests
+        XCTAssertEqual(requests.count, 2)
+        XCTAssertTrue(requests[1].command.hasPrefix("rm -f -- "))
+        let calls = await renamer.calls
+        XCTAssertTrue(calls.isEmpty)
+    }
+
+    func testFileBrowserExportsBinaryDataExactly() async throws {
+        let payload = Data([0x00, 0xff, 0x42, 0x0a])
+        let executor = TerminalExecutorStub { _ in
+            PocketRootCommandResult(exitCode: 0, standardOutput: payload)
+        }
+        let browser = PocketRootFileBrowser(executor: executor)
+
+        let exported = try await browser.exportFile(
+            at: "/root/project/archive.bin"
+        )
+
+        XCTAssertEqual(exported.path, "/root/project/archive.bin")
+        XCTAssertEqual(exported.suggestedFilename, "archive.bin")
+        XCTAssertEqual(exported.data, payload)
+        let requests = await executor.recordedRequests
+        XCTAssertEqual(requests.count, 1)
+        XCTAssertTrue(requests[0].command.contains("[ -L "))
+        XCTAssertTrue(requests[0].command.contains("stat -c %s"))
+        XCTAssertTrue(requests[0].command.contains("head -c 1048577 --"))
+    }
+
+    func testFileBrowserMapsGuestExportLimitFailure() async {
+        let executor = TerminalExecutorStub { _ in
+            PocketRootCommandResult(
+                exitCode: 75,
+                standardError: Data("too large".utf8)
+            )
+        }
+        let browser = PocketRootFileBrowser(executor: executor)
+
+        do {
+            _ = try await browser.exportFile(
+                at: "/root/large.bin",
+                maximumBytes: 17
+            )
+            XCTFail("Expected a typed transfer limit failure.")
+        } catch let error as PocketRootFileBrowserError {
+            XCTAssertEqual(error, .transferTooLarge(maximumBytes: 17))
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+    }
+
     func testFileBrowserRejectsRelativePathBeforeExecution() async {
         let executor = TerminalExecutorStub { _ in
             XCTFail("Invalid paths must not reach the executor.")
@@ -611,6 +760,13 @@ final class PocketRootTerminalTests: XCTestCase {
                 PocketRootFileTreeRow(entry: readme, depth: 0)
             ]
         )
+    }
+
+    func testOnlyDirectoriesAndRegularFilesCanBeOpenedFromFileTree() {
+        XCTAssertTrue(PocketRootFileEntry.Kind.directory.allowsOpening)
+        XCTAssertTrue(PocketRootFileEntry.Kind.file.allowsOpening)
+        XCTAssertFalse(PocketRootFileEntry.Kind.symbolicLink.allowsOpening)
+        XCTAssertFalse(PocketRootFileEntry.Kind.other.allowsOpening)
     }
 
     func testFileTreeCollapseHidesDescendantsWithoutDiscardingCache() {

@@ -44,6 +44,7 @@ public enum PocketRootIshSystemFactory {
         workDirectory: String = "/",
         supervisorGuestPath: String? = nil,
         kernelLogFileDescriptor: Int32 = -1,
+        maximumStandardInputBytes: Int = 1 * 1_024 * 1_024,
         maximumStandardOutputBytes: Int = 8 * 1_024 * 1_024,
         maximumStandardErrorBytes: Int = 4 * 1_024 * 1_024,
         healthCheck: PocketRootIshRuntimeHealthCheckConfiguration? = nil
@@ -60,6 +61,7 @@ public enum PocketRootIshSystemFactory {
             workDirectory: workDirectory,
             supervisorGuestPath: supervisorGuestPath,
             kernelLogFileDescriptor: kernelLogFileDescriptor,
+            maximumStandardInputBytes: maximumStandardInputBytes,
             maximumStandardOutputBytes: maximumStandardOutputBytes,
             maximumStandardErrorBytes: maximumStandardErrorBytes,
             healthCheck: healthCheck
@@ -100,6 +102,7 @@ public enum PocketRootIshSystemFactory {
             workDirectory: "/",
             supervisorGuestPath: nil,
             kernelLogFileDescriptor: -1,
+            maximumStandardInputBytes: 1 * 1_024 * 1_024,
             maximumStandardOutputBytes: 8 * 1_024 * 1_024,
             maximumStandardErrorBytes: 4 * 1_024 * 1_024,
             healthCheck: nil
@@ -115,6 +118,7 @@ public enum PocketRootIshSystemFactory {
         workDirectory: String,
         supervisorGuestPath: String?,
         kernelLogFileDescriptor: Int32,
+        maximumStandardInputBytes: Int,
         maximumStandardOutputBytes: Int,
         maximumStandardErrorBytes: Int,
         healthCheck: PocketRootIshRuntimeHealthCheckConfiguration?
@@ -134,6 +138,7 @@ public enum PocketRootIshSystemFactory {
                 workDirectory: workDirectory,
                 supervisorGuestPath: supervisorGuestPath,
                 kernelLogFileDescriptor: kernelLogFileDescriptor,
+                maximumStandardInputBytes: maximumStandardInputBytes,
                 maximumStandardOutputBytes: maximumStandardOutputBytes,
                 maximumStandardErrorBytes: maximumStandardErrorBytes,
                 healthCheck: resolvedHealthCheck

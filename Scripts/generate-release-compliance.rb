@@ -15,26 +15,26 @@ module PocketRootReleaseCompliance
   OUTPUT_RELATIVE = "Compliance/Release/experimental-v0.1.0"
   ISHEMBED = {
     "repository" => "https://github.com/jacklv-coder/ish-arm64-pkg.git",
-    "revision" => "37231ab667b380eb86a5fbcf961e31af4d50cebb",
-    "release" => "v0.4.0-abi.7",
+    "revision" => "2419f736b271beb52a699b2f780027cf280472b8",
+    "release" => "v0.4.0-abi.9",
     "licenseDeclared" => "GPL-3.0-or-later",
     "xcframework" => {
       "filename" => "libIshKernel.xcframework.zip",
       "url" =>
         "https://github.com/jacklv-coder/ish-arm64-pkg/releases/download/" \
-        "v0.4.0-abi.7/libIshKernel.xcframework.zip",
-      "byteCount" => 2_457_982,
+        "v0.4.0-abi.9/libIshKernel.xcframework.zip",
+      "byteCount" => 2_460_178,
       "sha256" =>
-        "98b02f42de7f62b82bdbbbfad7db8599bd881c879dabff787f78830d6971639b"
+        "c68f47587686000cf125105ac25eaf4d79de6dbd1715d39838bfb7d35abc72f8"
     },
     "correspondingSource" => {
       "filename" => "IshEmbed-corresponding-source.tar.gz",
       "url" =>
         "https://github.com/jacklv-coder/ish-arm64-pkg/releases/download/" \
-        "v0.4.0-abi.7/IshEmbed-corresponding-source.tar.gz",
-      "byteCount" => 2_388_002,
+        "v0.4.0-abi.9/IshEmbed-corresponding-source.tar.gz",
+      "byteCount" => 2_391_682,
       "sha256" =>
-        "2715c66dcad63e1a849ff1a79cfe28b4fcde9b1f844b97c212af698b88b67ecf"
+        "8e5d3d56056ece402c09e5f1b3cbdaad75f2f8697ed0e41eaeecd7c403f26557"
     },
     "ish" => {
       "repository" => "https://github.com/jacklv-coder/ish-arm64.git",
@@ -204,9 +204,9 @@ module PocketRootReleaseCompliance
     "LICENSE" =>
       "9858dd8b44db130c423cb772ec04d1a16fceb4fa57c679b27e301b9f76861bba",
     "Package.resolved" =>
-      "7e0335c633bde8128224003d97bd6323ac3cf0c8ddc2e92e519039f54119136f",
+      "a6c4a28788ed9d4a22f021248cadfd83ad8a0584fc2dd198a6e1bf0434b79167",
     "Package.swift" =>
-      "4e6e3acbd89104afd5c496b390267aeb3c84398794cb293ef116edc02e4655d1",
+      "3c53631753e44d6de1d0cd04cb1c725a105e65b2ba332ec19465c34048d5f339",
     "project.yml" =>
       "dde326aa375b5c63362e3696402e52e023c9d1f88a26c751a652d42fa24a2800",
     "Examples/PocketRootHostApp/project.yml" =>
@@ -1451,7 +1451,7 @@ module PocketRootReleaseCompliance
 
       此目录记录 `#{RELEASE_VERSION}` 源码树可复现的**最大实验组合**，不是已构建、
       已扫描或获准发行的 App 制品。`COMPOSITION.json` 区分默认 Demo、独立宿主示例、
-      原生 runtime smoke 与全部 Swift products；`SBOM.spdx.json` 汇总 PocketRoot、固定 ABI.7
+      原生 runtime smoke 与全部 Swift products；`SBOM.spdx.json` 汇总 PocketRoot、固定 ABI.9
       IshEmbed/XCFramework、精确 iSH gitlink、静态 supervisor 使用的 musl source、
       固定 SwiftTerm 与其解析依赖，以及调用方提供的外部 RootFS 和其中 15 个 Alpine 包。
 
@@ -1474,7 +1474,7 @@ module PocketRootReleaseCompliance
       scanned, or authorized App artifact. `COMPOSITION.json` distinguishes the
       default Demo, standalone host example, native-runtime smoke, and all
       Swift products.
-      `SBOM.spdx.json` combines PocketRoot, pinned ABI.7 IshEmbed/XCFramework,
+      `SBOM.spdx.json` combines PocketRoot, pinned ABI.9 IshEmbed/XCFramework,
       the exact iSH gitlink, the musl source snapshot used by the static guest
       supervisor, pinned SwiftTerm and its resolved dependency, and the
       caller-provided external RootFS with its 15 Alpine packages.

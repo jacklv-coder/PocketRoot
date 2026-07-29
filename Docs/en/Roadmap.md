@@ -16,9 +16,12 @@ Status:
 1. Merged the provider-agnostic bounded `PocketRootAgent` loop.
 2. Completed the OpenAI Responses API transport and host-owned credential contract.
 3. Completed the approval-, command-policy-, timeout-, and output-gated Linux tool.
-4. Published and pinned IshEmbed `v0.4.0-abi.6`, completing the unified
+4. Published and pinned IshEmbed `v0.4.0-abi.9`; it retains ABI.7's atomic
+   no-replace rename, bounds finite-session stdin write/close under one SPAWN
+   absolute deadline, and preserves ABI.6's unified
    control-path deadline, one-shot Swift Task cancellation, native exit
-   confirmation, and post-cancellation recovery.
+   confirmation, and post-cancellation recovery, and adds atomic no-replace
+   guest rename.
 5. Completed the maximal Experimental engineering-composition inventory/SPDX
    SBOM and added a deterministic external `.app`/`.xcarchive` scanner. CI now
    scans the unsigned device runtime App's files, Mach-O metadata,
@@ -104,7 +107,7 @@ This establishes the current Simulator, minimum-Xcode 16, and single-iPhone one-
 | Minimum Xcode 16 native | Passed | Xcode 16.0 / iOS 18.0 SDK completed RootFS install, Simulator/device final links, and the 17-check native smoke |
 | App lifecycle and memory | In progress | Simulator and Jack iPhone have 256 MiB `ru_maxrss` gates; physical process suspend/resume, UIKit foreground/background, post-termination data recovery, and bounded App-delegate memory-warning recovery passed; add real memory-pressure/jetsam evidence |
 | RootFS ENOSPC/power faults | In progress | Peak-space preflight, full ENOSPC, seven persistence barriers, deterministic power-loss cuts, and bounded capacity/ENOSPC cleanup recovery on Jack iPhone are covered; add real storage-pressure/power-cut evidence |
-| Maximal Experimental engineering composition inventory/SBOM | Passed | Keep SwiftPM/Xcode targets, ABI.6 dependency/source, the external RootFS's 15 packages, and checksums reproducible; never describe it as a final release-archive scan or distribution authorization |
+| Maximal Experimental engineering composition inventory/SBOM | Passed | Keep SwiftPM/Xcode targets, ABI.9 dependency/source, the external RootFS's 15 packages, and checksums reproducible; never describe it as a final release-archive scan or distribution authorization |
 | Unsigned engineering App scan | Passed | CI ephemerally scans the full file tree, Mach-O, signature/entitlements, private-framework/JIT signals, and validates the file-level SPDX; upload no output and keep every final-release gate closed |
 | Development-signed engineering archive | Passed | Locally build a standard `.xcarchive`, require development entitlements and a valid signature, and re-verify clean risk evidence and SPDX; never install/export/upload it and keep every final-release gate closed |
 | License-reviewed RootFS | Blocked | The 15-package/10-origin evidence, corresponding-source candidate material for all 10 origins, all 78 initial candidates, and all 138 external LICENSE/NOTICE payloads have checksum-bound engineering review. The historical builder is identified; a schema-v4 successor is reproducible across same-host invocations, with a five-unit delivery inventory and unified external candidate materializer. Only the `alpine-keys` MIT grant/copyright notice remains open, followed by a pinned-release exact-rebuild conclusion, complete NOTICE/source offer, legal review, delivery approval, and authorized release |
@@ -197,6 +200,11 @@ Completed in this closure:
     Support location; presentation coalesces boot and shows the Workspace,
     removal closes only its PTY, and explicit shutdown closes all host-created
     workspaces first.
+11. Bounded host ↔ guest file exchange: one-shot commands accept up to 1 MiB
+    of binary stdin; Files imports from the system document picker and exports
+    through the share sheet. Import uses private same-directory staging and
+    the atomic no-replace rename shipped in ABI.9, without shell interpolation
+    or replacement.
 
 The remaining iPhone gate is execution under an Xcode whose device-support
 range includes the selected signed device. Jack iPhone currently runs iOS 26.6

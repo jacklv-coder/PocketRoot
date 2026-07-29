@@ -29,7 +29,7 @@ struct IshEmbedDriver: IshRuntimeDriver {
     ) throws -> IshDriverCommandResult {
         try cancellation.check()
         // The product deadline starts at this driver entry, before native
-        // SPAWN staging/admission and stdin-close admission. ABI.6 uses a
+        // SPAWN staging/admission and stdin control admission. ABI.6+ uses a
         // finite streaming timeout to keep those control operations bounded.
         let deadline = ProcessInfo.processInfo.systemUptime + request.timeout
         let spawnTimeout = deadline - ProcessInfo.processInfo.systemUptime
@@ -88,12 +88,89 @@ struct IshEmbedDriver: IshRuntimeDriver {
                 )
             }
             do {
-                try session.closeStdin()
-            } catch IshError.raw(let code, _) where code == -12 {
-                // The finite native session reuses the original SPAWN
-                // deadline for stdin-close admission. It never publishes a
-                // late EOF frame after that product deadline.
-                try cancellation.check()
+                let chunkSize = 64 * 1_024
+                let inputAdmissionSlice: TimeInterval = 0.25
+                var offset = 0
+                while offset < request.standardInput.count {
+                    try cancellation.check()
+                    if let result = try drainAvailableEvents(
+                        session,
+                        request: request,
+                        cancellation: cancellation,
+                        deadline: deadline,
+                        standardOutput: &standardOutput,
+                        standardError: &standardError
+                    ) {
+                        return result
+                    }
+                    let remaining = deadline - ProcessInfo.processInfo.systemUptime
+                    guard remaining > 0 else {
+                        throw IshInputDeadlineExceeded()
+                    }
+                    let end = min(
+                        offset + chunkSize,
+                        request.standardInput.count
+                    )
+                    do {
+                        try session.write(
+                            request.standardInput.subdata(in: offset..<end),
+                            timeout: min(remaining, inputAdmissionSlice)
+                        )
+                        offset = end
+                    } catch IshError.raw(let code, _)
+                        where code == -12 || code == -21
+                    {
+                        // A short timeout or control-queue limit leaves this
+                        // single-frame chunk unadmitted. Drain output, check
+                        // cancellation, and retry while the product deadline
+                        // remains.
+                        if code == -21 {
+                            try waitBeforeRetry(deadline: deadline)
+                        }
+                        continue
+                    }
+                }
+                while true {
+                    try cancellation.check()
+                    if let result = try drainAvailableEvents(
+                        session,
+                        request: request,
+                        cancellation: cancellation,
+                        deadline: deadline,
+                        standardOutput: &standardOutput,
+                        standardError: &standardError
+                    ) {
+                        return result
+                    }
+                    let remaining = deadline - ProcessInfo.processInfo.systemUptime
+                    guard remaining > 0 else {
+                        throw IshInputDeadlineExceeded()
+                    }
+                    do {
+                        try session.closeStdin(
+                            timeout: min(remaining, inputAdmissionSlice)
+                        )
+                        break
+                    } catch IshError.raw(let code, _)
+                        where code == -12 || code == -19 || code == -21
+                    {
+                        if code == -19 || code == -21 {
+                            try waitBeforeRetry(deadline: deadline)
+                        }
+                        continue
+                    }
+                }
+                if let result = try drainAvailableEvents(
+                    session,
+                    request: request,
+                    cancellation: cancellation,
+                    deadline: deadline,
+                    standardOutput: &standardOutput,
+                    standardError: &standardError
+                ) {
+                    return result
+                }
+            } catch is IshInputDeadlineExceeded {
                 let terminationOutput = try terminateAndConfirmExit(
                     session,
                     preserving: standardOutput,
@@ -295,6 +372,88 @@ struct IshEmbedDriver: IshRuntimeDriver {
         }
     }
 
+    private func drainAvailableEvents(
+        _ session: IshSession,
+        request: IshDriverCommandRequest,
+        cancellation: IshCommandCancellation,
+        deadline: TimeInterval,
+        standardOutput: inout Data,
+        standardError: inout Data
+    ) throws -> IshDriverCommandResult? {
+        while true {
+            try cancellation.check()
+            guard ProcessInfo.processInfo.systemUptime < deadline else {
+                throw IshInputDeadlineExceeded()
+            }
+            let event: IshSessionEvent
+            do {
+                event = try session.read(timeout: 0)
+            } catch IshError.raw(let code, _) where code == -12 {
+                return nil
+            } catch IshError.raw(let code, let message) where code == -15 {
+                throw IshRuntimeDriverError.supervisorCommandRejected(
+                    "IshError \(code): \(message)"
+                )
+            } catch IshError.raw(let code, _) where code == -18 {
+                throw IshRuntimeDriverError.nativeOutputLimitExceeded(
+                    maximumBytes: 4 * 1_024 * 1_024,
+                    maximumFrames: 4_096
+                )
+            }
+            let deadlineExpired =
+                ProcessInfo.processInfo.systemUptime >= deadline
+
+            switch event {
+            case .data(let data, kind: .stdout, seq: _):
+                try append(
+                    data,
+                    to: &standardOutput,
+                    limit: request.maximumStandardOutputBytes,
+                    stream: "stdout"
+                )
+                if deadlineExpired {
+                    throw IshInputDeadlineExceeded()
+                }
+            case .data(let data, kind: .stderr, seq: _):
+                try append(
+                    data,
+                    to: &standardError,
+                    limit: request.maximumStandardErrorBytes,
+                    stream: "stderr"
+                )
+                if deadlineExpired {
+                    throw IshInputDeadlineExceeded()
+                }
+            case .exited(let exitCode, let signal):
+                try IshRuntimeTransportPolicy.validateAuthoritativeExit(
+                    exitCode: exitCode,
+                    signal: signal
+                )
+                if deadlineExpired {
+                    return timedOutResult(
+                        standardOutput: standardOutput,
+                        standardError: standardError
+                    )
+                }
+                return IshDriverCommandResult(
+                    exitCode: exitCode,
+                    signal: signal,
+                    standardOutput: standardOutput,
+                    standardError: standardError,
+                    timedOut: false
+                )
+            }
+        }
+    }
+
+    private func waitBeforeRetry(deadline: TimeInterval) throws {
+        let remaining = deadline - ProcessInfo.processInfo.systemUptime
+        guard remaining > 0 else {
+            throw IshInputDeadlineExceeded()
+        }
+        Thread.sleep(forTimeInterval: min(remaining, 0.01))
+    }
+
     private func timedOutResult(
         standardOutput: Data = Data(),
         standardError: Data = Data()
@@ -328,6 +487,8 @@ struct IshEmbedDriver: IshRuntimeDriver {
         let standardError: Data
         let outputLimitError: IshRuntimeDriverError?
     }
+
+    private struct IshInputDeadlineExceeded: Error {}
 
     @discardableResult
     private func terminateAndConfirmExit(

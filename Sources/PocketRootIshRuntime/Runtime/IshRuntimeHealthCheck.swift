@@ -55,6 +55,7 @@ enum IshRuntimeHealthCheck {
             ],
             timeout: max(configuration.timeout.timeInterval, 0.001),
             mergeStandardError: false,
+            standardInput: Data(),
             maximumStandardOutputBytes: maximumOutputBytes,
             maximumStandardErrorBytes: maximumOutputBytes
         )

@@ -19,7 +19,9 @@ jailbreak, and no Codex CLI installation.
 
 - **Terminal** — a full PTY session with input, streaming output, resize,
   signal, EOF, and ordered shutdown.
-- **Files** — browse, create, rename, and delete guest items, with bounded previews.
+- **Files** — browse, create, rename, and delete guest items with bounded
+  previews, import through the system document picker, and export through the
+  system share sheet.
 - **Workspace** — switch between Terminal and Files while keeping the same
   terminal session alive.
 - **Linux Runtime** — prepare, boot, and manage an iSH-based Alpine ARM64
@@ -36,7 +38,7 @@ an existing iOS App. Start with the
 [integration guide](Docs/en/IntegrationGuide.md).
 
 > [!WARNING]
-> Native iSH integration is **Experimental**. Pinned `v0.4.0-abi.7` has a soft shutdown that returns to Swift and atomic no-replace rename, but each host process still permits only one valid boot/shutdown lifecycle. iPad, sustained-load, and distribution gates remain open. This version is not approved for production, TestFlight, or public binary distribution.
+> Native iSH integration is **Experimental**. Pinned `v0.4.0-abi.9` has a soft shutdown that returns to Swift, atomic no-replace rename, and bounded stdin writes, but each host process still permits only one valid boot/shutdown lifecycle. iPad, sustained-load, and distribution gates remain open. This version is not approved for production, TestFlight, or public binary distribution.
 
 ## Capability status
 
@@ -46,7 +48,7 @@ an existing iOS App. Start with the
 | UIKit Demo shell | Available | System, Terminal, Files, Commands, and Diagnostics entry points |
 | RootFS verification and safe install | Available | Fixed digest, secure extraction, journal-protected same-volume promotion, reuse, recovery |
 | iSH boot and one-shot commands | Experimental | `iOS + arm64`; one-shot cancellation confirms guest exit |
-| Terminal and file browser | Embeddable / Experimental | UIKit/SwiftUI inject a booted system; persistent SwiftTerm PTY plus inline tree expansion, navigation, bounded previews, and safe create, rename, and delete actions |
+| Terminal and file browser | Embeddable / Experimental | UIKit/SwiftUI inject a booted system; persistent SwiftTerm PTY plus inline tree expansion, navigation, bounded previews, safe mutations, and 1 MiB-capped document import/share export |
 | Lightweight agent loop | Core, OpenAI transport, and approval-gated command tool available | Agent and Runtime Tools are explicit opt-ins; no Codex CLI install or automatic shell approval |
 | Interactive PTY and SwiftTerm | Implemented; broader device validation pending | Public sessions, bounded reads, input, resize, signal/EOF, registry, and close-before-shutdown are connected; Simulator passes the boot → PTY file creation → Files preview UI closure |
 | Physical devices and distribution | Partially passed / blocked | One-shot iPhone gates and unsigned engineering App scanning passed; the new PTY still needs device lifecycle coverage, plus storage pressure, iPad, jetsam/power-cut, final artifact, and compliance gates |
@@ -117,7 +119,7 @@ Design principles:
   cleanup fails closed. It does not roll back earlier side effects.
 - `boot()` reports `ready` only after a fixed post-boot command verifies guest architecture, Alpine identity, and command context. The built-in v0.3.3 RootFS manifest also requires Alpine `3.19.1` exactly.
 - One absolute request deadline starts at driver entry and covers finite native
-  SPAWN, stdin-close admission, and the event-read loop; authoritative `EXITED`
+  SPAWN, bounded stdin writes/close admission, and the event-read loop; authoritative `EXITED`
   confirmation after termination has a separate fixed bounded cleanup window.
   Swift stdout/stderr budgets remain independent. The native transport adds a
   4 MiB/4096-frame output backlog per session, a 4 MiB/256-frame total control

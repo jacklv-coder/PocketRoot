@@ -5,16 +5,16 @@
 本文是 PocketRoot 实验性 runtime 的不可变 revision、nested gitlink、制品 URL、大小和
 SHA-256 的唯一事实源。branch、moving tag、未验证 release alias 和本地缓存都不是有效 pin。
 
-审核日期：2026-07-29
+审核日期：2026-07-30
 
 ## 1. IshEmbed Swift Package
 
 | 字段 | 审核值 |
 | --- | --- |
 | 仓库 | `https://github.com/jacklv-coder/ish-arm64-pkg.git` |
-| 完整 wrapper revision | `37231ab667b380eb86a5fbcf961e31af4d50cebb` |
-| Release | `v0.4.0-abi.7`（prerelease） |
-| Tag peeled commit | `37231ab667b380eb86a5fbcf961e31af4d50cebb` |
+| 完整 wrapper revision | `2419f736b271beb52a699b2f780027cf280472b8` |
+| Release | `v0.4.0-abi.9`（prerelease） |
+| Tag peeled commit | `2419f736b271beb52a699b2f780027cf280472b8` |
 | Swift product | `IshEmbed` |
 | Manifest platform | iOS 18.0 |
 | Native slices | iOS arm64 device、arm64 Simulator |
@@ -25,14 +25,14 @@ SHA-256 的唯一事实源。branch、moving tag、未验证 release alias 和�
 ```swift
 .package(
     url: "https://github.com/jacklv-coder/ish-arm64-pkg.git",
-    revision: "37231ab667b380eb86a5fbcf961e31af4d50cebb"
+    revision: "2419f736b271beb52a699b2f780027cf280472b8"
 )
 ```
 
-消费 revision `37231ab667b380eb86a5fbcf961e31af4d50cebb` 就是 ABI.7 release
-commit。它包含 ABI.6 的统一 deadline 修复，并新增原子 guest
-`RENAME_NOREPLACE` C/Swift API；`Package.swift` 以 URL/checksum 固定由同一源码生成、
-公开且独立验证的 ABI.7 资产。Release tag peeled commit、Release target 与当前
+消费 revision `2419f736b271beb52a699b2f780027cf280472b8` 就是 ABI.9 release
+commit。它包含 ABI.7 的原子 guest `RENAME_NOREPLACE` C/Swift API，并让有限 session
+的 stdin write/close 复用同一 SPAWN 绝对 deadline；`Package.swift` 以 URL/checksum
+固定由同一源码生成、公开且独立验证的 ABI.9 资产。Release tag peeled commit、Release target 与当前
 package revision 三者完全一致。包仓库继续使用绝对 SSH-over-443 submodule URL；
 无 SSH 私钥的 GitHub CI 只在 checkout 时应用公开 HTTPS 只读重写。
 
@@ -48,15 +48,15 @@ package revision 三者完全一致。包仓库继续使用绝对 SSH-over-443 s
 对应源码归档记录 parent package revision、该 gitlink、Zig `0.16.0` 与静态 supervisor
 使用的 musl 源码。重建不能用 recursive branch checkout 代替这些精确身份。
 
-## 3. v0.4.0-abi.7 发布资产
+## 3. v0.4.0-abi.9 发布资产
 
 Release：
-`https://github.com/jacklv-coder/ish-arm64-pkg/releases/tag/v0.4.0-abi.7`
+`https://github.com/jacklv-coder/ish-arm64-pkg/releases/tag/v0.4.0-abi.9`
 
 | Artifact | 大小 | SHA-256 | 用途 |
 | --- | ---: | --- | --- |
-| `libIshKernel.xcframework.zip` | 2,457,982 bytes | `98b02f42de7f62b82bdbbbfad7db8599bd881c879dabff787f78830d6971639b` | SwiftPM binary target |
-| `IshEmbed-corresponding-source.tar.gz` | 2,388,002 bytes | `2715c66dcad63e1a849ff1a79cfe28b4fcde9b1f844b97c212af698b88b67ecf` | 对应源码 |
+| `libIshKernel.xcframework.zip` | 2,460,178 bytes | `c68f47587686000cf125105ac25eaf4d79de6dbd1715d39838bfb7d35abc72f8` | SwiftPM binary target |
+| `IshEmbed-corresponding-source.tar.gz` | 2,391,682 bytes | `8e5d3d56056ece402c09e5f1b3cbdaad75f2f8697ed0e41eaeecd7c403f26557` | 对应源码 |
 
 XCFramework 只有 `ios-arm64` 和 `ios-arm64-simulator` 两个 arm64 slice，minimum OS
 为 iOS 18.0；没有 x86_64 Simulator 或 macOS slice。SwiftPM 用 manifest checksum
@@ -139,7 +139,7 @@ PocketRoot 仍保持 Experimental。尚未闭环的门禁：
 - sustained workload、峰值内存与 jetsam；
 - RootFS 已生成 package inventory、SPDX SBOM、source locator 和默认配置证据，
   但完整 license/NOTICE 与对应源码 bundle 仍未完成；
-- 最大实验工程组合 inventory/SPDX SBOM 已绑定本清单中的 ABI.7 assets、iSH
+- 最大实验工程组合 inventory/SPDX SBOM 已绑定本清单中的 ABI.9 assets、iSH
   gitlink、supervisor musl source 和外部 RootFS；尚无最终 App archive 扫描；
 - App Store Review Guideline 2.5.2 结论。
 

@@ -37,8 +37,14 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   NUL-framed guest folder page with lazy inline tree expansion, directory
   navigation, bounded text/binary previews up to 512 KiB, file/folder creation,
   atomic no-replace rename, and confirmation-gated recursive deletion. Rename
-  uses the native IshEmbed `v0.4.0-abi.7` guest operation rather than a shell
+  uses the native IshEmbed `v0.4.0-abi.9` guest operation rather than a shell
   check-then-move sequence.
+- Binary `standardInput` for one-shot commands with a 1 MiB default cap, plus
+  system-document import and share-sheet export in the Files UI and actor API.
+  Import bytes never enter shell text: stdin writes a private same-directory
+  staging file and ABI.9 atomically commits it without replacement; failure
+  and cancellation perform best-effort cleanup, while export checks size both
+  before and after reading.
 - Public UIKit/SwiftUI Workspace composition surfaces for an already-booted
   system. Terminal and Files stay alive across switches, removal closes the
   PTY, and the Host App UI smoke verifies file creation, preview, and return to
@@ -54,6 +60,10 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   `37231ab667b380eb86a5fbcf961e31af4d50cebb` and the `v0.4.0-abi.7`
   XCFramework, with public atomic no-replace guest rename through
   `PocketRootSystem.renameItem`.
+- Experimental `PocketRootIshRuntime` upgraded to IshEmbed release revision
+  `2419f736b271beb52a699b2f780027cf280472b8` and the `v0.4.0-abi.9`
+  XCFramework, bounding finite-session stdin write/close under the same SPAWN
+  absolute deadline.
 - Experimental `PocketRootIshRuntimeIntegration` composing caller-local RootFS installation and native runtime.
 - A public `PocketRootIshRuntimeController` and standalone
   `Examples/PocketRootHostApp`, allowing a consumer to share one booted system
@@ -83,7 +93,7 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   remain distribution blockers.
 - A reproducible maximal Experimental engineering-composition inventory and
   SPDX 2.3 JSON SBOM that distinguishes the default Demo, native-runtime smoke,
-  and all Swift products, and binds ABI.6 IshEmbed/XCFramework, iSH, supervisor
+  and all Swift products, and binds ABI.9 IshEmbed/XCFramework, iSH, supervisor
   musl source, the external RootFS, and its 15 packages. CI compares generated
   output and validates the SBOM against the pinned official schema. This
   evidence does not scan a final archive; the complete release-artifact SBOM

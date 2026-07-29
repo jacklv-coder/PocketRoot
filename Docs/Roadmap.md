@@ -16,8 +16,10 @@
 1. 已合并 provider-agnostic `PocketRootAgent` 有界 loop。
 2. 完成 OpenAI Responses API transport 与宿主 credential contract。
 3. 完成带审批、命令策略、超时和输出边界的 Linux command tool。
-4. 已发布并固定 IshEmbed `v0.4.0-abi.6`，完成 control-path 统一 deadline、
-   一次性命令 Swift Task 取消、native 退出确认和取消后恢复。
+4. 已发布并固定 IshEmbed `v0.4.0-abi.9`；继承 ABI.7 的原子 no-replace rename，
+   并让有限 session 的 stdin write/close 复用同一 SPAWN 绝对 deadline；保留 ABI.6 的 control-path 统一
+   deadline、一次性命令 Swift Task 取消、native 退出确认和取消后恢复，并加入原子
+   no-replace guest rename。
 5. 完成最大实验工程组合 inventory/SPDX SBOM，并加入仓库外 `.app`/`.xcarchive`
    确定性扫描器；CI 已扫描 unsigned device runtime App 的文件、Mach-O、
    entitlement 与风险信号，本地 development-signed engineering archive 门禁也已
@@ -107,7 +109,7 @@
 | 最低 Xcode 16 原生兼容 | 已通过 | Xcode 16.0 / iOS 18.0 SDK 完成 RootFS install、Simulator/device final-link 和 17 项 native smoke |
 | App lifecycle 与内存 | 进行中 | Simulator 与 Jack iPhone 均有 256 MiB `ru_maxrss` 门禁；真机 process suspend/resume、UIKit foreground/background、强制终止后数据恢复和有界 App delegate memory-warning 回调恢复已通过；补真实 memory pressure/jetsam |
 | RootFS ENOSPC/掉电 | 进行中 | 峰值空间预检、全 ENOSPC、七点持久化屏障、确定性掉电切点和 Jack iPhone 受限容量/ENOSPC 清理恢复已覆盖；补真实 storage pressure/强制断电 |
-| 最大实验工程组合 inventory/SBOM | 已通过 | 保持 SwiftPM/Xcode target、ABI.6 dependency/source、外部 RootFS 15 包与 checksum 可复现；不得把它表述为最终发行 archive 扫描或发行授权 |
+| 最大实验工程组合 inventory/SBOM | 已通过 | 保持 SwiftPM/Xcode target、ABI.9 dependency/source、外部 RootFS 15 包与 checksum 可复现；不得把它表述为最终发行 archive 扫描或发行授权 |
 | unsigned 工程 App 扫描 | 已通过 | CI 临时扫描完整文件树、Mach-O、签名/entitlement、私有 framework/JIT 信号并校验文件级 SPDX；不上传输出，所有最终发行门禁保持关闭 |
 | development-signed engineering archive | 已通过 | 本地生成标准 `.xcarchive`，要求 development entitlement 与有效签名，复验 clean 风险 evidence 和 SPDX；不安装/导出/上传，最终发行门禁保持关闭 |
 | License-reviewed RootFS | 阻塞 | 15 包 inventory、10 source origin、SPDX SBOM、默认配置证据、10/10 origin 对应源码候选材料工程复核、78/78 初始候选和 138/138 外置 LICENSE/NOTICE payload 工程复核已完成；历史 builder 已定位、后继 schema-v4 候选完成同 host 跨调用复现，5 单元交付 inventory 与统一仓库外候选 materializer 已建立。只有 `alpine-keys` 的 MIT grant/版权声明仍未决，之后完成固定发布归档精确重建结论、完整 NOTICE/source offer、法律与交付批准 |
@@ -196,6 +198,9 @@
 13. 公开进程级 `PocketRootIshWorkspaceHost` 与 UIKit/SwiftUI 一体化入口：调用方只提供
     本地 RootFS 和 Application Support，页面自动合并并发 boot、展示 Workspace；
     页面退出只关 PTY，显式 shutdown 会先关闭该 host 的全部 Workspace。
+14. 打通 host ↔ guest 文件交换：一次性命令支持 1 MiB 有界二进制 stdin；Files
+    页面通过系统 document picker 导入、share sheet 导出。导入使用同目录私有
+    staging 与 ABI.9 中的原子 no-replace rename，不把文件内容拼入 shell，也不覆盖目标。
 
 未完成门禁：
 

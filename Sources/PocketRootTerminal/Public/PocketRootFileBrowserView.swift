@@ -2,6 +2,7 @@
 import PocketRootCore
 import SwiftUI
 import UIKit
+import UniformTypeIdentifiers
 
 @available(iOS 18.0, *)
 public struct PocketRootFileBrowserView: View {
@@ -11,6 +12,8 @@ public struct PocketRootFileBrowserView: View {
     @State private var proposedName = ""
     @State private var pendingDeletion: PocketRootFileEntry?
     @State private var operationErrorMessage: String?
+    @State private var isImportingFile = false
+    @State private var sharePayload: PocketRootSharePayload?
     private let allowsFileOperations: Bool
     private let onMutation: (@MainActor () async -> Void)?
 
@@ -94,6 +97,13 @@ public struct PocketRootFileBrowserView: View {
                     },
                     deleteEntry: {
                         pendingDeletion = row.entry
+                    },
+                    exportEntry: {
+                        Task {
+                            await performOperation {
+                                sharePayload = try await model.export(row.entry)
+                            }
+                        }
                     }
                 )
             }
@@ -115,6 +125,12 @@ public struct PocketRootFileBrowserView: View {
                         } label: {
                             Label("New Folder", systemImage: "folder.badge.plus")
                         }
+                        Button {
+                            isImportingFile = true
+                        } label: {
+                            Label("Import File", systemImage: "square.and.arrow.down")
+                        }
+                        .accessibilityIdentifier("PocketRootFiles.import")
                     } label: {
                         Label("File Actions", systemImage: "plus")
                     }
@@ -125,6 +141,45 @@ public struct PocketRootFileBrowserView: View {
         }
         .refreshable {
             await model.reload()
+        }
+        .fileImporter(
+            isPresented: $isImportingFile,
+            allowedContentTypes: [.data],
+            allowsMultipleSelection: false
+        ) { result in
+            if case .failure(let error) = result,
+               Self.isUserCancellation(error)
+            {
+                return
+            }
+            Task {
+                await performOperation {
+                    let url = try result.get().first
+                        .unwrap(or: PocketRootFileTransferUIError.noSelectedFile)
+                    let imported = try await Self.readImportFile(at: url)
+                    try await model.importFile(
+                        data: imported.data,
+                        named: imported.name
+                    )
+                }
+            }
+        }
+        .sheet(
+            item: $sharePayload,
+            onDismiss: {
+                if let payload = sharePayload {
+                    model.removeExport(payload)
+                    sharePayload = nil
+                }
+            }
+        ) { payload in
+            PocketRootActivityView(
+                url: payload.url,
+                completion: {
+                    model.removeExport(payload)
+                    sharePayload = nil
+                }
+            )
         }
         .task {
             await model.loadIfNeeded()
@@ -277,6 +332,70 @@ public struct PocketRootFileBrowserView: View {
             operationErrorMessage = error.localizedDescription
         }
     }
+
+    private static func isUserCancellation(_ error: Error) -> Bool {
+        if error is CancellationError {
+            return true
+        }
+        let error = error as NSError
+        return error.domain == NSCocoaErrorDomain
+            && error.code == NSUserCancelledError
+    }
+
+    private static func readImportFile(
+        at url: URL
+    ) async throws -> (name: String, data: Data) {
+        try await Task.detached {
+            let accessed = url.startAccessingSecurityScopedResource()
+            defer {
+                if accessed {
+                    url.stopAccessingSecurityScopedResource()
+                }
+            }
+            let values = try url.resourceValues(
+                forKeys: [
+                    .isRegularFileKey,
+                    .isSymbolicLinkKey,
+                    .fileSizeKey,
+                ]
+            )
+            guard values.isRegularFile == true,
+                  values.isSymbolicLink != true
+            else {
+                throw PocketRootFileTransferUIError.notRegularFile
+            }
+            if let size = values.fileSize,
+               size > PocketRootFileBrowser.maximumTransferBytes
+            {
+                throw PocketRootFileBrowserError.transferTooLarge(
+                    maximumBytes: PocketRootFileBrowser.maximumTransferBytes
+                )
+            }
+            let maximumBytes = PocketRootFileBrowser.maximumTransferBytes
+            let maximumReadBytes = maximumBytes + 1
+            let handle = try FileHandle(forReadingFrom: url)
+            defer {
+                try? handle.close()
+            }
+            var data = Data()
+            data.reserveCapacity(maximumReadBytes)
+            while data.count < maximumReadBytes {
+                let nextCount = min(64 * 1_024, maximumReadBytes - data.count)
+                guard let chunk = try handle.read(upToCount: nextCount),
+                      !chunk.isEmpty
+                else {
+                    break
+                }
+                data.append(chunk)
+            }
+            guard data.count <= PocketRootFileBrowser.maximumTransferBytes else {
+                throw PocketRootFileBrowserError.transferTooLarge(
+                    maximumBytes: PocketRootFileBrowser.maximumTransferBytes
+                )
+            }
+            return (url.lastPathComponent, data)
+        }.value
+    }
 }
 
 @available(iOS 18.0, *)
@@ -317,6 +436,7 @@ private final class PocketRootFileBrowserModel: ObservableObject {
     @Published private(set) var errorMessage: String?
     @Published private var loadingDirectories: Set<String> = []
     @Published private var expansionErrors: [String: String] = [:]
+    @Published private var isExporting = false
     private var didLoad = false
     private var requestGeneration: UInt64 = 0
     private var expansionRequestIDs: [String: UUID] = [:]
@@ -336,7 +456,7 @@ private final class PocketRootFileBrowserModel: ObservableObject {
     }
 
     var isBusy: Bool {
-        isLoading || isMutating || hasPendingExpansionRequests
+        isLoading || isMutating || isExporting || hasPendingExpansionRequests
     }
 
     @Published private(set) var isMutating = false
@@ -540,6 +660,55 @@ private final class PocketRootFileBrowserModel: ObservableObject {
         }
     }
 
+    func importFile(data: Data, named name: String) async throws {
+        try await performMutation {
+            _ = try await browser.importFile(data: data, named: name, in: path)
+        }
+    }
+
+    func export(_ entry: PocketRootFileEntry) async throws -> PocketRootSharePayload {
+        guard entry.kind == .file else {
+            throw PocketRootFileTransferUIError.notRegularFile
+        }
+        guard !isExporting else {
+            throw PocketRootFileTransferUIError.operationInProgress
+        }
+        isExporting = true
+        defer {
+            isExporting = false
+        }
+        let exported = try await browser.exportFile(at: entry.path)
+        return try await Task.detached {
+            let directory = FileManager.default.temporaryDirectory
+                .appendingPathComponent(
+                    "PocketRootExport-\(UUID().uuidString)",
+                    isDirectory: true
+                )
+            try FileManager.default.createDirectory(
+                at: directory,
+                withIntermediateDirectories: false
+            )
+            let url = directory.appendingPathComponent(
+                exported.suggestedFilename,
+                isDirectory: false
+            )
+            do {
+                try exported.data.write(to: url, options: .atomic)
+                return PocketRootSharePayload(url: url, directoryURL: directory)
+            } catch {
+                try? FileManager.default.removeItem(at: directory)
+                throw error
+            }
+        }.value
+    }
+
+    func removeExport(_ payload: PocketRootSharePayload) {
+        let directoryURL = payload.directoryURL
+        Task.detached {
+            try? FileManager.default.removeItem(at: directoryURL)
+        }
+    }
+
     private func performMutation(
         _ operation: () async throws -> Void
     ) async throws {
@@ -629,6 +798,7 @@ private struct PocketRootFileTreeRowView: View {
     let openEntry: () -> Void
     let renameEntry: () -> Void
     let deleteEntry: () -> Void
+    let exportEntry: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -641,7 +811,7 @@ private struct PocketRootFileTreeRowView: View {
                 }
                 .buttonStyle(.plain)
                 .disabled(
-                    row.entry.kind == .other || !isEntryEnabled
+                    !row.entry.kind.allowsOpening || !isEntryEnabled
                 )
                 .accessibilityIdentifier(
                     "PocketRootFiles.entry.\(row.entry.path)"
@@ -663,6 +833,12 @@ private struct PocketRootFileTreeRowView: View {
             }
         }
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            if row.entry.kind == .file {
+                Button(action: exportEntry) {
+                    Label("Share", systemImage: "square.and.arrow.up")
+                }
+                .tint(.green)
+            }
             if allowsFileOperations {
                 Button(role: .destructive, action: deleteEntry) {
                     Label("Delete", systemImage: "trash")
@@ -674,6 +850,11 @@ private struct PocketRootFileTreeRowView: View {
             }
         }
         .contextMenu {
+            if row.entry.kind == .file {
+                Button(action: exportEntry) {
+                    Label("Share / Export", systemImage: "square.and.arrow.up")
+                }
+            }
             if allowsFileOperations {
                 Button(action: renameEntry) {
                     Label("Rename", systemImage: "pencil")
@@ -720,6 +901,61 @@ private struct PocketRootFileTreeRowView: View {
                 .frame(width: 28, height: 34)
                 .accessibilityHidden(true)
         }
+    }
+}
+
+@available(iOS 18.0, *)
+private struct PocketRootSharePayload: Identifiable, Sendable {
+    let id = UUID()
+    let url: URL
+    let directoryURL: URL
+}
+
+@available(iOS 18.0, *)
+private struct PocketRootActivityView: UIViewControllerRepresentable {
+    let url: URL
+    let completion: () -> Void
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        let controller = UIActivityViewController(
+            activityItems: [url],
+            applicationActivities: nil
+        )
+        controller.completionWithItemsHandler = { _, _, _, _ in
+            completion()
+        }
+        return controller
+    }
+
+    func updateUIViewController(
+        _ uiViewController: UIActivityViewController,
+        context: Context
+    ) {}
+}
+
+private enum PocketRootFileTransferUIError: LocalizedError {
+    case noSelectedFile
+    case notRegularFile
+    case operationInProgress
+
+    var errorDescription: String? {
+        switch self {
+        case .noSelectedFile:
+            "No file was selected."
+        case .notRegularFile:
+            "Only regular files can be transferred."
+        case .operationInProgress:
+            "Another file export is already in progress."
+        }
+    }
+}
+
+private extension Optional {
+    func unwrap(or error: @autoclosure () -> Error) throws -> Wrapped {
+        guard let self else {
+            throw error()
+        }
+        return self
     }
 }
 

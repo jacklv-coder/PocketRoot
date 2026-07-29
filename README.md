@@ -17,7 +17,8 @@ PocketRoot 是面向 iPhone 和 iPad App 的本地 Linux Workspace SDK。它把�
 ## 接入后直接获得什么
 
 - **Terminal**：完整 PTY 会话，支持输入、持续输出、resize、signal、EOF 与有序关闭。
-- **Files**：浏览 Linux guest 目录、创建/重命名/删除文件与目录，并进行有界预览。
+- **Files**：浏览 Linux guest 目录、创建/重命名/删除文件与目录，支持有界预览，
+  并可通过系统文件选择器导入、通过分享面板导出文件。
 - **Workspace**：在 Terminal 与 Files 间切换，同时保持同一个终端 session。
 - **Linux Runtime**：在 iOS 沙箱内准备、启动并管理基于 iSH 的 Alpine ARM64 环境。
 - **RootFS 生命周期**：校验、安装、复用、恢复调用方提供的已审查 RootFS 归档。
@@ -29,7 +30,8 @@ PocketRoot 的定位不是另一个终端 App，也不是新的操作系统：�
 
 > [!WARNING]
 > 真实 iSH 集成目前仍是 **实验性（Experimental）** 能力。固定的
-> `v0.4.0-abi.7` 已支持返回 Swift 的 soft shutdown 与原子无覆盖重命名，但每个宿主进程仍只允许一次有效
+> `v0.4.0-abi.9` 已支持返回 Swift 的 soft shutdown、原子无覆盖重命名与有界 stdin
+> 写入，但每个宿主进程仍只允许一次有效
 > boot/shutdown；iPad、持续负载和发行合规门禁尚未闭环。当前版本不得用于
 > 生产、TestFlight 或公开二进制分发。
 
@@ -41,7 +43,7 @@ PocketRoot 的定位不是另一个终端 App，也不是新的操作系统：�
 | UIKit Demo 外壳 | 可用 | 展示 System、Terminal、Files、Commands、Diagnostics 五个入口 |
 | RootFS 校验与安全安装 | 可用 | 固定大小和 SHA-256、安全解包、journal 保护的同卷 promotion、复用与中断恢复 |
 | iSH 启动与一次性命令 | 实验性 | 仅 `iOS + arm64`；支持确认 guest 退出的一次性命令取消 |
-| 终端与文件浏览 | 可接入 / 实验性 | UIKit/SwiftUI 注入已 boot system；SwiftTerm 持续 PTY 支持输入、resize、signal/EOF，文件页支持树形展开、导航、有界预览及安全的创建、重命名与删除 |
+| 终端与文件浏览 | 可接入 / 实验性 | UIKit/SwiftUI 注入已 boot system；SwiftTerm 持续 PTY 支持输入、resize、signal/EOF，文件页支持树形展开、导航、有界预览、安全增删改，以及 1 MiB 上限的系统文件导入/分享导出 |
 | 轻量 agent loop | 核心、OpenAI transport 与审批命令工具可用 | Agent 与 Runtime Tools 均显式 opt-in；不安装 Codex CLI，不自动批准 shell |
 | 交互式 PTY 与 SwiftTerm | 已实现，待扩大真机验证 | public session、bounded read、输入、resize、signal/EOF、registry 与 close-before-shutdown 已接通；Simulator 已通过 PTY 持续输入/输出、前后台、旋转、关闭/重开、Files 预览与有序 shutdown |
 | 真机与公开发行 | 部分通过 / 阻塞 | iPhone 一次性命令门禁与 signed Host build 已通过；Host UI runner 已就绪，但 Jack iPhone 的 iOS 26.6 beta 超出本机 Xcode 26.1.1 设备支持范围，另需兼容工具链实跑、真实 storage pressure、iPad、jetsam/断电、最终制品与合规门禁 |
@@ -105,7 +107,8 @@ flowchart LR
   可继续使用，无法确认清理则失败关闭。取消不回滚此前副作用。
 - `boot()` 只有在固定 post-boot 命令验证 guest 架构、Alpine 身份和命令上下文后才报告 `ready`；内置 v0.3.3 RootFS 清单还严格要求 Alpine `3.19.1`。
 - 请求 timeout 从 driver 入口建立统一 deadline，覆盖 finite native SPAWN、
-  stdin-close admission 和 event-read loop；终止后的权威 `EXITED` 确认另有固定有界清理窗口。
+  有界 stdin 写入/close admission 和 event-read loop；终止后的权威 `EXITED`
+  确认另有固定有界清理窗口。
   Swift 结果有独立 stdout/stderr 配额，native transport 另有每 session 4 MiB/4096 帧
   输出积压、4 MiB/256 帧 control 总预算及 lifecycle reserve。8 MiB 二进制 stdout
   smoke 会跨越 native backlog 并逐字节验证结果；完整 Simulator smoke 生命周期还要求

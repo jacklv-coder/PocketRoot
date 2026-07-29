@@ -13,6 +13,7 @@ final class PocketRootIshRuntimeTests: XCTestCase {
         XCTAssertEqual(configuration.workDirectory, "/")
         XCTAssertNil(configuration.supervisorGuestPath)
         XCTAssertEqual(configuration.kernelLogFileDescriptor, -1)
+        XCTAssertEqual(configuration.maximumStandardInputBytes, 1 * 1_024 * 1_024)
         XCTAssertEqual(configuration.maximumStandardOutputBytes, 8 * 1_024 * 1_024)
         XCTAssertEqual(configuration.maximumStandardErrorBytes, 4 * 1_024 * 1_024)
         XCTAssertEqual(configuration.healthCheck, .alpineARM64)
@@ -127,7 +128,8 @@ final class PocketRootIshRuntimeTests: XCTestCase {
                 workingDirectory: "/root",
                 environment: ["POCKETROOT_TEST": "1"],
                 timeout: .milliseconds(1_500),
-                mergeStandardError: true
+                mergeStandardError: true,
+                standardInput: Data([0x00, 0xff, 0x41])
             )
         )
 
@@ -154,6 +156,7 @@ final class PocketRootIshRuntimeTests: XCTestCase {
                 environment: ["POCKETROOT_TEST": "1"],
                 timeout: 1.5,
                 mergeStandardError: true,
+                standardInput: Data([0x00, 0xff, 0x41]),
                 maximumStandardOutputBytes: 8 * 1_024 * 1_024,
                 maximumStandardErrorBytes: 4 * 1_024 * 1_024
             )
@@ -737,6 +740,67 @@ final class PocketRootIshRuntimeTests: XCTestCase {
         XCTAssertNil(driver.snapshot.commandRequest)
         let state = await runtime.state
         XCTAssertEqual(state, .ready)
+    }
+
+    func testRuntimeRejectsOversizedStandardInputBeforeCallingDriver() async throws {
+        let rootFSURL = try makeFakeFSFixture()
+        let driver = FakeIshRuntimeDriver()
+        let runtime = IshLinuxRuntime(
+            configuration: .init(
+                rootFSURL: rootFSURL,
+                maximumStandardInputBytes: 3
+            ),
+            driver: driver
+        )
+        try await runtime.boot(configuration: PocketRootConfiguration())
+
+        do {
+            _ = try await runtime.execute(
+                PocketRootCommandRequest(
+                    command: "cat",
+                    standardInput: Data([0, 1, 2, 3])
+                )
+            )
+            XCTFail("Oversized standard input must be rejected.")
+        } catch let error as PocketRootError {
+            XCTAssertEqual(
+                error,
+                .invalidCommandRequest(
+                    "standard input exceeds the runtime limit of 3 bytes."
+                )
+            )
+        }
+
+        XCTAssertNil(driver.snapshot.commandRequest)
+    }
+
+    func testRuntimeRejectsInputLimitAboveNativeQueueBudget() async throws {
+        let rootFSURL = try makeFakeFSFixture()
+        let driver = FakeIshRuntimeDriver()
+        let runtime = IshLinuxRuntime(
+            configuration: .init(
+                rootFSURL: rootFSURL,
+                maximumStandardInputBytes: 1 * 1_024 * 1_024 + 1
+            ),
+            driver: driver
+        )
+        try await runtime.boot(configuration: PocketRootConfiguration())
+
+        do {
+            _ = try await runtime.execute(
+                PocketRootCommandRequest(command: "true")
+            )
+            XCTFail("A limit above the native queue budget must be rejected.")
+        } catch let error as PocketRootError {
+            XCTAssertEqual(
+                error,
+                .invalidCommandRequest(
+                    "runtime standard input limit exceeds the native "
+                        + "1 MiB per-session queue budget."
+                )
+            )
+        }
+        XCTAssertNil(driver.snapshot.commandRequest)
     }
 
     func testRuntimeClampsSubMillisecondTimeoutToOneMillisecond() async throws {

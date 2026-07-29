@@ -30,7 +30,11 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
 - 固定 SwiftTerm `dd2fb8ac…`，提供 UIKit/SwiftUI 终端页面；加入 NUL-framed guest
   文件夹页面、按需树形原地展开、目录导航、最多 512 KiB 的有界文本/二进制预览，
   以及创建文件/目录、原子无覆盖重命名和确认后递归删除。重命名直接使用
-  IshEmbed `v0.4.0-abi.7` 的 guest 原生能力，不经过 shell 检查再移动。
+  IshEmbed `v0.4.0-abi.9` 中的 guest 原生能力，不经过 shell 检查再移动。
+- 一次性命令新增默认 1 MiB 上限的二进制 `standardInput`；Files 页面和 actor API
+  新增系统文件导入与分享导出。导入内容不拼接进 shell，而是经 stdin 写入同目录私有
+  staging，再由 ABI.9 中的原子 no-replace rename 提交；失败与取消会尽力清理 staging，
+  导出在读取前后均执行大小门禁。
 - 加入公开 UIKit/SwiftUI Workspace 组合入口：一个已 boot system 可直接打开持续
   Terminal 与 Files，跨页面不重建 PTY，退出时关闭 session；Host App UI smoke
   验证终端创建文件、Files 预览和切回后的同一会话。
@@ -42,6 +46,9 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
 - 将 Experimental `PocketRootIshRuntime` 升级到 IshEmbed release revision
   `37231ab667b380eb86a5fbcf961e31af4d50cebb` 与 `v0.4.0-abi.7` XCFramework，
   并公开 `PocketRootSystem.renameItem` 的原子 no-replace guest 重命名。
+- 将 Experimental `PocketRootIshRuntime` 升级到 IshEmbed release revision
+  `2419f736b271beb52a699b2f780027cf280472b8` 与 `v0.4.0-abi.9` XCFramework，
+  让有限 session 的 stdin write/close 复用同一 SPAWN 绝对 deadline。
 - 加入 Experimental `PocketRootIshRuntimeIntegration`，组合调用方本地 RootFS 与原生 runtime。
 - 加入公开 `PocketRootIshRuntimeController` 和独立
   `Examples/PocketRootHostApp`：业务 App 只通过 Swift Package API 即可共享 boot 后
@@ -65,7 +72,7 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
   和 `apk`、repository、DNS 默认配置快照；完整 LICENSE/NOTICE 与对应源码 bundle
   仍保持发行阻塞。
 - 加入可复现的最大实验工程组合 inventory 与 SPDX 2.3 JSON SBOM，区分默认 Demo、
-  原生 runtime smoke 和全部 Swift products，绑定 ABI.6 IshEmbed/XCFramework、
+  原生 runtime smoke 和全部 Swift products，绑定 ABI.9 IshEmbed/XCFramework、
   iSH、supervisor musl source、外部 RootFS 及其中 15 个包；CI 比对生成结果并
   使用固定官方 schema 校验。该证据未扫描最终 archive，完整发行物 SBOM 与发行授权
   门禁保持关闭。

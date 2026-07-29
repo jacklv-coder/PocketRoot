@@ -27,7 +27,7 @@ PocketRoot 是一个最低支持 iOS 18 的 Swift 模块化工程：它在 iOS �
 
 当前真实 iSH 路径仍是实验能力。默认 `PocketRoot` 产品不会链接 iSH，也不会打包或下载 RootFS。
 
-本文所说的命令“有界”包括从 driver 入口覆盖 finite SPAWN、stdin close 和 event read
+本文所说的命令“有界”包括从 driver 入口覆盖 finite SPAWN、stdin write/close 和 event read
 的统一 deadline、Swift stdout/stderr 配额、每 session 4 MiB/4096 帧 native 输出积压
 和 4 MiB/256 帧 control 总预算。
 超时或产品配额超限后的恢复仍要求明确观察到 `EXITED`；无法确认时 runtime 会失败关闭。
@@ -56,17 +56,17 @@ flowchart LR
 | 层 | 仓库或资产 | 负责内容 | 不负责内容 |
 | --- | --- | --- | --- |
 | 产品与集成层 | [`jacklv-coder/PocketRoot`](https://github.com/jacklv-coder/PocketRoot) | Swift 公共 API、RootFS 安装、iSH adapter、Demo、集成测试和产品文档 | 构建 iSH 原生二进制 |
-| 包装源码层 | [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) `37231ab` | Swift wrapper、C ABI 源码和 binary target 声明 | 当前声明固定已发布 ABI.7 制品 |
-| 当前原生制品 | `v0.4.0-abi.7` URL/checksum | 被 PocketRoot 最终链接的 XCFramework | 用户 fork 自托管 prerelease，不含 RootFS |
+| 包装源码层 | [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) `2419f73` | Swift wrapper、C ABI 源码和 binary target 声明 | 当前声明固定已发布 ABI.9 制品 |
+| 当前原生制品 | `v0.4.0-abi.9` URL/checksum | 被 PocketRoot 最终链接的 XCFramework | 用户 fork 自托管 prerelease，不含 RootFS |
 | 当前原生运行时层 | 上述 package revision 记录的精确 iSH gitlink | iSH 内核、进程、signal、halt 和线程生命周期等底层行为 | 不能用另一个 branch 或本地 checkout 替代 |
-| 当前 release commit | [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) `37231ab` | 固定 ABI.7 URL/checksum，并包含原子 no-replace rename 与既有 deadline 修复 | 与 tag、Release target 和 PocketRoot package pin 完全一致 |
+| 当前 release commit | [`jacklv-coder/ish-arm64-pkg`](https://github.com/jacklv-coder/ish-arm64-pkg) `2419f73` | 固定 ABI.9 URL/checksum，并包含原子 no-replace rename 与有界 stdin write/close | 与 tag、Release target 和 PocketRoot package pin 完全一致 |
 | Guest 文件系统 | 经许可审查的 `fs.tar.gz` | Alpine 用户空间、fakefs 数据与 guest 工具 | 不存放在 PocketRoot Git 仓库中 |
 
 ### 为什么需要修改 `ish-arm64-pkg`
 
 `ish-arm64-pkg` 虽然来源于另一个项目，但 PocketRoot 会编译固定 package revision 的
 Swift wrapper，并链接该 revision 的 `Package.swift` 通过 URL/checksum 指定的
-XCFramework。当前 pin 指向用户 fork 的 `v0.4.0-abi.7`，并以独立对应源码资产记录
+XCFramework。当前 pin 指向用户 fork 的 `v0.4.0-abi.9`，并以独立对应源码资产记录
 nested iSH、musl 与构建输入。RootFS 仍是单独固定的 parent v0.3.3 资产。
 
 因此原生改动必须按依赖方向推进：
@@ -97,9 +97,10 @@ PocketRootIshSystemFactory
 ```
 
 PocketRoot 负责链路的前半段和产品边界；后半段必须阅读当前 package revision 的对应源码
-和 gitlink。当前 wrapper revision `37231ab` 就是 ABI.7 release commit：它同时包含
+和 gitlink。当前 wrapper revision `2419f73` 就是 ABI.9 release commit：它同时包含
 Swift 参数封送与 native admission 共用的绝对 deadline 修复、native stdin-close 对
-原始 SPAWN deadline 的复用、原子无覆盖 guest rename，以及指向已独立验证 ABI.7
+原始 SPAWN deadline 的复用、有限 session stdin write 的有界接纳、原子无覆盖 guest
+rename，以及指向已独立验证 ABI.9
 资产的 binaryTarget；原生二进制行为以该 Release 的对应源码、哈希和运行验证为证据。
 ABI.6 会在 embedded bootstrap 和 guest task 线程解除内部
 SIGUSR1 屏蔽，使 guest signal 可打断阻塞中的宿主 syscall；它同时包含 ABI.3 的
@@ -217,11 +218,12 @@ sequenceDiagram
 
 - system 已经 ready；
 - timeout 大于零且不超过 24 小时；
-- stdout/stderr 上限有效；
+- stdin/stdout/stderr 上限有效；
 - 没有第二个一次性命令在途；
 - 当前 system 仍拥有全局 iSH 实例。
 
-driver 在入口先创建绝对 deadline，把剩余时间传给 finite `spawn`，然后关闭 stdin 并
+driver 在入口先创建绝对 deadline，把剩余时间传给 finite `spawn`，再以 64 KiB 分块
+写入最多 1 MiB 的可选 stdin、关闭 stdin，并
 分段读取事件。ABI.6 让 SPAWN 从 native API 入口覆盖 instance/spawn gate 与 control
 queue admission，并让 stdin close/terminate 使用有界异步接纳。SPAWN 在 deadline
 耗尽且未创建 session 时返回标准 timed-out 结果；not-running、protocol 或 broken-pipe
@@ -231,7 +233,7 @@ broken pipe 与 native backlog overflow 作为类型化错误返回；正常 gue
 结果，负数 `EXITED` 则被视为协议完整性失败。native backlog overflow 会请求有界
 session 清理并保留 byte/frame 来源；由于上游 `session.close()` 是 void，Swift 无法确认
 清理是否升级为 instance fail-close，因此 PocketRoot 会保守终结 process gate 并要求重启。
-同一个请求 deadline 覆盖 driver 入口到 SPAWN、stdin close 与 read loop；deadline
+同一个请求 deadline 覆盖 driver 入口到 SPAWN、stdin write/close 与 read loop；deadline
 到期后的 terminate/`EXITED` 确认另有固定有界清理窗口。
 
 Swift Task 取消会通过线程安全 token 传到串行 native 队列。若命令尚在队列中，它不会
@@ -248,7 +250,7 @@ errno 是可恢复的文件系统结果；但 native rename 超时表示操作�
 
 关闭语义取决于 PocketRoot 当前固定的原生制品。学习或调试时，先查 `Package.swift` 和[上游依赖清单](UpstreamDependencies.md)，不要把尚未发布或尚未接入的 fork 代码当成当前产品行为。
 
-当前固定的 `v0.4.0-abi.7` 会停止 supervisor、soft-halt embedded kernel、bounded join
+当前固定的 `v0.4.0-abi.9` 会停止 supervisor、soft-halt embedded kernel、bounded join
 原生线程并返回 Swift。成功后公共状态为 `.terminated`；iSH 的进程级全局状态仍只允许
 一次有效 boot/shutdown，因此同一宿主进程不能再次 boot。
 
@@ -264,7 +266,7 @@ PocketRoot 同时面对 Swift actor 和同步 C API，关键不是“多开线�
 | `BlockingIshExecutor` | 把同步原生调用移出主线程和 Swift cooperative executor |
 | `commandInFlight` | 当前阶段禁止两个一次性命令并行 |
 | `IshCommandCancellation` | 把 Swift Task 取消桥接到同步 driver，并在确认 guest 退出后再完成取消 |
-| timeout/output limits | 统一 deadline 从 driver 入口覆盖 finite SPAWN、stdin close 与 read loop；到期后的 terminate/`EXITED` 确认使用独立的固定有界清理窗口，Swift 配额与 native backlog/control 预算共同限制输出和控制积压 |
+| input/timeout/output limits | stdin 默认最多 1 MiB 并以 64 KiB 分块；每次 write/close 最多等待 250 ms，并在块间排空输出和检查取消；统一产品 deadline 从 driver 入口覆盖 finite SPAWN、stdin 与 read loop；到期后的 terminate/`EXITED` 确认使用独立的固定有界清理窗口，Swift 配额与 native backlog/control 预算共同限制输入、输出和控制积压 |
 
 典型状态方向：
 
