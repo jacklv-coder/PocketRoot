@@ -105,6 +105,7 @@
 | Demo 与外部宿主 runtime 接入 | 已通过 | Demo 和独立 Host App 共用公开 controller；Debug 只注入精确校验的仓库外 RootFS，Release 保持不注入 |
 | 进程安全 soft shutdown | 已通过 | v0.4.0-abi.6 soft-halt/join 返回 Swift；同进程仍只允许一次 lifecycle |
 | 签名 iPhone | 已通过 | v0.4.0-abi.6 完成 17 项 one-shot/soft-shutdown/peak-memory smoke；runtime 变更后继续重跑 |
+| iPad Simulator Host UI | 已通过 | iOS 18 上覆盖 RootFS boot、PTY、Files、Workspace、旋转与 shutdown；删除确认使用跨 size class 稳定的 alert |
 | 签名 iPad | 阻塞 | physical boot 与 command smoke |
 | 最低 Xcode 16 原生兼容 | 已通过 | Xcode 16.0 / iOS 18.0 SDK 完成 RootFS install、Simulator/device final-link 和 17 项 native smoke |
 | App lifecycle 与内存 | 进行中 | Simulator 与 Jack iPhone 均有 256 MiB `ru_maxrss` 门禁；真机 process suspend/resume、UIKit foreground/background、强制终止后数据恢复和有界 App delegate memory-warning 回调恢复已通过；补真实 memory pressure/jetsam |

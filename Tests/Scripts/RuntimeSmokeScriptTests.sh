@@ -44,6 +44,8 @@ bash -n "$HOST_UI_RUNNER"
 bash -n "$HOST_DEVICE_UI_RUNNER"
 
 if ! grep -Fq -- 'POCKETROOT_HOST_UI_SMOKE_DEVICE' "$HOST_UI_RUNNER" \
+  || ! grep -Fq -- 'POCKETROOT_HOST_UI_DEVICE_TYPE' "$HOST_UI_RUNNER" \
+  || ! grep -Fq -- 'POCKETROOT_KEEP_UI_RESULT' "$HOST_UI_RUNNER" \
   || ! grep -Fq -- 'PocketRootHostAppUITests' "$HOST_UI_RUNNER" \
   || ! grep -Fq -- 'POCKETROOT_DEVELOPMENT_ROOTFS_ARCHIVE="$ARCHIVE_PATH"' "$HOST_UI_RUNNER" \
   || ! grep -Fq -- '-test-timeouts-enabled YES' "$HOST_UI_RUNNER" \
