@@ -80,7 +80,7 @@
     "Sources/PocketRootTerminal/Bridge/TerminalBridge.swift": "b0850236d896a517258dc310c30f2f63dfaf4450cb7ff732a3ba3414c2da2002",
     "Sources/PocketRootTerminal/Public/PocketRootCommandTerminalSession.swift": "5eaa24f24efb46de1482029b3c5f2ce33942a9e961249fbdaeb728eabe92257a",
     "Sources/PocketRootTerminal/Public/PocketRootFileBrowser.swift": "3172cf61fbf15af862db63fd2a7e4852c627e48f79e1a4f821a305fc0c264ca5",
-    "Sources/PocketRootTerminal/Public/PocketRootFileBrowserView.swift": "cbe986b91d0edcd69fa1900ffa57bf8218366568ce10a089fd0177f7a40ac81b",
+    "Sources/PocketRootTerminal/Public/PocketRootFileBrowserView.swift": "e6ac3a09f3e02f93ce32808b68a1e9d181a1e40a86e5e73de446b48b0a88ad39",
     "Sources/PocketRootTerminal/Public/PocketRootTerminalCommandExecutor.swift": "9f300efae9c6d238b669e5dbcb3d2a2a881d92171728df148c5e30bc76cdddd3",
     "Sources/PocketRootTerminal/Public/PocketRootTerminalConfiguration.swift": "ac0d0dea44b24f68710a0fa4d362f8a0f62fb91931cde33193a1a43b940cf0ca",
     "Sources/PocketRootTerminal/Public/PocketRootTerminalTheme.swift": "a0f67e8d79b76465bb6b64d4ea3f48b886bc6a5d2d85a59669b82699e0e0649b",

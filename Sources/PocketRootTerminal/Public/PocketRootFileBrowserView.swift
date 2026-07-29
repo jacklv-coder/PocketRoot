@@ -537,9 +537,16 @@ private final class PocketRootFileBrowserModel: ObservableObject {
         defer {
             isMutating = false
         }
-        try await operation()
+        let result: Result<Void, Error>
+        do {
+            try await operation()
+            result = .success(())
+        } catch {
+            result = .failure(error)
+        }
         await reload()
         await onMutation?()
+        try result.get()
     }
 
     private func finishExpansionRequest(
