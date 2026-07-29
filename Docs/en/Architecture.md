@@ -111,8 +111,8 @@ Experimental products.
 
 ### PocketRootDemo
 
-A programmatic UIKit integration with System, Terminal, Commands, and
-Diagnostics stacks. One `DemoRuntimeStore` composes the external pinned RootFS,
+A programmatic UIKit integration with System, Terminal, Files, Commands, and
+Diagnostics surfaces. One `DemoRuntimeStore` composes the external pinned RootFS,
 Experimental runtime, SwiftTerm PTY, and Files page. No RootFS enters the source
 tree; only a size/digest-verified Debug build injection may add it to the App.
 

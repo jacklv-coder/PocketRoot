@@ -43,10 +43,10 @@ an existing iOS App. Start with the
 | Capability | Status | Notes |
 | --- | --- | --- |
 | Swift Package modules and public API | Available | Core, Resources, Terminal, Agent, Agent Runtime Tools, and safe umbrella |
-| UIKit Demo shell | Available | System, Terminal, Commands, and Diagnostics entry points |
+| UIKit Demo shell | Available | System, Terminal, Files, Commands, and Diagnostics entry points |
 | RootFS verification and safe install | Available | Fixed digest, secure extraction, journal-protected same-volume promotion, reuse, recovery |
 | iSH boot and one-shot commands | Experimental | `iOS + arm64`; one-shot cancellation confirms guest exit |
-| Terminal and file browser | Embeddable / Experimental | UIKit/SwiftUI inject a booted system; persistent SwiftTerm PTY plus bounded guest directory and preview pages |
+| Terminal and file browser | Embeddable / Experimental | UIKit/SwiftUI inject a booted system; persistent SwiftTerm PTY plus inline tree expansion, directory navigation, and bounded preview pages |
 | Lightweight agent loop | Core, OpenAI transport, and approval-gated command tool available | Agent and Runtime Tools are explicit opt-ins; no Codex CLI install or automatic shell approval |
 | Interactive PTY and SwiftTerm | Implemented; broader device validation pending | Public sessions, bounded reads, input, resize, signal/EOF, registry, and close-before-shutdown are connected; Simulator passes the boot → PTY file creation → Files preview UI closure |
 | Physical devices and distribution | Partially passed / blocked | One-shot iPhone gates and unsigned engineering App scanning passed; the new PTY still needs device lifecycle coverage, plus storage pressure, iPad, jetsam/power-cut, final artifact, and compliance gates |

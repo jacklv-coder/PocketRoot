@@ -42,7 +42,7 @@ Completed:
 
 - Swift Package modules and public runtime/command/session/terminal foundations.
 - Safe placeholder runtime and terminal behavior.
-- Programmatic UIKit Demo with four tabs.
+- Programmatic UIKit Demo, currently with five tabs.
 - XcodeGen, scripts, documentation, tests, and GitHub Actions.
 - Unified iOS 18.0 baseline.
 - Host package tests, pinned RootFS CI validation, generic Simulator Demo build, and arm64 Experimental final links.

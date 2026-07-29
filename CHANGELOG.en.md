@@ -12,7 +12,7 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 - An explicit opt-in `PocketRootAgent` product with a provider-agnostic lightweight loop, turn/tool/input/output bounds, ID replay rejection, whole-batch validation, sequential tool execution, and cancellation propagation; it neither installs Codex CLI nor exposes a default shell tool.
 - A native OpenAI Responses API transport for `PocketRootAgent` with host-owned bearer credentials, strict function-schema preflight, continuation mapping, sanitized failures, and bounded HTTP request/response bodies.
 - An explicit opt-in `PocketRootAgentRuntimeTools` product whose Linux commands require whole-batch tool preflight, host allow/deny policy, and per-call approval, with cwd, environment, timeout, and model-visible output bounds.
-- Programmatic UIKit Demo with System, Terminal, Commands, and Diagnostics.
+- Programmatic UIKit Demo with System, Terminal, Files, Commands, and Diagnostics.
 - A real Demo composition connecting Experimental iSH, SwiftTerm PTY,
   Commands, and Files, with Debug-only size/digest-verified external RootFS
   injection, shared runtime lifecycle, and dynamic Diagnostics; Release never
@@ -34,7 +34,8 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   unreturned native session, while recoverable supervisor/EOF errors remain
   session-local.
 - SwiftTerm pinned at `dd2fb8ac…` with UIKit/SwiftUI terminal pages, plus a
-  NUL-framed guest folder page and bounded text/binary previews up to 512 KiB.
+  NUL-framed guest folder page with lazy inline tree expansion, directory
+  navigation, and bounded text/binary previews up to 512 KiB.
 - Public UIKit/SwiftUI Workspace composition surfaces for an already-booted
   system. Terminal and Files stay alive across switches, removal closes the
   PTY, and the Host App UI smoke verifies file creation, preview, and return to

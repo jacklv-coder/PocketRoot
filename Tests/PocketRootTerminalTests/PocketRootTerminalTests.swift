@@ -370,6 +370,141 @@ final class PocketRootTerminalTests: XCTestCase {
         XCTAssertTrue(requests.isEmpty)
     }
 
+    func testFileTreeExpandsDirectoriesInlineAtTheExpectedDepth() {
+        let project = PocketRootFileEntry(
+            name: "project",
+            path: "/root/project",
+            kind: .directory,
+            size: 0
+        )
+        let readme = PocketRootFileEntry(
+            name: "README.md",
+            path: "/root/README.md",
+            kind: .file,
+            size: 128
+        )
+        let sources = PocketRootFileEntry(
+            name: "Sources",
+            path: "/root/project/Sources",
+            kind: .directory,
+            size: 0
+        )
+        let main = PocketRootFileEntry(
+            name: "main.swift",
+            path: "/root/project/Sources/main.swift",
+            kind: .file,
+            size: 64
+        )
+        var tree = PocketRootFileTreeState()
+        tree.replaceRootEntries([project, readme])
+        tree.replaceChildren([sources], of: project.path)
+        tree.replaceChildren([main], of: sources.path)
+
+        tree.expand(project.path)
+        tree.expand(sources.path)
+
+        XCTAssertEqual(
+            tree.visibleRows,
+            [
+                PocketRootFileTreeRow(entry: project, depth: 0),
+                PocketRootFileTreeRow(entry: sources, depth: 1),
+                PocketRootFileTreeRow(entry: main, depth: 2),
+                PocketRootFileTreeRow(entry: readme, depth: 0)
+            ]
+        )
+    }
+
+    func testFileTreeCollapseHidesDescendantsWithoutDiscardingCache() {
+        let directory = PocketRootFileEntry(
+            name: "folder",
+            path: "/root/folder",
+            kind: .directory,
+            size: 0
+        )
+        let file = PocketRootFileEntry(
+            name: "file.txt",
+            path: "/root/folder/file.txt",
+            kind: .file,
+            size: 1
+        )
+        var tree = PocketRootFileTreeState()
+        tree.replaceRootEntries([directory])
+        tree.replaceChildren([file], of: directory.path)
+        tree.expand(directory.path)
+
+        tree.collapse(directory.path)
+
+        XCTAssertEqual(
+            tree.visibleRows,
+            [PocketRootFileTreeRow(entry: directory, depth: 0)]
+        )
+        XCTAssertTrue(tree.hasLoadedChildren(of: directory.path))
+
+        tree.expand(directory.path)
+
+        XCTAssertEqual(tree.visibleRows.map(\.entry), [directory, file])
+    }
+
+    func testFileTreeRefreshClearsCachedChildrenBeforePreservingExpansion() {
+        let directory = PocketRootFileEntry(
+            name: "folder",
+            path: "/root/folder",
+            kind: .directory,
+            size: 0
+        )
+        let staleFile = PocketRootFileEntry(
+            name: "stale.txt",
+            path: "/root/folder/stale.txt",
+            kind: .file,
+            size: 1
+        )
+        var tree = PocketRootFileTreeState()
+        tree.replaceRootEntries([directory])
+        tree.replaceChildren([staleFile], of: directory.path)
+        tree.expand(directory.path)
+
+        let refreshedTree = tree.refreshSnapshot(rootEntries: [directory])
+
+        XCTAssertTrue(refreshedTree.isExpanded(directory.path))
+        XCTAssertFalse(refreshedTree.hasLoadedChildren(of: directory.path))
+        XCTAssertEqual(refreshedTree.visibleRows.map(\.entry), [directory])
+
+        XCTAssertTrue(tree.isExpanded(directory.path))
+        XCTAssertTrue(tree.hasLoadedChildren(of: directory.path))
+        XCTAssertEqual(tree.visibleRows.map(\.entry), [directory, staleFile])
+    }
+
+    func testFileTreeCanceledLoadsReturnDirectoriesToCollapsedState() {
+        let project = PocketRootFileEntry(
+            name: "project",
+            path: "/root/project",
+            kind: .directory,
+            size: 0
+        )
+        let sources = PocketRootFileEntry(
+            name: "Sources",
+            path: "/root/project/Sources",
+            kind: .directory,
+            size: 0
+        )
+        var tree = PocketRootFileTreeState()
+        tree.replaceRootEntries([project])
+        tree.replaceChildren([sources], of: project.path)
+        tree.expand(project.path)
+        tree.expand(sources.path)
+
+        tree.collapse(directoriesAt: [project.path, sources.path])
+
+        XCTAssertFalse(tree.isExpanded(project.path))
+        XCTAssertFalse(tree.isExpanded(sources.path))
+
+        tree.expand(project.path)
+
+        XCTAssertEqual(tree.visibleRows.map(\.entry), [project, sources])
+        XCTAssertFalse(tree.isExpanded(sources.path))
+        XCTAssertFalse(tree.hasLoadedChildren(of: sources.path))
+    }
+
     private static func marker(from command: String) throws -> String {
         guard let start = command.range(of: "'POCKETROOT_CWD_"),
               let end = command[start.upperBound...].firstIndex(of: "'")

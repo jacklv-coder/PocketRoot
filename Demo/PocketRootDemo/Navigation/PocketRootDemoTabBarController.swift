@@ -28,6 +28,11 @@ final class PocketRootDemoTabBarController: UITabBarController {
                 title: "Terminal",
                 symbolName: "terminal"
             ),
+            tabController(
+                root: FilesDemoViewController(runtimeStore: runtimeStore),
+                title: "Files",
+                symbolName: "folder"
+            ),
             navigationController(
                 root: CommandsViewController(runtimeStore: runtimeStore),
                 title: "Commands",
@@ -54,5 +59,18 @@ final class PocketRootDemoTabBarController: UITabBarController {
             selectedImage: nil
         )
         return navigationController
+    }
+
+    private func tabController(
+        root: UIViewController,
+        title: String,
+        symbolName: String
+    ) -> UIViewController {
+        root.tabBarItem = UITabBarItem(
+            title: title,
+            image: UIImage(systemName: symbolName),
+            selectedImage: nil
+        )
+        return root
     }
 }

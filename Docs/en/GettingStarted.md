@@ -60,11 +60,13 @@ open PocketRootDemo.xcodeproj
 
 ## 5. Run the real Demo
 
-The UIKit Demo contains System, Terminal, Commands, and Diagnostics tabs:
+The UIKit Demo contains System, Terminal, Files, Commands, and Diagnostics tabs:
 
 - System verifies and installs the fixed RootFS, then boots, checks, or shuts
   down the Experimental runtime.
-- Terminal presents the persistent SwiftTerm PTY and a Files entry for `/root`.
+- Terminal presents the persistent SwiftTerm PTY and retains a Files shortcut.
+- Files browses `/root`; the disclosure control expands a directory inline,
+  while tapping the folder body navigates into that directory.
 - Commands executes bounded one-shot commands against the same booted system.
 - Diagnostics reports live RootFS, iSH Runtime, and SwiftTerm status.
 

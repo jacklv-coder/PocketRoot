@@ -38,7 +38,7 @@
 - Swift Package 模块边界；
 - public runtime、command、session 和 terminal API 基础；
 - placeholder runtime 与 terminal behavior；
-- 纯 UIKit Demo，包含四个 tab；
+- 纯 UIKit Demo，当前包含五个 tab；
 - XcodeGen 工程生成和脚本；
 - 文档、测试与 GitHub Actions；
 - package、Demo、tests 和 CI 统一 iOS 18.0；
