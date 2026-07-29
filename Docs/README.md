@@ -2,6 +2,8 @@
 
 [简体中文](README.md) | [English](en/README.md) | [返回项目首页](../README.md)
 
+**Embed a local Linux Terminal and Files workspace in any iOS app.**
+
 这里是 PocketRoot 的中文主文档入口。目标是让产品、应用接入者和维护者不阅读源码，也能回答三个问题：
 
 1. PocketRoot 要解决什么问题，当前边界在哪里？

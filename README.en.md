@@ -2,11 +2,38 @@
 
 [简体中文](README.md) | [English](README.en.md)
 
-PocketRoot provides embeddable ARM64 Linux runtime, terminal, and upper-layer
-lightweight-agent foundations for iOS. Its Swift Package modules can securely
-install a verified Alpine fakefs and, through the Experimental iSH/IshEmbed
-adapter, execute bounded commands, expose a persistent SwiftTerm PTY, and
-browse the guest filesystem inside the iOS sandbox.
+**Embed a local Linux Terminal and Files workspace in any iOS app.**
+
+[![CI](https://github.com/jacklv-coder/PocketRoot/actions/workflows/ci.yml/badge.svg)](https://github.com/jacklv-coder/PocketRoot/actions/workflows/ci.yml)
+![Platform](https://img.shields.io/badge/platform-iOS%2018%2B-blue)
+![Swift](https://img.shields.io/badge/Swift-5.10%2B-orange)
+![Status](https://img.shields.io/badge/status-Experimental-yellow)
+
+PocketRoot is a local Linux Workspace SDK for iPhone and iPad apps. Its Swift
+Package combines an iSH-based ARM64 Linux runtime, an interactive SwiftTerm
+terminal, guest file browsing, secure RootFS installation, and Swift lifecycle
+APIs. Everything runs locally inside the App sandbox—no remote shell, no
+jailbreak, and no Codex CLI installation.
+
+## What you can embed
+
+- **Terminal** — a full PTY session with input, streaming output, resize,
+  signal, EOF, and ordered shutdown.
+- **Files** — browse guest directories and open bounded text or binary previews.
+- **Workspace** — switch between Terminal and Files while keeping the same
+  terminal session alive.
+- **Linux Runtime** — prepare, boot, and manage an iSH-based Alpine ARM64
+  environment inside the iOS sandbox.
+- **RootFS lifecycle** — verify, install, reuse, and recover a caller-supplied,
+  reviewed RootFS archive.
+- **Swift APIs and ready-made UI** — execute bounded commands or present UIKit
+  and SwiftUI workspace screens directly.
+
+PocketRoot is not another terminal App and it is not a new operating system.
+It is the SDK layer for embedding a local Linux Terminal + Files workspace in
+an existing iOS App. Start with the
+[minimal host App](Examples/PocketRootHostApp) or the
+[integration guide](Docs/en/IntegrationGuide.md).
 
 > [!WARNING]
 > Native iSH integration is **Experimental**. Pinned `v0.4.0-abi.6` has a soft shutdown that returns to Swift, but each host process still permits only one valid boot/shutdown lifecycle. iPad, sustained-load, and distribution gates remain open. This version is not approved for production, TestFlight, or public binary distribution.
@@ -30,6 +57,39 @@ select `PocketRootAgent`. Select `PocketRootAgentRuntimeTools` only for the
 approval-gated command adapter; real runtime applications explicitly select
 `PocketRootIshRuntimeIntegration`. `PocketRootSystem.shared` remains a safe
 placeholder.
+
+## Smallest UI integration
+
+Retain one `PocketRootIshWorkspaceHost` in the App or scene owner, then present
+its integrated screen. The screen prepares the local RootFS, boots the runtime,
+and displays a Terminal / Files Workspace backed by one Linux guest. The
+Terminal's PTY session stays alive while the user switches to Files:
+
+```swift
+import PocketRoot
+import PocketRootIshRuntimeIntegration
+
+let host = PocketRootIshWorkspaceHost(
+    runtimeConfiguration: .init(
+        archiveURL: localReviewedRootFSURL,
+        applicationSupportURL: applicationSupportURL
+    )
+)
+
+navigationController?.pushViewController(
+    host.makeViewController(),
+    animated: true
+)
+```
+
+`localReviewedRootFSURL` must identify a local archive that the App has
+lawfully obtained and reviewed. PocketRoot currently does not download,
+select, or publicly distribute a RootFS. SwiftUI presents the same retained
+host:
+
+```swift
+PocketRootIshWorkspaceView(host: host)
+```
 
 ## Implementation overview
 
