@@ -2,7 +2,30 @@
 
 [简体中文](README.md) | [English](README.en.md)
 
-PocketRoot 是面向 iOS 的可嵌入 ARM64 Linux 运行时、终端与上层轻量 agent 基础设施。项目使用 Swift Package 提供模块化 API，以 iSH/IshEmbed 作为实验性运行时，在 iOS 沙箱中安装经过校验的 Alpine fakefs，执行有界命令，并通过 SwiftTerm 提供持续 PTY 与 guest 文件浏览。
+**Embed a local Linux Terminal and Files workspace in any iOS app.**
+
+[![CI](https://github.com/jacklv-coder/PocketRoot/actions/workflows/ci.yml/badge.svg)](https://github.com/jacklv-coder/PocketRoot/actions/workflows/ci.yml)
+![Platform](https://img.shields.io/badge/platform-iOS%2018%2B-blue)
+![Swift](https://img.shields.io/badge/Swift-5.10%2B-orange)
+![Status](https://img.shields.io/badge/status-Experimental-yellow)
+
+PocketRoot 是面向 iPhone 和 iPad App 的本地 Linux Workspace SDK。它把基于 iSH
+的 ARM64 Linux runtime、SwiftTerm 交互终端、guest 文件浏览、RootFS 安装与 Swift
+生命周期 API 组合成可嵌入的 Swift Package。整个环境在 App 沙箱内本地运行，不依赖
+远程 shell，不要求越狱，也不会安装 Codex CLI。
+
+## 接入后直接获得什么
+
+- **Terminal**：完整 PTY 会话，支持输入、持续输出、resize、signal、EOF 与有序关闭。
+- **Files**：浏览 Linux guest 目录、打开文件并进行有界文本或二进制预览。
+- **Workspace**：在 Terminal 与 Files 间切换，同时保持同一个终端 session。
+- **Linux Runtime**：在 iOS 沙箱内准备、启动并管理基于 iSH 的 Alpine ARM64 环境。
+- **RootFS 生命周期**：校验、安装、复用、恢复调用方提供的已审查 RootFS 归档。
+- **Swift API 与现成 UI**：执行有界命令，或直接展示 UIKit / SwiftUI Workspace 页面。
+
+PocketRoot 的定位不是另一个终端 App，也不是新的操作系统：它是让现有 iOS App
+嵌入本地 Linux Terminal + Files 工作区的 SDK。可以先查看
+[最小宿主 App](Examples/PocketRootHostApp)和[应用接入指南](Docs/IntegrationGuide.md)。
 
 > [!WARNING]
 > 真实 iSH 集成目前仍是 **实验性（Experimental）** 能力。固定的
@@ -27,6 +50,36 @@ PocketRoot 是面向 iOS 的可嵌入 ARM64 Linux 运行时、终端与上层轻
 需要 agent 的应用显式依赖 `PocketRootAgent`；只有需要审批命令 adapter 时才额外依赖
 `PocketRootAgentRuntimeTools`；需要真实运行时的应用显式依赖
 `PocketRootIshRuntimeIntegration`。`PocketRootSystem.shared` 仍使用安全的占位实现。
+
+## 最短 UI 接入
+
+业务 App 长期保留一个 `PocketRootIshWorkspaceHost`，然后直接打开集成页面。页面会
+准备本地 RootFS、boot runtime，并展示共享同一个 Linux guest 的 Terminal / Files
+Workspace；切换到 Files 时 Terminal 的 PTY session 会继续保持：
+
+```swift
+import PocketRoot
+import PocketRootIshRuntimeIntegration
+
+let host = PocketRootIshWorkspaceHost(
+    runtimeConfiguration: .init(
+        archiveURL: localReviewedRootFSURL,
+        applicationSupportURL: applicationSupportURL
+    )
+)
+
+navigationController?.pushViewController(
+    host.makeViewController(),
+    animated: true
+)
+```
+
+`localReviewedRootFSURL` 必须是 App 已合法取得并完成审查的本地归档。PocketRoot
+当前不会从网络下载、选择或公开分发 RootFS。SwiftUI 使用同一个长期保留的 host：
+
+```swift
+PocketRootIshWorkspaceView(host: host)
+```
 
 ## 实现概览
 

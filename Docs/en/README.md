@@ -2,6 +2,8 @@
 
 [简体中文](../README.md) | [English](README.md) | [Project home](../../README.en.md)
 
+**Embed a local Linux Terminal and Files workspace in any iOS app.**
+
 This is the English documentation hub for PocketRoot. The Chinese documents at the parent paths are the primary narrative set; every maintained document has an English mirror.
 
 ## Reading paths

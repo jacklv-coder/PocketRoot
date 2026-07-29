@@ -4,9 +4,16 @@
 
 ## 产品愿景
 
-PocketRoot 希望让 iOS 应用能够以明确、安全、可审核的方式嵌入一个 ARM64 Linux guest，并通过 Swift API 完成本地命令执行，后续再扩展为可交互终端。
+**Embed a local Linux Terminal and Files workspace in any iOS app.**
 
-它不是一个完整的 iSH App 分支，也不是通用虚拟化平台。PocketRoot 的重点是把运行时、RootFS、命令、终端 UI 和宿主 App 生命周期拆成可复用模块，并把供应链、资源边界和发行门禁写进工程契约。
+PocketRoot 希望让 iPhone 和 iPad App 能够以明确、安全、可审核的方式嵌入一个本地
+ARM64 Linux 工作区。接入者既可以通过 Swift API 执行有界命令，也可以直接展示共享
+同一个 Linux guest 的 Terminal / Files 页面；切换页面时 Terminal 的 PTY session
+保持运行。
+
+它不是一个完整的 iSH App 分支、新的操作系统或通用虚拟化平台。PocketRoot 的重点是
+把运行时、RootFS、命令、终端 UI、文件浏览和宿主 App 生命周期拆成可复用模块，并把
+供应链、资源边界和发行门禁写进工程契约。
 
 ## 目标用户
 
@@ -28,7 +35,8 @@ PocketRoot 希望让 iOS 应用能够以明确、安全、可审核的方式嵌�
    App 准备经过审核的 Alpine fakefs，启动运行时，执行有超时和输出上限的 shell 命令，并取得退出码、signal、stdout 和 stderr。
 
 2. **嵌入式交互终端**
-   在未来稳定的 PTY 生命周期之上，把 SwiftTerm 作为 UI 适配层，支持输入、输出、窗口 resize、signal、EOF、取消与可预测关闭。
+   通过 SwiftTerm UI 适配层提供持续 PTY，支持输入、输出、窗口 resize、signal、EOF、
+   取消与可预测关闭，并与 Files 页面共享同一个 Linux guest。
 
 3. **可恢复的本地 Linux 环境**
    对固定版本 RootFS 做安全安装、校验、复用、损坏替换和中断恢复，不让半安装状态覆盖已可用环境。

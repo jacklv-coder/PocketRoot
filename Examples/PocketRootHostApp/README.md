@@ -1,5 +1,7 @@
 # PocketRoot Host App
 
+**Embed a local Linux Terminal and Files workspace in any iOS app.**
+
 这是一个仓库内 Demo 之外的独立 iOS 宿主，用于验证业务 App 只通过公开 Swift
 Package 产品即可完成：
 

@@ -4,9 +4,18 @@
 
 ## Vision
 
-PocketRoot aims to let an iOS application embed an ARM64 Linux guest through explicit, bounded, and auditable Swift APIs. The first useful capability is controlled one-shot command execution; interactive terminal support follows only after PTY lifecycle ownership is proven.
+**Embed a local Linux Terminal and Files workspace in any iOS app.**
 
-PocketRoot is not a full iSH app fork or a general virtualization platform. It separates runtime, RootFS, command, terminal UI, and host lifecycle concerns into reusable modules with supply-chain and release gates encoded in the repository.
+PocketRoot lets iPhone and iPad apps embed a local ARM64 Linux workspace
+through explicit, bounded, and auditable Swift APIs. Integrators can execute
+bounded commands or directly present Terminal and Files screens backed by the
+same Linux guest, while the Terminal's PTY session stays alive across surface
+switches.
+
+PocketRoot is not a full iSH App fork, a new operating system, or a general
+virtualization platform. It separates runtime, RootFS, commands, terminal UI,
+file browsing, and host lifecycle concerns into reusable modules with
+supply-chain and release gates encoded in the repository.
 
 ## Target users
 
@@ -17,7 +26,9 @@ PocketRoot is not a full iSH app fork or a general virtualization platform. It s
 ## Core scenarios
 
 1. Prepare a reviewed Alpine fakefs, boot the runtime, execute a bounded shell command, and consume exit code, signal, stdout, and stderr.
-2. Add an interactive terminal after session input, output, resize, signal, EOF, cancellation, and shutdown ownership are safe.
+2. Embed a SwiftTerm-backed persistent PTY with input, output, resize, signal,
+   EOF, cancellation, and predictable shutdown, sharing one Linux guest with
+   the Files screen.
 3. Reuse or recover a verified local Linux environment without allowing partial installation to replace the last valid version.
 4. Pin every external input by commit, nested gitlink, size, and SHA-256.
 5. Use a bounded native-Swift agent loop to connect a model with explicitly registered tools. The Linux runtime executes only host-approved, bounded commands and does not install the full Codex CLI in the RootFS.
