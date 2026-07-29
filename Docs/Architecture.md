@@ -375,7 +375,9 @@ CI 与测试职责见[测试与验证](Testing.md)。动态完成状态见[路�
 - `PocketRootSession`：已实现长运行 PTY I/O 抽象。
 - live session registry 与 bounded reads：已保证 shutdown 的 close 顺序。
 - `PTYTerminalBridge`：已连接固定 SwiftTerm，默认拒绝 OSC 52 剪贴板访问。
-- `PocketRootFileBrowser`：已建立 guest 目录和有界预览页面。
+- `PocketRootFileBrowser`：已建立 guest 目录、基础文件管理和有界预览页面；名称与
+  路径在执行前校验，创建不覆盖，guest 根目录拒绝删除。原子无覆盖重命名等待
+  iSH ABI 提供 `RENAME_NOREPLACE` 等价能力。
 - 应用专属 post-boot health：在基础 identity gate 之后验证业务工具、网络和数据。
 - 后续仍需 iPad、VoiceOver、background/foreground 和持续负载实机硬化。
 

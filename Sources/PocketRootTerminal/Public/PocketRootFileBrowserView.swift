@@ -7,25 +7,43 @@ import UIKit
 public struct PocketRootFileBrowserView: View {
     @StateObject private var model: PocketRootFileBrowserModel
     @State private var selectedEntry: PocketRootFileEntry?
+    @State private var nameAction: PocketRootFileNameAction?
+    @State private var proposedName = ""
+    @State private var pendingDeletion: PocketRootFileEntry?
+    @State private var operationErrorMessage: String?
+    private let allowsFileOperations: Bool
+    private let onMutation: (@MainActor () async -> Void)?
 
     public init(
         system: PocketRootSystem,
-        initialPath: String = "/root"
+        initialPath: String = "/root",
+        allowsFileOperations: Bool = true
     ) {
         let browser = PocketRootFileBrowser(executor: system)
+        self.allowsFileOperations = allowsFileOperations
+        onMutation = nil
         _model = StateObject(
             wrappedValue: PocketRootFileBrowserModel(
                 browser: browser,
-                path: initialPath
+                path: initialPath,
+                onMutation: nil
             )
         )
     }
 
-    private init(browser: PocketRootFileBrowser, path: String) {
+    private init(
+        browser: PocketRootFileBrowser,
+        path: String,
+        allowsFileOperations: Bool,
+        onMutation: @escaping @MainActor () async -> Void
+    ) {
+        self.allowsFileOperations = allowsFileOperations
+        self.onMutation = onMutation
         _model = StateObject(
             wrappedValue: PocketRootFileBrowserModel(
                 browser: browser,
-                path: path
+                path: path,
+                onMutation: onMutation
             )
         )
     }
@@ -53,19 +71,26 @@ public struct PocketRootFileBrowserView: View {
                     isLoading: model.isLoading(row.entry.path),
                     isEntryEnabled:
                         !model.isLoading
+                            && !model.isMutating
                             && !model.hasPendingExpansionRequests,
                     isDisclosureEnabled:
                         !model.isLoading
+                            && !model.isMutating
                             && (
                                 !model.hasPendingExpansionRequests
                                     || model.isLoading(row.entry.path)
                             ),
+                    allowsFileOperations:
+                        allowsFileOperations && !model.isBusy,
                     expansionError: model.expansionError(row.entry.path),
                     toggleExpansion: {
                         model.toggleExpansion(for: row.entry)
                     },
                     openEntry: {
                         selectedEntry = row.entry
+                    },
+                    deleteEntry: {
+                        pendingDeletion = row.entry
                     }
                 )
             }
@@ -73,6 +98,28 @@ public struct PocketRootFileBrowserView: View {
         .accessibilityIdentifier("PocketRootFiles.list")
         .navigationTitle(model.displayName)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if allowsFileOperations {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        Button {
+                            presentNameAction(.createFile)
+                        } label: {
+                            Label("New File", systemImage: "doc.badge.plus")
+                        }
+                        Button {
+                            presentNameAction(.createDirectory)
+                        } label: {
+                            Label("New Folder", systemImage: "folder.badge.plus")
+                        }
+                    } label: {
+                        Label("File Actions", systemImage: "plus")
+                    }
+                    .disabled(model.isBusy)
+                    .accessibilityIdentifier("PocketRootFiles.actions")
+                }
+            }
+        }
         .refreshable {
             await model.reload()
         }
@@ -86,7 +133,12 @@ public struct PocketRootFileBrowserView: View {
             if entry.kind == .directory {
                 PocketRootFileBrowserView(
                     browser: model.browser,
-                    path: entry.path
+                    path: entry.path,
+                    allowsFileOperations: allowsFileOperations,
+                    onMutation: {
+                        await model.reload()
+                        await onMutation?()
+                    }
                 )
             } else {
                 PocketRootFilePreviewView(
@@ -94,6 +146,130 @@ public struct PocketRootFileBrowserView: View {
                     entry: entry
                 )
             }
+        }
+        .overlay {
+            if model.isMutating {
+                ProgressView("Updating Files…")
+                    .padding()
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+                    .accessibilityIdentifier("PocketRootFiles.operationProgress")
+            }
+        }
+        .alert(
+            nameAction?.title ?? "Name",
+            isPresented: isShowingNameAction
+        ) {
+            TextField("Name", text: $proposedName)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+            Button(nameAction?.submitTitle ?? "Save") {
+                submitNameAction()
+            }
+            .disabled(proposedName.isEmpty)
+            Button("Cancel", role: .cancel) {
+                nameAction = nil
+            }
+        } message: {
+            Text(nameAction?.message ?? "")
+        }
+        .confirmationDialog(
+            "Delete Item?",
+            isPresented: isShowingDeleteConfirmation,
+            presenting: pendingDeletion
+        ) { entry in
+            Button("Delete \(entry.name)", role: .destructive) {
+                pendingDeletion = nil
+                Task {
+                    await performOperation {
+                        try await model.delete(entry)
+                    }
+                }
+            }
+            Button("Cancel", role: .cancel) {
+                pendingDeletion = nil
+            }
+        } message: { entry in
+            if entry.kind == .directory {
+                Text("The folder and all of its contents will be permanently deleted.")
+            } else {
+                Text("This item will be permanently deleted.")
+            }
+        }
+        .alert(
+            "File Operation Failed",
+            isPresented: isShowingOperationError
+        ) {
+            Button("OK", role: .cancel) {
+                operationErrorMessage = nil
+            }
+        } message: {
+            Text(operationErrorMessage ?? "")
+        }
+    }
+
+    private var isShowingNameAction: Binding<Bool> {
+        Binding(
+            get: { nameAction != nil },
+            set: { isPresented in
+                if !isPresented {
+                    nameAction = nil
+                }
+            }
+        )
+    }
+
+    private var isShowingDeleteConfirmation: Binding<Bool> {
+        Binding(
+            get: { pendingDeletion != nil },
+            set: { isPresented in
+                if !isPresented {
+                    pendingDeletion = nil
+                }
+            }
+        )
+    }
+
+    private var isShowingOperationError: Binding<Bool> {
+        Binding(
+            get: { operationErrorMessage != nil },
+            set: { isPresented in
+                if !isPresented {
+                    operationErrorMessage = nil
+                }
+            }
+        )
+    }
+
+    private func presentNameAction(_ action: PocketRootFileNameAction) {
+        nameAction = action
+        proposedName = action.initialName
+    }
+
+    private func submitNameAction() {
+        guard let action = nameAction else {
+            return
+        }
+        let name = proposedName
+        nameAction = nil
+        Task {
+            await performOperation {
+                switch action {
+                case .createFile:
+                    try await model.createFile(named: name)
+                case .createDirectory:
+                    try await model.createDirectory(named: name)
+                }
+            }
+        }
+    }
+
+    private func performOperation(
+        _ operation: () async throws -> Void
+    ) async {
+        do {
+            try await operation()
+        } catch {
+            operationErrorMessage = error.localizedDescription
         }
     }
 }
@@ -104,14 +280,16 @@ public final class PocketRootFileBrowserViewController:
 {
     public init(
         system: PocketRootSystem,
-        initialPath: String = "/root"
+        initialPath: String = "/root",
+        allowsFileOperations: Bool = true
     ) {
         super.init(
             rootView: AnyView(
                 NavigationStack {
                     PocketRootFileBrowserView(
                         system: system,
-                        initialPath: initialPath
+                        initialPath: initialPath,
+                        allowsFileOperations: allowsFileOperations
                     )
                 }
             )
@@ -138,6 +316,7 @@ private final class PocketRootFileBrowserModel: ObservableObject {
     private var requestGeneration: UInt64 = 0
     private var expansionRequestIDs: [String: UUID] = [:]
     private var expansionTasks: [String: Task<Void, Never>] = [:]
+    private let onMutation: (@MainActor () async -> Void)?
 
     var visibleRows: [PocketRootFileTreeRow] {
         tree.visibleRows
@@ -151,9 +330,20 @@ private final class PocketRootFileBrowserModel: ObservableObject {
         !expansionRequestIDs.isEmpty
     }
 
-    init(browser: PocketRootFileBrowser, path: String) {
+    var isBusy: Bool {
+        isLoading || isMutating || hasPendingExpansionRequests
+    }
+
+    @Published private(set) var isMutating = false
+
+    init(
+        browser: PocketRootFileBrowser,
+        path: String,
+        onMutation: (@MainActor () async -> Void)?
+    ) {
         self.browser = browser
         self.path = path
+        self.onMutation = onMutation
     }
 
     func loadIfNeeded() async {
@@ -315,6 +505,43 @@ private final class PocketRootFileBrowserModel: ObservableObject {
         expansionErrors[path]
     }
 
+    func createFile(named name: String) async throws {
+        try await performMutation {
+            _ = try await browser.createFile(named: name, in: path)
+        }
+    }
+
+    func createDirectory(named name: String) async throws {
+        try await performMutation {
+            _ = try await browser.createDirectory(named: name, in: path)
+        }
+    }
+
+    func delete(_ entry: PocketRootFileEntry) async throws {
+        try await performMutation {
+            try await browser.deleteItem(
+                at: entry.path,
+                recursively: entry.kind == .directory
+            )
+        }
+    }
+
+    private func performMutation(
+        _ operation: () async throws -> Void
+    ) async throws {
+        guard !isMutating else {
+            return
+        }
+        cancelPendingExpansionRequests()
+        isMutating = true
+        defer {
+            isMutating = false
+        }
+        try await operation()
+        await reload()
+        await onMutation?()
+    }
+
     private func finishExpansionRequest(
         at directoryPath: String,
         requestID: UUID,
@@ -375,9 +602,11 @@ private struct PocketRootFileTreeRowView: View {
     let isLoading: Bool
     let isEntryEnabled: Bool
     let isDisclosureEnabled: Bool
+    let allowsFileOperations: Bool
     let expansionError: String?
     let toggleExpansion: () -> Void
     let openEntry: () -> Void
+    let deleteEntry: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -409,6 +638,20 @@ private struct PocketRootFileTreeRowView: View {
                 .accessibilityIdentifier(
                     "PocketRootFiles.error.\(row.entry.path)"
                 )
+            }
+        }
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            if allowsFileOperations {
+                Button(role: .destructive, action: deleteEntry) {
+                    Label("Delete", systemImage: "trash")
+                }
+            }
+        }
+        .contextMenu {
+            if allowsFileOperations {
+                Button(role: .destructive, action: deleteEntry) {
+                    Label("Delete", systemImage: "trash")
+                }
             }
         }
     }
@@ -448,6 +691,34 @@ private struct PocketRootFileTreeRowView: View {
                 .frame(width: 28, height: 34)
                 .accessibilityHidden(true)
         }
+    }
+}
+
+@available(iOS 18.0, *)
+private enum PocketRootFileNameAction {
+    case createFile
+    case createDirectory
+
+    var title: String {
+        switch self {
+        case .createFile: "New File"
+        case .createDirectory: "New Folder"
+        }
+    }
+
+    var submitTitle: String {
+        "Create"
+    }
+
+    var message: String {
+        switch self {
+        case .createFile: "Enter a name for the new empty file."
+        case .createDirectory: "Enter a name for the new folder."
+        }
+    }
+
+    var initialName: String {
+        ""
     }
 }
 

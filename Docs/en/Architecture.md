@@ -100,9 +100,11 @@ single-lifecycle soft shutdown.
 ### PocketRootTerminal
 
 A SwiftTerm-backed persistent PTY, a NUL-framed guest file browser with bounded
-preview, and an optional one-shot fallback that carries the physical `pwd -P`
-result instead of trusting mutable `$PWD`. UIKit and SwiftUI presentation
-remains MainActor-isolated.
+preview and fail-closed create/delete operations, and an optional
+one-shot fallback that carries the physical `pwd -P` result instead of trusting
+mutable `$PWD`. UIKit and SwiftUI presentation remains MainActor-isolated.
+Atomic no-replace rename remains gated on an iSH ABI equivalent to
+`RENAME_NOREPLACE`.
 
 ### PocketRoot
 

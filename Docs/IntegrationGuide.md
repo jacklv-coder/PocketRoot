@@ -527,14 +527,32 @@ PTY 输入、输出和会话生命周期。
 ```swift
 let filesViewController = PocketRootFileBrowserViewController(
     system: system,
-    initialPath: "/root"
+    initialPath: "/root",
+    allowsFileOperations: true
 )
 navigationController?.pushViewController(filesViewController, animated: true)
 ```
 
 文件夹行的左侧箭头会按需读取并在当前列表原地展开子目录；点击文件夹图标或名称则进入
 独立目录页面。两个交互共用相同的有界命令协议和路径校验，不会直接访问宿主 App
-sandbox 中的 RootFS 存储结构。
+sandbox 中的 RootFS 存储结构。右上角 `+` 创建空文件或目录；长按或左滑条目可以
+删除。目录删除会显示递归删除确认。只读业务场景传入
+`allowsFileOperations: false`。
+
+不使用现成页面时，也可以直接调用同一个 actor API：
+
+```swift
+let files = PocketRootFileBrowser(executor: system)
+try await files.createFile(named: "notes.txt", in: "/root")
+try await files.createDirectory(named: "Sources", in: "/root")
+try await files.deleteItem(at: "/root/Sources", recursively: true)
+```
+
+名称必须是 1–255 个 UTF-8 字节，且不能是 `.`、`..`，也不能包含 `/` 或 NUL。
+所有 guest 参数都经过 shell quote；创建不会覆盖现有条目；`/` 不能被删除；
+非空目录只有显式传入 `recursively: true` 才能删除。当前 iSH ABI 会拒绝带 flag
+的 `renameat2`，因此 PocketRoot 暂不公开存在并发覆盖窗口的“无覆盖重命名”；
+该能力等待 runtime 提供原子 `RENAME_NOREPLACE` 等价实现。
 
 SwiftUI 的组合入口更简洁：
 
@@ -557,7 +575,7 @@ struct LinuxTerminalScreen: View {
 SwiftTerm 负责 ANSI/VT、软键盘、选择、滚动和辅助功能语义；bridge 按序转发按键，
 同步字符行列 resize，并把 guest 输出流送入 terminal。guest 的 OSC 52 剪贴板读写默认
 拒绝，HTTP/HTTPS 链接只有在用户点击后才交给系统打开。文件页支持目录导航和最多
-512 KiB 的有界文本/二进制预览，不提供宿主 App 沙箱浏览。
+512 KiB 的有界文本/二进制预览及基础 guest 文件管理，不提供宿主 App 沙箱浏览。
 
 自定义 configuration 使用 `allowsInput: false` 时，PTY 仍显示和持续接收 guest 输出，
 但 bridge 会丢弃键盘、粘贴等所有 host-to-guest 输入，也不会自动拉起键盘。SwiftUI

@@ -35,7 +35,10 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   session-local.
 - SwiftTerm pinned at `dd2fb8ac…` with UIKit/SwiftUI terminal pages, plus a
   NUL-framed guest folder page with lazy inline tree expansion, directory
-  navigation, and bounded text/binary previews up to 512 KiB.
+  navigation, bounded text/binary previews up to 512 KiB, file/folder creation,
+  and confirmation-gated recursive deletion. The current iSH ABI does not
+  support atomic `RENAME_NOREPLACE`, so PocketRoot does not present a shell
+  sequence with a concurrent replacement window as a safe rename operation.
 - Public UIKit/SwiftUI Workspace composition surfaces for an already-booted
   system. Terminal and Files stay alive across switches, removal closes the
   PTY, and the Host App UI smoke verifies file creation, preview, and return to
