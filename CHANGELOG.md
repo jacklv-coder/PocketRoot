@@ -12,7 +12,7 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
 - 新增显式 opt-in `PocketRootAgent` 产品，提供 provider-agnostic、有 turn/tool/input/output 上限、ID 防重放、整批预检、顺序工具执行与取消传播的轻量 agent loop；不安装 Codex CLI，也不默认暴露 shell。
 - 为 `PocketRootAgent` 增加原生 OpenAI Responses API transport、宿主 bearer credential contract、strict function schema 预检、连续回合映射、脱敏错误与有界 HTTP request/response body。
 - 新增显式 opt-in `PocketRootAgentRuntimeTools` 产品；Linux 命令必须通过整批工具级预检、宿主 allow/deny policy 与逐次审批，并受 cwd、environment、timeout 和 model-visible output 配额约束。
-- 建立纯 UIKit Demo，包含 System、Terminal、Commands、Diagnostics。
+- 建立纯 UIKit Demo，包含 System、Terminal、Files、Commands、Diagnostics。
 - Demo 显式接通实验 iSH、SwiftTerm PTY、Commands 与 Files；加入仓库外固定 RootFS
   的 Debug-only 大小/hash 校验注入、共享 runtime 生命周期和动态 Diagnostics，
   Release 构建保持不注入。
@@ -28,7 +28,7 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
   缓冲以 16 KiB 分块限制到 4 MiB 并保留终态，native shutdown 只在权威退出后执行；
   取消创建会关闭未返回的 native session，可恢复的 supervisor/EOF 错误只关闭当前会话。
 - 固定 SwiftTerm `dd2fb8ac…`，提供 UIKit/SwiftUI 终端页面；加入 NUL-framed guest
-  文件夹页面和最多 512 KiB 的有界文本/二进制预览。
+  文件夹页面、按需树形原地展开、目录导航和最多 512 KiB 的有界文本/二进制预览。
 - 加入公开 UIKit/SwiftUI Workspace 组合入口：一个已 boot system 可直接打开持续
   Terminal 与 Files，跨页面不重建 PTY，退出时关闭 session；Host App UI smoke
   验证终端创建文件、Files 预览和切回后的同一会话。

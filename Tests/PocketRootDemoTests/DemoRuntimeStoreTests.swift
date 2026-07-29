@@ -171,6 +171,22 @@ final class DemoRuntimeStoreTests: XCTestCase {
         )
     }
 
+    func testDemoExposesTerminalAndFilesAsDirectTabs() {
+        let store = DemoRuntimeStore(runtimeAvailable: false)
+        let controller = PocketRootDemoTabBarController(runtimeStore: store)
+
+        controller.loadViewIfNeeded()
+
+        XCTAssertEqual(
+            controller.viewControllers?.map(\.tabBarItem.title),
+            ["System", "Terminal", "Files", "Commands", "Diagnostics"]
+        )
+        XCTAssertFalse(
+            controller.viewControllers?[2] is UINavigationController,
+            "Files owns its SwiftUI navigation stack and must not be nested."
+        )
+    }
+
     private func makeBundle(
         includesRootFS: Bool,
         rootFSIsDirectory: Bool = false

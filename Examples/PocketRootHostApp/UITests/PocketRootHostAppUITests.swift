@@ -30,6 +30,19 @@ final class PocketRootHostAppUITests: XCTestCase {
             "PocketRootFiles.entry./root/pocketroot-ui-smoke"
         ]
         XCTAssertTrue(directory.waitForExistence(timeout: 30))
+
+        let disclosure = app.buttons[
+            "PocketRootFiles.disclosure./root/pocketroot-ui-smoke"
+        ]
+        XCTAssertTrue(disclosure.waitForExistence(timeout: 10))
+        disclosure.tap()
+
+        let inlineFile = app.descendants(matching: .any)[
+            "PocketRootFiles.entry./root/pocketroot-ui-smoke/created.txt"
+        ]
+        XCTAssertTrue(inlineFile.waitForExistence(timeout: 30))
+        XCTAssertTrue(app.navigationBars["root"].exists)
+
         directory.tap()
 
         let file = app.descendants(matching: .any)[

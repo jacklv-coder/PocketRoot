@@ -82,12 +82,13 @@ open PocketRootDemo.xcodeproj
 
 ## 5. 运行真实 Demo
 
-Demo 使用 AppDelegate、SceneDelegate、UIWindow、纯 UIKit 和 Auto Layout，包含四个 tab：
+Demo 使用 AppDelegate、SceneDelegate、UIWindow、纯 UIKit 和 Auto Layout，包含五个 tab：
 
 | 页面 | 当前用途 |
 | --- | --- |
 | System | 校验、安装固定 RootFS，启动/检查/关闭实验 runtime |
-| Terminal | 使用 SwiftTerm 打开持续 PTY；Files 入口浏览 `/root` |
+| Terminal | 使用 SwiftTerm 打开持续 PTY；右上角也保留 Files 快捷入口 |
+| Files | 浏览 `/root`；箭头原地展开子目录，点击文件夹主体进入该目录 |
 | Commands | 对同一个已启动 system 执行有界一次性命令 |
 | Diagnostics | 动态显示 RootFS、iSH Runtime 与 SwiftTerm 状态 |
 

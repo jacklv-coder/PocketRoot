@@ -203,7 +203,7 @@ UIKit/SwiftUI UI：
 源码：`Demo/PocketRootDemo/`
 
 使用 AppDelegate、SceneDelegate、UIWindow、UIKit 和 Auto Layout，包含
-System、Terminal、Commands、Diagnostics 四个 navigation stack。共享
+System、Terminal、Files、Commands、Diagnostics 五个入口。共享
 `DemoRuntimeStore` 组合仓库外固定 RootFS、实验 runtime、SwiftTerm PTY 与 Files；
 RootFS 不进入源码树，只能在 Debug 构建阶段经过固定大小/hash 校验后注入。
 

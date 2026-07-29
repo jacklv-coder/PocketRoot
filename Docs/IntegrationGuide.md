@@ -532,6 +532,10 @@ let filesViewController = PocketRootFileBrowserViewController(
 navigationController?.pushViewController(filesViewController, animated: true)
 ```
 
+文件夹行的左侧箭头会按需读取并在当前列表原地展开子目录；点击文件夹图标或名称则进入
+独立目录页面。两个交互共用相同的有界命令协议和路径校验，不会直接访问宿主 App
+sandbox 中的 RootFS 存储结构。
+
 SwiftUI 的组合入口更简洁：
 
 ```swift

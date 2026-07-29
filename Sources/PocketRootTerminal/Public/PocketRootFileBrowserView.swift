@@ -6,6 +6,7 @@ import UIKit
 @available(iOS 18.0, *)
 public struct PocketRootFileBrowserView: View {
     @StateObject private var model: PocketRootFileBrowserModel
+    @State private var selectedEntry: PocketRootFileEntry?
 
     public init(
         system: PocketRootSystem,
@@ -31,7 +32,7 @@ public struct PocketRootFileBrowserView: View {
 
     public var body: some View {
         List {
-            if model.isLoading, model.entries.isEmpty {
+            if model.isLoading, model.visibleRows.isEmpty {
                 HStack {
                     Spacer()
                     ProgressView()
@@ -45,24 +46,28 @@ public struct PocketRootFileBrowserView: View {
                     description: Text(errorMessage)
                 )
             }
-            ForEach(model.entries) { entry in
-                NavigationLink {
-                    if entry.kind == .directory {
-                        PocketRootFileBrowserView(
-                            browser: model.browser,
-                            path: entry.path
-                        )
-                    } else {
-                        PocketRootFilePreviewView(
-                            browser: model.browser,
-                            entry: entry
-                        )
+            ForEach(model.visibleRows) { row in
+                PocketRootFileTreeRowView(
+                    row: row,
+                    isExpanded: model.isExpanded(row.entry.path),
+                    isLoading: model.isLoading(row.entry.path),
+                    isEntryEnabled:
+                        !model.isLoading
+                            && !model.hasPendingExpansionRequests,
+                    isDisclosureEnabled:
+                        !model.isLoading
+                            && (
+                                !model.hasPendingExpansionRequests
+                                    || model.isLoading(row.entry.path)
+                            ),
+                    expansionError: model.expansionError(row.entry.path),
+                    toggleExpansion: {
+                        model.toggleExpansion(for: row.entry)
+                    },
+                    openEntry: {
+                        selectedEntry = row.entry
                     }
-                } label: {
-                    PocketRootFileEntryRow(entry: entry)
-                }
-                .accessibilityIdentifier("PocketRootFiles.entry.\(entry.path)")
-                .disabled(entry.kind == .other)
+                )
             }
         }
         .accessibilityIdentifier("PocketRootFiles.list")
@@ -73,6 +78,22 @@ public struct PocketRootFileBrowserView: View {
         }
         .task {
             await model.loadIfNeeded()
+        }
+        .onDisappear {
+            model.cancelPendingExpansionRequests()
+        }
+        .navigationDestination(item: $selectedEntry) { entry in
+            if entry.kind == .directory {
+                PocketRootFileBrowserView(
+                    browser: model.browser,
+                    path: entry.path
+                )
+            } else {
+                PocketRootFilePreviewView(
+                    browser: model.browser,
+                    entry: entry
+                )
+            }
         }
     }
 }
@@ -108,13 +129,26 @@ private final class PocketRootFileBrowserModel: ObservableObject {
     let browser: PocketRootFileBrowser
     let path: String
 
-    @Published private(set) var entries: [PocketRootFileEntry] = []
+    @Published private var tree = PocketRootFileTreeState()
     @Published private(set) var isLoading = false
     @Published private(set) var errorMessage: String?
+    @Published private var loadingDirectories: Set<String> = []
+    @Published private var expansionErrors: [String: String] = [:]
     private var didLoad = false
+    private var requestGeneration: UInt64 = 0
+    private var expansionRequestIDs: [String: UUID] = [:]
+    private var expansionTasks: [String: Task<Void, Never>] = [:]
+
+    var visibleRows: [PocketRootFileTreeRow] {
+        tree.visibleRows
+    }
 
     var displayName: String {
         path == "/" ? "/" : String(path.split(separator: "/").last ?? "/")
+    }
+
+    var hasPendingExpansionRequests: Bool {
+        !expansionRequestIDs.isEmpty
     }
 
     init(browser: PocketRootFileBrowser, path: String) {
@@ -130,17 +164,289 @@ private final class PocketRootFileBrowserModel: ObservableObject {
     }
 
     func reload() async {
+        cancelPendingExpansionRequests()
+        let generation = requestGeneration
         isLoading = true
         errorMessage = nil
+        expansionErrors = [:]
         defer {
-            isLoading = false
-            didLoad = true
+            if generation == requestGeneration {
+                isLoading = false
+                didLoad = true
+            }
         }
         do {
-            entries = try await browser.listDirectory(at: path)
+            let entries = try await browser.listDirectory(at: path)
+            try Task.checkCancellation()
+            guard generation == requestGeneration else {
+                return
+            }
+            var refreshedTree = tree.refreshSnapshot(rootEntries: entries)
+            var refreshedExpansionErrors: [String: String] = [:]
+            let expandedDirectories = refreshedTree.expandedDirectories
+            for directoryPath in expandedDirectories.sorted(
+                by: Self.shallowerPathFirst
+            ) {
+                guard refreshedTree.entry(at: directoryPath)?.kind
+                    == .directory
+                else {
+                    refreshedTree.collapse(directoryPath)
+                    continue
+                }
+                do {
+                    let children = try await browser.listDirectory(
+                        at: directoryPath
+                    )
+                    try Task.checkCancellation()
+                    guard generation == requestGeneration else {
+                        return
+                    }
+                    refreshedTree.replaceChildren(
+                        children,
+                        of: directoryPath
+                    )
+                } catch is CancellationError {
+                    return
+                } catch {
+                    guard generation == requestGeneration else {
+                        return
+                    }
+                    refreshedExpansionErrors[directoryPath] =
+                        error.localizedDescription
+                }
+            }
+            guard generation == requestGeneration else {
+                return
+            }
+            tree = refreshedTree
+            expansionErrors = refreshedExpansionErrors
+        } catch is CancellationError {
+            return
         } catch {
-            entries = []
+            guard generation == requestGeneration else {
+                return
+            }
+            tree.replaceRootEntries([])
             errorMessage = error.localizedDescription
+        }
+    }
+
+    func toggleExpansion(for entry: PocketRootFileEntry) {
+        guard entry.kind == .directory else {
+            return
+        }
+        if tree.isExpanded(entry.path) {
+            tree.collapse(entry.path)
+            cancelExpansionRequests(atOrBelow: entry.path)
+            return
+        }
+
+        tree.expand(entry.path)
+        expansionErrors[entry.path] = nil
+        guard !tree.hasLoadedChildren(of: entry.path),
+              expansionRequestIDs[entry.path] == nil
+        else {
+            return
+        }
+
+        let directoryPath = entry.path
+        let requestID = UUID()
+        let generation = requestGeneration
+        expansionRequestIDs[directoryPath] = requestID
+        loadingDirectories.insert(directoryPath)
+
+        let task = Task { @MainActor [weak self, browser] in
+            do {
+                let children = try await browser.listDirectory(
+                    at: directoryPath
+                )
+                try Task.checkCancellation()
+                self?.finishExpansionRequest(
+                    at: directoryPath,
+                    requestID: requestID,
+                    generation: generation,
+                    result: .success(children)
+                )
+            } catch is CancellationError {
+                self?.finishExpansionRequest(
+                    at: directoryPath,
+                    requestID: requestID,
+                    generation: generation,
+                    result: nil
+                )
+            } catch {
+                self?.finishExpansionRequest(
+                    at: directoryPath,
+                    requestID: requestID,
+                    generation: generation,
+                    result: .failure(error)
+                )
+            }
+        }
+        expansionTasks[directoryPath] = task
+        if expansionRequestIDs[directoryPath] != requestID {
+            expansionTasks[directoryPath] = nil
+        }
+    }
+
+    func cancelPendingExpansionRequests() {
+        requestGeneration &+= 1
+        let directoryPaths = Array(expansionRequestIDs.keys)
+        let tasks = expansionTasks.values
+        expansionRequestIDs = [:]
+        expansionTasks = [:]
+        loadingDirectories = []
+        isLoading = false
+        tree.collapse(directoriesAt: directoryPaths)
+        for task in tasks {
+            task.cancel()
+        }
+    }
+
+    func isExpanded(_ path: String) -> Bool {
+        tree.isExpanded(path)
+    }
+
+    func isLoading(_ path: String) -> Bool {
+        loadingDirectories.contains(path)
+    }
+
+    func expansionError(_ path: String) -> String? {
+        expansionErrors[path]
+    }
+
+    private func finishExpansionRequest(
+        at directoryPath: String,
+        requestID: UUID,
+        generation: UInt64,
+        result: Result<[PocketRootFileEntry], Error>?
+    ) {
+        guard expansionRequestIDs[directoryPath] == requestID else {
+            return
+        }
+        expansionRequestIDs[directoryPath] = nil
+        expansionTasks[directoryPath] = nil
+        loadingDirectories.remove(directoryPath)
+
+        guard generation == requestGeneration,
+              tree.isExpanded(directoryPath),
+              let result
+        else {
+            return
+        }
+        switch result {
+        case .success(let children):
+            tree.replaceChildren(children, of: directoryPath)
+        case .failure(let error):
+            expansionErrors[directoryPath] = error.localizedDescription
+        }
+    }
+
+    private func cancelExpansionRequests(atOrBelow directoryPath: String) {
+        let prefix = directoryPath + "/"
+        let paths = expansionRequestIDs.keys.filter {
+            $0 == directoryPath || $0.hasPrefix(prefix)
+        }
+        tree.collapse(directoriesAt: paths)
+        for path in paths {
+            expansionRequestIDs[path] = nil
+            loadingDirectories.remove(path)
+            expansionTasks.removeValue(forKey: path)?.cancel()
+        }
+    }
+
+    private static func shallowerPathFirst(
+        _ lhs: String,
+        _ rhs: String
+    ) -> Bool {
+        let lhsDepth = lhs.split(separator: "/").count
+        let rhsDepth = rhs.split(separator: "/").count
+        if lhsDepth == rhsDepth {
+            return lhs < rhs
+        }
+        return lhsDepth < rhsDepth
+    }
+}
+
+@available(iOS 18.0, *)
+private struct PocketRootFileTreeRowView: View {
+    let row: PocketRootFileTreeRow
+    let isExpanded: Bool
+    let isLoading: Bool
+    let isEntryEnabled: Bool
+    let isDisclosureEnabled: Bool
+    let expansionError: String?
+    let toggleExpansion: () -> Void
+    let openEntry: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 4) {
+                disclosureControl
+                Button(action: openEntry) {
+                    PocketRootFileEntryRow(entry: row.entry)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .disabled(
+                    row.entry.kind == .other || !isEntryEnabled
+                )
+                .accessibilityIdentifier(
+                    "PocketRootFiles.entry.\(row.entry.path)"
+                )
+            }
+            .padding(.leading, CGFloat(row.depth) * 22)
+
+            if let expansionError, isExpanded {
+                Label(
+                    expansionError,
+                    systemImage: "exclamationmark.triangle.fill"
+                )
+                .font(.caption)
+                .foregroundStyle(.orange)
+                .padding(.leading, CGFloat(row.depth + 1) * 22 + 32)
+                .accessibilityIdentifier(
+                    "PocketRootFiles.error.\(row.entry.path)"
+                )
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var disclosureControl: some View {
+        if row.entry.kind == .directory {
+            Button(action: toggleExpansion) {
+                Group {
+                    if isLoading {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else {
+                        Image(
+                            systemName: isExpanded
+                                ? "chevron.down"
+                                : "chevron.right"
+                        )
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.blue)
+                    }
+                }
+                .frame(width: 28, height: 34)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(!isDisclosureEnabled)
+            .accessibilityLabel(
+                isExpanded ? "Collapse \(row.entry.name)" : "Expand \(row.entry.name)"
+            )
+            .accessibilityValue(isExpanded ? "Expanded" : "Collapsed")
+            .accessibilityIdentifier(
+                "PocketRootFiles.disclosure.\(row.entry.path)"
+            )
+        } else {
+            Color.clear
+                .frame(width: 28, height: 34)
+                .accessibilityHidden(true)
         }
     }
 }

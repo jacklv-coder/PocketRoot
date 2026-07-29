@@ -425,6 +425,11 @@ let filesViewController = PocketRootFileBrowserViewController(
 navigationController?.pushViewController(filesViewController, animated: true)
 ```
 
+The disclosure control on a folder row loads and expands that directory inline.
+Tapping the folder icon or name instead navigates to a dedicated directory page.
+Both interactions use the same bounded command protocol and path validation;
+neither reads the RootFS storage layout directly from the host App sandbox.
+
 SwiftUI has the same composed entry point:
 
 ```swift
