@@ -94,6 +94,8 @@ public final class PocketRootIshWorkspaceHost {
         switch runtimeController.phase {
         case .unavailable, .shuttingDown, .terminated:
             return false
+        case .failed:
+            return runtimeController.canBoot
         default:
             return true
         }
@@ -146,8 +148,9 @@ public final class PocketRootIshWorkspaceHost {
     public func closeWorkspaces(
         completion: (@MainActor () -> Void)? = nil
     ) {
-        Task { @MainActor [self] in
-            await closeWorkspaceSessions()
+        let controllers = workspaceControllerSnapshot()
+        Task { @MainActor [self, controllers] in
+            await closeWorkspaceSessions(controllers)
             completion?()
         }
     }
@@ -163,11 +166,12 @@ public final class PocketRootIshWorkspaceHost {
             return try await shutdownTask.value
         }
 
-        let task = Task { @MainActor [self] in
+        let controllers = workspaceControllerSnapshot()
+        let task = Task { @MainActor [self, controllers] in
             if let bootTask {
                 _ = try await bootTask.value
             }
-            await closeWorkspaceSessions()
+            await closeWorkspaceSessions(controllers)
             if phase == .terminated {
                 return
             }
@@ -225,9 +229,16 @@ public final class PocketRootIshWorkspaceHost {
         }
     }
 
-    private func closeWorkspaceSessions() async {
+    private func workspaceControllerSnapshot() -> [
+        PocketRootIshWorkspaceViewController
+    ] {
         pruneWorkspaceControllers()
-        let controllers = workspaceControllers.compactMap(\.value)
+        return workspaceControllers.compactMap(\.value)
+    }
+
+    private func closeWorkspaceSessions(
+        _ controllers: [PocketRootIshWorkspaceViewController]
+    ) async {
         guard !controllers.isEmpty else {
             return
         }
@@ -252,7 +263,11 @@ public final class PocketRootIshWorkspaceHost {
         of _: PocketRootIshRuntimePhase
     ) {}
 
-    private func closeWorkspaceSessions() async {}
+    private func workspaceControllerSnapshot() -> [Never] {
+        []
+    }
+
+    private func closeWorkspaceSessions(_: [Never]) async {}
     #endif
 }
 

@@ -102,11 +102,8 @@ public final class PocketRootIshWorkspaceViewController: UIViewController {
         }
         isDetached = true
         let host = host
-        closeSession { [weak self, weak host] in
-            guard let self else {
-                return
-            }
-            host?.unregister(self)
+        closeSession { [self, host] in
+            host.unregister(self)
         }
     }
 

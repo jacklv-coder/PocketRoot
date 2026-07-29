@@ -193,6 +193,44 @@ final class PocketRootIshRuntimeIntegrationTests: XCTestCase {
     }
 
     @MainActor
+    func testWorkspaceHostRejectsScreensAfterTerminalRuntimeFailure() async throws {
+        let runtime = WorkspaceHostLinuxRuntime()
+        let system = PocketRootSystem(runtime: runtime)
+        let controller = PocketRootIshRuntimeController(
+            configuration: makeControllerConfiguration(),
+            runtimeAvailable: true,
+            prepareSystem: { _ in
+                PocketRootPreparedIshSystem(
+                    system: system,
+                    installation: PocketRootRootFSInstallation(
+                        version: "fixture-v1",
+                        rootFSURL: URL(
+                            fileURLWithPath: "/tmp/fixture-rootfs"
+                        ),
+                        reusedExistingInstallation: false
+                    )
+                )
+            }
+        )
+        let host = PocketRootIshWorkspaceHost(
+            runtimeController: controller
+        )
+
+        _ = try await host.boot()
+        XCTAssertTrue(host.canOpenWorkspace)
+
+        await runtime.setState(.failed("native runtime requires restart"))
+        await host.refreshRuntimeState()
+
+        XCTAssertEqual(
+            host.phase,
+            .failed("native runtime requires restart")
+        )
+        XCTAssertFalse(host.canBoot)
+        XCTAssertFalse(host.canOpenWorkspace)
+    }
+
+    @MainActor
     func testRefreshCannotOverwriteReentrantShutdownPhase() async throws {
         let runtime = RefreshRaceLinuxRuntime()
         let system = PocketRootSystem(runtime: runtime)
@@ -562,6 +600,10 @@ private actor WorkspaceHostLinuxRuntime: LinuxRuntime {
     func resumeShutdown() {
         shutdownResumeWaiter?.resume()
         shutdownResumeWaiter = nil
+    }
+
+    func setState(_ state: PocketRootRuntimeState) {
+        currentState = state
     }
 }
 

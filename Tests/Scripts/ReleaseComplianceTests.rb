@@ -177,6 +177,28 @@ class ReleaseComplianceTests < Minitest::Test
       source,
       "hostViewController.closeActiveInteractiveSurfaces()"
     )
+    integrated_host_source =
+      REPOSITORY_ROOT
+        .join(
+          "Sources/PocketRootIshRuntimeIntegration/" \
+          "PocketRootIshWorkspaceHost.swift"
+        )
+        .binread
+    integrated_workspace_source =
+      REPOSITORY_ROOT
+        .join(
+          "Sources/PocketRootIshRuntimeIntegration/" \
+          "PocketRootIshWorkspaceViewController.swift"
+        )
+        .binread
+    assert_includes(
+      integrated_host_source,
+      "let controllers = workspaceControllerSnapshot()"
+    )
+    assert_includes(
+      integrated_workspace_source,
+      "closeSession { [self, host] in"
+    )
     workspace_source =
       REPOSITORY_ROOT
         .join(
