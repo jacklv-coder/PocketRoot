@@ -126,7 +126,8 @@ module PocketRootReleaseCompliance
       "dependencies" => [
         "target:PocketRootCore",
         "target:PocketRootResources",
-        "target:PocketRootIshRuntime"
+        "target:PocketRootIshRuntime",
+        "target:PocketRootTerminal"
       ],
       "resources" => []
     },
@@ -205,7 +206,7 @@ module PocketRootReleaseCompliance
     "Package.resolved" =>
       "0af53a967822dfe3ad3aca7c5c319c5d0922c3f0ab57bbda19a92baac0aa273a",
     "Package.swift" =>
-      "fff762dc74981f136159838d480f1d28deb292100e74ebdcd2589885366c3a4f",
+      "41e682aa18ed1b2d6fd05c819f431cac632dd86c702bdcfed4e3dd9dc68c23c7",
     "project.yml" =>
       "dde326aa375b5c63362e3696402e52e023c9d1f88a26c751a652d42fa24a2800",
     "Examples/PocketRootHostApp/project.yml" =>

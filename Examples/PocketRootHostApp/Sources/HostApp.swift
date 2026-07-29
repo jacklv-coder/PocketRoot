@@ -5,7 +5,7 @@ import UIKit
 @main
 @MainActor
 final class HostAppDelegate: UIResponder, UIApplicationDelegate {
-    var runtimeController: PocketRootIshRuntimeController?
+    var workspaceHost: PocketRootIshWorkspaceHost?
 
     func application(
         _ application: UIApplication,
@@ -64,6 +64,7 @@ final class HostViewController: UIViewController {
     private let terminalButton = UIButton(type: .system)
     private let filesButton = UIButton(type: .system)
     private let workspaceButton = UIButton(type: .system)
+    private let integratedWorkspaceButton = UIButton(type: .system)
     private let shutdownButton = UIButton(type: .system)
 
     private unowned let runtimeOwner: HostAppDelegate
@@ -73,8 +74,8 @@ final class HostViewController: UIViewController {
     private var isClosingWorkspace = false
     private var isShutdownRequested = false
 
-    private var runtimeController: PocketRootIshRuntimeController? {
-        runtimeOwner.runtimeController
+    private var workspaceHost: PocketRootIshWorkspaceHost? {
+        runtimeOwner.workspaceHost
     }
 
     init(runtimeOwner: HostAppDelegate) {
@@ -92,8 +93,8 @@ final class HostViewController: UIViewController {
         title = "PocketRoot Host"
         view.backgroundColor = .systemBackground
         configureView()
-        if let runtimeController {
-            bind(to: runtimeController)
+        if let workspaceHost {
+            bind(to: workspaceHost)
         } else {
             render(phase: .idle)
         }
@@ -111,9 +112,9 @@ final class HostViewController: UIViewController {
         {
             closeActiveWorkspace()
         }
-        if let runtimeController {
+        if let workspaceHost {
             Task {
-                await runtimeController.refreshRuntimeState()
+                await workspaceHost.refreshRuntimeState()
             }
         }
     }
@@ -126,12 +127,12 @@ final class HostViewController: UIViewController {
         activeTerminal = nil
         isClosingTerminal = true
         terminalButton.accessibilityValue = "Session Closing"
-        render(phase: runtimeController?.phase ?? .idle)
+        render(phase: workspaceHost?.phase ?? .idle)
         terminal.closeSession { [weak self] in
             if let self {
                 isClosingTerminal = false
                 terminalButton.accessibilityValue = "Session Closed"
-                render(phase: runtimeController?.phase ?? .idle)
+                render(phase: workspaceHost?.phase ?? .idle)
             }
             completion?()
         }
@@ -145,12 +146,12 @@ final class HostViewController: UIViewController {
         activeWorkspace = nil
         isClosingWorkspace = true
         workspaceButton.accessibilityValue = "Session Closing"
-        render(phase: runtimeController?.phase ?? .idle)
+        render(phase: workspaceHost?.phase ?? .idle)
         workspace.closeSession { [weak self] in
             if let self {
                 isClosingWorkspace = false
                 workspaceButton.accessibilityValue = "Session Closed"
-                render(phase: runtimeController?.phase ?? .idle)
+                render(phase: workspaceHost?.phase ?? .idle)
             }
             completion?()
         }
@@ -160,7 +161,21 @@ final class HostViewController: UIViewController {
         completion: (() -> Void)? = nil
     ) {
         closeActiveTerminal { [weak self] in
-            self?.closeActiveWorkspace(completion: completion)
+            guard let self else {
+                completion?()
+                return
+            }
+            closeActiveWorkspace { [weak self] in
+                guard let self else {
+                    completion?()
+                    return
+                }
+                guard let workspaceHost = self.workspaceHost else {
+                    completion?()
+                    return
+                }
+                workspaceHost.closeWorkspaces(completion: completion)
+            }
         }
     }
 
@@ -200,6 +215,14 @@ final class HostViewController: UIViewController {
         )
         workspaceButton.accessibilityIdentifier = "PocketRootHost.workspace"
         configure(
+            integratedWorkspaceButton,
+            title: "Open Integrated Workspace",
+            symbol: "shippingbox.and.arrow.backward",
+            action: #selector(openIntegratedWorkspace)
+        )
+        integratedWorkspaceButton.accessibilityIdentifier =
+            "PocketRootHost.integratedWorkspace"
+        configure(
             shutdownButton,
             title: "Shutdown Runtime",
             symbol: "power.circle",
@@ -214,6 +237,7 @@ final class HostViewController: UIViewController {
                 terminalButton,
                 filesButton,
                 workspaceButton,
+                integratedWorkspaceButton,
                 shutdownButton
             ]
         )
@@ -249,54 +273,26 @@ final class HostViewController: UIViewController {
 
     @objc
     private func bootRuntime() {
-        guard let archiveURL = Bundle.main.url(
-            forResource: Self.rootFSName,
-            withExtension: "tar.gz"
-        ) else {
-            presentMessage(
-                title: "RootFS Missing",
-                message: "Configure the reviewed Debug RootFS before booting."
-            )
+        guard let workspaceHost = resolveWorkspaceHost() else {
             return
         }
 
-        do {
-            let controller: PocketRootIshRuntimeController
-            if let runtimeController {
-                controller = runtimeController
-            } else {
-                controller = PocketRootIshRuntimeController(
-                    configuration: PocketRootIshRuntimeControllerConfiguration(
-                        archiveURL: archiveURL,
-                        applicationSupportURL: try applicationSupportURL(),
-                        workDirectory: "/"
-                    )
+        Task {
+            do {
+                try await workspaceHost.boot()
+            } catch {
+                presentMessage(
+                    title: "Boot Failed",
+                    message: error.localizedDescription
                 )
-                runtimeOwner.runtimeController = controller
-                bind(to: controller, refreshRuntimeState: false)
             }
-            Task {
-                do {
-                    try await controller.boot()
-                } catch {
-                    presentMessage(
-                        title: "Boot Failed",
-                        message: error.localizedDescription
-                    )
-                }
-            }
-        } catch {
-            presentMessage(
-                title: "Storage Unavailable",
-                message: error.localizedDescription
-            )
         }
     }
 
     @objc
     private func openTerminal() {
         guard !isClosingTerminal,
-              let system = runtimeController?.readySystem
+              let system = workspaceHost?.readySystem
         else {
             return
         }
@@ -308,12 +304,12 @@ final class HostViewController: UIViewController {
             ),
             theme: .dark
         )
-        let controller = runtimeController
-        terminal.onSessionEnded = { [weak terminal, weak controller] reason in
+        let host = workspaceHost
+        terminal.onSessionEnded = { [weak terminal, weak host] reason in
             terminal?.title = Self.sessionEndTitle(reason)
             if case .failed = reason {
                 Task {
-                    await controller?.refreshRuntimeState()
+                    await host?.refreshRuntimeState()
                 }
             }
         }
@@ -324,7 +320,7 @@ final class HostViewController: UIViewController {
 
     @objc
     private func openFiles() {
-        guard let system = runtimeController?.readySystem else {
+        guard let system = workspaceHost?.readySystem else {
             return
         }
         let files = PocketRootFileBrowserViewController(
@@ -337,7 +333,7 @@ final class HostViewController: UIViewController {
     @objc
     private func openWorkspace() {
         guard !isClosingWorkspace,
-              let system = runtimeController?.readySystem
+              let system = workspaceHost?.readySystem
         else {
             return
         }
@@ -350,13 +346,13 @@ final class HostViewController: UIViewController {
                 )
             )
         )
-        let controller = runtimeController
+        let host = workspaceHost
         workspace.onTerminalSessionEnded = {
-            [weak workspace, weak controller] reason in
+            [weak workspace, weak host] reason in
             workspace?.title = Self.sessionEndTitle(reason)
             if case .failed = reason {
                 Task {
-                    await controller?.refreshRuntimeState()
+                    await host?.refreshRuntimeState()
                 }
             }
         }
@@ -366,23 +362,34 @@ final class HostViewController: UIViewController {
     }
 
     @objc
+    private func openIntegratedWorkspace() {
+        guard let workspaceHost = resolveWorkspaceHost() else {
+            return
+        }
+        navigationController?.pushViewController(
+            workspaceHost.makeViewController(),
+            animated: true
+        )
+    }
+
+    @objc
     private func shutdownRuntime() {
         guard !isClosingTerminal,
               !isClosingWorkspace,
               !isShutdownRequested,
-              let controller = runtimeController
+              let workspaceHost
         else {
             return
         }
         isShutdownRequested = true
-        render(phase: controller.phase)
+        render(phase: workspaceHost.phase)
         closeActiveInteractiveSurfaces { [weak self] in
             Task {
                 do {
-                    try await controller.shutdown()
+                    try await workspaceHost.shutdown()
                 } catch {
                     self?.isShutdownRequested = false
-                    self?.render(phase: controller.phase)
+                    self?.render(phase: workspaceHost.phase)
                     self?.presentMessage(
                         title: "Shutdown Failed",
                         message: error.localizedDescription
@@ -395,10 +402,12 @@ final class HostViewController: UIViewController {
     private func render(phase: PocketRootIshRuntimePhase) {
         statusLabel.text = "Runtime: \(Self.phaseDescription(phase))"
         let isReady = phase == .ready
-        bootButton.isEnabled = runtimeController?.canBoot ?? true
+        bootButton.isEnabled = workspaceHost?.canBoot ?? true
         terminalButton.isEnabled = isReady && !isClosingTerminal
         filesButton.isEnabled = isReady
         workspaceButton.isEnabled = isReady && !isClosingWorkspace
+        integratedWorkspaceButton.isEnabled =
+            phase != .shuttingDown && phase != .terminated
         shutdownButton.isEnabled =
             isReady
                 && !isClosingTerminal
@@ -407,17 +416,58 @@ final class HostViewController: UIViewController {
     }
 
     private func bind(
-        to controller: PocketRootIshRuntimeController,
+        to workspaceHost: PocketRootIshWorkspaceHost,
         refreshRuntimeState: Bool = true
     ) {
-        controller.onPhaseChange = { [weak self] phase in
+        workspaceHost.onPhaseChange = { [weak self] phase in
             self?.render(phase: phase)
         }
-        render(phase: controller.phase)
+        render(phase: workspaceHost.phase)
         if refreshRuntimeState {
             Task {
-                await controller.refreshRuntimeState()
+                await workspaceHost.refreshRuntimeState()
             }
+        }
+    }
+
+    private func resolveWorkspaceHost() -> PocketRootIshWorkspaceHost? {
+        if let workspaceHost {
+            return workspaceHost
+        }
+        guard let archiveURL = Bundle.main.url(
+            forResource: Self.rootFSName,
+            withExtension: "tar.gz"
+        ) else {
+            presentMessage(
+                title: "RootFS Missing",
+                message: "Configure the reviewed Debug RootFS before booting."
+            )
+            return nil
+        }
+        do {
+            let host = PocketRootIshWorkspaceHost(
+                runtimeConfiguration:
+                    PocketRootIshRuntimeControllerConfiguration(
+                        archiveURL: archiveURL,
+                        applicationSupportURL: try applicationSupportURL(),
+                        workDirectory: "/"
+                    ),
+                workspaceConfiguration: PocketRootWorkspaceConfiguration(
+                    terminalConfiguration: .interactive(
+                        initialWorkingDirectory: "/root",
+                        cursorBlinkEnabled: !isUITesting
+                    )
+                )
+            )
+            runtimeOwner.workspaceHost = host
+            bind(to: host, refreshRuntimeState: false)
+            return host
+        } catch {
+            presentMessage(
+                title: "Storage Unavailable",
+                message: error.localizedDescription
+            )
+            return nil
         }
     }
 

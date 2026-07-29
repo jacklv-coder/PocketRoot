@@ -1,6 +1,7 @@
 import Darwin
 import Foundation
 import PocketRootResources
+import PocketRootTerminal
 import XCTest
 @testable import PocketRootCore
 @_spi(PocketRootRuntimeSmoke) @testable import PocketRootIshRuntimeIntegration
@@ -88,6 +89,80 @@ final class PocketRootIshRuntimeIntegrationTests: XCTestCase {
             PocketRootIshRuntimeController.phase(for: .terminated),
             .terminated
         )
+    }
+
+    @MainActor
+    func testWorkspaceHostCoalescesBootAndMakesShutdownIdempotent() async throws {
+        let runtime = WorkspaceHostLinuxRuntime()
+        let system = PocketRootSystem(runtime: runtime)
+        let preparationGate = WorkspaceHostPreparationGate()
+        let controller = PocketRootIshRuntimeController(
+            configuration: makeControllerConfiguration(),
+            runtimeAvailable: true,
+            prepareSystem: { _ in
+                await preparationGate.enter()
+                return PocketRootPreparedIshSystem(
+                    system: system,
+                    installation: PocketRootRootFSInstallation(
+                        version: "fixture-v1",
+                        rootFSURL: URL(
+                            fileURLWithPath: "/tmp/fixture-rootfs"
+                        ),
+                        reusedExistingInstallation: false
+                    )
+                )
+            }
+        )
+        let host = PocketRootIshWorkspaceHost(
+            runtimeController: controller,
+            workspaceConfiguration: PocketRootWorkspaceConfiguration(
+                initialFilePath: "/workspace",
+                initialSurface: .files
+            )
+        )
+        var observedPhases: [PocketRootIshRuntimePhase] = []
+        host.onPhaseChange = {
+            observedPhases.append($0)
+        }
+
+        let firstBoot = Task {
+            try await host.boot()
+        }
+        await preparationGate.waitUntilEntered()
+        let secondBoot = Task {
+            try await host.boot()
+        }
+        await Task.yield()
+        await preparationGate.resume()
+
+        let firstSystem = try await firstBoot.value
+        let secondSystem = try await secondBoot.value
+        let preparationCount = await preparationGate.entryCount
+        let bootCount = await runtime.bootCount
+        XCTAssertTrue(firstSystem === secondSystem)
+        XCTAssertEqual(preparationCount, 1)
+        XCTAssertEqual(bootCount, 1)
+        XCTAssertEqual(host.phase, .ready)
+        XCTAssertEqual(
+            host.workspaceConfiguration.initialFilePath,
+            "/workspace"
+        )
+        XCTAssertEqual(
+            host.workspaceConfiguration.initialSurface,
+            .files
+        )
+        XCTAssertEqual(
+            observedPhases,
+            [.preparingRootFS, .booting, .ready]
+        )
+
+        try await host.shutdown()
+        try await host.shutdown()
+        let shutdownCount = await runtime.shutdownCount
+        XCTAssertEqual(shutdownCount, 1)
+        XCTAssertEqual(host.phase, .terminated)
+        XCTAssertFalse(host.canBoot)
+        XCTAssertFalse(host.canShutdown)
     }
 
     @MainActor
@@ -365,6 +440,71 @@ final class PocketRootIshRuntimeIntegrationTests: XCTestCase {
 
     private static let archiveBase64 =
         "H4sIAAAAAAAC/+3VMQ6CMBiG4R6FE0ArtD1PDRAHjImtice3MAnK4PA3MbzPUoYmDG/4GGOjpOnMW7uc2fb88uzafL2yqoBHTOGeX6mOaYzNdUih7s+y/V3X7fc32/7eaaMqTX9xc/w+pKBw1O9/zi/6E/h9//3JOfa/ZP/LME23Oj2T1P5/dn9rbtf9TWbZ/xKW7swgAAAAAAAAAAAAAPy9F8wBBB8AKAAA"
+}
+
+@available(macOS 13.0, *)
+private actor WorkspaceHostPreparationGate {
+    private(set) var entryCount = 0
+    private var entered = false
+    private var enterWaiter: CheckedContinuation<Void, Never>?
+    private var resumeWaiter: CheckedContinuation<Void, Never>?
+
+    func enter() async {
+        entryCount += 1
+        entered = true
+        enterWaiter?.resume()
+        enterWaiter = nil
+        await withCheckedContinuation { continuation in
+            resumeWaiter = continuation
+        }
+    }
+
+    func waitUntilEntered() async {
+        guard !entered else {
+            return
+        }
+        await withCheckedContinuation { continuation in
+            enterWaiter = continuation
+        }
+    }
+
+    func resume() {
+        resumeWaiter?.resume()
+        resumeWaiter = nil
+    }
+}
+
+@available(macOS 13.0, *)
+private actor WorkspaceHostLinuxRuntime: LinuxRuntime {
+    private var currentState: PocketRootRuntimeState = .idle
+    private(set) var bootCount = 0
+    private(set) var shutdownCount = 0
+
+    var state: PocketRootRuntimeState {
+        currentState
+    }
+
+    func boot(configuration _: PocketRootConfiguration) async throws {
+        bootCount += 1
+        currentState = .ready
+    }
+
+    func execute(
+        _: PocketRootCommandRequest
+    ) async throws -> PocketRootCommandResult {
+        throw PocketRootError.unsupportedOperation("Not used by this test.")
+    }
+
+    func makeSession(
+        configuration _: PocketRootSessionConfiguration
+    ) async throws -> any PocketRootSession {
+        throw PocketRootError.unsupportedOperation("Not used by this test.")
+    }
+
+    func shutdown() async throws {
+        shutdownCount += 1
+        currentState = .terminated
+    }
 }
 
 @available(macOS 13.0, *)

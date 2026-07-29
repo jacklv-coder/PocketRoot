@@ -39,6 +39,11 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   system. Terminal and Files stay alive across switches, removal closes the
   PTY, and the Host App UI smoke verifies file creation, preview, and return to
   the same session.
+- A process-retained `PocketRootIshWorkspaceHost` and integrated UIKit/SwiftUI
+  entry points. A caller-supplied local RootFS and Application Support location
+  are enough to prepare, boot, and open Workspace; concurrent boot is
+  coalesced, removal closes only the PTY, and explicit shutdown closes every
+  host-created workspace first.
 - Unified iOS 18 deployment baseline.
 - Experimental `PocketRootIshRuntime` pinned to IshEmbed release revision `38d25d6f8726145e7e988172f12000020d89a638` and the `v0.4.0-abi.6` XCFramework.
 - Experimental `PocketRootIshRuntimeIntegration` composing caller-local RootFS installation and native runtime.

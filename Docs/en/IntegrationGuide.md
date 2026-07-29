@@ -170,46 +170,57 @@ See [RootFS security](RootFS.md) for the storage and recovery algorithm.
 
 ### Recommended: one host controller for the minimal loop
 
-Retain one `PocketRootIshRuntimeController` for the App lifetime. It owns RootFS
-preparation, process-global lifecycle, phase notifications, and authoritative
-state reconciliation. Terminal and Files must share the same returned system:
+Retain one `PocketRootIshWorkspaceHost` in the App or scene owner. The caller
+provides a reviewed local RootFS archive and Application Support location; the
+host coalesces boot, prepares the RootFS, boots the runtime, and creates a
+persistent Terminal/Files screen:
 
 ```swift
 import PocketRoot
 import PocketRootIshRuntimeIntegration
 
-let runtimeController = PocketRootIshRuntimeController(
-    configuration: PocketRootIshRuntimeControllerConfiguration(
+let pocketRootHost = PocketRootIshWorkspaceHost(
+    runtimeConfiguration: PocketRootIshRuntimeControllerConfiguration(
         archiveURL: localReviewedArchiveURL,
         applicationSupportURL: applicationSupportURL,
         workDirectory: "/"
+    ),
+    workspaceConfiguration: PocketRootWorkspaceConfiguration(
+        terminalConfiguration: .interactive(
+            initialWorkingDirectory: "/root"
+        ),
+        initialFilePath: "/root"
     )
 )
 
-runtimeController.onPhaseChange = { phase in
-    // Update Boot, Terminal, and Files controls on the main actor.
-}
-
-let system = try await runtimeController.boot()
-
-let terminal = PocketRootTerminalViewController(
-    system: system,
-    configuration: .interactive(initialWorkingDirectory: "/root"),
-    theme: .dark
-)
-let files = PocketRootFileBrowserViewController(
-    system: system,
-    initialPath: "/root"
+navigationController?.pushViewController(
+    pocketRootHost.makeViewController(),
+    animated: true
 )
 ```
 
-Open Terminal or Files only while `runtimeController.readySystem` is non-nil.
-Call `closeSession()` when leaving a PTY screen, and call
-`await runtimeController.refreshRuntimeState()` after a fatal session end.
-Do not prepare or boot separate systems for the two screens. The standalone
+Retain one `PocketRootIshWorkspaceHost` in the App or scene owner. The first
+screen presentation coalesces concurrent boot requests, prepares the
+caller-supplied local RootFS, boots the runtime, and installs one persistent
+Terminal/Files workspace. Removing the screen closes only that PTY so the same
+runtime can open another workspace. When intentionally ending Linux support,
+call `try await pocketRootHost.shutdown()`; it closes every workspace made by
+that host before process-global shutdown.
+
+SwiftUI passes the same process-retained host to
+`PocketRootIshWorkspaceView(host: pocketRootHost)`; do not recreate the host
+from `body`. The host never downloads or chooses a RootFS and does not install
+Node.js, npm, Codex CLI, or an Agent Loop. The standalone
 [`Examples/PocketRootHostApp`](../../Examples/PocketRootHostApp) XcodeGen App
 uses only public Swift Package products. CI builds it and verifies its injected
 RootFS.
+
+### Lower-level host lifecycle
+
+Apps that want separate Boot, Terminal, and Files controls may retain
+`PocketRootIshRuntimeController`, present surfaces only while `readySystem` is
+non-nil, call `closeSession()` when leaving a PTY, and refresh authoritative
+runtime state after a fatal session end.
 
 ### Lower-level manual lifecycle
 
@@ -351,9 +362,9 @@ the runtime.
 
 ## 9. Embed Terminal and Files
 
-After preparation and boot, the smallest integration can present one workspace
-containing a persistent PTY and guest file browser. Switching surfaces does not
-recreate the terminal session:
+When a host already owns a prepared and booted `system`, the lower-level
+workspace can present a persistent PTY and guest file browser. Switching
+surfaces does not recreate the terminal session:
 
 ```swift
 import PocketRootTerminal

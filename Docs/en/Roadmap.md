@@ -192,6 +192,11 @@ Completed in this closure:
    switching between Terminal and Files, close it on removal, and are covered
    by the Host App Simulator file-creation, preview, and session-persistence
    UI closure.
+10. A process-retained `PocketRootIshWorkspaceHost` with UIKit/SwiftUI
+    integrated entry points. Callers provide a local RootFS and Application
+    Support location; presentation coalesces boot and shows the Workspace,
+    removal closes only its PTY, and explicit shutdown closes all host-created
+    workspaces first.
 
 The remaining iPhone gate is execution under an Xcode whose device-support
 range includes the selected signed device. Jack iPhone currently runs iOS 26.6

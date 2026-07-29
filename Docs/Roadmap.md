@@ -193,6 +193,9 @@
 12. 公开 UIKit/SwiftUI Workspace：宿主以一个入口打开 Terminal 与 Files，切换页面
     不重建 PTY；UIKit 支持顶部与底部切换，退出时关闭 session，Host App Simulator
     UI smoke 验证文件创建、预览和同一 PTY 持续性。
+13. 公开进程级 `PocketRootIshWorkspaceHost` 与 UIKit/SwiftUI 一体化入口：调用方只提供
+    本地 RootFS 和 Application Support，页面自动合并并发 boot、展示 Workspace；
+    页面退出只关 PTY，显式 shutdown 会先关闭该 host 的全部 Workspace。
 
 未完成门禁：
 
