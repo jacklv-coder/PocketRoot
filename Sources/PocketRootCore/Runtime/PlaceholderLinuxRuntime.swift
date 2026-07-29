@@ -20,6 +20,14 @@ actor PlaceholderLinuxRuntime: LinuxRuntime {
         throw PocketRootError.runtimeNotBooted
     }
 
+    func renameItem(
+        at sourcePath: String,
+        to destinationPath: String,
+        timeout: Duration
+    ) async throws {
+        throw PocketRootError.runtimeNotBooted
+    }
+
     func shutdown() async throws {
         state = .idle
     }

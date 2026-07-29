@@ -74,6 +74,28 @@ public actor PocketRootSystem {
         }
     }
 
+    /// Atomically renames a guest item without replacing an existing destination.
+    ///
+    /// Both paths are absolute inside the Linux guest. The runtime must be
+    /// booted before this method is called.
+    public func renameItem(
+        at sourcePath: String,
+        to destinationPath: String,
+        timeout: Duration = .seconds(5)
+    ) async throws {
+        do {
+            try await coordinator.renameItem(
+                at: sourcePath,
+                to: destinationPath,
+                timeout: timeout
+            )
+            await refreshPublishedStableState()
+        } catch {
+            await refreshPublishedStableState()
+            throw error
+        }
+    }
+
     public func shutdown() async throws {
         do {
             try await coordinator.shutdown()

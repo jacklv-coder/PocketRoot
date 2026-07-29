@@ -17,7 +17,7 @@ PocketRoot 是面向 iPhone 和 iPad App 的本地 Linux Workspace SDK。它把�
 ## 接入后直接获得什么
 
 - **Terminal**：完整 PTY 会话，支持输入、持续输出、resize、signal、EOF 与有序关闭。
-- **Files**：浏览 Linux guest 目录、创建/删除文件与目录，并进行有界预览。
+- **Files**：浏览 Linux guest 目录、创建/重命名/删除文件与目录，并进行有界预览。
 - **Workspace**：在 Terminal 与 Files 间切换，同时保持同一个终端 session。
 - **Linux Runtime**：在 iOS 沙箱内准备、启动并管理基于 iSH 的 Alpine ARM64 环境。
 - **RootFS 生命周期**：校验、安装、复用、恢复调用方提供的已审查 RootFS 归档。
@@ -29,7 +29,7 @@ PocketRoot 的定位不是另一个终端 App，也不是新的操作系统：�
 
 > [!WARNING]
 > 真实 iSH 集成目前仍是 **实验性（Experimental）** 能力。固定的
-> `v0.4.0-abi.6` 已支持返回 Swift 的 soft shutdown，但每个宿主进程仍只允许一次有效
+> `v0.4.0-abi.7` 已支持返回 Swift 的 soft shutdown 与原子无覆盖重命名，但每个宿主进程仍只允许一次有效
 > boot/shutdown；iPad、持续负载和发行合规门禁尚未闭环。当前版本不得用于
 > 生产、TestFlight 或公开二进制分发。
 
@@ -41,7 +41,7 @@ PocketRoot 的定位不是另一个终端 App，也不是新的操作系统：�
 | UIKit Demo 外壳 | 可用 | 展示 System、Terminal、Files、Commands、Diagnostics 五个入口 |
 | RootFS 校验与安全安装 | 可用 | 固定大小和 SHA-256、安全解包、journal 保护的同卷 promotion、复用与中断恢复 |
 | iSH 启动与一次性命令 | 实验性 | 仅 `iOS + arm64`；支持确认 guest 退出的一次性命令取消 |
-| 终端与文件浏览 | 可接入 / 实验性 | UIKit/SwiftUI 注入已 boot system；SwiftTerm 持续 PTY 支持输入、resize、signal/EOF，文件页支持树形展开、导航、有界预览及基础文件管理 |
+| 终端与文件浏览 | 可接入 / 实验性 | UIKit/SwiftUI 注入已 boot system；SwiftTerm 持续 PTY 支持输入、resize、signal/EOF，文件页支持树形展开、导航、有界预览及安全的创建、重命名与删除 |
 | 轻量 agent loop | 核心、OpenAI transport 与审批命令工具可用 | Agent 与 Runtime Tools 均显式 opt-in；不安装 Codex CLI，不自动批准 shell |
 | 交互式 PTY 与 SwiftTerm | 已实现，待扩大真机验证 | public session、bounded read、输入、resize、signal/EOF、registry 与 close-before-shutdown 已接通；Simulator 已通过 PTY 持续输入/输出、前后台、旋转、关闭/重开、Files 预览与有序 shutdown |
 | 真机与公开发行 | 部分通过 / 阻塞 | iPhone 一次性命令门禁与 signed Host build 已通过；Host UI runner 已就绪，但 Jack iPhone 的 iOS 26.6 beta 超出本机 Xcode 26.1.1 设备支持范围，另需兼容工具链实跑、真实 storage pressure、iPad、jetsam/断电、最终制品与合规门禁 |
@@ -99,7 +99,7 @@ flowchart LR
 - RootFS 二进制不提交到仓库，库本身不执行网络下载。
 - 上游源码、XCFramework 和 RootFS 都固定到不可变 revision 或 SHA-256。
 - RootFS 在私有、同卷 staging 中解包；校验通过后先持久化候选树，再通过已持久化 journal、逐次目录同步和原子 `current.json` 完成可恢复、可回滚的 promotion。整个替换仍不是一次整体原子操作，但明确的文件/目录同步顺序和断电切点恢复矩阵保证可推断 commit 或 rollback；真机强制断电实证仍是独立门禁。
-- IshEmbed 是进程级单例；PocketRoot 只允许一个原生运行时所有者和一个在途一次性命令，并登记所有 live PTY session。
+- IshEmbed 是进程级单例；PocketRoot 只允许一个原生运行时所有者，以及一个在途一次性命令或原生文件系统操作，并登记所有 live PTY session。
 - 同步原生调用在串行阻塞队列中执行，不阻塞主线程和 Swift cooperative executor。
 - 取消一次性命令会终止 native session，确认 guest `EXITED` 后才返回；成功后 runtime
   可继续使用，无法确认清理则失败关闭。取消不回滚此前副作用。

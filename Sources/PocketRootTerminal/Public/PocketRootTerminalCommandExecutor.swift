@@ -13,5 +13,18 @@ public protocol PocketRootTerminalCommandExecutor: AnyObject, Sendable {
     ) async throws -> PocketRootCommandResult
 }
 
+/// The native no-replace rename capability used by the Files UI.
 @available(macOS 13.0, *)
-extension PocketRootSystem: PocketRootTerminalCommandExecutor {}
+public protocol PocketRootFileRenameExecutor: AnyObject, Sendable {
+    func renameItem(
+        at sourcePath: String,
+        to destinationPath: String,
+        timeout: Duration
+    ) async throws
+}
+
+@available(macOS 13.0, *)
+extension PocketRootSystem:
+    PocketRootTerminalCommandExecutor,
+    PocketRootFileRenameExecutor
+{}

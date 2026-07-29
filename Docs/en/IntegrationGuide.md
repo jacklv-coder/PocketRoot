@@ -7,7 +7,7 @@ default, explicit agent, and Experimental native products, and covers the
 complete local-RootFS to one-shot-result flow.
 
 > [!CAUTION]
-> Pinned `v0.4.0-abi.6` soft-halts and joins the embedded kernel, then
+> Pinned `v0.4.0-abi.7` soft-halts and joins the embedded kernel, then
 > `prepared.system.shutdown()` returns to Swift. The same host process cannot
 > boot again after success. Do not trigger it accidentally from view, scene,
 > deinit, or routine cleanup paths.
@@ -437,25 +437,25 @@ Tapping the folder icon or name instead navigates to a dedicated directory page.
 Both interactions use the same bounded command protocol and path validation;
 neither reads the RootFS storage layout directly from the host App sandbox. The
 top-right action menu creates empty files or folders, while long-press and swipe
-actions delete entries. Folder deletion requires recursive deletion
+actions rename or delete entries. Folder deletion requires recursive deletion
 confirmation. Pass `allowsFileOperations: false` for a read-only surface.
 
 Hosts that do not use the ready-made page can call the same actor directly:
 
 ```swift
-let files = PocketRootFileBrowser(executor: system)
+let files = PocketRootFileBrowser(system: system)
 try await files.createFile(named: "notes.txt", in: "/root")
 try await files.createDirectory(named: "Sources", in: "/root")
+try await files.renameItem(at: "/root/notes.txt", to: "README.txt")
 try await files.deleteItem(at: "/root/Sources", recursively: true)
 ```
 
 Names must occupy 1–255 UTF-8 bytes and cannot be `.`, `..`, or contain `/` or
-NUL. Every guest argument is shell-quoted; create never replaces an existing
-item; `/` cannot be deleted; and non-empty directory deletion requires explicit
-`recursively: true`. The current iSH ABI rejects flagged `renameat2`, so
-PocketRoot does not expose a no-replace rename with a concurrent replacement
-window. That operation remains gated on an atomic `RENAME_NOREPLACE`
-equivalent in the runtime.
+NUL. Guest arguments are validated; create and rename never replace an existing
+item; `/` cannot be renamed or deleted; and non-empty directory deletion
+requires explicit `recursively: true`. Rename uses IshEmbed
+`v0.4.0-abi.7`'s atomic `RENAME_NOREPLACE` equivalent, not a racy shell
+check-then-move sequence.
 
 SwiftUI has the same composed entry point:
 

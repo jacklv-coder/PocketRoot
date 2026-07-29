@@ -29,8 +29,8 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
   取消创建会关闭未返回的 native session，可恢复的 supervisor/EOF 错误只关闭当前会话。
 - 固定 SwiftTerm `dd2fb8ac…`，提供 UIKit/SwiftUI 终端页面；加入 NUL-framed guest
   文件夹页面、按需树形原地展开、目录导航、最多 512 KiB 的有界文本/二进制预览，
-  以及创建文件/目录和确认后递归删除。当前 iSH ABI 不支持原子
-  `RENAME_NOREPLACE`，因此不以存在并发覆盖窗口的 shell 组合冒充安全重命名。
+  以及创建文件/目录、原子无覆盖重命名和确认后递归删除。重命名直接使用
+  IshEmbed `v0.4.0-abi.7` 的 guest 原生能力，不经过 shell 检查再移动。
 - 加入公开 UIKit/SwiftUI Workspace 组合入口：一个已 boot system 可直接打开持续
   Terminal 与 Files，跨页面不重建 PTY，退出时关闭 session；Host App UI smoke
   验证终端创建文件、Files 预览和切回后的同一会话。
@@ -39,6 +39,9 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
   并发 boot 合并，页面退出只关闭 PTY，显式 shutdown 先关闭全部 host Workspace。
 - 统一 package、Demo、tests 和 CI 的 iOS 18.0 deployment baseline。
 - 固定 Experimental `PocketRootIshRuntime` 到 IshEmbed release revision `38d25d6f8726145e7e988172f12000020d89a638` 与 `v0.4.0-abi.6` XCFramework。
+- 将 Experimental `PocketRootIshRuntime` 升级到 IshEmbed release revision
+  `37231ab667b380eb86a5fbcf961e31af4d50cebb` 与 `v0.4.0-abi.7` XCFramework，
+  并公开 `PocketRootSystem.renameItem` 的原子 no-replace guest 重命名。
 - 加入 Experimental `PocketRootIshRuntimeIntegration`，组合调用方本地 RootFS 与原生 runtime。
 - 加入公开 `PocketRootIshRuntimeController` 和独立
   `Examples/PocketRootHostApp`：业务 App 只通过 Swift Package API 即可共享 boot 后

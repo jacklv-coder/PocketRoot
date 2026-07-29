@@ -8,6 +8,7 @@ final class PocketRootHostAppUITests: XCTestCase {
 
         let suffix = String(UUID().uuidString.prefix(8)).lowercased()
         let fileName = "files-\(suffix).txt"
+        let renamedFileName = "\(fileName).renamed"
         let folderName = "folder-\(suffix)"
         let nestedFileName = "nested-\(suffix).txt"
         let actions = app.buttons["PocketRootFiles.actions"]
@@ -27,11 +28,35 @@ final class PocketRootHostAppUITests: XCTestCase {
         XCTAssertTrue(file.waitForExistence(timeout: 30))
         waitForEnabled(file)
         file.press(forDuration: 1)
-        app.buttons["Delete"].tap()
-        app.buttons["Delete \(fileName)"].tap()
+        app.buttons["Rename"].tap()
+        let renameAlert = app.alerts["Rename"]
+        XCTAssertTrue(renameAlert.waitForExistence(timeout: 10))
+        let renameNameField = renameAlert.textFields["Name"]
+        XCTAssertTrue(renameNameField.waitForExistence(timeout: 10))
+        XCTAssertEqual(renameNameField.value as? String, fileName)
+        renameNameField.coordinate(
+            withNormalizedOffset: CGVector(dx: 0.98, dy: 0.5)
+        ).tap()
+        renameNameField.typeText(".renamed")
+        XCTAssertEqual(renameNameField.value as? String, renamedFileName)
+        renameAlert.buttons["Rename"].tap()
+
+        let renamedFile = app.descendants(matching: .any)[
+            "PocketRootFiles.entry./root/\(renamedFileName)"
+        ]
+        XCTAssertTrue(renamedFile.waitForExistence(timeout: 30))
         wait(
             for: NSPredicate(format: "exists == false"),
             evaluatedWith: file,
+            timeout: 30
+        )
+        waitForEnabled(renamedFile)
+        renamedFile.press(forDuration: 1)
+        app.buttons["Delete"].tap()
+        app.buttons["Delete \(renamedFileName)"].tap()
+        wait(
+            for: NSPredicate(format: "exists == false"),
+            evaluatedWith: renamedFile,
             timeout: 30
         )
 
@@ -543,4 +568,5 @@ final class PocketRootHostAppUITests: XCTestCase {
             timeout: timeout
         )
     }
+
 }

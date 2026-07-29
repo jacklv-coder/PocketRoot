@@ -173,6 +173,124 @@ final class PocketRootIshRuntimeTests: XCTestCase {
         }
     }
 
+    func testRuntimePerformsNativeNoReplaceRenameOffMainThread() async throws {
+        let rootFSURL = try makeFakeFSFixture()
+        let driver = FakeIshRuntimeDriver()
+        let runtime = IshLinuxRuntime(
+            configuration: .init(rootFSURL: rootFSURL),
+            driver: driver
+        )
+        try await runtime.boot(configuration: PocketRootConfiguration())
+
+        try await runtime.renameItem(
+            at: "/root/old name.txt",
+            to: "/root/new name.txt",
+            timeout: .milliseconds(2_500)
+        )
+
+        XCTAssertEqual(
+            driver.snapshot.renameRequest,
+            IshDriverRenameRequest(
+                sourcePath: "/root/old name.txt",
+                destinationPath: "/root/new name.txt",
+                timeout: 2.5
+            )
+        )
+        XCTAssertFalse(driver.snapshot.calledOnMainThread)
+    }
+
+    func testRuntimeMapsNoReplaceCollisionWithoutFailingRuntime() async throws {
+        let rootFSURL = try makeFakeFSFixture()
+        let driver = FakeIshRuntimeDriver(
+            renameError: IshRuntimeDriverError.destinationExists(
+                path: "/root/existing.txt"
+            )
+        )
+        let runtime = IshLinuxRuntime(
+            configuration: .init(rootFSURL: rootFSURL),
+            driver: driver
+        )
+        try await runtime.boot(configuration: PocketRootConfiguration())
+
+        do {
+            try await runtime.renameItem(
+                at: "/root/source.txt",
+                to: "/root/existing.txt",
+                timeout: .seconds(5)
+            )
+            XCTFail("A native no-replace collision must be preserved.")
+        } catch let error as PocketRootError {
+            XCTAssertEqual(
+                error,
+                .fileDestinationExists("/root/existing.txt")
+            )
+        }
+        let state = await runtime.state
+        XCTAssertEqual(state, .ready)
+    }
+
+    func testRuntimeFailsClosedAfterNativeRenameTransportFailure() async throws {
+        let rootFSURL = try makeFakeFSFixture()
+        let failure = IshRuntimeDriverError.sessionTerminationUnconfirmed(
+            "synthetic rename transport loss"
+        )
+        let driver = FakeIshRuntimeDriver(renameError: failure)
+        let runtime = IshLinuxRuntime(
+            configuration: .init(rootFSURL: rootFSURL),
+            driver: driver
+        )
+        try await runtime.boot(configuration: PocketRootConfiguration())
+
+        do {
+            try await runtime.renameItem(
+                at: "/root/source.txt",
+                to: "/root/destination.txt",
+                timeout: .seconds(5)
+            )
+            XCTFail("A fatal rename transport failure must fail closed.")
+        } catch let error as PocketRootError {
+            XCTAssertEqual(
+                error,
+                .runtimeFailure(
+                    "Guest process termination could not be confirmed: "
+                        + "synthetic rename transport loss"
+                )
+            )
+        }
+        let state = await runtime.state
+        XCTAssertEqual(state, .failed(failure.localizedDescription))
+    }
+
+    func testRuntimeRejectsInvalidRenameBeforeNativeAdmission() async throws {
+        let rootFSURL = try makeFakeFSFixture()
+        let driver = FakeIshRuntimeDriver()
+        let runtime = IshLinuxRuntime(
+            configuration: .init(rootFSURL: rootFSURL),
+            driver: driver
+        )
+        try await runtime.boot(configuration: PocketRootConfiguration())
+
+        for paths in [
+            ("relative", "/root/destination"),
+            ("/", "/root/destination"),
+            ("/root/source", "/")
+        ] {
+            do {
+                try await runtime.renameItem(
+                    at: paths.0,
+                    to: paths.1,
+                    timeout: .seconds(5)
+                )
+                XCTFail("Invalid guest paths must be rejected.")
+            } catch let error as PocketRootError {
+                guard case .invalidCommandRequest = error else {
+                    return XCTFail("Unexpected PocketRoot error: \(error)")
+                }
+            }
+        }
+        XCTAssertNil(driver.snapshot.renameRequest)
+    }
+
     func testBootFailsClosedWhenGuestIdentityDoesNotMatch() async throws {
         let rootFSURL = try makeFakeFSFixture()
         let driver = FakeIshRuntimeDriver(
@@ -812,6 +930,47 @@ final class PocketRootIshRuntimeTests: XCTestCase {
         XCTAssertTrue(driver.snapshot.didShutdown)
     }
 
+    func testShutdownCannotOvertakeNativeRename() async throws {
+        let rootFSURL = try makeFakeFSFixture()
+        let renameStarted = expectation(description: "native rename started")
+        let releaseRename = DispatchSemaphore(value: 0)
+        let driver = FakeIshRuntimeDriver(
+            renameStarted: renameStarted,
+            renameBlocker: releaseRename
+        )
+        let runtime = IshLinuxRuntime(
+            configuration: .init(rootFSURL: rootFSURL),
+            driver: driver
+        )
+        try await runtime.boot(configuration: PocketRootConfiguration())
+
+        let rename = Task {
+            try await runtime.renameItem(
+                at: "/root/source.txt",
+                to: "/root/destination.txt",
+                timeout: .seconds(5)
+            )
+        }
+        await fulfillment(of: [renameStarted], timeout: 2)
+
+        do {
+            try await runtime.shutdown()
+            XCTFail("Shutdown must not overtake a native rename.")
+        } catch let error as PocketRootError {
+            guard case .runtimeFailure(let message) = error else {
+                releaseRename.signal()
+                return XCTFail("Unexpected PocketRoot error: \(error)")
+            }
+            XCTAssertTrue(message.contains("native filesystem operation"))
+        }
+        XCTAssertFalse(driver.snapshot.didShutdown)
+
+        releaseRename.signal()
+        try await rename.value
+        try await runtime.shutdown()
+        XCTAssertTrue(driver.snapshot.didShutdown)
+    }
+
     func testTaskCancellationStopsActiveCommandAndKeepsRuntimeReady() async throws {
         let rootFSURL = try makeFakeFSFixture()
         let commandStarted = expectation(description: "cancellable command started")
@@ -1185,6 +1344,28 @@ final class PocketRootIshRuntimeTests: XCTestCase {
                 )
             )
         }
+    }
+
+    func testNativeFilesystemTransportFailuresMapToFailClosedError() {
+        for code in [-9, -11, -12, -17] as [Int32] {
+            guard case .sessionTerminationUnconfirmed(let reason) =
+                IshRuntimeTransportPolicy.filesystemOperationFailure(
+                    code: code,
+                    message: "synthetic transport loss"
+                )
+            else {
+                return XCTFail("IshError \(code) must fail the runtime closed.")
+            }
+            XCTAssertTrue(reason.contains("filesystem operation"))
+            XCTAssertTrue(reason.contains("IshError \(code)"))
+        }
+
+        XCTAssertNil(
+            IshRuntimeTransportPolicy.filesystemOperationFailure(
+                code: -13,
+                message: "invalid argument"
+            )
+        )
     }
 
     func testBootRejectsSymlinkedMetadataBeforeConsumingProcessSlot() async throws {
@@ -1638,6 +1819,7 @@ private final class FakeIshRuntimeDriver: IshRuntimeDriver, @unchecked Sendable 
         let bootOptions: IshDriverBootOptions?
         let healthCheckRequest: IshDriverCommandRequest?
         let commandRequest: IshDriverCommandRequest?
+        let renameRequest: IshDriverRenameRequest?
         let didShutdown: Bool
         let calledOnMainThread: Bool
         let bootCallCount: Int
@@ -1650,6 +1832,7 @@ private final class FakeIshRuntimeDriver: IshRuntimeDriver, @unchecked Sendable 
     private let healthError: Error?
     private let bootError: Error?
     private let executeError: Error?
+    private let renameError: Error?
     private let bootStarted: XCTestExpectation?
     private let bootBlocker: DispatchSemaphore?
     private let commandStarted: XCTestExpectation?
@@ -1657,9 +1840,12 @@ private final class FakeIshRuntimeDriver: IshRuntimeDriver, @unchecked Sendable 
     private let cancellationCommand: String?
     private let cancellationObserved: XCTestExpectation?
     private let cancellationError: Error?
+    private let renameStarted: XCTestExpectation?
+    private let renameBlocker: DispatchSemaphore?
     private var bootOptions: IshDriverBootOptions?
     private var healthCheckRequest: IshDriverCommandRequest?
     private var commandRequest: IshDriverCommandRequest?
+    private var renameRequest: IshDriverRenameRequest?
     private var didShutdown = false
     private var calledOnMainThread = false
     private var bootCallCount = 0
@@ -1677,19 +1863,23 @@ private final class FakeIshRuntimeDriver: IshRuntimeDriver, @unchecked Sendable 
         healthError: Error? = nil,
         bootError: Error? = nil,
         executeError: Error? = nil,
+        renameError: Error? = nil,
         bootStarted: XCTestExpectation? = nil,
         bootBlocker: DispatchSemaphore? = nil,
         commandStarted: XCTestExpectation? = nil,
         commandBlocker: DispatchSemaphore? = nil,
         cancellationCommand: String? = nil,
         cancellationObserved: XCTestExpectation? = nil,
-        cancellationError: Error? = nil
+        cancellationError: Error? = nil,
+        renameStarted: XCTestExpectation? = nil,
+        renameBlocker: DispatchSemaphore? = nil
     ) {
         self.result = result
         self.healthResult = healthResult ?? Self.defaultHealthResult
         self.healthError = healthError
         self.bootError = bootError
         self.executeError = executeError
+        self.renameError = renameError
         self.bootStarted = bootStarted
         self.bootBlocker = bootBlocker
         self.commandStarted = commandStarted
@@ -1697,6 +1887,8 @@ private final class FakeIshRuntimeDriver: IshRuntimeDriver, @unchecked Sendable 
         self.cancellationCommand = cancellationCommand
         self.cancellationObserved = cancellationObserved
         self.cancellationError = cancellationError
+        self.renameStarted = renameStarted
+        self.renameBlocker = renameBlocker
     }
 
     var snapshot: Snapshot {
@@ -1706,6 +1898,7 @@ private final class FakeIshRuntimeDriver: IshRuntimeDriver, @unchecked Sendable 
             bootOptions: bootOptions,
             healthCheckRequest: healthCheckRequest,
             commandRequest: commandRequest,
+            renameRequest: renameRequest,
             didShutdown: didShutdown,
             calledOnMainThread: calledOnMainThread,
             bootCallCount: bootCallCount,
@@ -1793,6 +1986,18 @@ private final class FakeIshRuntimeDriver: IshRuntimeDriver, @unchecked Sendable 
         standardError: Data(),
         timedOut: false
     )
+
+    func renameNoReplace(_ request: IshDriverRenameRequest) throws {
+        lock.lock()
+        renameRequest = request
+        calledOnMainThread = calledOnMainThread || Thread.isMainThread
+        lock.unlock()
+        renameStarted?.fulfill()
+        renameBlocker?.wait()
+        if let renameError {
+            throw renameError
+        }
+    }
 
     func shutdown() throws {
         lock.lock()

@@ -87,6 +87,16 @@ final class PocketRootCoreTests: XCTestCase {
         XCTAssertEqual(result.exitCode, 0)
         XCTAssertEqual(result.stdout, "ready")
 
+        try await system.renameItem(
+            at: "/root/before.txt",
+            to: "/root/after.txt",
+            timeout: .seconds(3)
+        )
+        let rename = await runtime.lastRename
+        XCTAssertEqual(rename?.sourcePath, "/root/before.txt")
+        XCTAssertEqual(rename?.destinationPath, "/root/after.txt")
+        XCTAssertEqual(rename?.timeout, .seconds(3))
+
         try await system.shutdown()
         let shutdownState = await system.state
         XCTAssertEqual(shutdownState, .idle)
@@ -236,7 +246,14 @@ final class PocketRootCoreTests: XCTestCase {
 
 @available(macOS 13.0, *)
 private actor StubLinuxRuntime: LinuxRuntime {
+    struct Rename: Sendable {
+        let sourcePath: String
+        let destinationPath: String
+        let timeout: Duration
+    }
+
     private(set) var state: PocketRootRuntimeState = .idle
+    private(set) var lastRename: Rename?
 
     func boot(configuration: PocketRootConfiguration) async throws {
         state = .ready
@@ -259,6 +276,21 @@ private actor StubLinuxRuntime: LinuxRuntime {
         configuration: PocketRootSessionConfiguration
     ) async throws -> any PocketRootSession {
         StubSession(configuration: configuration)
+    }
+
+    func renameItem(
+        at sourcePath: String,
+        to destinationPath: String,
+        timeout: Duration
+    ) async throws {
+        guard state == .ready else {
+            throw PocketRootError.runtimeNotBooted
+        }
+        lastRename = Rename(
+            sourcePath: sourcePath,
+            destinationPath: destinationPath,
+            timeout: timeout
+        )
     }
 
     func shutdown() async throws {

@@ -33,6 +33,12 @@ struct IshDriverSessionRequest: Sendable, Equatable {
     let initialTerminalSize: PocketRootTerminalSize
 }
 
+struct IshDriverRenameRequest: Sendable, Equatable {
+    let sourcePath: String
+    let destinationPath: String
+    let timeout: TimeInterval
+}
+
 enum IshDriverSessionEvent: Sendable, Equatable {
     case standardOutput(Data)
     case standardError(Data)
@@ -59,6 +65,7 @@ protocol IshRuntimeDriver: Sendable {
     func makeSession(
         _ request: IshDriverSessionRequest
     ) throws -> any IshRuntimeDriverSession
+    func renameNoReplace(_ request: IshDriverRenameRequest) throws
     func shutdown() throws
 }
 
@@ -78,6 +85,10 @@ extension IshRuntimeDriver {
     ) throws -> any IshRuntimeDriverSession {
         throw IshRuntimeSessionUnsupportedError()
     }
+
+    func renameNoReplace(_ request: IshDriverRenameRequest) throws {
+        throw IshRuntimeRenameUnsupportedError()
+    }
 }
 
 private struct IshRuntimeSessionUnsupportedError: LocalizedError {
@@ -86,17 +97,26 @@ private struct IshRuntimeSessionUnsupportedError: LocalizedError {
     }
 }
 
+private struct IshRuntimeRenameUnsupportedError: LocalizedError {
+    var errorDescription: String? {
+        "This IshEmbed driver does not provide native guest filesystem rename."
+    }
+}
+
 enum IshRuntimeDriverError: LocalizedError, Equatable {
     case outputLimitExceeded(stream: String, limit: Int)
     case nativeOutputLimitExceeded(maximumBytes: Int, maximumFrames: Int)
     case supervisorCommandRejected(String)
     case sessionTerminationUnconfirmed(String)
+    case destinationExists(path: String)
+    case guestFileSystemFailure(code: Int32, path: String)
 
     var requiresRuntimeRestart: Bool {
         switch self {
         case .nativeOutputLimitExceeded, .sessionTerminationUnconfirmed:
             return true
-        case .outputLimitExceeded, .supervisorCommandRejected:
+        case .outputLimitExceeded, .supervisorCommandRejected,
+             .destinationExists, .guestFileSystemFailure:
             return false
         }
     }
@@ -113,6 +133,10 @@ enum IshRuntimeDriverError: LocalizedError, Equatable {
                 + "(\(message))."
         case .sessionTerminationUnconfirmed(let reason):
             return "Guest process termination could not be confirmed: \(reason)"
+        case .destinationExists(let path):
+            return "An item already exists at \(path)."
+        case .guestFileSystemFailure(let code, let path):
+            return "The guest filesystem operation failed for \(path) with errno \(code)."
         }
     }
 }
@@ -120,6 +144,10 @@ enum IshRuntimeDriverError: LocalizedError, Equatable {
 enum IshRuntimeTransportPolicy {
     private static let terminalSpawnErrorCodes: Set<Int32> = [-9, -11, -17]
     private static let terminalSessionOperationErrorCodes: Set<Int32> = [-9, -11]
+    // A filesystem helper timeout (-12) is different from the pre-session
+    // SPAWN timeout: the native mutation may already have been admitted, and
+    // its result cannot be proven after bounded cleanup returns.
+    private static let filesystemOperationErrorCodes: Set<Int32> = [-9, -11, -12, -17]
 
     static func terminalSpawnFailure(
         code: Int32,
@@ -144,6 +172,20 @@ enum IshRuntimeTransportPolicy {
         return .sessionTerminationUnconfirmed(
             "the guest session operation failed because the native transport "
                 + "is no longer trustworthy (IshError \(code): \(message))"
+        )
+    }
+
+    static func filesystemOperationFailure(
+        code: Int32,
+        message: String
+    ) -> IshRuntimeDriverError? {
+        guard filesystemOperationErrorCodes.contains(code) else {
+            return nil
+        }
+        return .sessionTerminationUnconfirmed(
+            "the native guest filesystem operation failed because the "
+                + "transport is no longer trustworthy "
+                + "(IshError \(code): \(message))"
         )
     }
 

@@ -26,7 +26,7 @@ The repository now commits a reproducible maximal Experimental engineering
 composition inventory and SPDX 2.3 JSON SBOM under
 [`Compliance/Release/experimental-v0.1.0`](../../Compliance/Release/experimental-v0.1.0/README.md).
 It distinguishes the default Demo, native-runtime smoke, and all Swift products,
-and covers pinned ABI.6 IshEmbed/XCFramework, the iSH gitlink, supervisor musl
+and covers pinned ABI.7 IshEmbed/XCFramework, the iSH gitlink, supervisor musl
 source, the caller-provided external RootFS, and its 15 Alpine packages. The
 Demo now links IshEmbed, but the repository still contains no RootFS; only a
 local Debug build may inject the exact external asset, and Release skips it.
@@ -56,9 +56,9 @@ capability; the output keeps `signedReleaseArtifact=false`,
 The package repository carries GPL identifiers and a GPL-3.0 statement but did not provide a complete top-level license/notice set at audit. The pinned iSH source has GPL and `LICENSE.IOS` terms. Binary/source correspondence needs a durable reproducible record.
 
 The current audit pins IshEmbed wrapper revision
-`38d25d6f8726145e7e988172f12000020d89a638`, the `v0.4.0-abi.6` release
-commit `38d25d6f8726145e7e988172f12000020d89a638`, and iSH gitlink
-`c36dfd25462737b45559eb48d4b09f799471572e`; the upstream inventory records
+`37231ab667b380eb86a5fbcf961e31af4d50cebb`, the `v0.4.0-abi.7` release
+commit `37231ab667b380eb86a5fbcf961e31af4d50cebb`, and iSH gitlink
+`3d0b4f6f55108f6d602ac6a2c86df555935b979d`; the upstream inventory records
 the XCFramework and corresponding-source asset sizes and digests. The Release
 provides a corresponding-source asset, but product-level RootFS compliance
 material and the complete distributable combination remain open, so this does

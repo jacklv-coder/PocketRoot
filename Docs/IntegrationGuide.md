@@ -5,7 +5,7 @@
 本指南描述当前公开 API 的真实行为。它区分安全默认产品、显式 agent 产品和实验性 iSH 产品，并给出从本地 RootFS 到一次性命令结果的完整闭环。
 
 > [!CAUTION]
-> 固定的 `v0.4.0-abi.6` 会 soft-halt 并 join embedded kernel，然后从
+> 固定的 `v0.4.0-abi.7` 会 soft-halt 并 join embedded kernel，然后从
 > `prepared.system.shutdown()` 返回 Swift。成功后同一宿主进程不能再次 boot；不要把它
 > 放在页面退出、scene 切换、deinit 或无意触发的普通清理路径中。
 
@@ -367,7 +367,7 @@ print(result.stderr)
 | `.booting` | 原生启动进行中 |
 | `.ready` | 可接受一次性命令 |
 | `.shuttingDown` | 关闭已开始，不接受新操作 |
-| `.terminated` | v0.4.0-abi.6 soft shutdown 成功返回；同进程不能再次 boot |
+| `.terminated` | v0.4.0-abi.7 soft shutdown 成功返回；同进程不能再次 boot |
 | `.failed(String)` | 启动或关闭失败，通常需要重启宿主 App |
 
 ### 错误
@@ -541,23 +541,24 @@ navigationController?.pushViewController(filesViewController, animated: true)
 文件夹行的左侧箭头会按需读取并在当前列表原地展开子目录；点击文件夹图标或名称则进入
 独立目录页面。两个交互共用相同的有界命令协议和路径校验，不会直接访问宿主 App
 sandbox 中的 RootFS 存储结构。右上角 `+` 创建空文件或目录；长按或左滑条目可以
-删除。目录删除会显示递归删除确认。只读业务场景传入
+重命名或删除。目录删除会显示递归删除确认。只读业务场景传入
 `allowsFileOperations: false`。
 
 不使用现成页面时，也可以直接调用同一个 actor API：
 
 ```swift
-let files = PocketRootFileBrowser(executor: system)
+let files = PocketRootFileBrowser(system: system)
 try await files.createFile(named: "notes.txt", in: "/root")
 try await files.createDirectory(named: "Sources", in: "/root")
+try await files.renameItem(at: "/root/notes.txt", to: "README.txt")
 try await files.deleteItem(at: "/root/Sources", recursively: true)
 ```
 
 名称必须是 1–255 个 UTF-8 字节，且不能是 `.`、`..`，也不能包含 `/` 或 NUL。
-所有 guest 参数都经过 shell quote；创建不会覆盖现有条目；`/` 不能被删除；
-非空目录只有显式传入 `recursively: true` 才能删除。当前 iSH ABI 会拒绝带 flag
-的 `renameat2`，因此 PocketRoot 暂不公开存在并发覆盖窗口的“无覆盖重命名”；
-该能力等待 runtime 提供原子 `RENAME_NOREPLACE` 等价实现。
+所有 guest 参数都经过校验；创建和重命名不会覆盖现有条目；`/` 不能被重命名或删除；
+非空目录只有显式传入 `recursively: true` 才能删除。重命名使用 IshEmbed
+`v0.4.0-abi.7` 的原子 `RENAME_NOREPLACE` 等价实现，不执行存在竞态的 shell
+check-then-move。
 
 SwiftUI 的组合入口更简洁：
 

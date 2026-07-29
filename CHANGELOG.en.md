@@ -36,9 +36,9 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 - SwiftTerm pinned at `dd2fb8ac…` with UIKit/SwiftUI terminal pages, plus a
   NUL-framed guest folder page with lazy inline tree expansion, directory
   navigation, bounded text/binary previews up to 512 KiB, file/folder creation,
-  and confirmation-gated recursive deletion. The current iSH ABI does not
-  support atomic `RENAME_NOREPLACE`, so PocketRoot does not present a shell
-  sequence with a concurrent replacement window as a safe rename operation.
+  atomic no-replace rename, and confirmation-gated recursive deletion. Rename
+  uses the native IshEmbed `v0.4.0-abi.7` guest operation rather than a shell
+  check-then-move sequence.
 - Public UIKit/SwiftUI Workspace composition surfaces for an already-booted
   system. Terminal and Files stay alive across switches, removal closes the
   PTY, and the Host App UI smoke verifies file creation, preview, and return to
@@ -50,6 +50,10 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   host-created workspace first.
 - Unified iOS 18 deployment baseline.
 - Experimental `PocketRootIshRuntime` pinned to IshEmbed release revision `38d25d6f8726145e7e988172f12000020d89a638` and the `v0.4.0-abi.6` XCFramework.
+- Experimental `PocketRootIshRuntime` upgraded to IshEmbed release revision
+  `37231ab667b380eb86a5fbcf961e31af4d50cebb` and the `v0.4.0-abi.7`
+  XCFramework, with public atomic no-replace guest rename through
+  `PocketRootSystem.renameItem`.
 - Experimental `PocketRootIshRuntimeIntegration` composing caller-local RootFS installation and native runtime.
 - A public `PocketRootIshRuntimeController` and standalone
   `Examples/PocketRootHostApp`, allowing a consumer to share one booted system

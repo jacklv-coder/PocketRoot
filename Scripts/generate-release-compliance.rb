@@ -15,31 +15,31 @@ module PocketRootReleaseCompliance
   OUTPUT_RELATIVE = "Compliance/Release/experimental-v0.1.0"
   ISHEMBED = {
     "repository" => "https://github.com/jacklv-coder/ish-arm64-pkg.git",
-    "revision" => "38d25d6f8726145e7e988172f12000020d89a638",
-    "release" => "v0.4.0-abi.6",
+    "revision" => "37231ab667b380eb86a5fbcf961e31af4d50cebb",
+    "release" => "v0.4.0-abi.7",
     "licenseDeclared" => "GPL-3.0-or-later",
     "xcframework" => {
       "filename" => "libIshKernel.xcframework.zip",
       "url" =>
         "https://github.com/jacklv-coder/ish-arm64-pkg/releases/download/" \
-        "v0.4.0-abi.6/libIshKernel.xcframework.zip",
-      "byteCount" => 2_450_755,
+        "v0.4.0-abi.7/libIshKernel.xcframework.zip",
+      "byteCount" => 2_457_982,
       "sha256" =>
-        "049422af47334a323dbe26fa7eb431160ef0742495783bd50d1c3949dd0c6720"
+        "98b02f42de7f62b82bdbbbfad7db8599bd881c879dabff787f78830d6971639b"
     },
     "correspondingSource" => {
       "filename" => "IshEmbed-corresponding-source.tar.gz",
       "url" =>
         "https://github.com/jacklv-coder/ish-arm64-pkg/releases/download/" \
-        "v0.4.0-abi.6/IshEmbed-corresponding-source.tar.gz",
-      "byteCount" => 2_364_382,
+        "v0.4.0-abi.7/IshEmbed-corresponding-source.tar.gz",
+      "byteCount" => 2_388_002,
       "sha256" =>
-        "a94dbfa58289270ec83aefc5ed1632198290956fd5d1ca381e90dd2ec7f518fa"
+        "2715c66dcad63e1a849ff1a79cfe28b4fcde9b1f844b97c212af698b88b67ecf"
     },
     "ish" => {
       "repository" => "https://github.com/jacklv-coder/ish-arm64.git",
       "path" => "third_party/ish",
-      "revision" => "c36dfd25462737b45559eb48d4b09f799471572e",
+      "revision" => "3d0b4f6f55108f6d602ac6a2c86df555935b979d",
       "licenseDeclared" => "GPL-3.0-only OR GPL-2.0-only"
     },
     "supervisor" => {
@@ -204,9 +204,9 @@ module PocketRootReleaseCompliance
     "LICENSE" =>
       "9858dd8b44db130c423cb772ec04d1a16fceb4fa57c679b27e301b9f76861bba",
     "Package.resolved" =>
-      "0af53a967822dfe3ad3aca7c5c319c5d0922c3f0ab57bbda19a92baac0aa273a",
+      "7e0335c633bde8128224003d97bd6323ac3cf0c8ddc2e92e519039f54119136f",
     "Package.swift" =>
-      "41e682aa18ed1b2d6fd05c819f431cac632dd86c702bdcfed4e3dd9dc68c23c7",
+      "4e6e3acbd89104afd5c496b390267aeb3c84398794cb293ef116edc02e4655d1",
     "project.yml" =>
       "dde326aa375b5c63362e3696402e52e023c9d1f88a26c751a652d42fa24a2800",
     "Examples/PocketRootHostApp/project.yml" =>
@@ -216,7 +216,7 @@ module PocketRootReleaseCompliance
     "Scripts/run-host-app-device-ui-smoke.sh" =>
       "f9528bd72aa40e6615633d1bc56ea8a31965b41f6570a0dc9f5fa390c5082490",
     "Scripts/run-host-app-ui-smoke.sh" =>
-      "642fbacf3e644b58a4c9f17cf5133f14bbbb0645ad50c85e133052a08921f189",
+      "716496d64ae3484361d7f744c205e9d909a36b4fcfc5530332b3eb9c8945973a",
     "ThirdPartyNotices/SwiftTerm-LICENSE.txt" =>
       "1c34c11581e20feb2b7ea122146a6690261dae94b2c8444e8cff902e567df6ae"
   }.freeze
@@ -1451,7 +1451,7 @@ module PocketRootReleaseCompliance
 
       此目录记录 `#{RELEASE_VERSION}` 源码树可复现的**最大实验组合**，不是已构建、
       已扫描或获准发行的 App 制品。`COMPOSITION.json` 区分默认 Demo、独立宿主示例、
-      原生 runtime smoke 与全部 Swift products；`SBOM.spdx.json` 汇总 PocketRoot、固定 ABI.6
+      原生 runtime smoke 与全部 Swift products；`SBOM.spdx.json` 汇总 PocketRoot、固定 ABI.7
       IshEmbed/XCFramework、精确 iSH gitlink、静态 supervisor 使用的 musl source、
       固定 SwiftTerm 与其解析依赖，以及调用方提供的外部 RootFS 和其中 15 个 Alpine 包。
 
@@ -1474,7 +1474,7 @@ module PocketRootReleaseCompliance
       scanned, or authorized App artifact. `COMPOSITION.json` distinguishes the
       default Demo, standalone host example, native-runtime smoke, and all
       Swift products.
-      `SBOM.spdx.json` combines PocketRoot, pinned ABI.6 IshEmbed/XCFramework,
+      `SBOM.spdx.json` combines PocketRoot, pinned ABI.7 IshEmbed/XCFramework,
       the exact iSH gitlink, the musl source snapshot used by the static guest
       supervisor, pinned SwiftTerm and its resolved dependency, and the
       caller-provided external RootFS with its 15 Alpine packages.
