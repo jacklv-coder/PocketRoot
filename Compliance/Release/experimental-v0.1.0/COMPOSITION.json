@@ -15,7 +15,7 @@
     "project.yml": "dde326aa375b5c63362e3696402e52e023c9d1f88a26c751a652d42fa24a2800",
     "Examples/PocketRootHostApp/project.yml": "43fbf8a7dc8aa2b598fcc6595562398102d89888eb0f931233e0440bca731a9c",
     "Scripts/inject-demo-rootfs.sh": "3982b5382b0d1e13e0c8e8a5bb5404c5bad1dfc4d6e9cd23a39e3395a83087bb",
-    "Scripts/run-host-app-ui-smoke.sh": "642fbacf3e644b58a4c9f17cf5133f14bbbb0645ad50c85e133052a08921f189",
+    "Scripts/run-host-app-ui-smoke.sh": "716496d64ae3484361d7f744c205e9d909a36b4fcfc5530332b3eb9c8945973a",
     "Scripts/run-host-app-device-ui-smoke.sh": "f9528bd72aa40e6615633d1bc56ea8a31965b41f6570a0dc9f5fa390c5082490",
     "ThirdPartyNotices/SwiftTerm-LICENSE.txt": "1c34c11581e20feb2b7ea122146a6690261dae94b2c8444e8cff902e567df6ae",
     "Sources/CPocketRootArchiveSupport/CPocketRootArchiveSupport.c": "0abfdca5894c5e888de4ba48a73880dbbe2a593785c509684b52bfa412249751",

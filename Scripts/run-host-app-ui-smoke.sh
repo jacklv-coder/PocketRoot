@@ -10,8 +10,9 @@ CREATED_DEVICE="false"
 DERIVED_DATA_ROOT="$(
     mktemp -d "${TMPDIR:-/tmp}/PocketRootHostAppUISmoke.XXXXXX"
 )"
+RESULT_BUNDLE_PATH="$DERIVED_DATA_ROOT/PocketRootHostAppUITests.xcresult"
 CLONED_SOURCE_PACKAGES_DIR="${POCKETROOT_CLONED_SOURCE_PACKAGES_DIR:-${TMPDIR:-/tmp}/PocketRootSharedSourcePackages}"
-ONLY_TESTING="PocketRootHostAppUITests/PocketRootHostAppUITests"
+ONLY_TESTING="${POCKETROOT_HOST_UI_ONLY_TESTING:-PocketRootHostAppUITests/PocketRootHostAppUITests}"
 
 cleanup() {
     if [[ "$CREATED_DEVICE" == "true" &&
@@ -65,6 +66,7 @@ mkdir -p "$CLONED_SOURCE_PACKAGES_DIR"
 xcrun simctl boot "$DEVICE_UDID" >/dev/null 2>&1 || true
 xcrun simctl bootstatus "$DEVICE_UDID" -b
 
+set +e
 POCKETROOT_DEVELOPMENT_ROOTFS_ARCHIVE="$ARCHIVE_PATH" \
 xcodebuild \
   -quiet \
@@ -73,6 +75,7 @@ xcodebuild \
   -configuration Debug \
   -destination "id=$DEVICE_UDID" \
   -derivedDataPath "$DERIVED_DATA_ROOT" \
+  -resultBundlePath "$RESULT_BUNDLE_PATH" \
   -clonedSourcePackagesDirPath "$CLONED_SOURCE_PACKAGES_DIR" \
   -test-timeouts-enabled YES \
   -default-test-execution-time-allowance 180 \
@@ -82,5 +85,14 @@ xcodebuild \
   ONLY_ACTIVE_ARCH=YES \
   CODE_SIGNING_ALLOWED=NO \
   test
+test_exit_code=$?
+set -e
+
+if [[ "$test_exit_code" -ne 0 ]]; then
+    echo "PocketRoot Host App UI smoke failed; xcresult summary follows." >&2
+    xcrun xcresulttool get test-results summary \
+      --path "$RESULT_BUNDLE_PATH" || true
+    exit "$test_exit_code"
+fi
 
 echo "PocketRoot Host App UI smoke passed."
