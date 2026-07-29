@@ -3,7 +3,7 @@
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "PocketRoot experimental full-graph composition 0.1.0",
-  "documentNamespace": "https://github.com/jacklv-coder/PocketRoot/sbom/release/experimental-v0.1.0/cb424803a32306f7bdac751bab22903838d901bbc03dd7087e9d00cc52276909",
+  "documentNamespace": "https://github.com/jacklv-coder/PocketRoot/sbom/release/experimental-v0.1.0/5f308dee11a529cb10c92ab78dfef4e7da763f744cf0a99c65abc6f6310d3d06",
   "creationInfo": {
     "created": "2026-07-28T00:00:00Z",
     "creators": [
@@ -31,20 +31,20 @@
     {
       "SPDXID": "SPDXRef-Package-IshEmbed",
       "name": "IshEmbed",
-      "versionInfo": "v0.4.0-abi.6",
+      "versionInfo": "v0.4.0-abi.7",
       "supplier": "NOASSERTION",
-      "downloadLocation": "https://github.com/jacklv-coder/ish-arm64-pkg/tree/38d25d6f8726145e7e988172f12000020d89a638",
+      "downloadLocation": "https://github.com/jacklv-coder/ish-arm64-pkg/tree/37231ab667b380eb86a5fbcf961e31af4d50cebb",
       "filesAnalyzed": false,
       "licenseConcluded": "NOASSERTION",
       "licenseDeclared": "GPL-3.0-or-later",
       "copyrightText": "NOASSERTION",
       "primaryPackagePurpose": "LIBRARY",
-      "sourceInfo": "Pinned Git revision 38d25d6f8726145e7e988172f12000020d89a638.",
+      "sourceInfo": "Pinned Git revision 37231ab667b380eb86a5fbcf961e31af4d50cebb.",
       "externalRefs": [
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:github/jacklv-coder/ish-arm64-pkg@38d25d6f8726145e7e988172f12000020d89a638"
+          "referenceLocator": "pkg:github/jacklv-coder/ish-arm64-pkg@37231ab667b380eb86a5fbcf961e31af4d50cebb"
         }
       ]
     },
@@ -91,9 +91,9 @@
     {
       "SPDXID": "SPDXRef-Package-IshKernel-XCFramework",
       "name": "libIshKernel.xcframework",
-      "versionInfo": "v0.4.0-abi.6",
+      "versionInfo": "v0.4.0-abi.7",
       "supplier": "NOASSERTION",
-      "downloadLocation": "https://github.com/jacklv-coder/ish-arm64-pkg/releases/download/v0.4.0-abi.6/libIshKernel.xcframework.zip",
+      "downloadLocation": "https://github.com/jacklv-coder/ish-arm64-pkg/releases/download/v0.4.0-abi.7/libIshKernel.xcframework.zip",
       "filesAnalyzed": false,
       "licenseConcluded": "NOASSERTION",
       "licenseDeclared": "NOASSERTION",
@@ -104,7 +104,7 @@
       "checksums": [
         {
           "algorithm": "SHA256",
-          "checksumValue": "049422af47334a323dbe26fa7eb431160ef0742495783bd50d1c3949dd0c6720"
+          "checksumValue": "98b02f42de7f62b82bdbbbfad7db8599bd881c879dabff787f78830d6971639b"
         }
       ],
       "packageFileName": "libIshKernel.xcframework.zip"
@@ -112,9 +112,9 @@
     {
       "SPDXID": "SPDXRef-Package-IshEmbed-Corresponding-Source",
       "name": "IshEmbed corresponding source",
-      "versionInfo": "v0.4.0-abi.6",
+      "versionInfo": "v0.4.0-abi.7",
       "supplier": "NOASSERTION",
-      "downloadLocation": "https://github.com/jacklv-coder/ish-arm64-pkg/releases/download/v0.4.0-abi.6/IshEmbed-corresponding-source.tar.gz",
+      "downloadLocation": "https://github.com/jacklv-coder/ish-arm64-pkg/releases/download/v0.4.0-abi.7/IshEmbed-corresponding-source.tar.gz",
       "filesAnalyzed": false,
       "licenseConcluded": "NOASSERTION",
       "licenseDeclared": "NOASSERTION",
@@ -124,7 +124,7 @@
       "checksums": [
         {
           "algorithm": "SHA256",
-          "checksumValue": "a94dbfa58289270ec83aefc5ed1632198290956fd5d1ca381e90dd2ec7f518fa"
+          "checksumValue": "2715c66dcad63e1a849ff1a79cfe28b4fcde9b1f844b97c212af698b88b67ecf"
         }
       ],
       "packageFileName": "IshEmbed-corresponding-source.tar.gz"
@@ -132,21 +132,21 @@
     {
       "SPDXID": "SPDXRef-Package-iSH",
       "name": "iSH PocketRoot fork",
-      "versionInfo": "c36dfd25462737b45559eb48d4b09f799471572e",
+      "versionInfo": "3d0b4f6f55108f6d602ac6a2c86df555935b979d",
       "supplier": "NOASSERTION",
-      "downloadLocation": "https://github.com/jacklv-coder/ish-arm64/tree/c36dfd25462737b45559eb48d4b09f799471572e",
+      "downloadLocation": "https://github.com/jacklv-coder/ish-arm64/tree/3d0b4f6f55108f6d602ac6a2c86df555935b979d",
       "filesAnalyzed": false,
       "licenseConcluded": "NOASSERTION",
       "licenseDeclared": "GPL-3.0-only OR GPL-2.0-only",
       "copyrightText": "NOASSERTION",
       "primaryPackagePurpose": "LIBRARY",
-      "sourceInfo": "Expanded from IshEmbed gitlink third_party/ish at c36dfd25462737b45559eb48d4b09f799471572e.",
+      "sourceInfo": "Expanded from IshEmbed gitlink third_party/ish at 3d0b4f6f55108f6d602ac6a2c86df555935b979d.",
       "licenseComments": "The pinned source also carries LICENSE.IOS terms for Apple App Store distribution; legal review remains open.",
       "externalRefs": [
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:github/jacklv-coder/ish-arm64@c36dfd25462737b45559eb48d4b09f799471572e"
+          "referenceLocator": "pkg:github/jacklv-coder/ish-arm64@3d0b4f6f55108f6d602ac6a2c86df555935b979d"
         }
       ]
     },

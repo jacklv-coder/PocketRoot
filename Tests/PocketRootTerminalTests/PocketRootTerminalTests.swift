@@ -477,6 +477,98 @@ final class PocketRootTerminalTests: XCTestCase {
         ))
     }
 
+    func testFileBrowserRenamesThroughNativeNoReplaceCapability() async throws {
+        let executor = TerminalExecutorStub { _ in
+            XCTFail("Rename must not execute a shell command.")
+            return PocketRootCommandResult(exitCode: 0)
+        }
+        let renamer = FileRenameExecutorStub()
+        let browser = PocketRootFileBrowser(
+            executor: executor,
+            renameExecutor: renamer,
+            timeout: .seconds(7)
+        )
+
+        let path = try await browser.renameItem(
+            at: "/root/project/old name.txt",
+            to: "new name.txt"
+        )
+
+        XCTAssertEqual(path, "/root/project/new name.txt")
+        let requests = await executor.recordedRequests
+        XCTAssertTrue(requests.isEmpty)
+        let calls = await renamer.calls
+        XCTAssertEqual(calls.count, 1)
+        XCTAssertEqual(calls[0].sourcePath, "/root/project/old name.txt")
+        XCTAssertEqual(calls[0].destinationPath, "/root/project/new name.txt")
+        XCTAssertEqual(calls[0].timeout, .seconds(7))
+    }
+
+    func testFileBrowserRenameDoesNotReplaceExistingDestination() async {
+        let executor = TerminalExecutorStub { _ in
+            PocketRootCommandResult(exitCode: 0)
+        }
+        let renamer = FileRenameExecutorStub(
+            error: PocketRootError.fileDestinationExists(
+                "/root/project/existing.txt"
+            )
+        )
+        let browser = PocketRootFileBrowser(
+            executor: executor,
+            renameExecutor: renamer
+        )
+
+        do {
+            _ = try await browser.renameItem(
+                at: "/root/project/source.txt",
+                to: "existing.txt"
+            )
+            XCTFail("An existing destination must not be replaced.")
+        } catch let error as PocketRootFileBrowserError {
+            XCTAssertEqual(
+                error,
+                .destinationExists("/root/project/existing.txt")
+            )
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+    }
+
+    func testFileBrowserRenameValidatesBeforeNativeAdmission() async {
+        let executor = TerminalExecutorStub { _ in
+            PocketRootCommandResult(exitCode: 0)
+        }
+        let renamer = FileRenameExecutorStub()
+        let browser = PocketRootFileBrowser(
+            executor: executor,
+            renameExecutor: renamer
+        )
+
+        do {
+            _ = try await browser.renameItem(at: "/", to: "root")
+            XCTFail("The guest root must not be renamed.")
+        } catch let error as PocketRootFileBrowserError {
+            XCTAssertEqual(error, .protectedPath)
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+
+        do {
+            _ = try await browser.renameItem(
+                at: "/root/source.txt",
+                to: "nested/name"
+            )
+            XCTFail("A rename target must be a single valid item name.")
+        } catch let error as PocketRootFileBrowserError {
+            XCTAssertEqual(error, .invalidName)
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+
+        let calls = await renamer.calls
+        XCTAssertTrue(calls.isEmpty)
+    }
+
     func testFileTreeExpandsDirectoriesInlineAtTheExpectedDepth() {
         let project = PocketRootFileEntry(
             name: "project",
@@ -643,6 +735,38 @@ private actor TerminalExecutorStub: PocketRootTerminalCommandExecutor {
     ) async throws -> PocketRootCommandResult {
         recordedRequests.append(request)
         return try await handler(request)
+    }
+}
+
+private actor FileRenameExecutorStub: PocketRootFileRenameExecutor {
+    struct Call: Sendable {
+        let sourcePath: String
+        let destinationPath: String
+        let timeout: Duration
+    }
+
+    private let error: PocketRootError?
+    private(set) var calls: [Call] = []
+
+    init(error: PocketRootError? = nil) {
+        self.error = error
+    }
+
+    func renameItem(
+        at sourcePath: String,
+        to destinationPath: String,
+        timeout: Duration
+    ) async throws {
+        calls.append(
+            Call(
+                sourcePath: sourcePath,
+                destinationPath: destinationPath,
+                timeout: timeout
+            )
+        )
+        if let error {
+            throw error
+        }
     }
 }
 

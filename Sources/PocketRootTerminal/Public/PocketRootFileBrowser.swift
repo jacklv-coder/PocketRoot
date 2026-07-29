@@ -33,6 +33,8 @@ public enum PocketRootFileBrowserError: LocalizedError, Sendable, Equatable {
     case invalidPath
     case invalidName
     case protectedPath
+    case renameUnavailable
+    case destinationExists(String)
     case commandFailed(path: String, message: String)
     case invalidDirectoryResponse
 
@@ -44,6 +46,10 @@ public enum PocketRootFileBrowserError: LocalizedError, Sendable, Equatable {
             return "The item name must be 1–255 UTF-8 bytes and cannot contain '/', NUL, '.' or '..'."
         case .protectedPath:
             return "The guest root directory cannot be deleted."
+        case .renameUnavailable:
+            return "This file browser was not configured with native rename support."
+        case .destinationExists(let path):
+            return "An item already exists at \(path)."
         case .commandFailed(let path, let message):
             return "Unable to access \(path): \(message)"
         case .invalidDirectoryResponse:
@@ -58,13 +64,25 @@ public actor PocketRootFileBrowser {
     private static let maximumPreviewBytes = 512 * 1_024
 
     private let executor: any PocketRootTerminalCommandExecutor
+    private let renameExecutor: (any PocketRootFileRenameExecutor)?
     private let timeout: Duration
 
     public init(
         executor: any PocketRootTerminalCommandExecutor,
+        renameExecutor: (any PocketRootFileRenameExecutor)? = nil,
         timeout: Duration = .seconds(30)
     ) {
         self.executor = executor
+        self.renameExecutor = renameExecutor
+        self.timeout = timeout
+    }
+
+    public init(
+        system: PocketRootSystem,
+        timeout: Duration = .seconds(30)
+    ) {
+        executor = system
+        renameExecutor = system
         self.timeout = timeout
     }
 
@@ -207,6 +225,35 @@ public actor PocketRootFileBrowser {
         fi
         """
         try await executeMutation(command, path: path)
+    }
+
+    /// Renames an item within its current directory without replacing a peer.
+    @discardableResult
+    public func renameItem(
+        at path: String,
+        to name: String
+    ) async throws -> String {
+        let sourcePath = try Self.validateMutable(path)
+        let destinationPath = try Self.childPath(
+            name: name,
+            parent: Self.parentPath(of: sourcePath)
+        )
+        guard destinationPath != sourcePath else {
+            return sourcePath
+        }
+        guard let renameExecutor else {
+            throw PocketRootFileBrowserError.renameUnavailable
+        }
+        do {
+            try await renameExecutor.renameItem(
+                at: sourcePath,
+                to: destinationPath,
+                timeout: timeout
+            )
+            return destinationPath
+        } catch PocketRootError.fileDestinationExists(_) {
+            throw PocketRootFileBrowserError.destinationExists(destinationPath)
+        }
     }
 
     private func executeMutation(

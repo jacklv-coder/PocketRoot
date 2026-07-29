@@ -7,6 +7,8 @@ public enum PocketRootError: Error, Sendable, Equatable {
     case restartRequired
     case invalidCommandRequest(String)
     case commandOutputLimitExceeded(stream: String, limit: Int)
+    case fileDestinationExists(String)
+    case guestFileSystemFailure(code: Int32, path: String)
     case unsupportedOperation(String)
 }
 
@@ -25,6 +27,10 @@ extension PocketRootError: LocalizedError {
             return "Invalid command request: \(message)"
         case .commandOutputLimitExceeded(let stream, let limit):
             return "Command \(stream) exceeded the \(limit)-byte output limit."
+        case .fileDestinationExists(let path):
+            return "An item already exists at \(path)."
+        case .guestFileSystemFailure(let code, let path):
+            return "The guest filesystem operation failed for \(path) with errno \(code)."
         case let .unsupportedOperation(message):
             return message
         }

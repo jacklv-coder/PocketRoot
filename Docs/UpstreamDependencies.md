@@ -5,16 +5,16 @@
 本文是 PocketRoot 实验性 runtime 的不可变 revision、nested gitlink、制品 URL、大小和
 SHA-256 的唯一事实源。branch、moving tag、未验证 release alias 和本地缓存都不是有效 pin。
 
-审核日期：2026-07-28
+审核日期：2026-07-29
 
 ## 1. IshEmbed Swift Package
 
 | 字段 | 审核值 |
 | --- | --- |
 | 仓库 | `https://github.com/jacklv-coder/ish-arm64-pkg.git` |
-| 完整 wrapper revision | `38d25d6f8726145e7e988172f12000020d89a638` |
-| Release | `v0.4.0-abi.6`（prerelease） |
-| Tag peeled commit | `38d25d6f8726145e7e988172f12000020d89a638` |
+| 完整 wrapper revision | `37231ab667b380eb86a5fbcf961e31af4d50cebb` |
+| Release | `v0.4.0-abi.7`（prerelease） |
+| Tag peeled commit | `37231ab667b380eb86a5fbcf961e31af4d50cebb` |
 | Swift product | `IshEmbed` |
 | Manifest platform | iOS 18.0 |
 | Native slices | iOS arm64 device、arm64 Simulator |
@@ -25,14 +25,14 @@ SHA-256 的唯一事实源。branch、moving tag、未验证 release alias 和�
 ```swift
 .package(
     url: "https://github.com/jacklv-coder/ish-arm64-pkg.git",
-    revision: "38d25d6f8726145e7e988172f12000020d89a638"
+    revision: "37231ab667b380eb86a5fbcf961e31af4d50cebb"
 )
 ```
 
-消费 revision `38d25d6f8726145e7e988172f12000020d89a638` 就是 ABI.6 release
-commit。它包含已合并的 Swift 参数封送 deadline 修复和 native stdin-close 原始
-SPAWN deadline 复用修复，并通过 `Package.swift` 的 URL/checksum 固定由同一源码生成、
-公开且独立验证的 ABI.6 资产。Release tag peeled commit、Release target 与当前
+消费 revision `37231ab667b380eb86a5fbcf961e31af4d50cebb` 就是 ABI.7 release
+commit。它包含 ABI.6 的统一 deadline 修复，并新增原子 guest
+`RENAME_NOREPLACE` C/Swift API；`Package.swift` 以 URL/checksum 固定由同一源码生成、
+公开且独立验证的 ABI.7 资产。Release tag peeled commit、Release target 与当前
 package revision 三者完全一致。包仓库继续使用绝对 SSH-over-443 submodule URL；
 无 SSH 私钥的 GitHub CI 只在 checkout 时应用公开 HTTPS 只读重写。
 
@@ -42,21 +42,21 @@ package revision 三者完全一致。包仓库继续使用绝对 SSH-over-443 s
 | --- | --- |
 | 仓库 | `https://github.com/jacklv-coder/ish-arm64.git` |
 | Package 内路径 | `third_party/ish` |
-| 完整 gitlink | `c36dfd25462737b45559eb48d4b09f799471572e` |
+| 完整 gitlink | `3d0b4f6f55108f6d602ac6a2c86df555935b979d` |
 | 记录 branch | `embed-chroot-containment` |
 
 对应源码归档记录 parent package revision、该 gitlink、Zig `0.16.0` 与静态 supervisor
 使用的 musl 源码。重建不能用 recursive branch checkout 代替这些精确身份。
 
-## 3. v0.4.0-abi.6 发布资产
+## 3. v0.4.0-abi.7 发布资产
 
 Release：
-`https://github.com/jacklv-coder/ish-arm64-pkg/releases/tag/v0.4.0-abi.6`
+`https://github.com/jacklv-coder/ish-arm64-pkg/releases/tag/v0.4.0-abi.7`
 
 | Artifact | 大小 | SHA-256 | 用途 |
 | --- | ---: | --- | --- |
-| `libIshKernel.xcframework.zip` | 2,450,755 bytes | `049422af47334a323dbe26fa7eb431160ef0742495783bd50d1c3949dd0c6720` | SwiftPM binary target |
-| `IshEmbed-corresponding-source.tar.gz` | 2,364,382 bytes | `a94dbfa58289270ec83aefc5ed1632198290956fd5d1ca381e90dd2ec7f518fa` | 对应源码 |
+| `libIshKernel.xcframework.zip` | 2,457,982 bytes | `98b02f42de7f62b82bdbbbfad7db8599bd881c879dabff787f78830d6971639b` | SwiftPM binary target |
+| `IshEmbed-corresponding-source.tar.gz` | 2,388,002 bytes | `2715c66dcad63e1a849ff1a79cfe28b4fcde9b1f844b97c212af698b88b67ecf` | 对应源码 |
 
 XCFramework 只有 `ios-arm64` 和 `ios-arm64-simulator` 两个 arm64 slice，minimum OS
 为 iOS 18.0；没有 x86_64 Simulator 或 macOS slice。SwiftPM 用 manifest checksum
@@ -66,8 +66,9 @@ XCFramework 只有 `ios-arm64` 和 `ios-arm64-simulator` 两个 arm64 slice，mi
 - Release 为公开 prerelease、不是 draft，且只有上述两个资产；
 - 从公开 URL 重新下载后，两项 digest 与发布记录一致；
 - device/simulator Mach-O、ABI 符号与 iOS 18 最终链接；
-- Package.swift binaryTarget 在 arm64 iOS Simulator 的 18 个测试中 13 个通过，
+- Package.swift binaryTarget 在 arm64 iOS Simulator 的 21 个测试中 16 个通过，
   5 个因未提供 RootFS 按预期 skip，0 failure。
+- 57 项 native 测试通过，包括原子无覆盖重命名成功、`EEXIST` 冲突和 timeout；
 - PocketRoot 完整实验依赖图在 arm64 Simulator 与 unsigned device 最终链接；
 - iOS 18.2 Simulator 使用固定 v0.3.3 RootFS 通过 17 项 native smoke，其中 8 MiB
   二进制 stdout 跨越 backlog 后逐字节精确、阻塞命令取消后可恢复执行，shutdown
@@ -129,6 +130,7 @@ package。Codex CLI 不属于手机端架构，IshEmbed 不提供其安装、pro
 - 有界 stdin/log 队列、完整 session close 与无法确认清理时的 instance fail-close；
 - root `/proc` 在 supervisor 启动前挂载；
 - 默认 bundled supervisor 的内容摘要验证。
+- 文件和目录的原子无覆盖 guest 重命名；目标存在时保持双方不变并返回 `EEXIST`。
 
 PocketRoot 仍保持 Experimental。尚未闭环的门禁：
 
@@ -137,7 +139,7 @@ PocketRoot 仍保持 Experimental。尚未闭环的门禁：
 - sustained workload、峰值内存与 jetsam；
 - RootFS 已生成 package inventory、SPDX SBOM、source locator 和默认配置证据，
   但完整 license/NOTICE 与对应源码 bundle 仍未完成；
-- 最大实验工程组合 inventory/SPDX SBOM 已绑定本清单中的 ABI.6 assets、iSH
+- 最大实验工程组合 inventory/SPDX SBOM 已绑定本清单中的 ABI.7 assets、iSH
   gitlink、supervisor musl source 和外部 RootFS；尚无最终 App archive 扫描；
 - App Store Review Guideline 2.5.2 结论。
 

@@ -8,6 +8,7 @@ final class PocketRootHostAppUITests: XCTestCase {
 
         let suffix = String(UUID().uuidString.prefix(8)).lowercased()
         let fileName = "files-\(suffix).txt"
+        let renamedFileName = "renamed-\(suffix).txt"
         let folderName = "folder-\(suffix)"
         let nestedFileName = "nested-\(suffix).txt"
         let actions = app.buttons["PocketRootFiles.actions"]
@@ -27,11 +28,25 @@ final class PocketRootHostAppUITests: XCTestCase {
         XCTAssertTrue(file.waitForExistence(timeout: 30))
         waitForEnabled(file)
         file.press(forDuration: 1)
+        app.buttons["Rename"].tap()
+        XCTAssertTrue(nameField.waitForExistence(timeout: 10))
+        nameField.tap()
+        nameField.typeKey("a", modifierFlags: .command)
+        nameField.typeText(renamedFileName)
+        app.buttons["Rename"].tap()
+
+        let renamedFile = app.descendants(matching: .any)[
+            "PocketRootFiles.entry./root/\(renamedFileName)"
+        ]
+        XCTAssertTrue(renamedFile.waitForExistence(timeout: 30))
+        XCTAssertFalse(file.exists)
+        waitForEnabled(renamedFile)
+        renamedFile.press(forDuration: 1)
         app.buttons["Delete"].tap()
-        app.buttons["Delete \(fileName)"].tap()
+        app.buttons["Delete \(renamedFileName)"].tap()
         wait(
             for: NSPredicate(format: "exists == false"),
-            evaluatedWith: file,
+            evaluatedWith: renamedFile,
             timeout: 30
         )
 

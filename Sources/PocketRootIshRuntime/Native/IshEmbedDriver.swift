@@ -210,6 +210,10 @@ struct IshEmbedDriver: IshRuntimeDriver {
                 }
                 try cancellation.check()
                 throw error
+            case .destinationExists, .guestFileSystemFailure:
+                // Filesystem failures are not produced by command sessions,
+                // but preserve them if a future native transport surfaces one.
+                throw error
             }
         } catch is CancellationError {
             // Cancellation is acknowledged only after the guest process has an
@@ -256,6 +260,35 @@ struct IshEmbedDriver: IshRuntimeDriver {
                 code: code,
                 message: message
             ) {
+                throw terminalFailure
+            }
+            throw IshError.raw(code, message)
+        }
+    }
+
+    func renameNoReplace(_ request: IshDriverRenameRequest) throws {
+        do {
+            try IshInstance.shared.renameNoReplace(
+                from: request.sourcePath,
+                to: request.destinationPath,
+                timeout: request.timeout
+            )
+        } catch IshFilesystemError.destinationExists {
+            throw IshRuntimeDriverError.destinationExists(
+                path: request.destinationPath
+            )
+        } catch IshFilesystemError.guestErrno(let code) {
+            throw IshRuntimeDriverError.guestFileSystemFailure(
+                code: code,
+                path: request.sourcePath
+            )
+        } catch IshError.raw(let code, let message) {
+            if let terminalFailure =
+                IshRuntimeTransportPolicy.filesystemOperationFailure(
+                    code: code,
+                    message: message
+                )
+            {
                 throw terminalFailure
             }
             throw IshError.raw(code, message)

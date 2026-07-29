@@ -47,7 +47,7 @@ let package = Package(
     dependencies: [
         .package(
             url: "https://github.com/jacklv-coder/ish-arm64-pkg.git",
-            revision: "38d25d6f8726145e7e988172f12000020d89a638"
+            revision: "37231ab667b380eb86a5fbcf961e31af4d50cebb"
         ),
         .package(
             url: "https://github.com/migueldeicaza/SwiftTerm.git",

@@ -6,16 +6,16 @@ This is the sole source of truth for immutable revisions, nested gitlinks,
 artifact URLs, sizes, and SHA-256 values used by the Experimental runtime.
 Branches, moving tags, unverified release aliases, and local caches are not pins.
 
-Audit date: 2026-07-28
+Audit date: 2026-07-29
 
 ## 1. IshEmbed Swift package
 
 | Field | Audited value |
 | --- | --- |
 | Repository | `https://github.com/jacklv-coder/ish-arm64-pkg.git` |
-| Exact wrapper revision | `38d25d6f8726145e7e988172f12000020d89a638` |
-| Release | `v0.4.0-abi.6` prerelease |
-| Tag peeled commit | `38d25d6f8726145e7e988172f12000020d89a638` |
+| Exact wrapper revision | `37231ab667b380eb86a5fbcf961e31af4d50cebb` |
+| Release | `v0.4.0-abi.7` prerelease |
+| Tag peeled commit | `37231ab667b380eb86a5fbcf961e31af4d50cebb` |
 | Swift product | `IshEmbed` |
 | Manifest platform | iOS 18.0 |
 | Native slices | iOS arm64 device and arm64 Simulator |
@@ -26,14 +26,14 @@ Both `Package.swift` and `Package.resolved` pin the full revision:
 ```swift
 .package(
     url: "https://github.com/jacklv-coder/ish-arm64-pkg.git",
-    revision: "38d25d6f8726145e7e988172f12000020d89a638"
+    revision: "37231ab667b380eb86a5fbcf961e31af4d50cebb"
 )
 ```
 
-Consumed revision `38d25d6f8726145e7e988172f12000020d89a638` is the ABI.6
-release commit. It contains the merged Swift-marshalling deadline fix and the
-native stdin-close reuse of the original SPAWN deadline, while `Package.swift`
-pins the public, independently verified ABI.6 asset built from that source by
+Consumed revision `37231ab667b380eb86a5fbcf961e31af4d50cebb` is the ABI.7
+release commit. It contains ABI.6's unified deadline fixes and adds atomic guest
+`RENAME_NOREPLACE` C/Swift APIs, while `Package.swift`
+pins the public, independently verified ABI.7 asset built from that source by
 URL/checksum. The peeled tag, Release target, and consumed package revision are
 identical. The package repository keeps an absolute SSH-over-443 submodule URL;
 GitHub CI without an SSH private key applies a public read-only HTTPS rewrite
@@ -45,22 +45,22 @@ only while checking out source.
 | --- | --- |
 | Repository | `https://github.com/jacklv-coder/ish-arm64.git` |
 | Package path | `third_party/ish` |
-| Exact gitlink | `c36dfd25462737b45559eb48d4b09f799471572e` |
+| Exact gitlink | `3d0b4f6f55108f6d602ac6a2c86df555935b979d` |
 | Recorded branch | `embed-chroot-containment` |
 
 The corresponding-source archive records the parent package revision, this
 gitlink, Zig 0.16.0, and the musl source used by the static supervisor.
 Recursive branch checkout is not a substitute for these exact identities.
 
-## 3. v0.4.0-abi.6 assets
+## 3. v0.4.0-abi.7 assets
 
 Release:
-`https://github.com/jacklv-coder/ish-arm64-pkg/releases/tag/v0.4.0-abi.6`
+`https://github.com/jacklv-coder/ish-arm64-pkg/releases/tag/v0.4.0-abi.7`
 
 | Artifact | Size | SHA-256 | Use |
 | --- | ---: | --- | --- |
-| `libIshKernel.xcframework.zip` | 2,450,755 bytes | `049422af47334a323dbe26fa7eb431160ef0742495783bd50d1c3949dd0c6720` | SwiftPM binary target |
-| `IshEmbed-corresponding-source.tar.gz` | 2,364,382 bytes | `a94dbfa58289270ec83aefc5ed1632198290956fd5d1ca381e90dd2ec7f518fa` | Corresponding source |
+| `libIshKernel.xcframework.zip` | 2,457,982 bytes | `98b02f42de7f62b82bdbbbfad7db8599bd881c879dabff787f78830d6971639b` | SwiftPM binary target |
+| `IshEmbed-corresponding-source.tar.gz` | 2,388,002 bytes | `2715c66dcad63e1a849ff1a79cfe28b4fcde9b1f844b97c212af698b88b67ecf` | Corresponding source |
 
 The XCFramework contains only `ios-arm64` and `ios-arm64-simulator`, both
 arm64 with an iOS 18.0 minimum. It has no x86_64 Simulator or macOS slice.
@@ -70,8 +70,10 @@ SwiftPM validates the zip checksum. The release transaction also verified:
 - the public release is a prerelease, not a draft, and has exactly two assets;
 - both public assets redownload with the recorded digests;
 - device and Simulator Mach-O metadata, ABI symbols, and final iOS 18 links; and
-- 13 passing arm64 iOS Simulator binaryTarget tests, 5 expected RootFS skips,
+- 16 passing arm64 iOS Simulator binaryTarget tests, 5 expected RootFS skips,
   and 0 failures.
+- 57 passing native tests, including successful atomic no-replace rename,
+  `EEXIST` collision, and timeout coverage;
 - the complete PocketRoot Experimental graph final-linked for arm64 Simulator
   and unsigned device; and
 - an iOS 18.2 Simulator passed the 17-check native smoke with the pinned v0.3.3
@@ -145,6 +147,8 @@ The pinned artifact provides:
   when cleanup cannot be proven;
 - root `/proc` mounted before supervisor startup; and
 - digest verification for the default bundled supervisor.
+- atomic no-replace guest rename for files and directories, preserving both
+  sides and returning `EEXIST` when the destination exists.
 
 PocketRoot remains Experimental. Open gates include:
 
@@ -155,7 +159,7 @@ PocketRoot remains Experimental. Open gates include:
   configuration are present, while the complete license/NOTICE and
   corresponding-source bundles remain open;
 - the maximal Experimental engineering-composition inventory/SPDX SBOM binds
-  the ABI.6 assets, iSH gitlink, supervisor musl source, and external RootFS
+  the ABI.7 assets, iSH gitlink, supervisor musl source, and external RootFS
   recorded here, while no final App archive has been scanned; and
 - an App Store Review Guideline 2.5.2 decision.
 

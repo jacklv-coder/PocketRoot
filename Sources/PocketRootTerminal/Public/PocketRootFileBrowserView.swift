@@ -19,7 +19,7 @@ public struct PocketRootFileBrowserView: View {
         initialPath: String = "/root",
         allowsFileOperations: Bool = true
     ) {
-        let browser = PocketRootFileBrowser(executor: system)
+        let browser = PocketRootFileBrowser(system: system)
         self.allowsFileOperations = allowsFileOperations
         onMutation = nil
         _model = StateObject(
@@ -88,6 +88,9 @@ public struct PocketRootFileBrowserView: View {
                     },
                     openEntry: {
                         selectedEntry = row.entry
+                    },
+                    renameEntry: {
+                        presentNameAction(.rename(row.entry))
                     },
                     deleteEntry: {
                         pendingDeletion = row.entry
@@ -258,6 +261,8 @@ public struct PocketRootFileBrowserView: View {
                     try await model.createFile(named: name)
                 case .createDirectory:
                     try await model.createDirectory(named: name)
+                case .rename(let entry):
+                    try await model.rename(entry, to: name)
                 }
             }
         }
@@ -526,6 +531,15 @@ private final class PocketRootFileBrowserModel: ObservableObject {
         }
     }
 
+    func rename(
+        _ entry: PocketRootFileEntry,
+        to name: String
+    ) async throws {
+        try await performMutation {
+            _ = try await browser.renameItem(at: entry.path, to: name)
+        }
+    }
+
     private func performMutation(
         _ operation: () async throws -> Void
     ) async throws {
@@ -613,6 +627,7 @@ private struct PocketRootFileTreeRowView: View {
     let expansionError: String?
     let toggleExpansion: () -> Void
     let openEntry: () -> Void
+    let renameEntry: () -> Void
     let deleteEntry: () -> Void
 
     var body: some View {
@@ -652,10 +667,17 @@ private struct PocketRootFileTreeRowView: View {
                 Button(role: .destructive, action: deleteEntry) {
                     Label("Delete", systemImage: "trash")
                 }
+                Button(action: renameEntry) {
+                    Label("Rename", systemImage: "pencil")
+                }
+                .tint(.blue)
             }
         }
         .contextMenu {
             if allowsFileOperations {
+                Button(action: renameEntry) {
+                    Label("Rename", systemImage: "pencil")
+                }
                 Button(role: .destructive, action: deleteEntry) {
                     Label("Delete", systemImage: "trash")
                 }
@@ -705,27 +727,36 @@ private struct PocketRootFileTreeRowView: View {
 private enum PocketRootFileNameAction {
     case createFile
     case createDirectory
+    case rename(PocketRootFileEntry)
 
     var title: String {
         switch self {
         case .createFile: "New File"
         case .createDirectory: "New Folder"
+        case .rename: "Rename"
         }
     }
 
     var submitTitle: String {
-        "Create"
+        switch self {
+        case .createFile, .createDirectory: "Create"
+        case .rename: "Rename"
+        }
     }
 
     var message: String {
         switch self {
         case .createFile: "Enter a name for the new empty file."
         case .createDirectory: "Enter a name for the new folder."
+        case .rename: "Enter a new name. Existing items will not be replaced."
         }
     }
 
     var initialName: String {
-        ""
+        switch self {
+        case .createFile, .createDirectory: ""
+        case .rename(let entry): entry.name
+        }
     }
 }
 

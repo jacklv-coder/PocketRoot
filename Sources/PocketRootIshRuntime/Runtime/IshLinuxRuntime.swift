@@ -301,6 +301,65 @@ package actor IshLinuxRuntime: LinuxRuntime {
         }
     }
 
+    package func renameItem(
+        at sourcePath: String,
+        to destinationPath: String,
+        timeout: Duration
+    ) async throws {
+        switch runtimeState {
+        case .ready:
+            break
+        case .terminated:
+            throw PocketRootError.restartRequired
+        default:
+            throw PocketRootError.runtimeNotBooted
+        }
+
+        try Self.validateGuestMutationPath(sourcePath, label: "source")
+        try Self.validateGuestMutationPath(destinationPath, label: "destination")
+        let requestedTimeout = timeout.timeInterval
+        guard requestedTimeout > 0, requestedTimeout <= 86_400 else {
+            throw PocketRootError.invalidCommandRequest(
+                "filesystem timeout must be greater than zero and no longer than 24 hours."
+            )
+        }
+
+        guard !commandInFlight else {
+            throw PocketRootError.runtimeFailure(
+                "PocketRoot currently permits one one-shot command or native "
+                    + "filesystem operation at a time."
+            )
+        }
+        commandInFlight = true
+        defer {
+            commandInFlight = false
+        }
+
+        try Task.checkCancellation()
+        try await processGate.requireOwnership(for: ownerID)
+        let request = IshDriverRenameRequest(
+            sourcePath: sourcePath,
+            destinationPath: destinationPath,
+            timeout: max(requestedTimeout, 0.001)
+        )
+        do {
+            try await executor.perform { [driver] in
+                try driver.renameNoReplace(request)
+            }
+        } catch {
+            if error is CancellationError {
+                throw CancellationError()
+            }
+            if let driverError = error as? IshRuntimeDriverError,
+               driverError.requiresRuntimeRestart
+            {
+                await processGate.markTerminated(for: ownerID)
+                runtimeState = .failed(error.localizedDescription)
+            }
+            throw map(error)
+        }
+    }
+
     package func shutdown() async throws {
         switch runtimeState {
         case .idle, .terminated:
@@ -320,7 +379,8 @@ package actor IshLinuxRuntime: LinuxRuntime {
 
         guard !commandInFlight else {
             throw PocketRootError.runtimeFailure(
-                "Wait for the active one-shot command to finish before shutting down."
+                "Wait for the active one-shot command or native filesystem "
+                    + "operation to finish before shutting down."
             )
         }
         guard sessionCreationsInFlight == 0 else {
@@ -441,6 +501,20 @@ package actor IshLinuxRuntime: LinuxRuntime {
         }
     }
 
+    private static func validateGuestMutationPath(
+        _ path: String,
+        label: String
+    ) throws {
+        guard path.hasPrefix("/"),
+              path.count > 1,
+              !path.contains("\0")
+        else {
+            throw PocketRootError.invalidCommandRequest(
+                "\(label) path must be an absolute non-root guest path without NUL bytes."
+            )
+        }
+    }
+
     private static func sessionEnvironment(
         overriding customEnvironment: [String: String],
         shell: String
@@ -504,6 +578,12 @@ package actor IshLinuxRuntime: LinuxRuntime {
         }
         if case let IshRuntimeDriverError.outputLimitExceeded(stream, limit) = error {
             return .commandOutputLimitExceeded(stream: stream, limit: limit)
+        }
+        if case let IshRuntimeDriverError.destinationExists(path) = error {
+            return .fileDestinationExists(path)
+        }
+        if case let IshRuntimeDriverError.guestFileSystemFailure(code, path) = error {
+            return .guestFileSystemFailure(code: code, path: path)
         }
         if let description = (error as? LocalizedError)?.errorDescription {
             return .runtimeFailure(description)

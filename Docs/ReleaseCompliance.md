@@ -38,7 +38,7 @@ PocketRoot 的实验性 iSH runtime、XCFramework 和候选 RootFS 当前仅用�
 仓库现已在
 [`Compliance/Release/experimental-v0.1.0`](../Compliance/Release/experimental-v0.1.0/README.md)
 提交可复现的最大实验工程组合清单和 SPDX 2.3 JSON SBOM。它区分默认 Demo、
-原生 runtime smoke 与全部 Swift products，并覆盖固定 ABI.6 IshEmbed/XCFramework、
+原生 runtime smoke 与全部 Swift products，并覆盖固定 ABI.7 IshEmbed/XCFramework、
 iSH gitlink、supervisor musl source、调用方提供的外部 RootFS 及其中 15 个 Alpine
 包。Demo 现在显式链接 IshEmbed；仓库仍不含 RootFS，只有本地 Debug 构建可从仓库外
 注入精确固定资产，Release 构建明确跳过。该证据没有扫描最终 archive，明确保持
@@ -70,9 +70,9 @@ smoke `.xcarchive`，验证 `get-task-allow`、签名和 clean 风险信号并�
 - source-to-binary correspondence 必须进一步固化并可提供。
 
 当前审计记录固定 IshEmbed wrapper revision
-`38d25d6f8726145e7e988172f12000020d89a638`、`v0.4.0-abi.6` release commit
-`38d25d6f8726145e7e988172f12000020d89a638` 与 iSH gitlink
-`c36dfd25462737b45559eb48d4b09f799471572e`，并在上游依赖清单中记录 XCFramework
+`37231ab667b380eb86a5fbcf961e31af4d50cebb`、`v0.4.0-abi.7` release commit
+`37231ab667b380eb86a5fbcf961e31af4d50cebb` 与 iSH gitlink
+`3d0b4f6f55108f6d602ac6a2c86df555935b979d`，并在上游依赖清单中记录 XCFramework
 和 corresponding-source 资产的大小与摘要。Release 已提供对应源码资产，但产品级
 RootFS 合规材料和完整可分发组合仍未闭环，因此不会解除发行阻塞。
 

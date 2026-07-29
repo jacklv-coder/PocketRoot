@@ -26,6 +26,18 @@ actor RuntimeCoordinator {
         try await runtime.makeSession(configuration: configuration)
     }
 
+    func renameItem(
+        at sourcePath: String,
+        to destinationPath: String,
+        timeout: Duration
+    ) async throws {
+        try await runtime.renameItem(
+            at: sourcePath,
+            to: destinationPath,
+            timeout: timeout
+        )
+    }
+
     func shutdown() async throws {
         try await runtime.shutdown()
     }
