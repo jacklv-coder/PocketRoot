@@ -2,6 +2,84 @@ import XCTest
 
 @MainActor
 final class PocketRootHostAppUITests: XCTestCase {
+    func testFilesCreateAndDelete() {
+        let app = launchAndBoot()
+        app.buttons["PocketRootHost.files"].tap()
+
+        let suffix = String(UUID().uuidString.prefix(8)).lowercased()
+        let fileName = "files-\(suffix).txt"
+        let folderName = "folder-\(suffix)"
+        let nestedFileName = "nested-\(suffix).txt"
+        let actions = app.buttons["PocketRootFiles.actions"]
+        XCTAssertTrue(actions.waitForExistence(timeout: 30))
+        waitForEnabled(actions)
+
+        actions.tap()
+        app.buttons["New File"].tap()
+        let nameField = app.textFields["Name"]
+        XCTAssertTrue(nameField.waitForExistence(timeout: 10))
+        nameField.typeText(fileName)
+        app.buttons["Create"].tap()
+
+        let file = app.descendants(matching: .any)[
+            "PocketRootFiles.entry./root/\(fileName)"
+        ]
+        XCTAssertTrue(file.waitForExistence(timeout: 30))
+        waitForEnabled(file)
+        file.press(forDuration: 1)
+        app.buttons["Delete"].tap()
+        app.buttons["Delete \(fileName)"].tap()
+        wait(
+            for: NSPredicate(format: "exists == false"),
+            evaluatedWith: file,
+            timeout: 30
+        )
+
+        waitForEnabled(actions)
+        actions.tap()
+        app.buttons["New Folder"].tap()
+        XCTAssertTrue(nameField.waitForExistence(timeout: 10))
+        nameField.typeText(folderName)
+        app.buttons["Create"].tap()
+
+        let folder = app.descendants(matching: .any)[
+            "PocketRootFiles.entry./root/\(folderName)"
+        ]
+        XCTAssertTrue(folder.waitForExistence(timeout: 30))
+        let disclosure = app.buttons[
+            "PocketRootFiles.disclosure./root/\(folderName)"
+        ]
+        XCTAssertTrue(disclosure.waitForExistence(timeout: 10))
+        waitForEnabled(disclosure)
+        disclosure.tap()
+        waitForEnabled(folder)
+        folder.tap()
+
+        waitForEnabled(actions)
+        actions.tap()
+        app.buttons["New File"].tap()
+        XCTAssertTrue(nameField.waitForExistence(timeout: 10))
+        nameField.typeText(nestedFileName)
+        app.buttons["Create"].tap()
+        waitForEnabled(actions)
+        let childNavigationBar = app.navigationBars[folderName]
+        XCTAssertTrue(childNavigationBar.waitForExistence(timeout: 10))
+        childNavigationBar.buttons.element(boundBy: 0).tap()
+
+        let nestedFile = app.descendants(matching: .any)[
+            "PocketRootFiles.entry./root/\(folderName)/\(nestedFileName)"
+        ]
+        XCTAssertTrue(nestedFile.waitForExistence(timeout: 30))
+        folder.press(forDuration: 1)
+        app.buttons["Delete"].tap()
+        app.buttons["Delete \(folderName)"].tap()
+        wait(
+            for: NSPredicate(format: "exists == false"),
+            evaluatedWith: folder,
+            timeout: 30
+        )
+    }
+
     func testPTYCommandCreatesFileVisibleInFiles() {
         let app = launchAndBoot()
 
@@ -452,6 +530,17 @@ final class PocketRootHostAppUITests: XCTestCase {
         XCTAssertEqual(
             XCTWaiter.wait(for: [expectation], timeout: timeout),
             .completed
+        )
+    }
+
+    private func waitForEnabled(
+        _ element: XCUIElement,
+        timeout: TimeInterval = 30
+    ) {
+        wait(
+            for: NSPredicate(format: "enabled == true"),
+            evaluatedWith: element,
+            timeout: timeout
         )
     }
 }

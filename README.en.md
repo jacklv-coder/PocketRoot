@@ -19,7 +19,7 @@ jailbreak, and no Codex CLI installation.
 
 - **Terminal** — a full PTY session with input, streaming output, resize,
   signal, EOF, and ordered shutdown.
-- **Files** — browse guest directories and open bounded text or binary previews.
+- **Files** — browse, create, and delete guest items, with bounded previews.
 - **Workspace** — switch between Terminal and Files while keeping the same
   terminal session alive.
 - **Linux Runtime** — prepare, boot, and manage an iSH-based Alpine ARM64
@@ -46,7 +46,7 @@ an existing iOS App. Start with the
 | UIKit Demo shell | Available | System, Terminal, Files, Commands, and Diagnostics entry points |
 | RootFS verification and safe install | Available | Fixed digest, secure extraction, journal-protected same-volume promotion, reuse, recovery |
 | iSH boot and one-shot commands | Experimental | `iOS + arm64`; one-shot cancellation confirms guest exit |
-| Terminal and file browser | Embeddable / Experimental | UIKit/SwiftUI inject a booted system; persistent SwiftTerm PTY plus inline tree expansion, directory navigation, and bounded preview pages |
+| Terminal and file browser | Embeddable / Experimental | UIKit/SwiftUI inject a booted system; persistent SwiftTerm PTY plus inline tree expansion, navigation, bounded previews, and basic file management |
 | Lightweight agent loop | Core, OpenAI transport, and approval-gated command tool available | Agent and Runtime Tools are explicit opt-ins; no Codex CLI install or automatic shell approval |
 | Interactive PTY and SwiftTerm | Implemented; broader device validation pending | Public sessions, bounded reads, input, resize, signal/EOF, registry, and close-before-shutdown are connected; Simulator passes the boot → PTY file creation → Files preview UI closure |
 | Physical devices and distribution | Partially passed / blocked | One-shot iPhone gates and unsigned engineering App scanning passed; the new PTY still needs device lifecycle coverage, plus storage pressure, iPad, jetsam/power-cut, final artifact, and compliance gates |

@@ -15,7 +15,7 @@ PocketRoot separates host logic, real RootFS, iOS build, native final-link, and 
 | Engineering App/archive scan | `ruby Scripts/scan-release-artifact.rb` | Deterministic external `.app`/`.xcarchive` file hashes, Mach-O, signature/entitlement risk signals, and file-level SPDX | Final exported artifact, dependency-license completeness, or distribution authorization |
 | Development-signed archive gate | `./Scripts/build-signed-engineering-archive.sh` | Standard `.xcarchive`, development entitlements, clean risk signals, deterministic re-verification, and SPDX schema validation | IPA export, release signing, installation, upload, or distribution authorization |
 | Simulator native smoke | `./Scripts/run-runtime-smoke.sh` | Prepare, boot, command bounds, returning soft shutdown | Other toolchains, physical devices, distribution |
-| Host App UI smoke | `./Scripts/run-host-app-ui-smoke.sh` | Public-host manual and integrated automatic boot, SwiftTerm PTY input/sustained output, background/foreground, resize rotation, close/reopen, Workspace PTY persistence across Files, preview, and ordered shutdown on an iOS 18 Simulator | Physical keyboards, iPad, distribution |
+| Host App UI smoke | `./Scripts/run-host-app-ui-smoke.sh` | Public-host boot, SwiftTerm PTY, lifecycle, Workspace session persistence, Files create/delete/preview, and ordered shutdown on an iOS 18 Simulator | Physical keyboards, iPad, distribution |
 | Physical Host App UI smoke | `./Scripts/run-host-app-device-ui-smoke.sh` | The same lifecycle UI test on a development-signed iPhone/iPad, including signature and development entitlements | iPad, real pressure, distribution |
 | Physical native smoke | `./Scripts/run-runtime-device-smoke.sh` | Same 17 checks with optional process suspend/resume, UIKit lifecycle, forced-relaunch persistence, bounded storage-failure recovery, or bounded memory-warning recovery; development entitlements and returning soft shutdown | Real storage/memory pressure, power cut, jetsam, iPad, distribution |
 | Documentation | `./Scripts/check-docs.sh` | Pairs, Chinese coverage, relative links | Implementation correctness |
@@ -435,7 +435,7 @@ uploads neither the App nor scan evidence.
 The minimum-toolchain job explicitly selects Xcode 16.0 / iOS 18.0 SDK,
 validates real RootFS installation, installs the iOS 18.0 Simulator runtime,
 final-links Simulator/device Apps, runs the 17-check native smoke, and executes
-the Host App PTY-input/file-creation/Files-preview UI closure. This Simulator
+the Host App PTY-input/Files-create-delete-preview UI closure. This Simulator
 evidence does not prove signed-device or distribution readiness.
 
 ## Minimum checks by change

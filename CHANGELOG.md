@@ -28,7 +28,9 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
   缓冲以 16 KiB 分块限制到 4 MiB 并保留终态，native shutdown 只在权威退出后执行；
   取消创建会关闭未返回的 native session，可恢复的 supervisor/EOF 错误只关闭当前会话。
 - 固定 SwiftTerm `dd2fb8ac…`，提供 UIKit/SwiftUI 终端页面；加入 NUL-framed guest
-  文件夹页面、按需树形原地展开、目录导航和最多 512 KiB 的有界文本/二进制预览。
+  文件夹页面、按需树形原地展开、目录导航、最多 512 KiB 的有界文本/二进制预览，
+  以及创建文件/目录和确认后递归删除。当前 iSH ABI 不支持原子
+  `RENAME_NOREPLACE`，因此不以存在并发覆盖窗口的 shell 组合冒充安全重命名。
 - 加入公开 UIKit/SwiftUI Workspace 组合入口：一个已 boot system 可直接打开持续
   Terminal 与 Files，跨页面不重建 PTY，退出时关闭 session；Host App UI smoke
   验证终端创建文件、Files 预览和切回后的同一会话。

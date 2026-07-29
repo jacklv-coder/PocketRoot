@@ -66,7 +66,8 @@ The UIKit Demo contains System, Terminal, Files, Commands, and Diagnostics tabs:
   down the Experimental runtime.
 - Terminal presents the persistent SwiftTerm PTY and retains a Files shortcut.
 - Files browses `/root`; the disclosure control expands a directory inline,
-  while tapping the folder body navigates into that directory.
+  tapping the folder body navigates into it, and the action menu creates or
+  confirmation-deletes guest items.
 - Commands executes bounded one-shot commands against the same booted system.
 - Diagnostics reports live RootFS, iSH Runtime, and SwiftTerm status.
 
@@ -82,7 +83,8 @@ The command requires a regular non-symlink, the exact 6,581,376-byte size, and
 the pinned SHA-256, then atomically copies it under
 `~/Library/Application Support/PocketRootDevelopment/RootFS/`. Rebuild and tap
 **Prepare and Boot Runtime** in System. At `Ready`, Terminal supports `ls`,
-`cd`, and file creation, while Files browses and previews guest files.
+`cd`, and file creation. Files can browse, preview, create, and delete
+guest items.
 
 For a single command-line build, pass the input directly:
 

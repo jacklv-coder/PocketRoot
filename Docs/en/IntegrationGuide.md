@@ -189,7 +189,8 @@ let pocketRootHost = PocketRootIshWorkspaceHost(
         terminalConfiguration: .interactive(
             initialWorkingDirectory: "/root"
         ),
-        initialFilePath: "/root"
+        initialFilePath: "/root",
+        allowsFileOperations: true
     )
 )
 
@@ -198,6 +199,11 @@ navigationController?.pushViewController(
     animated: true
 )
 ```
+
+Set `allowsFileOperations: false` on
+`PocketRootWorkspaceConfiguration` when the entire Workspace Files tab must be
+browse-and-preview only. The SwiftUI and UIKit workspace wrappers enforce the
+same read-only boundary.
 
 Retain one `PocketRootIshWorkspaceHost` in the App or scene owner. The first
 screen presentation coalesces concurrent boot requests, prepares the
@@ -420,7 +426,8 @@ The guest file browser is another ready-to-present page:
 ```swift
 let filesViewController = PocketRootFileBrowserViewController(
     system: system,
-    initialPath: "/root"
+    initialPath: "/root",
+    allowsFileOperations: true
 )
 navigationController?.pushViewController(filesViewController, animated: true)
 ```
@@ -428,7 +435,27 @@ navigationController?.pushViewController(filesViewController, animated: true)
 The disclosure control on a folder row loads and expands that directory inline.
 Tapping the folder icon or name instead navigates to a dedicated directory page.
 Both interactions use the same bounded command protocol and path validation;
-neither reads the RootFS storage layout directly from the host App sandbox.
+neither reads the RootFS storage layout directly from the host App sandbox. The
+top-right action menu creates empty files or folders, while long-press and swipe
+actions delete entries. Folder deletion requires recursive deletion
+confirmation. Pass `allowsFileOperations: false` for a read-only surface.
+
+Hosts that do not use the ready-made page can call the same actor directly:
+
+```swift
+let files = PocketRootFileBrowser(executor: system)
+try await files.createFile(named: "notes.txt", in: "/root")
+try await files.createDirectory(named: "Sources", in: "/root")
+try await files.deleteItem(at: "/root/Sources", recursively: true)
+```
+
+Names must occupy 1–255 UTF-8 bytes and cannot be `.`, `..`, or contain `/` or
+NUL. Every guest argument is shell-quoted; create never replaces an existing
+item; `/` cannot be deleted; and non-empty directory deletion requires explicit
+`recursively: true`. The current iSH ABI rejects flagged `renameat2`, so
+PocketRoot does not expose a no-replace rename with a concurrent replacement
+window. That operation remains gated on an atomic `RENAME_NOREPLACE`
+equivalent in the runtime.
 
 SwiftUI has the same composed entry point:
 
@@ -452,7 +479,8 @@ SwiftTerm handles ANSI/VT rendering, keyboard input, selection, scrolling, and
 accessibility semantics. The bridge preserves input order, forwards character
 size changes, and streams guest output. Guest OSC 52 clipboard access is denied
 by default. The Files page uses NUL-framed listings and bounded previews of up
-to 512 KiB.
+to 512 KiB, plus basic guest file management. It never browses the host App
+sandbox.
 
 With a custom configuration whose `allowsInput` is `false`, the PTY remains
 visible and continues receiving guest output, but the bridge drops every

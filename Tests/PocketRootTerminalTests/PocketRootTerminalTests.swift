@@ -96,6 +96,7 @@ final class PocketRootTerminalTests: XCTestCase {
         XCTAssertEqual(configuration.terminalTheme, .dark)
         XCTAssertEqual(configuration.initialFilePath, "/root")
         XCTAssertEqual(configuration.initialSurface, .terminal)
+        XCTAssertTrue(configuration.allowsFileOperations)
         XCTAssertEqual(
             PocketRootWorkspaceSurface.allCases,
             [.terminal, .files]
@@ -119,7 +120,8 @@ final class PocketRootTerminalTests: XCTestCase {
                 fontSize: 17
             ),
             initialFilePath: "/workspace",
-            initialSurface: .files
+            initialSurface: .files,
+            allowsFileOperations: false
         )
 
         XCTAssertEqual(
@@ -132,6 +134,7 @@ final class PocketRootTerminalTests: XCTestCase {
         XCTAssertEqual(configuration.terminalTheme.fontSize, 17)
         XCTAssertEqual(configuration.initialFilePath, "/workspace")
         XCTAssertEqual(configuration.initialSurface, .files)
+        XCTAssertFalse(configuration.allowsFileOperations)
     }
 
     func testControllerMaintainsTranscriptWithoutLoadingUI() async {
@@ -368,6 +371,110 @@ final class PocketRootTerminalTests: XCTestCase {
 
         let requests = await executor.recordedRequests
         XCTAssertTrue(requests.isEmpty)
+    }
+
+    func testFileBrowserCreatesFileAndDirectoryWithQuotedAbsolutePaths() async throws {
+        let executor = TerminalExecutorStub { _ in
+            PocketRootCommandResult(exitCode: 0)
+        }
+        let browser = PocketRootFileBrowser(executor: executor)
+
+        let filePath = try await browser.createFile(
+            named: "it's ready.txt",
+            in: "/root/project"
+        )
+        let directoryPath = try await browser.createDirectory(
+            named: "New Folder",
+            in: "/root/project"
+        )
+        let requests = await executor.recordedRequests
+
+        XCTAssertEqual(filePath, "/root/project/it's ready.txt")
+        XCTAssertEqual(directoryPath, "/root/project/New Folder")
+        XCTAssertEqual(requests.count, 2)
+        XCTAssertEqual(requests.map(\.workingDirectory), ["/", "/"])
+        XCTAssertTrue(requests[0].command.contains(
+            "'/root/project/it'\"'\"'s ready.txt'"
+        ))
+        XCTAssertTrue(requests[0].command.contains("set -C"))
+        XCTAssertTrue(requests[1].command.contains(
+            "mkdir -- '/root/project/New Folder'"
+        ))
+    }
+
+    func testFileBrowserRejectsInvalidNamesBeforeExecution() async {
+        let executor = TerminalExecutorStub { _ in
+            XCTFail("Invalid names must not reach the executor.")
+            return PocketRootCommandResult(exitCode: 0)
+        }
+        let browser = PocketRootFileBrowser(executor: executor)
+
+        for name in ["", ".", "..", "nested/name", "nul\0name"] {
+            do {
+                _ = try await browser.createFile(named: name, in: "/root")
+                XCTFail("Expected invalid name rejection for \(name.debugDescription).")
+            } catch let error as PocketRootFileBrowserError {
+                XCTAssertEqual(error, .invalidName)
+            } catch {
+                XCTFail("Unexpected error: \(error)")
+            }
+        }
+
+        let oversizedName = String(repeating: "é", count: 128)
+        do {
+            _ = try await browser.createDirectory(
+                named: oversizedName,
+                in: "/root"
+            )
+            XCTFail("Expected UTF-8 byte length rejection.")
+        } catch let error as PocketRootFileBrowserError {
+            XCTAssertEqual(error, .invalidName)
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+
+        let requests = await executor.recordedRequests
+        XCTAssertTrue(requests.isEmpty)
+    }
+
+    func testFileBrowserProtectsGuestRootFromDelete() async {
+        let executor = TerminalExecutorStub { _ in
+            XCTFail("Protected paths must not reach the executor.")
+            return PocketRootCommandResult(exitCode: 0)
+        }
+        let browser = PocketRootFileBrowser(executor: executor)
+
+        do {
+            try await browser.deleteItem(at: "/", recursively: true)
+            XCTFail("Expected protected path rejection.")
+        } catch let error as PocketRootFileBrowserError {
+            XCTAssertEqual(error, .protectedPath)
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+
+        let requests = await executor.recordedRequests
+        XCTAssertTrue(requests.isEmpty)
+    }
+
+    func testFileBrowserRequiresExplicitRecursiveDirectoryDeletion() async throws {
+        let executor = TerminalExecutorStub { _ in
+            PocketRootCommandResult(exitCode: 0)
+        }
+        let browser = PocketRootFileBrowser(executor: executor)
+
+        try await browser.deleteItem(at: "/root/empty")
+        try await browser.deleteItem(at: "/root/project", recursively: true)
+        let requests = await executor.recordedRequests
+
+        XCTAssertEqual(requests.count, 2)
+        XCTAssertTrue(requests[0].command.contains(
+            "rmdir -- '/root/empty'"
+        ))
+        XCTAssertFalse(requests[0].command.contains("rm -rf --"))
+        XCTAssertTrue(requests[1].command.contains(
+            "rm -rf -- '/root/project'"
+        ))
     }
 
     func testFileTreeExpandsDirectoriesInlineAtTheExpectedDepth() {

@@ -43,7 +43,9 @@ public struct PocketRootWorkspaceView: View {
             NavigationStack {
                 PocketRootFileBrowserView(
                     system: system,
-                    initialPath: configuration.initialFilePath
+                    initialPath: configuration.initialFilePath,
+                    allowsFileOperations:
+                        configuration.allowsFileOperations
                 )
             }
             .tag(PocketRootWorkspaceSurface.files)

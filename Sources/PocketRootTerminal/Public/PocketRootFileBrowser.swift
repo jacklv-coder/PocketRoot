@@ -31,6 +31,8 @@ public struct PocketRootFilePreview: Sendable, Equatable {
 
 public enum PocketRootFileBrowserError: LocalizedError, Sendable, Equatable {
     case invalidPath
+    case invalidName
+    case protectedPath
     case commandFailed(path: String, message: String)
     case invalidDirectoryResponse
 
@@ -38,8 +40,12 @@ public enum PocketRootFileBrowserError: LocalizedError, Sendable, Equatable {
         switch self {
         case .invalidPath:
             return "The guest path must be an absolute path without NUL bytes."
+        case .invalidName:
+            return "The item name must be 1–255 UTF-8 bytes and cannot contain '/', NUL, '.' or '..'."
+        case .protectedPath:
+            return "The guest root directory cannot be deleted."
         case .commandFailed(let path, let message):
-            return "Unable to read \(path): \(message)"
+            return "Unable to access \(path): \(message)"
         case .invalidDirectoryResponse:
             return "The guest returned an invalid directory listing."
         }
@@ -132,6 +138,92 @@ public actor PocketRootFileBrowser {
         )
     }
 
+    /// Creates an empty regular file without replacing an existing item.
+    @discardableResult
+    public func createFile(
+        named name: String,
+        in directoryPath: String
+    ) async throws -> String {
+        let directoryPath = try Self.validate(directoryPath)
+        let targetPath = try Self.childPath(name: name, parent: directoryPath)
+        let command = """
+        if [ ! -d \(Self.shellQuote(directoryPath)) ]; then
+          printf 'Parent directory does not exist.\\n' >&2
+          exit 66
+        fi
+        if [ -e \(Self.shellQuote(targetPath)) ] || [ -L \(Self.shellQuote(targetPath)) ]; then
+          printf 'An item with that name already exists.\\n' >&2
+          exit 73
+        fi
+        set -C
+        : > \(Self.shellQuote(targetPath)) || {
+          printf 'Unable to create file.\\n' >&2
+          exit 73
+        }
+        """
+        try await executeMutation(command, path: targetPath)
+        return targetPath
+    }
+
+    /// Creates a directory without replacing an existing item.
+    @discardableResult
+    public func createDirectory(
+        named name: String,
+        in directoryPath: String
+    ) async throws -> String {
+        let directoryPath = try Self.validate(directoryPath)
+        let targetPath = try Self.childPath(name: name, parent: directoryPath)
+        let command = """
+        if [ ! -d \(Self.shellQuote(directoryPath)) ]; then
+          printf 'Parent directory does not exist.\\n' >&2
+          exit 66
+        fi
+        mkdir -- \(Self.shellQuote(targetPath))
+        """
+        try await executeMutation(command, path: targetPath)
+        return targetPath
+    }
+
+    /// Deletes a file, symbolic link, or directory.
+    ///
+    /// Non-empty directories require `recursively` to be explicitly enabled.
+    public func deleteItem(
+        at path: String,
+        recursively: Bool = false
+    ) async throws {
+        let path = try Self.validateMutable(path)
+        let deleteDirectory = recursively
+            ? "rm -rf -- \(Self.shellQuote(path))"
+            : "rmdir -- \(Self.shellQuote(path))"
+        let command = """
+        if [ ! -e \(Self.shellQuote(path)) ] && [ ! -L \(Self.shellQuote(path)) ]; then
+          printf 'The item does not exist.\\n' >&2
+          exit 66
+        fi
+        if [ -d \(Self.shellQuote(path)) ] && [ ! -L \(Self.shellQuote(path)) ]; then
+          \(deleteDirectory)
+        else
+          rm -f -- \(Self.shellQuote(path))
+        fi
+        """
+        try await executeMutation(command, path: path)
+    }
+
+    private func executeMutation(
+        _ command: String,
+        path: String
+    ) async throws {
+        let result = try await executor.execute(
+            .init(
+                command: command,
+                workingDirectory: "/",
+                environment: ["LC_ALL": "C"],
+                timeout: timeout
+            )
+        )
+        try Self.validate(result, path: path)
+    }
+
     private static func parseDirectory(
         _ data: Data,
         parent: String
@@ -208,6 +300,44 @@ public actor PocketRootFileBrowser {
             }
         }
         return "/" + normalized.joined(separator: "/")
+    }
+
+    private static func validateMutable(_ path: String) throws -> String {
+        let path = try validate(path)
+        guard path != "/" else {
+            throw PocketRootFileBrowserError.protectedPath
+        }
+        return path
+    }
+
+    private static func validate(name: String) throws -> String {
+        guard !name.isEmpty,
+              name != ".",
+              name != "..",
+              !name.contains("/"),
+              !name.contains("\0"),
+              name.lengthOfBytes(using: .utf8) <= 255
+        else {
+            throw PocketRootFileBrowserError.invalidName
+        }
+        return name
+    }
+
+    private static func childPath(
+        name: String,
+        parent: String
+    ) throws -> String {
+        let name = try validate(name: name)
+        return parent == "/" ? "/" + name : parent + "/" + name
+    }
+
+    private static func parentPath(of path: String) -> String {
+        guard let separator = path.lastIndex(of: "/"),
+              separator != path.startIndex
+        else {
+            return "/"
+        }
+        return String(path[..<separator])
     }
 
     private static func validate(

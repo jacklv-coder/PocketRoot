@@ -88,7 +88,7 @@ Demo 使用 AppDelegate、SceneDelegate、UIWindow、纯 UIKit 和 Auto Layout�
 | --- | --- |
 | System | 校验、安装固定 RootFS，启动/检查/关闭实验 runtime |
 | Terminal | 使用 SwiftTerm 打开持续 PTY；右上角也保留 Files 快捷入口 |
-| Files | 浏览 `/root`；箭头原地展开子目录，点击文件夹主体进入该目录 |
+| Files | 浏览 `/root`；原地展开或进入目录，并创建、删除文件与目录 |
 | Commands | 对同一个已启动 system 执行有界一次性命令 |
 | Diagnostics | 动态显示 RootFS、iSH Runtime 与 SwiftTerm 状态 |
 
@@ -102,7 +102,7 @@ Demo 使用 AppDelegate、SceneDelegate、UIWindow、纯 UIKit 和 Auto Layout�
 该命令要求普通非符号链接文件、精确 `6,581,376` 字节和固定 SHA-256，并原子复制到
 `~/Library/Application Support/PocketRootDevelopment/RootFS/`。随后重新构建并在
 System 点击 **Prepare and Boot Runtime**。状态达到 `Ready` 后，Terminal 可执行
-`ls`、`cd` 和文件创建；右上角 Files 可浏览并预览 guest 文件。
+`ls`、`cd` 和文件创建；Files 右上角 `+` 可新建文件/目录，行菜单可确认删除。
 
 也可只对一次命令行构建显式传入：
 

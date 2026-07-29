@@ -43,7 +43,8 @@ public final class PocketRootWorkspaceViewController:
         )
         filesController = PocketRootFileBrowserViewController(
             system: system,
-            initialPath: configuration.initialFilePath
+            initialPath: configuration.initialFilePath,
+            allowsFileOperations: configuration.allowsFileOperations
         )
         super.init(nibName: nil, bundle: nil)
 
