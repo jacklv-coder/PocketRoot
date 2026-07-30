@@ -56,7 +56,7 @@
 | Xcode | 16.0+ 与 iOS 18 SDK |
 | Swift Package | Swift 5.10+ |
 | Deployment target | iOS 18.0 |
-| Xcode project source | `project.yml` |
+| Xcode project source | `Examples/PocketRootDemo/project.yml` |
 | Git generated project | 不提交 |
 
 ## 里程碑 2：ARM64 Linux 一次性命令

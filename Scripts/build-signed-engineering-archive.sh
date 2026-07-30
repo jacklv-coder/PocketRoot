@@ -115,7 +115,7 @@ cd "$ROOT_DIR"
 "$ROOT_DIR/Scripts/generate-project.sh"
 xcodebuild \
   -quiet \
-  -project PocketRootDemo.xcodeproj \
+  -project "$ROOT_DIR/Examples/PocketRootDemo/PocketRootDemo.xcodeproj" \
   -scheme "$SCHEME" \
   -configuration Debug \
   -destination "generic/platform=iOS" \

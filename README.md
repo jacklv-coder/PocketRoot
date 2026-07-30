@@ -26,7 +26,8 @@ PocketRoot 是面向 iPhone 和 iPad App 的本地 Linux Workspace SDK。它把�
 
 PocketRoot 的定位不是另一个终端 App，也不是新的操作系统：它是让现有 iOS App
 嵌入本地 Linux Terminal + Files 工作区的 SDK。可以先查看
-[最小宿主 App](Examples/PocketRootHostApp)和[应用接入指南](Docs/IntegrationGuide.md)。
+[完整 Demo](Examples/PocketRootDemo)、[最小宿主 App](Examples/PocketRootHostApp)
+和[应用接入指南](Docs/IntegrationGuide.md)。
 
 > [!WARNING]
 > 真实 iSH 集成目前仍是 **实验性（Experimental）** 能力。固定的
@@ -142,10 +143,12 @@ cd PocketRoot
 ./Scripts/bootstrap.sh
 ./Scripts/test.sh
 ./Scripts/build.sh
-open PocketRootDemo.xcodeproj
+open Examples/PocketRootDemo/PocketRootDemo.xcodeproj
 ```
 
-`bootstrap.sh` 会解析 Swift Package 并通过 XcodeGen 生成工程。`PocketRootDemo.xcodeproj` 不提交到 Git；`project.yml` 才是工程事实源。
+`bootstrap.sh` 会解析 Swift Package，并根据
+`Examples/PocketRootDemo/project.yml` 生成 Demo 工程。生成的
+`Examples/PocketRootDemo/PocketRootDemo.xcodeproj` 不提交到 Git。
 
 Demo 已接通实验性 iSH、SwiftTerm PTY、Commands 和 Files 页面。RootFS 不提交到
 仓库；首次运行前把固定归档配置为本机 Debug 开发资产：
@@ -154,7 +157,7 @@ Demo 已接通实验性 iSH、SwiftTerm PTY、Commands 和 Files 页面。RootFS
 ./Scripts/inject-demo-rootfs.sh \
   --install-development-archive /absolute/path/to/fs.tar.gz
 ./Scripts/build.sh
-open PocketRootDemo.xcodeproj
+open Examples/PocketRootDemo/PocketRootDemo.xcodeproj
 ```
 
 注入脚本严格校验 v0.3.3 的 `6,581,376` 字节与固定 SHA-256。Debug 构建把它复制到

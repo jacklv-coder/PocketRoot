@@ -53,7 +53,7 @@ Use Xcode 16+, iOS 18 SDK, Swift 5.10+, XcodeGen, and Homebrew. Native runtime w
 
 - Core has no UIKit, concrete RootFS, or IshEmbed dependency.
 - Use programmatic UIKit and Auto Layout; no storyboard/XIB/SwiftUI App lifecycle.
-- `project.yml` is authoritative; generated projects are not committed.
+- `Examples/PocketRootDemo/project.yml` is authoritative for the complete Demo; generated projects are not committed.
 - The umbrella never exports Experimental runtime products.
 - Blocking IshEmbed calls stay off main/cooperative executors.
 - Close lifecycle reentrancy before suspension.

@@ -218,6 +218,10 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 
 ### Changed
 
+- Moved the complete Demo, its tests, and its XcodeGen source into the
+  self-contained `Examples/PocketRootDemo` tree. Project generation and build
+  scripts now use that public example path instead of mixing Demo and package
+  sources at the repository root.
 - Release-composition generation and the SPDX SBOM now cover the direct
   SwiftTerm pin, its resolved-but-unlinked `swift-argument-parser` dependency,
   the MIT notice, and the Terminal target graph. PTY strictly honors

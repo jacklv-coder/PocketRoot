@@ -19,7 +19,7 @@ settings:
 
 packages:
   PocketRoot:
-    path: .
+    path: ../..
 
 targets:
   PocketRootIshRuntimeCompileSpike:
@@ -28,7 +28,7 @@ targets:
     deploymentTarget: "18.0"
 
     sources:
-      - path: Spikes/PocketRootIshRuntimeCompileSpike
+      - path: ../../Spikes/PocketRootIshRuntimeCompileSpike
 
     dependencies:
       - package: PocketRoot
@@ -52,7 +52,7 @@ targets:
     deploymentTarget: "18.0"
 
     sources:
-      - path: Spikes/PocketRootIshRuntimeSmoke
+      - path: ../../Spikes/PocketRootIshRuntimeSmoke
 
     dependencies:
       - package: PocketRoot
@@ -82,12 +82,12 @@ targets:
     deploymentTarget: "18.0"
 
     sources:
-      - path: Demo/PocketRootDemo
+      - path: Sources/PocketRootDemo
         excludes:
           - Resources
 
     resources:
-      - path: Demo/PocketRootDemo/Resources
+      - path: Sources/PocketRootDemo/Resources
 
     dependencies:
       - package: PocketRoot
@@ -116,11 +116,11 @@ targets:
     postBuildScripts:
       - name: Inject reviewed development RootFS
         script: |
-          "$SRCROOT/Scripts/inject-demo-rootfs.sh"
+          "$SRCROOT/../../Scripts/inject-demo-rootfs.sh"
         basedOnDependencyAnalysis: false
 
     info:
-      path: Demo/PocketRootDemo/Info.plist
+      path: Sources/PocketRootDemo/Info.plist
       properties:
         CFBundleDisplayName: PocketRoot
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
@@ -139,7 +139,7 @@ targets:
     deploymentTarget: "18.0"
 
     sources:
-      - path: Tests/PocketRootDemoTests
+      - path: Tests
         optional: true
 
     dependencies:

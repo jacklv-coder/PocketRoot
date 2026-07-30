@@ -161,7 +161,10 @@ jobs:
       - name: Generate Xcode project
         run: |
           xcodegen version
-          xcodegen generate --spec project.yml
+          (
+            cd Examples/PocketRootDemo
+            xcodegen generate --spec project.yml
+          )
           (
             cd Examples/PocketRootHostApp
             xcodegen generate --spec project.yml
@@ -170,7 +173,7 @@ jobs:
       - name: Build for generic iOS Simulator
         run: |
           xcodebuild \
-            -project PocketRootDemo.xcodeproj \
+            -project Examples/PocketRootDemo/PocketRootDemo.xcodeproj \
             -scheme PocketRootDemo \
             -configuration Debug \
             -destination 'generic/platform=iOS Simulator' \
@@ -202,7 +205,7 @@ jobs:
       - name: Compile Demo unit tests
         run: |
           xcodebuild \
-            -project PocketRootDemo.xcodeproj \
+            -project Examples/PocketRootDemo/PocketRootDemo.xcodeproj \
             -scheme PocketRootDemo \
             -configuration Debug \
             -destination 'generic/platform=iOS Simulator' \
@@ -214,7 +217,7 @@ jobs:
       - name: Final-link iSH runtime app for arm64 iOS Simulator
         run: |
           xcodebuild \
-            -project PocketRootDemo.xcodeproj \
+            -project Examples/PocketRootDemo/PocketRootDemo.xcodeproj \
             -scheme PocketRootIshRuntimeCompileSpike \
             -configuration Debug \
             -destination 'generic/platform=iOS Simulator' \
@@ -227,7 +230,7 @@ jobs:
       - name: Final-link iSH runtime app for arm64 iOS device
         run: |
           xcodebuild \
-            -project PocketRootDemo.xcodeproj \
+            -project Examples/PocketRootDemo/PocketRootDemo.xcodeproj \
             -scheme PocketRootIshRuntimeCompileSpike \
             -configuration Debug \
             -destination 'generic/platform=iOS' \

@@ -13,7 +13,7 @@ class ReleaseComplianceTests < Minitest::Test
     "LICENSE",
     "Package.resolved",
     "Package.swift",
-    "project.yml",
+    "Examples/PocketRootDemo/project.yml",
     "Examples/PocketRootHostApp/project.yml",
     "Scripts/inject-demo-rootfs.sh",
     "Scripts/run-host-app-device-ui-smoke.sh",
@@ -493,7 +493,7 @@ class ReleaseComplianceTests < Minitest::Test
 
   def test_rejects_application_product_composition_drift
     root = input_fixture
-    path = root.join("project.yml")
+    path = root.join("Examples/PocketRootDemo/project.yml")
     path.binwrite(
       path.binread.sub(
         "product: PocketRootIshRuntimeIntegration",
@@ -510,10 +510,10 @@ class ReleaseComplianceTests < Minitest::Test
 
   def test_rejects_application_resource_path_drift
     root = input_fixture
-    path = root.join("project.yml")
+    path = root.join("Examples/PocketRootDemo/project.yml")
     path.binwrite(
       path.binread.sub(
-        "path: Demo/PocketRootDemo/Resources",
+        "path: Sources/PocketRootDemo/Resources",
         "path: Spikes/PocketRootIshRuntimeSmoke"
       )
     )
@@ -527,7 +527,7 @@ class ReleaseComplianceTests < Minitest::Test
 
   def test_rejects_application_target_deployment_floor_drift
     root = input_fixture
-    path = root.join("project.yml")
+    path = root.join("Examples/PocketRootDemo/project.yml")
     contents = path.binread
     original =
       "PocketRootDemo:\n    type: application\n    platform: iOS\n" \
@@ -546,7 +546,7 @@ class ReleaseComplianceTests < Minitest::Test
 
   def test_rejects_effective_global_application_deployment_override
     root = input_fixture
-    path = root.join("project.yml")
+    path = root.join("Examples/PocketRootDemo/project.yml")
     contents = path.binread
     original = "    IPHONEOS_DEPLOYMENT_TARGET: \"18.0\""
     assert_includes contents, original
@@ -561,7 +561,7 @@ class ReleaseComplianceTests < Minitest::Test
 
   def test_rejects_effective_application_target_setting_override
     root = input_fixture
-    path = root.join("project.yml")
+    path = root.join("Examples/PocketRootDemo/project.yml")
     contents = path.binread
     original =
       "    settings:\n      base:\n" \
@@ -583,7 +583,8 @@ class ReleaseComplianceTests < Minitest::Test
   def test_rejects_unexpected_default_product_resource
     root = input_fixture
     root.join(
-      "Demo/PocketRootDemo/Resources/unreviewed-fs.tar.gz"
+      "Examples/PocketRootDemo/Sources/PocketRootDemo/Resources/" \
+        "unreviewed-fs.tar.gz"
     ).binwrite("payload")
 
     error = assert_raises(PocketRootReleaseCompliance::ComplianceError) do

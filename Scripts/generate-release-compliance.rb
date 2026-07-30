@@ -193,7 +193,7 @@ module PocketRootReleaseCompliance
     }
   }.freeze
   EXPECTED_RESOURCE_FILES = {
-    "Demo/PocketRootDemo/Resources/Assets.xcassets/Contents.json" =>
+    "Examples/PocketRootDemo/Sources/PocketRootDemo/Resources/Assets.xcassets/Contents.json" =>
       "0fd49ba3c3585c709678e0046a821c3c60685ec7063720d30d3a3448be3a208b",
     "Sources/PocketRootResources/Resources/.gitkeep" =>
       "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
@@ -207,8 +207,8 @@ module PocketRootReleaseCompliance
       "a6c4a28788ed9d4a22f021248cadfd83ad8a0584fc2dd198a6e1bf0434b79167",
     "Package.swift" =>
       "3c53631753e44d6de1d0cd04cb1c725a105e65b2ba332ec19465c34048d5f339",
-    "project.yml" =>
-      "dde326aa375b5c63362e3696402e52e023c9d1f88a26c751a652d42fa24a2800",
+    "Examples/PocketRootDemo/project.yml" =>
+      "749cfea0c9a9e7cc4919d3dbee1c01720aa85d8f1b5fe4fc887b61d3a2d0f3fa",
     "Examples/PocketRootHostApp/project.yml" =>
       "5d2961cd344b85b5ca0102f3e7b80c3bba7ac8681b645e3d8efae0ec137d33e4",
     "Scripts/inject-demo-rootfs.sh" =>
@@ -222,7 +222,7 @@ module PocketRootReleaseCompliance
   }.freeze
   IMPLEMENTATION_ROOTS = %w[
     Sources
-    Demo/PocketRootDemo
+    Examples/PocketRootDemo/Sources/PocketRootDemo
     Examples/PocketRootHostApp/Sources
     Spikes/PocketRootIshRuntimeCompileSpike
     Spikes/PocketRootIshRuntimeSmoke
@@ -680,7 +680,7 @@ module PocketRootReleaseCompliance
       project["name"] == "PocketRootDemo" &&
       project["options"] == expected_options &&
       project["settings"] == expected_settings &&
-      project["packages"] == {"PocketRoot" => {"path" => "."}}
+      project["packages"] == {"PocketRoot" => {"path" => "../.."}}
       raise ComplianceError,
         "project.yml does not preserve exact project settings and package inputs"
     end
@@ -709,7 +709,7 @@ module PocketRootReleaseCompliance
           }
         },
         "sources" => [
-          {"path" => "Spikes/PocketRootIshRuntimeCompileSpike"}
+          {"path" => "../../Spikes/PocketRootIshRuntimeCompileSpike"}
         ],
         "resources" => [],
         "dependencies" => [
@@ -739,7 +739,7 @@ module PocketRootReleaseCompliance
           }
         },
         "sources" => [
-          {"path" => "Spikes/PocketRootIshRuntimeSmoke"}
+          {"path" => "../../Spikes/PocketRootIshRuntimeSmoke"}
         ],
         "resources" => [],
         "dependencies" => [
@@ -776,12 +776,12 @@ module PocketRootReleaseCompliance
         },
         "sources" => [
           {
-            "path" => "Demo/PocketRootDemo",
+            "path" => "Sources/PocketRootDemo",
             "excludes" => ["Resources"]
           }
         ],
         "resources" => [
-          {"path" => "Demo/PocketRootDemo/Resources"}
+          {"path" => "Sources/PocketRootDemo/Resources"}
         ],
         "dependencies" => [
           {"package" => "PocketRoot", "product" => "PocketRoot"},
@@ -794,7 +794,7 @@ module PocketRootReleaseCompliance
         "postBuildScripts" => [
           {
             "name" => "Inject reviewed development RootFS",
-            "script" => "\"$SRCROOT/Scripts/inject-demo-rootfs.sh\"\n",
+            "script" => "\"$SRCROOT/../../Scripts/inject-demo-rootfs.sh\"\n",
             "basedOnDependencyAnalysis" => false
           }
         ]
@@ -811,7 +811,7 @@ module PocketRootReleaseCompliance
           }
         },
         "sources" => [
-          {"path" => "Tests/PocketRootDemoTests", "optional" => true}
+          {"path" => "Tests", "optional" => true}
         ],
         "resources" => [],
         "dependencies" => [
@@ -857,7 +857,9 @@ module PocketRootReleaseCompliance
 
   def validate_resource_files(root)
     resource_roots = [
-      root.join("Demo/PocketRootDemo/Resources"),
+      root.join(
+        "Examples/PocketRootDemo/Sources/PocketRootDemo/Resources"
+      ),
       root.join("Sources/PocketRootResources/Resources")
     ]
     actual = {}
@@ -939,7 +941,11 @@ module PocketRootReleaseCompliance
       read_regular(root.join("Package.swift"), "Package.swift")
     package_resolved, package_resolved_bytes =
       load_json(root.join("Package.resolved"), "Package.resolved")
-    project_bytes = read_regular(root.join("project.yml"), "project.yml")
+    project_bytes =
+      read_regular(
+        root.join("Examples/PocketRootDemo/project.yml"),
+        "PocketRoot Demo project.yml"
+      )
     host_project_bytes =
       read_regular(
         root.join("Examples/PocketRootHostApp/project.yml"),
@@ -994,7 +1000,8 @@ module PocketRootReleaseCompliance
       "LICENSE" => Digest::SHA256.hexdigest(license_bytes),
       "Package.resolved" => Digest::SHA256.hexdigest(package_resolved_bytes),
       "Package.swift" => Digest::SHA256.hexdigest(package_swift),
-      "project.yml" => Digest::SHA256.hexdigest(project_bytes),
+      "Examples/PocketRootDemo/project.yml" =>
+        Digest::SHA256.hexdigest(project_bytes),
       "Examples/PocketRootHostApp/project.yml" =>
         Digest::SHA256.hexdigest(host_project_bytes),
       "Scripts/inject-demo-rootfs.sh" =>

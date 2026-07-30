@@ -12,7 +12,7 @@
     "LICENSE": "9858dd8b44db130c423cb772ec04d1a16fceb4fa57c679b27e301b9f76861bba",
     "Package.resolved": "a6c4a28788ed9d4a22f021248cadfd83ad8a0584fc2dd198a6e1bf0434b79167",
     "Package.swift": "3c53631753e44d6de1d0cd04cb1c725a105e65b2ba332ec19465c34048d5f339",
-    "project.yml": "dde326aa375b5c63362e3696402e52e023c9d1f88a26c751a652d42fa24a2800",
+    "Examples/PocketRootDemo/project.yml": "749cfea0c9a9e7cc4919d3dbee1c01720aa85d8f1b5fe4fc887b61d3a2d0f3fa",
     "Examples/PocketRootHostApp/project.yml": "5d2961cd344b85b5ca0102f3e7b80c3bba7ac8681b645e3d8efae0ec137d33e4",
     "Scripts/inject-demo-rootfs.sh": "3982b5382b0d1e13e0c8e8a5bb5404c5bad1dfc4d6e9cd23a39e3395a83087bb",
     "Scripts/run-host-app-ui-smoke.sh": "557baabe9721bc65c484c299356176dc8c5300594c533f61245fd620c60f741b",
@@ -92,19 +92,19 @@
     "Sources/PocketRootTerminal/UI/PocketRootFileTreeState.swift": "0b3696504a5a0e001c227267743d0628bab30e8cd0485fce298a01bfa609ddec",
     "Sources/PocketRootTerminal/UI/TerminalAccessoryView.swift": "bc9f2d56534e7b34cd3bcbf2e165daa7623cfb2e4d8956de1aea205a88697e0e",
     "Sources/PocketRootTerminal/UI/TerminalPlaceholderView.swift": "2781166fb44b8a86e6c1dc9aa087e0b70fef683695096cbbb17b096ee5400b0d",
-    "Demo/PocketRootDemo/Application/AppDelegate.swift": "3a94c7b05345b7b57d2bfdad01ea25bccf49bfd86c564b3f43e04581ab2f4d7b",
-    "Demo/PocketRootDemo/Application/SceneDelegate.swift": "c9ac1d34b15f0976950c3e412d2ce1d65805ec374860b2818ff84bfcc27811b1",
-    "Demo/PocketRootDemo/Features/Commands/CommandsViewController.swift": "cc677e400fd2dbe9a72cadb21013aaee572953226bc573f81e84772f36f648aa",
-    "Demo/PocketRootDemo/Features/Diagnostics/DiagnosticsViewController.swift": "a4bc8dac9bd5a2a3020bb90da944a7db190a6c32f220caacdc978382ad794099",
-    "Demo/PocketRootDemo/Features/Files/FilesDemoViewController.swift": "1c4bbf856af7ce6b0f3e2fa2a34ed93fe8c614b1611afad2ababe382e7c40029",
-    "Demo/PocketRootDemo/Features/System/SystemViewController.swift": "c0c8008f98306936f3467c3538c8179afcd16232a03da567b88f69c77daa77ec",
-    "Demo/PocketRootDemo/Features/Terminal/TerminalDemoViewController.swift": "4075c4b7d645eadfde040c6fe5695a866a92fa2896d2c6a8c4f26cc66a67d4c9",
-    "Demo/PocketRootDemo/Info.plist": "3da706b932aa7563ba497984be8fd23ee1ed98691e153204f4ffdd50fab0e5fb",
-    "Demo/PocketRootDemo/Navigation/PocketRootDemoTabBarController.swift": "7cdd8862a2cf7332bbe6c95fd2e01a7436d332356c007b368010410569fcb8e3",
-    "Demo/PocketRootDemo/Resources/Assets.xcassets/Contents.json": "0fd49ba3c3585c709678e0046a821c3c60685ec7063720d30d3a3448be3a208b",
-    "Demo/PocketRootDemo/Shared/Runtime/DemoRuntimeStore.swift": "a1c48ac00bda87dc5332daf5ddd75715b6d18e84d5eaae80e6c8da11f63db8da",
-    "Demo/PocketRootDemo/Shared/Support/DemoConstants.swift": "9e47feedb5056ecb96f4d297324c29c2ff975031cce63abb46f112f324a4f610",
-    "Demo/PocketRootDemo/Shared/UI/PlaceholderViewController.swift": "48e0f6462228a66face2aef51f9bd39ec02923c4d1c01b6b34f920948998f2b8",
+    "Examples/PocketRootDemo/Sources/PocketRootDemo/Application/AppDelegate.swift": "3a94c7b05345b7b57d2bfdad01ea25bccf49bfd86c564b3f43e04581ab2f4d7b",
+    "Examples/PocketRootDemo/Sources/PocketRootDemo/Application/SceneDelegate.swift": "c9ac1d34b15f0976950c3e412d2ce1d65805ec374860b2818ff84bfcc27811b1",
+    "Examples/PocketRootDemo/Sources/PocketRootDemo/Features/Commands/CommandsViewController.swift": "cc677e400fd2dbe9a72cadb21013aaee572953226bc573f81e84772f36f648aa",
+    "Examples/PocketRootDemo/Sources/PocketRootDemo/Features/Diagnostics/DiagnosticsViewController.swift": "a4bc8dac9bd5a2a3020bb90da944a7db190a6c32f220caacdc978382ad794099",
+    "Examples/PocketRootDemo/Sources/PocketRootDemo/Features/Files/FilesDemoViewController.swift": "1c4bbf856af7ce6b0f3e2fa2a34ed93fe8c614b1611afad2ababe382e7c40029",
+    "Examples/PocketRootDemo/Sources/PocketRootDemo/Features/System/SystemViewController.swift": "c0c8008f98306936f3467c3538c8179afcd16232a03da567b88f69c77daa77ec",
+    "Examples/PocketRootDemo/Sources/PocketRootDemo/Features/Terminal/TerminalDemoViewController.swift": "4075c4b7d645eadfde040c6fe5695a866a92fa2896d2c6a8c4f26cc66a67d4c9",
+    "Examples/PocketRootDemo/Sources/PocketRootDemo/Info.plist": "3da706b932aa7563ba497984be8fd23ee1ed98691e153204f4ffdd50fab0e5fb",
+    "Examples/PocketRootDemo/Sources/PocketRootDemo/Navigation/PocketRootDemoTabBarController.swift": "7cdd8862a2cf7332bbe6c95fd2e01a7436d332356c007b368010410569fcb8e3",
+    "Examples/PocketRootDemo/Sources/PocketRootDemo/Resources/Assets.xcassets/Contents.json": "0fd49ba3c3585c709678e0046a821c3c60685ec7063720d30d3a3448be3a208b",
+    "Examples/PocketRootDemo/Sources/PocketRootDemo/Shared/Runtime/DemoRuntimeStore.swift": "a1c48ac00bda87dc5332daf5ddd75715b6d18e84d5eaae80e6c8da11f63db8da",
+    "Examples/PocketRootDemo/Sources/PocketRootDemo/Shared/Support/DemoConstants.swift": "9e47feedb5056ecb96f4d297324c29c2ff975031cce63abb46f112f324a4f610",
+    "Examples/PocketRootDemo/Sources/PocketRootDemo/Shared/UI/PlaceholderViewController.swift": "48e0f6462228a66face2aef51f9bd39ec02923c4d1c01b6b34f920948998f2b8",
     "Examples/PocketRootHostApp/Sources/HostApp.swift": "5fceef4899e644e2de32f3e03c242fca1ccbc9004f1de8a22f8dddc4c1462393",
     "Examples/PocketRootHostApp/Sources/Info.plist": "711b38923f11fdb4ceb7d28cb90a51674afec0a64786a20f9bd68e3f406f8d26",
     "Spikes/PocketRootIshRuntimeCompileSpike/PocketRootIshRuntimeCompileSpike.swift": "829a9ef79d67cb93aae5fbea32561c5c5497a7a017922bb1ebb344b4c0c32da8",
@@ -317,7 +317,7 @@
         },
         "sources": [
           {
-            "path": "Spikes/PocketRootIshRuntimeCompileSpike"
+            "path": "../../Spikes/PocketRootIshRuntimeCompileSpike"
           }
         ],
         "resources": [],
@@ -349,7 +349,7 @@
         },
         "sources": [
           {
-            "path": "Spikes/PocketRootIshRuntimeSmoke"
+            "path": "../../Spikes/PocketRootIshRuntimeSmoke"
           }
         ],
         "resources": [],
@@ -397,7 +397,7 @@
         },
         "sources": [
           {
-            "path": "Demo/PocketRootDemo",
+            "path": "Sources/PocketRootDemo",
             "excludes": [
               "Resources"
             ]
@@ -405,7 +405,7 @@
         ],
         "resources": [
           {
-            "path": "Demo/PocketRootDemo/Resources"
+            "path": "Sources/PocketRootDemo/Resources"
           }
         ],
         "dependencies": [
@@ -425,7 +425,7 @@
         "postBuildScripts": [
           {
             "name": "Inject reviewed development RootFS",
-            "script": "\"$SRCROOT/Scripts/inject-demo-rootfs.sh\"\n",
+            "script": "\"$SRCROOT/../../Scripts/inject-demo-rootfs.sh\"\n",
             "basedOnDependencyAnalysis": false
           }
         ],
@@ -444,7 +444,7 @@
         },
         "sources": [
           {
-            "path": "Tests/PocketRootDemoTests",
+            "path": "Tests",
             "optional": true
           }
         ],

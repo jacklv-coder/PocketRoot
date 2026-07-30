@@ -18,7 +18,10 @@ swift package show-dependencies
 
 ## XcodeGen missing or project absent
 
-Install with `brew install xcodegen` or run `./Scripts/bootstrap.sh`. Generate `PocketRootDemo.xcodeproj` with `./Scripts/generate-project.sh`. Do not edit `project.pbxproj`; `project.yml` is authoritative.
+Install with `brew install xcodegen` or run `./Scripts/bootstrap.sh`. Generate
+`Examples/PocketRootDemo/PocketRootDemo.xcodeproj` with
+`./Scripts/generate-project.sh`. Do not edit `project.pbxproj`;
+`Examples/PocketRootDemo/project.yml` is authoritative.
 
 ## Dependency resolution
 

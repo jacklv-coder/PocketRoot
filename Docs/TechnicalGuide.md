@@ -118,7 +118,7 @@ SIGUSR1 屏蔽，使 guest signal 可打断阻塞中的宿主 syscall；它同�
 | `Sources/PocketRootIshRuntime/` | iSH adapter、driver、串行执行与所有权 | 阻塞原生 API 如何接入 Swift Concurrency |
 | `Sources/PocketRootIshRuntimeIntegration/` | RootFS 与 runtime 的组合 factory | 应用真正使用的 `prepareSystem` 入口 |
 | `Sources/PocketRootTerminal/` | SwiftTerm PTY、guest 文件浏览和 fallback facade | UI 如何连接已登记 session 并保持资源边界 |
-| `Demo/PocketRootDemo/` | 安全默认的 UIKit 演示 | UI 与实验运行时保持分离 |
+| `Examples/PocketRootDemo/Sources/PocketRootDemo/` | 完整 UIKit 演示 | UI 与 SDK 源码保持分离 |
 | `Spikes/` | 最终链接与原生 smoke App | 编译成功和真实运行成功的区别 |
 | `Tests/` | Swift 单元与集成测试 | 状态、边界、恢复和错误语义 |
 | `Scripts/` | bootstrap、构建、文档检查和 smoke | 本地与 CI 的统一入口 |
@@ -332,7 +332,7 @@ RootFS 二进制本身受来源与许可证门禁约束，所以不提交到仓�
 | 安装复用与恢复 | `RootFSInstaller.swift` | `Tests/PocketRootResourcesTests/` |
 | Swift 到 native | `IshEmbedDriver.swift` | `ish-arm64-pkg` 的 `Sources/IshEmbed/` 与 C ABI |
 | 原生 kernel 行为 | `ish-arm64-pkg/third_party/ish` gitlink | `ish-arm64` 对应 commit |
-| Demo 页面 | `Demo/PocketRootDemo/` | `project.yml` |
+| Demo 页面 | `Examples/PocketRootDemo/Sources/PocketRootDemo/` | `Examples/PocketRootDemo/project.yml` |
 | 原生行为证据 | `Spikes/PocketRootIshRuntimeSmoke/` | `Scripts/run-runtime-smoke.sh`、`Scripts/run-runtime-device-smoke.sh` |
 
 更细的逐方法说明见[实现原理](Implementation.md)。
@@ -364,7 +364,10 @@ RootFS 二进制本身受来源与许可证门禁约束，所以不提交到仓�
 ./Scripts/build-runtime-spike.sh
 ```
 
-干净 clone 建议先运行 `bootstrap.sh`：`build.sh` 需要由 `project.yml` 生成、但不提交到 Git 的 Xcode 工程。`build-runtime-spike.sh` 会自行重新生成工程，但仍要求 XcodeGen 和依赖环境可用。已完成 bootstrap 且工程没有配置变化时，可以从后续检查开始。
+干净 clone 建议先运行 `bootstrap.sh`：`build.sh` 需要由
+`Examples/PocketRootDemo/project.yml` 生成、但不提交到 Git 的 Xcode 工程。
+`build-runtime-spike.sh` 会自行重新生成工程，但仍要求 XcodeGen 和依赖环境可用。
+已完成 bootstrap 且工程没有配置变化时，可以从后续检查开始。
 
 有经过审核且精确匹配 manifest 的 RootFS 时，再运行：
 
