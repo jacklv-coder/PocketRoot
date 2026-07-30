@@ -203,6 +203,12 @@ final class PocketRootHostAppUITests: XCTestCase {
         guard waitForHittable(imported) else {
             return
         }
+        flushGuestState(in: app)
+        app.buttons["PocketRootHost.files"].tap()
+        XCTAssertTrue(imported.waitForExistence(timeout: 30))
+        guard waitForHittable(imported) else {
+            return
+        }
         imported.press(forDuration: 1)
         app.buttons["Share / Export"].tap()
 
@@ -229,10 +235,15 @@ final class PocketRootHostAppUITests: XCTestCase {
         if replace.waitForExistence(timeout: 10) {
             replace.tap()
         }
-        guard dismissShareSheetIfNeeded(in: app) else {
-            return
+        if dismissShareSheetIfNeeded(in: app) {
+            returnToHost(in: app)
+        } else {
+            // iOS 18.0 can leave the app-hosted ActivityViewController
+            // inaccessible after the document picker returns. Restarting the
+            // host removes that system-owned UI while preserving the installed
+            // RootFS and the files being verified by the remainder of the test.
+            relaunchAndBoot(app)
         }
-        returnToHost(in: app)
         let filesButton = app.buttons["PocketRootHost.files"]
         XCTAssertTrue(filesButton.waitForExistence(timeout: 10))
         filesButton.tap()
@@ -568,7 +579,36 @@ final class PocketRootHostAppUITests: XCTestCase {
             "-PocketRootUITesting"
         ]
         app.launch()
+        bootRuntime(in: app)
+        return app
+    }
 
+    private func relaunchAndBoot(_ app: XCUIApplication) {
+        app.terminate()
+        XCTAssertTrue(app.wait(for: .notRunning, timeout: 10))
+        app.launch()
+        bootRuntime(in: app)
+    }
+
+    private func flushGuestState(in app: XCUIApplication) {
+        returnToHost(in: app)
+        app.buttons["PocketRootHost.terminal"].tap()
+
+        let terminal = terminalElement(in: app)
+        XCTAssertTrue(terminal.waitForExistence(timeout: 30))
+        terminal.tap()
+        let marker = "__POCKETROOT_SYSTEM_FILE_SYNCED__"
+        terminal.typeText("sync && printf '\(marker)\\n'\n")
+        wait(
+            for: NSPredicate(format: "value CONTAINS %@", marker),
+            evaluatedWith: terminal,
+            timeout: 30
+        )
+        dismissKeyboard(in: app)
+        returnToHost(in: app)
+    }
+
+    private func bootRuntime(in app: XCUIApplication) {
         let status = app.staticTexts["PocketRootHost.status"]
         XCTAssertTrue(status.waitForExistence(timeout: 10))
         XCTAssertEqual(status.label, "Runtime: Ready to Boot")
@@ -588,7 +628,6 @@ final class PocketRootHostAppUITests: XCTestCase {
             evaluatedWith: terminalButton,
             timeout: 10
         )
-        return app
     }
 
     private func terminalElement(in app: XCUIApplication) -> XCUIElement {
@@ -706,16 +745,27 @@ final class PocketRootHostAppUITests: XCTestCase {
             } else {
                 // iPad presents the activity view as a popover without a
                 // Close button. Tap outside its current frame to dismiss it.
-                _ = tapOutsideCurrentFrame(of: activityView, in: app)
+                let tappedOutside = tapOutsideCurrentFrame(
+                    of: activityView,
+                    in: app
+                )
+                if !tappedOutside {
+                    // A stale or full-screen activity view has no safe gesture
+                    // target. Let the caller use the relaunch recovery path.
+                    continue
+                }
             }
         }
 
         // System UI can leave a stale ActivityListView accessibility node
         // behind. The host action button becoming hittable is the reliable
-        // signal that the share sheet no longer blocks input.
-        return waitForHittable(
-            hostActions,
-            failureDescription: "the system share sheet to dismiss"
+        // signal that the share sheet no longer blocks input. If iOS keeps the
+        // remote view attached, the caller relaunches the host and continues
+        // validating the persisted Linux and exported files.
+        return waitWithoutAssertion(
+            for: hostIsHittable,
+            evaluatedWith: hostActions,
+            timeout: 5
         )
     }
 
