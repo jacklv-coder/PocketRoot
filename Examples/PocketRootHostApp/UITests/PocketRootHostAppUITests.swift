@@ -203,6 +203,12 @@ final class PocketRootHostAppUITests: XCTestCase {
         guard waitForHittable(imported) else {
             return
         }
+        flushGuestState(in: app)
+        app.buttons["PocketRootHost.files"].tap()
+        XCTAssertTrue(imported.waitForExistence(timeout: 30))
+        guard waitForHittable(imported) else {
+            return
+        }
         imported.press(forDuration: 1)
         app.buttons["Share / Export"].tap()
 
@@ -229,10 +235,15 @@ final class PocketRootHostAppUITests: XCTestCase {
         if replace.waitForExistence(timeout: 10) {
             replace.tap()
         }
-        guard dismissShareSheetIfNeeded(in: app) else {
-            return
+        if dismissShareSheetIfNeeded(in: app) {
+            returnToHost(in: app)
+        } else {
+            // iOS 18.0 can leave the app-hosted ActivityViewController
+            // inaccessible after the document picker returns. Restarting the
+            // host removes that system-owned UI while preserving the installed
+            // RootFS and the files being verified by the remainder of the test.
+            relaunchAndBoot(app)
         }
-        returnToHost(in: app)
         let filesButton = app.buttons["PocketRootHost.files"]
         XCTAssertTrue(filesButton.waitForExistence(timeout: 10))
         filesButton.tap()
@@ -568,7 +579,36 @@ final class PocketRootHostAppUITests: XCTestCase {
             "-PocketRootUITesting"
         ]
         app.launch()
+        bootRuntime(in: app)
+        return app
+    }
 
+    private func relaunchAndBoot(_ app: XCUIApplication) {
+        app.terminate()
+        XCTAssertTrue(app.wait(for: .notRunning, timeout: 10))
+        app.launch()
+        bootRuntime(in: app)
+    }
+
+    private func flushGuestState(in app: XCUIApplication) {
+        returnToHost(in: app)
+        app.buttons["PocketRootHost.terminal"].tap()
+
+        let terminal = terminalElement(in: app)
+        XCTAssertTrue(terminal.waitForExistence(timeout: 30))
+        terminal.tap()
+        let marker = "__POCKETROOT_SYSTEM_FILE_SYNCED__"
+        terminal.typeText("sync && printf '\(marker)\\n'\n")
+        wait(
+            for: NSPredicate(format: "value CONTAINS %@", marker),
+            evaluatedWith: terminal,
+            timeout: 30
+        )
+        dismissKeyboard(in: app)
+        returnToHost(in: app)
+    }
+
+    private func bootRuntime(in app: XCUIApplication) {
         let status = app.staticTexts["PocketRootHost.status"]
         XCTAssertTrue(status.waitForExistence(timeout: 10))
         XCTAssertEqual(status.label, "Runtime: Ready to Boot")
@@ -588,7 +628,6 @@ final class PocketRootHostAppUITests: XCTestCase {
             evaluatedWith: terminalButton,
             timeout: 10
         )
-        return app
     }
 
     private func terminalElement(in app: XCUIApplication) -> XCUIElement {
@@ -649,7 +688,13 @@ final class PocketRootHostAppUITests: XCTestCase {
         XCTAssertTrue(localLocation.waitForExistence(timeout: 30))
         localLocation.tap()
 
-        let hostDocuments = app.staticTexts["PocketRoot Host"]
+        let hostDocuments = app.cells.matching(
+            NSPredicate(
+                format: "identifier == %@ OR label BEGINSWITH %@",
+                "PocketRoot Host, Container",
+                "PocketRoot Host,"
+            )
+        ).firstMatch
         XCTAssertTrue(hostDocuments.waitForExistence(timeout: 30))
         hostDocuments.tap()
     }
@@ -659,34 +704,113 @@ final class PocketRootHostAppUITests: XCTestCase {
     ) -> Bool {
         let activityView = app.otherElements["ActivityListView"]
         let hostActions = app.buttons["PocketRootFiles.actions"]
-        guard activityView.waitForExistence(timeout: 3) else {
-            return waitForHittable(hostActions)
+        let hostIsHittable = NSPredicate(format: "hittable == true")
+
+        for attempt in 0..<3 {
+            if waitWithoutAssertion(
+                for: hostIsHittable,
+                evaluatedWith: hostActions,
+                timeout: attempt == 0 ? 3 : 2
+            ) {
+                return true
+            }
+            if attempt == 0, !activityView.exists {
+                _ = activityView.waitForExistence(timeout: 3)
+            }
+            guard activityView.exists else {
+                continue
+            }
+
+            let close = app.buttons.matching(
+                NSPredicate(format: "label IN %@", ["Close", "关闭"])
+            ).firstMatch
+            let shareDismissedOrCloseHittable = NSPredicate { _, _ in
+                hostActions.isHittable || !activityView.exists
+                    || close.isHittable
+            }
+            _ = waitWithoutAssertion(
+                for: shareDismissedOrCloseHittable,
+                evaluatedWith: app,
+                timeout: 5
+            )
+            if hostActions.isHittable {
+                return true
+            }
+            guard activityView.exists else {
+                continue
+            }
+
+            if close.isHittable {
+                tapCurrentFrame(of: close, in: app)
+            } else {
+                // iPad presents the activity view as a popover without a
+                // Close button. Tap outside its current frame to dismiss it.
+                let tappedOutside = tapOutsideCurrentFrame(
+                    of: activityView,
+                    in: app
+                )
+                if !tappedOutside {
+                    // A stale or full-screen activity view has no safe gesture
+                    // target. Let the caller use the relaunch recovery path.
+                    continue
+                }
+            }
         }
-        let close = app.buttons.matching(
-            NSPredicate(format: "label IN %@", ["Close", "关闭"])
-        ).firstMatch
-        let shareDismissedOrCloseHittable = NSPredicate { _, _ in
-            hostActions.isHittable || !activityView.exists
-                || close.isHittable
+
+        // System UI can leave a stale ActivityListView accessibility node
+        // behind. The host action button becoming hittable is the reliable
+        // signal that the share sheet no longer blocks input. If iOS keeps the
+        // remote view attached, the caller relaunches the host and continues
+        // validating the persisted Linux and exported files.
+        return waitWithoutAssertion(
+            for: hostIsHittable,
+            evaluatedWith: hostActions,
+            timeout: 5
+        )
+    }
+
+    private func tapCurrentFrame(
+        of element: XCUIElement,
+        in app: XCUIApplication
+    ) {
+        let appFrame = app.frame
+        let elementFrame = element.frame
+        app.coordinate(withNormalizedOffset: .zero)
+            .withOffset(
+                CGVector(
+                    dx: elementFrame.midX - appFrame.minX,
+                    dy: elementFrame.midY - appFrame.minY
+                )
+            )
+            .tap()
+    }
+
+    private func tapOutsideCurrentFrame(
+        of element: XCUIElement,
+        in app: XCUIApplication
+    ) -> Bool {
+        let appFrame = app.frame
+        let elementFrame = element.frame
+        guard appFrame.width > 2, appFrame.height > 2 else {
+            return false
         }
-        guard wait(
-            for: shareDismissedOrCloseHittable,
-            evaluatedWith: app,
-            timeout: 30
+        let candidatePoints = [
+            CGPoint(x: appFrame.minX + 1, y: appFrame.minY + 1),
+            CGPoint(x: appFrame.maxX - 1, y: appFrame.minY + 1),
+            CGPoint(x: appFrame.minX + 1, y: appFrame.maxY - 1),
+            CGPoint(x: appFrame.maxX - 1, y: appFrame.maxY - 1),
+        ]
+        guard let point = candidatePoints.first(
+            where: { !elementFrame.contains($0) }
         ) else {
             return false
         }
-        if hostActions.isHittable {
-            return true
-        }
-        guard activityView.exists else {
-            return waitForHittable(hostActions)
-        }
-        close.tap()
-        // Files can leave a non-visible ActivityListView accessibility node
-        // behind after dismissal. The host action button becoming hittable is
-        // the reliable signal that the system sheet no longer blocks input.
-        return waitForHittable(hostActions)
+        let offset = CGVector(
+            dx: (point.x - appFrame.minX) / appFrame.width,
+            dy: (point.y - appFrame.minY) / appFrame.height
+        )
+        app.coordinate(withNormalizedOffset: offset).tap()
+        return true
     }
 
     private func tapBackButton(in app: XCUIApplication) {
@@ -767,15 +891,39 @@ final class PocketRootHostAppUITests: XCTestCase {
     private func wait(
         for predicate: NSPredicate,
         evaluatedWith object: Any,
-        timeout: TimeInterval
+        timeout: TimeInterval,
+        failureDescription: String? = nil,
+        file: StaticString = #filePath,
+        line: UInt = #line
     ) -> Bool {
         let expectation = XCTNSPredicateExpectation(
             predicate: predicate,
             object: object
         )
         let result = XCTWaiter.wait(for: [expectation], timeout: timeout)
-        XCTAssertEqual(result, .completed)
+        XCTAssertEqual(
+            result,
+            .completed,
+            failureDescription ?? "predicate \(predicate) to become true",
+            file: file,
+            line: line
+        )
         return result == .completed
+    }
+
+    private func waitWithoutAssertion(
+        for predicate: NSPredicate,
+        evaluatedWith object: Any,
+        timeout: TimeInterval
+    ) -> Bool {
+        let expectation = XCTNSPredicateExpectation(
+            predicate: predicate,
+            object: object
+        )
+        return XCTWaiter.wait(
+            for: [expectation],
+            timeout: timeout
+        ) == .completed
     }
 
     private func waitForEnabled(
@@ -785,19 +933,24 @@ final class PocketRootHostAppUITests: XCTestCase {
         wait(
             for: NSPredicate(format: "enabled == true"),
             evaluatedWith: element,
-            timeout: timeout
+            timeout: timeout,
+            failureDescription:
+                "element \(element.identifier) to become enabled"
         )
     }
 
     @discardableResult
     private func waitForHittable(
         _ element: XCUIElement,
-        timeout: TimeInterval = 30
+        timeout: TimeInterval = 30,
+        failureDescription: String? = nil
     ) -> Bool {
         wait(
             for: NSPredicate(format: "hittable == true"),
             evaluatedWith: element,
-            timeout: timeout
+            timeout: timeout,
+            failureDescription: failureDescription
+                ?? "element \(element.identifier) to become hittable"
         )
     }
 }

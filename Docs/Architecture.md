@@ -201,7 +201,7 @@ UIKit/SwiftUI UI：
 
 ### PocketRootDemo
 
-源码：`Demo/PocketRootDemo/`
+源码：`Examples/PocketRootDemo/Sources/PocketRootDemo/`
 
 使用 AppDelegate、SceneDelegate、UIWindow、UIKit 和 Auto Layout，包含
 System、Terminal、Files、Commands、Diagnostics 五个入口。共享
@@ -363,8 +363,9 @@ journal-only/backup/candidate 断电切点验证旧版本回滚或候选提交�
 
 - `Package.swift`：Swift Package 产品、依赖和 test target 事实源。
 - `Package.resolved`：当前精确 dependency resolution。
-- `project.yml`：Demo、compile spike、smoke target 和 scheme 事实源。
-- `PocketRootDemo.xcodeproj`：生成物，不提交。
+- `Examples/PocketRootDemo/project.yml`：Demo、compile spike、smoke target 和
+  scheme 事实源。
+- `Examples/PocketRootDemo/PocketRootDemo.xcodeproj`：生成物，不提交。
 - `.github/workflows/ci.yml`：host tests、真实 RootFS test、Demo build 与 arm64 final-link。
 - `Scripts/run-runtime-smoke.sh`：本地 iOS 18 Simulator 原生行为门禁。
 - `Scripts/run-runtime-device-smoke.sh`：签名 iOS 18+ iPhone/iPad 原生行为门禁。

@@ -38,7 +38,10 @@ The repository Git remote uses SSH.
 ./Scripts/bootstrap.sh
 ```
 
-The script installs XcodeGen through Homebrew when required, runs `swift package resolve`, and generates `PocketRootDemo.xcodeproj` from `project.yml`.
+The script installs XcodeGen through Homebrew when required, runs
+`swift package resolve`, and generates
+`Examples/PocketRootDemo/PocketRootDemo.xcodeproj` from
+`Examples/PocketRootDemo/project.yml`.
 
 To regenerate only:
 
@@ -46,14 +49,15 @@ To regenerate only:
 ./Scripts/generate-project.sh
 ```
 
-Do not edit `project.pbxproj` manually. The generated project is ignored; `project.yml` is the source of truth.
+Do not edit `project.pbxproj` manually. The generated project is ignored;
+`Examples/PocketRootDemo/project.yml` is the source of truth.
 
 ## 4. Basic validation
 
 ```bash
 ./Scripts/test.sh
 ./Scripts/build.sh
-open PocketRootDemo.xcodeproj
+open Examples/PocketRootDemo/PocketRootDemo.xcodeproj
 ```
 
 `test.sh` runs host Swift Package tests. The real release-asset test skips unless `POCKETROOT_ROOTFS_ARCHIVE` is set; synthetic fixtures still cover installer reuse and related paths. `build.sh` final-links the arm64 Demo; without a configured RootFS it does not boot a guest.

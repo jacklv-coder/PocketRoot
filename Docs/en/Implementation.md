@@ -16,7 +16,7 @@ This document maps public APIs to source and explains the end-to-end implementat
 | Native factory and adapter | `Sources/PocketRootIshRuntime/` |
 | RootFS/runtime composition | `Sources/PocketRootIshRuntimeIntegration/` |
 | Terminal UI | `Sources/PocketRootTerminal/` |
-| Demo | `Demo/PocketRootDemo/` |
+| Demo | `Examples/PocketRootDemo/Sources/PocketRootDemo/` |
 | Final-link and native behavior probes | `Spikes/` |
 
 ## Safe default

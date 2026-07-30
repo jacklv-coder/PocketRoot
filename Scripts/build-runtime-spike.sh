@@ -3,6 +3,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+DEMO_PROJECT="$ROOT_DIR/Examples/PocketRootDemo/PocketRootDemo.xcodeproj"
 DERIVED_DATA_ROOT="${TMPDIR:-/tmp}/PocketRootIshRuntimeCompileSpike"
 
 cd "$ROOT_DIR"
@@ -12,7 +13,7 @@ cd "$ROOT_DIR"
 for destination in 'generic/platform=iOS Simulator' 'generic/platform=iOS'; do
     suffix="$(printf '%s' "$destination" | tr ' /=' '---')"
     xcodebuild \
-      -project PocketRootDemo.xcodeproj \
+      -project "$DEMO_PROJECT" \
       -scheme PocketRootIshRuntimeCompileSpike \
       -configuration Debug \
       -destination "$destination" \

@@ -267,8 +267,8 @@ reuse; the installer rewrites it before returning.
 
 - `Package.swift`: products, dependencies, and tests.
 - `Package.resolved`: exact resolution.
-- `project.yml`: Demo and native spike targets.
-- Generated `PocketRootDemo.xcodeproj`: not committed.
+- `Examples/PocketRootDemo/project.yml`: Demo and native spike targets.
+- Generated `Examples/PocketRootDemo/PocketRootDemo.xcodeproj`: not committed.
 - CI: host tests, real-asset test, Demo build, and arm64 final links.
 - Local smoke: iOS 18 Simulator native behavior.
 

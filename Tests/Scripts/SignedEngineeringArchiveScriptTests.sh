@@ -4,7 +4,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 RUNNER="$ROOT_DIR/Scripts/build-signed-engineering-archive.sh"
-PROJECT_SPEC="$ROOT_DIR/project.yml"
+PROJECT_SPEC="$ROOT_DIR/Examples/PocketRootDemo/project.yml"
 TEST_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/PocketRootSignedArchiveContract.XXXXXX")"
 
 cleanup() {

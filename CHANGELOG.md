@@ -175,6 +175,9 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
 
 ### Changed
 
+- 将完整 Demo 与专属测试、XcodeGen 配置整理到自包含的
+  `Examples/PocketRootDemo`；工程生成和构建脚本统一使用该公开示例路径，避免把
+  Demo 与 Swift Package SDK 源码混在仓库根层级。
 - SwiftTerm 加入后，发行组合生成器与 SPDX SBOM 同步覆盖直接 pin、解析得到但未链接的
   `swift-argument-parser`、SwiftTerm MIT notice 和 Terminal target 图；PTY 现在严格
   执行 `allowsInput=false`，SwiftUI 在 backend/session/terminal configuration 变化时

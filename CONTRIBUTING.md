@@ -105,7 +105,7 @@ feat: add bounded runtime command output
 - `PocketRootCore` 不依赖 UIKit、RootFS implementation 或 IshEmbed。
 - UIKit 代码使用 programmatic UIKit 与 Auto Layout。
 - 不加入 storyboard、XIB 或 SwiftUI App lifecycle。
-- `project.yml` 是 Xcode project 事实源；不提交生成的 `PocketRootDemo.xcodeproj`。
+- `Examples/PocketRootDemo/project.yml` 是完整 Demo 的 Xcode project 事实源；不提交生成的 `Examples/PocketRootDemo/PocketRootDemo.xcodeproj`。
 - 默认 `PocketRoot` umbrella 不导出 Experimental runtime。
 - 真实 runtime 必须 opt-in。
 - IshEmbed 同步调用不能运行在 main thread 或 Swift cooperative executor。

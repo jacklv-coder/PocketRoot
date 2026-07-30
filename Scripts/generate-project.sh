@@ -3,8 +3,9 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+DEMO_DIR="$ROOT_DIR/Examples/PocketRootDemo"
 
-cd "$ROOT_DIR"
+cd "$DEMO_DIR"
 
 if ! command -v xcodegen >/dev/null 2>&1; then
     echo "xcodegen is not installed."
@@ -12,5 +13,5 @@ if ! command -v xcodegen >/dev/null 2>&1; then
     exit 1
 fi
 
-xcodegen generate
-echo "Generated PocketRootDemo.xcodeproj"
+xcodegen generate --spec project.yml
+echo "Generated Examples/PocketRootDemo/PocketRootDemo.xcodeproj"

@@ -34,7 +34,8 @@ jailbreak, and no Codex CLI installation.
 PocketRoot is not another terminal App and it is not a new operating system.
 It is the SDK layer for embedding a local Linux Terminal + Files workspace in
 an existing iOS App. Start with the
-[minimal host App](Examples/PocketRootHostApp) or the
+[complete Demo](Examples/PocketRootDemo), the
+[minimal host App](Examples/PocketRootHostApp), or the
 [integration guide](Docs/en/IntegrationGuide.md).
 
 > [!WARNING]
@@ -150,10 +151,12 @@ cd PocketRoot
 ./Scripts/bootstrap.sh
 ./Scripts/test.sh
 ./Scripts/build.sh
-open PocketRootDemo.xcodeproj
+open Examples/PocketRootDemo/PocketRootDemo.xcodeproj
 ```
 
-`bootstrap.sh` resolves packages and generates the project with XcodeGen. The generated project is ignored; `project.yml` is authoritative.
+`bootstrap.sh` resolves packages and generates the Demo project from
+`Examples/PocketRootDemo/project.yml` with XcodeGen. The generated
+`Examples/PocketRootDemo/PocketRootDemo.xcodeproj` is ignored.
 
 The Demo now connects the Experimental iSH runtime, SwiftTerm PTY, Commands,
 and Files pages. The RootFS is not committed. Configure the pinned archive as a
@@ -163,7 +166,7 @@ local Debug development asset before running:
 ./Scripts/inject-demo-rootfs.sh \
   --install-development-archive /absolute/path/to/fs.tar.gz
 ./Scripts/build.sh
-open PocketRootDemo.xcodeproj
+open Examples/PocketRootDemo/PocketRootDemo.xcodeproj
 ```
 
 The script requires the exact v0.3.3 byte count and SHA-256. Debug builds copy

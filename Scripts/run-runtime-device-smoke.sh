@@ -242,7 +242,7 @@ mkdir -p "$DERIVED_DATA_ROOT" "$CLONED_SOURCE_PACKAGES_DIR"
 
 xcodebuild \
   -quiet \
-  -project PocketRootDemo.xcodeproj \
+  -project "$ROOT_DIR/Examples/PocketRootDemo/PocketRootDemo.xcodeproj" \
   -scheme PocketRootIshRuntimeSmoke \
   -configuration Debug \
   -destination "id=$DEVICE_ID" \

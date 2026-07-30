@@ -6,5 +6,6 @@ xcuserdata/
 *.xcuserstate
 *.xccheckout
 *.xcscmblueprint
-PocketRootDemo.xcodeproj/
+Examples/PocketRootDemo/PocketRootDemo.xcodeproj/
+/PocketRootDemo.xcodeproj/
 Examples/PocketRootHostApp/PocketRootHostApp.xcodeproj/

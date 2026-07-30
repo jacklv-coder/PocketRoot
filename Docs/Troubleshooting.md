@@ -40,7 +40,7 @@ brew install xcodegen
 
 `bootstrap.sh` 在缺少 XcodeGen 时会调用 Homebrew。CI 不使用浮动 Homebrew 包，而是下载固定版本并验证哈希。
 
-## 找不到 `PocketRootDemo.xcodeproj`
+## 找不到 `Examples/PocketRootDemo/PocketRootDemo.xcodeproj`
 
 生成工程：
 
@@ -48,7 +48,8 @@ brew install xcodegen
 ./Scripts/generate-project.sh
 ```
 
-不要从其他机器复制生成工程，也不要直接修改 `project.pbxproj`。`project.yml` 是事实源。
+不要从其他机器复制生成工程，也不要直接修改 `project.pbxproj`。
+`Examples/PocketRootDemo/project.yml` 是事实源。
 
 ## Swift Package 依赖解析失败
 
@@ -353,7 +354,7 @@ POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
 - `Package.resolved`；
 - XcodeGen 版本；
 - RootFS/XcodeGen digest；
-- 生成工程是否来自最新 `project.yml`；
+- 生成工程是否来自最新 `Examples/PocketRootDemo/project.yml`；
 - 未提交文件是否被本地构建错误地引用。
 
 CI 先运行 `./Scripts/check-docs.sh`，再执行测试与构建。`actions/checkout` 自身固定到精确 revision，但它检出的仓库内容是 workflow 事件选定的 SHA（push SHA 或 PR merge SHA）。CI 是干净 checkout，不能访问本地 archive、DerivedData、未提交工程或凭据。

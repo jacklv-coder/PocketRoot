@@ -128,7 +128,7 @@ xcrun simctl boot "$DEVICE_UDID" >/dev/null 2>&1 || true
 xcrun simctl bootstatus "$DEVICE_UDID" -b
 
 xcodebuild \
-  -project PocketRootDemo.xcodeproj \
+  -project "$ROOT_DIR/Examples/PocketRootDemo/PocketRootDemo.xcodeproj" \
   -scheme PocketRootIshRuntimeSmoke \
   -configuration Debug \
   -destination "id=$DEVICE_UDID" \

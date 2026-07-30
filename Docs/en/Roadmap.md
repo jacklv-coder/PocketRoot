@@ -55,7 +55,7 @@ Completed:
 | Xcode | 16.0+ with iOS 18 SDK |
 | Swift Package | Swift 5.10+ |
 | Deployment | iOS 18.0 |
-| Project source | `project.yml` |
+| Project source | `Examples/PocketRootDemo/project.yml` |
 | Generated project | Not committed |
 
 ## Milestone 2: ARM64 Linux one-shot commands

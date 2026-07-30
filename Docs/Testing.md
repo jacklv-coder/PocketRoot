@@ -150,7 +150,7 @@ POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
 
 `build.sh` 目标：
 
-- project：`PocketRootDemo.xcodeproj`；
+- project：`Examples/PocketRootDemo/PocketRootDemo.xcodeproj`；
 - scheme：`PocketRootDemo`；
 - destination：`generic/platform=iOS Simulator`；
 - code signing：关闭。
@@ -528,7 +528,7 @@ DerivedData 与 `.xcresult`。这些 Simulator 结果不证明签名真机或发
 | IshRuntime lifecycle/command/driver | `swift test` + strict build + runtime final-link + native smoke |
 | Agent loop/model/tool contract | `swift test` + strict build + 文档检查 |
 | Package.swift 或 native dependency | `swift test` + Demo build + 两个 arm64 final-link + native smoke |
-| project.yml 或 Demo | regenerate + Demo build |
+| `Examples/PocketRootDemo/project.yml` 或 Demo | regenerate + Demo build |
 | smoke App/runner | shell syntax + Simulator smoke + 可用时 signed device smoke |
 | terminal/file browser | terminal tests（含二进制 stdin、原子导入、导出上限）+ strict iOS build + Demo build |
 | PTY/SwiftTerm | session/runtime unit + final-link + Host App UI smoke + signed iPhone/iPad lifecycle |

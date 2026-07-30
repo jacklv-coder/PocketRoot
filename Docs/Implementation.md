@@ -24,7 +24,7 @@
 | 原生串行执行 | `BlockingIshExecutor` | `Sources/PocketRootIshRuntime/Concurrency/` |
 | 进程所有权 | `IshProcessGate` | `Sources/PocketRootIshRuntime/Concurrency/` |
 | Terminal UI | `PocketRootTerminalViewController` | `Sources/PocketRootTerminal/` |
-| Demo | UIKit controllers | `Demo/PocketRootDemo/` |
+| Demo | UIKit controllers | `Examples/PocketRootDemo/Sources/PocketRootDemo/` |
 | 最终链接验证 | compile spike | `Spikes/PocketRootIshRuntimeCompileSpike/` |
 | 原生行为验证 | smoke App | `Spikes/PocketRootIshRuntimeSmoke/` |
 

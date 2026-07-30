@@ -52,7 +52,8 @@ git remote -v
 
 1. 检查 `xcodegen`，缺少时执行 `brew install xcodegen`。
 2. 执行 `swift package resolve`。
-3. 根据 `project.yml` 生成 `PocketRootDemo.xcodeproj`。
+3. 根据 `Examples/PocketRootDemo/project.yml` 生成
+   `Examples/PocketRootDemo/PocketRootDemo.xcodeproj`。
 
 只重新生成工程时使用：
 
@@ -60,7 +61,10 @@ git remote -v
 ./Scripts/generate-project.sh
 ```
 
-不要手工维护 `project.pbxproj`。生成的 `PocketRootDemo.xcodeproj` 已被 `.gitignore` 忽略，所有 target、scheme、依赖和 deployment target 变更都应写入 `project.yml`。
+不要手工维护 `project.pbxproj`。生成的
+`Examples/PocketRootDemo/PocketRootDemo.xcodeproj` 已被 `.gitignore` 忽略，
+所有 target、scheme、依赖和 deployment target 变更都应写入
+`Examples/PocketRootDemo/project.yml`。
 
 ## 4. 运行基础验证
 
@@ -75,7 +79,7 @@ git remote -v
 打开工程：
 
 ```bash
-open PocketRootDemo.xcodeproj
+open Examples/PocketRootDemo/PocketRootDemo.xcodeproj
 ```
 
 在 Xcode 中选择 `PocketRootDemo` scheme 和任意 iOS 18 Simulator 后运行。
@@ -262,7 +266,7 @@ POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
 
 ## 9. 不应提交的本地内容
 
-- `PocketRootDemo.xcodeproj/`
+- `Examples/PocketRootDemo/PocketRootDemo.xcodeproj/`
 - `.build/`、`.swiftpm/`、`DerivedData/`
 - RootFS `fs.tar.gz` 或解包后的 fakefs
 - 本地 smoke 报告

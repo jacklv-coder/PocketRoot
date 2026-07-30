@@ -456,7 +456,7 @@ signed-device or distribution readiness.
 | Runtime lifecycle/driver | Package + strict build + final links + native smoke |
 | Agent loop/model/tool contract | Package tests + strict build + docs |
 | Package/native dependency | Package + Demo + both final links + smoke |
-| project.yml/Demo | Regenerate + Demo build |
+| `Examples/PocketRootDemo/project.yml` or Demo | Regenerate + Demo build |
 | smoke | Shell syntax + Simulator smoke + signed-device smoke when available |
 | terminal/files UI | Terminal tests + strict iOS build + Host App UI smoke |
 | docs | Documentation check |

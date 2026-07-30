@@ -128,7 +128,7 @@ copies and the ABI.2 `/proc` lifecycle-lock fix.
 | `Sources/PocketRootIshRuntime/` | iSH adapter, driver, serial execution, and ownership | How blocking native APIs enter Swift Concurrency |
 | `Sources/PocketRootIshRuntimeIntegration/` | Factory that combines RootFS and runtime | The application-facing `prepareSystem` entry point |
 | `Sources/PocketRootTerminal/` | SwiftTerm PTY, guest files, and fallback facade | How UI connects registered sessions within fixed bounds |
-| `Demo/PocketRootDemo/` | Safe-default UIKit demo | Separation between UI and experimental runtime |
+| `Examples/PocketRootDemo/Sources/PocketRootDemo/` | Complete UIKit demo | Separation between UI and SDK sources |
 | `Spikes/` | Final-link and native smoke applications | The difference between compiling and running the real runtime |
 | `Tests/` | Swift unit and integration tests | State, bounds, recovery, and error semantics |
 | `Scripts/` | Bootstrap, build, docs, and smoke entry points | Shared local and CI commands |
@@ -358,7 +358,7 @@ The native package version and RootFS version are independent axes. The former s
 | Installation reuse and recovery | `RootFSInstaller.swift` | `Tests/PocketRootResourcesTests/` |
 | Swift-to-native bridge | `IshEmbedDriver.swift` | `Sources/IshEmbed/` and the C ABI in ish-arm64-pkg |
 | Native kernel behavior | The `third_party/ish` gitlink in ish-arm64-pkg | The corresponding ish-arm64 commit |
-| Demo screens | `Demo/PocketRootDemo/` | `project.yml` |
+| Demo screens | `Examples/PocketRootDemo/Sources/PocketRootDemo/` | `Examples/PocketRootDemo/project.yml` |
 | Native behavior evidence | `Spikes/PocketRootIshRuntimeSmoke/` | `Scripts/run-runtime-smoke.sh`, `Scripts/run-runtime-device-smoke.sh` |
 
 See [Implementation](Implementation.md) for method-by-method details.
@@ -390,7 +390,11 @@ Run from fastest to slowest:
 ./Scripts/build-runtime-spike.sh
 ```
 
-A clean clone should run `bootstrap.sh` first because `build.sh` requires an Xcode project generated from `project.yml` but not committed to Git. `build-runtime-spike.sh` regenerates the project itself, but still requires XcodeGen and the dependency environment. After bootstrap, and when project configuration has not changed, later checks can start below it.
+A clean clone should run `bootstrap.sh` first because `build.sh` requires an
+Xcode project generated from `Examples/PocketRootDemo/project.yml` but not
+committed to Git. `build-runtime-spike.sh` regenerates the project itself, but
+still requires XcodeGen and the dependency environment. After bootstrap, and
+when project configuration has not changed, later checks can start below it.
 
 When a reviewed RootFS exactly matches the manifest, also run:
 
