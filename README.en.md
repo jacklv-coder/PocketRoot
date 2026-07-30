@@ -105,6 +105,16 @@ switches to Files. SwiftUI presents the same retained host:
 PocketRootIshWorkspaceView(host: host)
 ```
 
+This shortest path is not validated only by in-repository examples. CI creates
+a fresh iOS App outside the source tree, resolves the current full commit
+through the public Git URL, selects only `PocketRoot` and
+`PocketRootIshRuntimeIntegration`, then uses a real RootFS to cover Terminal
+file creation, background/foreground recovery, Files preview, and explicit
+shutdown. The fixture lives in
+[`Tests/Integration/ExternalConsumerApp`](Tests/Integration/ExternalConsumerApp);
+see the [integration guide](Docs/en/IntegrationGuide.md#external-consumer-acceptance)
+for the local command.
+
 ## Implementation overview
 
 ```mermaid

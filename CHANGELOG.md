@@ -47,6 +47,9 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
   iPhone/iPad UI smoke 从冷启动分别验证 Files 与 Terminal 自动 boot，并确认真实
   PTY 创建的文件可由 Files 预览。Quick Start 与 Host App 复用同一个有界 Simulator
   runner。
+- 加入仓库外生成的 External Consumer 验收 App；本地可指向当前 package path，
+  PR CI 则通过公开 Git URL 固定到 head 完整 SHA，使用调用方资源方式打包已审核
+  RootFS，并验证 Terminal 创建文件、前后台恢复、Files 预览与显式 shutdown。
 - 统一 package、Demo、tests 和 CI 的 iOS 18.0 deployment baseline。
 - 固定 Experimental `PocketRootIshRuntime` 到 IshEmbed release revision `38d25d6f8726145e7e988172f12000020d89a638` 与 `v0.4.0-abi.6` XCFramework。
 - 将 Experimental `PocketRootIshRuntime` 升级到 IshEmbed release revision

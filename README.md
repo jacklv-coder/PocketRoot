@@ -96,6 +96,13 @@ SwiftUI 使用同一个长期保留的 host：
 PocketRootIshWorkspaceView(host: host)
 ```
 
+这条最短路径不只由仓库内部 Demo 编译验证。CI 会在源码树之外生成一个全新的
+iOS App，通过公开 Git URL 固定到当前完整 commit，仅选择 `PocketRoot` 与
+`PocketRootIshRuntimeIntegration` 两个产品，然后用真实 RootFS 完成
+Terminal 创建文件、前后台恢复、Files 预览和显式 shutdown。验收夹具位于
+[`Tests/Integration/ExternalConsumerApp`](Tests/Integration/ExternalConsumerApp)，
+本地复验命令见[应用接入指南](Docs/IntegrationGuide.md#外部消费者验收)。
+
 ## 实现概览
 
 ```mermaid

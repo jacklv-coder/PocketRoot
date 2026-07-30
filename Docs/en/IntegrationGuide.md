@@ -232,6 +232,52 @@ and full-lifecycle
 use only public Swift Package products. CI builds both and verifies their
 injected RootFS.
 
+### External consumer acceptance
+
+The in-repository examples use a local package path for readable iteration.
+Release integration also needs proof that a fresh App outside the PocketRoot
+source tree can resolve and use the public products independently. The fixture
+is in
+[`Tests/Integration/ExternalConsumerApp`](../../Tests/Integration/ExternalConsumerApp).
+Its runner copies the fixture into a system temporary directory, adds the
+caller-provided RootFS as an App resource, and executes one real UI flow:
+
+1. open Terminal and wait for automatic RootFS installation and boot;
+2. create a file through the persistent PTY;
+3. background and reactivate the App with the same Terminal session;
+4. open and preview the file through Files;
+5. shut down explicitly and verify every entry reaches the terminal state.
+
+Validate the current local checkout:
+
+```bash
+POCKETROOT_ROOTFS_ARCHIVE=/absolute/path/to/fs.tar.gz \
+POCKETROOT_EXTERNAL_CONSUMER_PACKAGE_PATH="$PWD" \
+  ./Scripts/run-external-consumer-ui-smoke.sh
+```
+
+Validate an exact commit from a public repository:
+
+```bash
+POCKETROOT_ROOTFS_ARCHIVE=/absolute/path/to/fs.tar.gz \
+POCKETROOT_EXTERNAL_CONSUMER_REPOSITORY_URL=https://github.com/jacklv-coder/PocketRoot.git \
+POCKETROOT_EXTERNAL_CONSUMER_REVISION=<40-character-reviewed-sha> \
+  ./Scripts/run-external-consumer-ui-smoke.sh
+```
+
+Remote mode accepts only a public HTTPS Git URL and a full lowercase SHA; it
+cannot fall back to a tag, branch, or version range. PR CI uses the
+contributor head repository's public `clone_url` and head SHA, so fork PRs
+exercise the submitted commit. The temporary App selects only `PocketRoot`
+and `PocketRootIshRuntimeIntegration`; it does not read an in-repository Demo
+project or RootFS injection script. The temporary App and Simulator are
+removed by default. Set `POCKETROOT_KEEP_EXTERNAL_CONSUMER_APP=1` or
+`POCKETROOT_KEEP_UI_RESULT=1` to retain diagnostics.
+
+This acceptance proves the public SwiftPM boundary and minimal UI/lifecycle
+closure. It does not authorize redistribution of the test RootFS or clear any
+TestFlight, App Store, license, corresponding-source, or final-artifact gate.
+
 ### Lower-level host lifecycle
 
 Apps that want separate Boot, Terminal, and Files controls may retain

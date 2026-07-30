@@ -10,12 +10,17 @@ HOST_UI_RUNNER="$ROOT_DIR/Scripts/run-host-app-ui-smoke.sh"
 HOST_DEVICE_UI_RUNNER="$ROOT_DIR/Scripts/run-host-app-device-ui-smoke.sh"
 GENERIC_UI_RUNNER="$ROOT_DIR/Scripts/run-ios-example-ui-smoke.sh"
 QUICK_START_UI_RUNNER="$ROOT_DIR/Scripts/run-quick-start-ui-smoke.sh"
+EXTERNAL_CONSUMER_UI_RUNNER="$ROOT_DIR/Scripts/run-external-consumer-ui-smoke.sh"
 HOST_APP_SOURCE="$ROOT_DIR/Examples/PocketRootHostApp/Sources/HostApp.swift"
 HOST_UI_TESTS="$ROOT_DIR/Examples/PocketRootHostApp/UITests/PocketRootHostAppUITests.swift"
 HOST_PROJECT_SPEC="$ROOT_DIR/Examples/PocketRootHostApp/project.yml"
 QUICK_START_SOURCE="$ROOT_DIR/Examples/PocketRootQuickStartApp/Sources/QuickStartApp.swift"
 QUICK_START_UI_TESTS="$ROOT_DIR/Examples/PocketRootQuickStartApp/UITests/PocketRootQuickStartAppUITests.swift"
 QUICK_START_PROJECT_SPEC="$ROOT_DIR/Examples/PocketRootQuickStartApp/project.yml"
+EXTERNAL_CONSUMER_FIXTURE="$ROOT_DIR/Tests/Integration/ExternalConsumerApp"
+EXTERNAL_CONSUMER_SOURCE="$EXTERNAL_CONSUMER_FIXTURE/Sources/ExternalConsumerApp.swift"
+EXTERNAL_CONSUMER_UI_TESTS="$EXTERNAL_CONSUMER_FIXTURE/UITests/ExternalConsumerAppUITests.swift"
+EXTERNAL_CONSUMER_PROJECT_TEMPLATE="$EXTERNAL_CONSUMER_FIXTURE/project.yml.template"
 PROJECT_SPEC="$ROOT_DIR/Examples/PocketRootDemo/project.yml"
 SMOKE_APP="$ROOT_DIR/Spikes/PocketRootIshRuntimeSmoke/PocketRootIshRuntimeSmoke.swift"
 
@@ -52,6 +57,7 @@ bash -n "$HOST_UI_RUNNER"
 bash -n "$HOST_DEVICE_UI_RUNNER"
 bash -n "$GENERIC_UI_RUNNER"
 bash -n "$QUICK_START_UI_RUNNER"
+bash -n "$EXTERNAL_CONSUMER_UI_RUNNER"
 
 if ! grep -Fq -- 'POCKETROOT_HOST_UI_SMOKE_DEVICE' "$HOST_UI_RUNNER" \
   || ! grep -Fq -- 'POCKETROOT_HOST_UI_DEVICE_TYPE' "$HOST_UI_RUNNER" \
@@ -61,7 +67,12 @@ if ! grep -Fq -- 'POCKETROOT_HOST_UI_SMOKE_DEVICE' "$HOST_UI_RUNNER" \
   || ! grep -Fq -- 'POCKETROOT_QUICK_START_UI_SMOKE_DEVICE' "$QUICK_START_UI_RUNNER" \
   || ! grep -Fq -- 'POCKETROOT_QUICK_START_UI_DEVICE_TYPE' "$QUICK_START_UI_RUNNER" \
   || ! grep -Fq -- 'PocketRootQuickStartAppUITests' "$QUICK_START_UI_RUNNER" \
-  || ! grep -Fq -- 'run-ios-example-ui-smoke.sh' "$QUICK_START_UI_RUNNER"; then
+  || ! grep -Fq -- 'run-ios-example-ui-smoke.sh' "$QUICK_START_UI_RUNNER" \
+  || ! grep -Fq -- 'POCKETROOT_EXTERNAL_CONSUMER_REVISION' "$EXTERNAL_CONSUMER_UI_RUNNER" \
+  || ! grep -Fq -- 'POCKETROOT_EXTERNAL_CONSUMER_REPOSITORY_URL' "$EXTERNAL_CONSUMER_UI_RUNNER" \
+  || ! grep -Fq -- 'POCKETROOT_EXTERNAL_CONSUMER_REQUIRE_REMOTE' "$EXTERNAL_CONSUMER_UI_RUNNER" \
+  || ! grep -Fq -- 'PocketRootExternalConsumerAppUITests' "$EXTERNAL_CONSUMER_UI_RUNNER" \
+  || ! grep -Fq -- 'run-ios-example-ui-smoke.sh' "$EXTERNAL_CONSUMER_UI_RUNNER"; then
     echo "Example UI wrappers are missing deterministic target mappings." >&2
     exit 1
 fi
@@ -98,6 +109,24 @@ if ! grep -Fq -- 'makeTerminalViewController()' "$QUICK_START_SOURCE" \
   || ! grep -Fq -- 'product: PocketRootIshRuntimeIntegration' "$QUICK_START_PROJECT_SPEC" \
   || ! grep -Fq -- '"$SRCROOT/../../Scripts/inject-demo-rootfs.sh"' "$QUICK_START_PROJECT_SPEC"; then
     echo "Quick Start App is missing its two-entry UI closure or package boundary." >&2
+    exit 1
+fi
+
+if ! grep -Fq -- '__POCKETROOT_PACKAGE_SOURCE__' "$EXTERNAL_CONSUMER_PROJECT_TEMPLATE" \
+  || ! grep -Fq -- 'product: PocketRoot' "$EXTERNAL_CONSUMER_PROJECT_TEMPLATE" \
+  || ! grep -Fq -- 'product: PocketRootIshRuntimeIntegration' "$EXTERNAL_CONSUMER_PROJECT_TEMPLATE" \
+  || ! grep -Fq -- 'host.makeTerminalViewController()' "$EXTERNAL_CONSUMER_SOURCE" \
+  || ! grep -Fq -- 'host.makeFilesViewController()' "$EXTERNAL_CONSUMER_SOURCE" \
+  || ! grep -Fq -- 'try await host.shutdown()' "$EXTERNAL_CONSUMER_SOURCE" \
+  || ! grep -Fq -- 'func sceneDidDisconnect(_ scene: UIScene)' "$EXTERNAL_CONSUMER_SOURCE" \
+  || ! grep -Fq -- 'pocketRootHost?.closeWorkspaces()' "$EXTERNAL_CONSUMER_SOURCE" \
+  || ! grep -Fq -- 'testRemoteConsumerTerminalFilesAndLifecycleClosure' "$EXTERNAL_CONSUMER_UI_TESTS" \
+  || ! grep -Fq -- 'XCUIDevice.shared.press(.home)' "$EXTERNAL_CONSUMER_UI_TESTS" \
+  || ! grep -Fq -- 'app.wait(for: .runningBackground' "$EXTERNAL_CONSUMER_UI_TESTS" \
+  || ! grep -Fq -- 'app.wait(for: .runningForeground' "$EXTERNAL_CONSUMER_UI_TESTS" \
+  || ! grep -Fq -- '__POCKETROOT_EXTERNAL_CONSUMER_FOREGROUND__' "$EXTERNAL_CONSUMER_UI_TESTS" \
+  || ! grep -Fq -- 'Runtime Terminated' "$EXTERNAL_CONSUMER_UI_TESTS"; then
+    echo "External Consumer acceptance fixture is missing its public API or lifecycle closure." >&2
     exit 1
 fi
 
