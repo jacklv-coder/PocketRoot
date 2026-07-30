@@ -229,6 +229,9 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 
 ### Changed
 
+- Host App iPad UI smoke now locates the system share sheet by accessibility
+  identifier across element types, avoiding false XCTest failures when iOS 18
+  exposes `ActivityListView` through a different automation type.
 - Moved the complete Demo, its tests, and its XcodeGen source into the
   self-contained `Examples/PocketRootDemo` tree. Project generation and build
   scripts now use that public example path instead of mixing Demo and package

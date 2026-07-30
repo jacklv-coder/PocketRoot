@@ -370,6 +370,8 @@ class ReleaseComplianceTests < Minitest::Test
     assert_includes project, "type: bundle.ui-testing"
     assert_includes ui_test, "terminal.typeText("
     assert_includes ui_test, "PocketRootFiles.preview"
+    assert_includes ui_test, '.matching(identifier: "ActivityListView")'
+    refute_includes ui_test, 'app.otherElements["ActivityListView"]'
     assert_includes ui_test, "testPTYLifecycleAndShutdown"
     assert_includes ui_test, "testWorkspaceKeepsPTYAliveAcrossFilesTab"
     assert_includes(
