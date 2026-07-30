@@ -19,6 +19,8 @@ class ReleaseComplianceTests < Minitest::Test
     "Scripts/inject-demo-rootfs.sh",
     "Scripts/run-host-app-device-ui-smoke.sh",
     "Scripts/run-host-app-ui-smoke.sh",
+    "Scripts/run-ios-example-ui-smoke.sh",
+    "Scripts/run-quick-start-ui-smoke.sh",
     "ThirdPartyNotices/SwiftTerm-LICENSE.txt",
     "Compliance/RootFS/v0.3.3/EVIDENCE.json",
     "Compliance/RootFS/v0.3.3/SBOM.spdx.json"
@@ -187,6 +189,32 @@ class ReleaseComplianceTests < Minitest::Test
     assert_includes source, "host.makeFilesViewController()"
     assert_includes source, "func sceneDidDisconnect(_ scene: UIScene)"
     assert_includes source, "pocketRootHost?.closeWorkspaces()"
+
+    project =
+      REPOSITORY_ROOT
+        .join("Examples/PocketRootQuickStartApp/project.yml")
+        .binread
+    ui_test =
+      REPOSITORY_ROOT
+        .join(
+          "Examples/PocketRootQuickStartApp/UITests/" \
+          "PocketRootQuickStartAppUITests.swift"
+        )
+        .binread
+    runner =
+      REPOSITORY_ROOT
+        .join("Scripts/run-quick-start-ui-smoke.sh")
+        .binread
+    workflow = REPOSITORY_ROOT.join(".github/workflows/ci.yml").binread
+
+    assert_includes project, "PocketRootQuickStartAppUITests:"
+    assert_includes project, "type: bundle.ui-testing"
+    assert_includes ui_test, "testFilesEntryAutoBootsFromColdLaunch"
+    assert_includes ui_test, "testTerminalCreatesFileThatFilesCanPreview"
+    assert_includes ui_test, "PocketRootTerminal.pty"
+    assert_includes ui_test, "PocketRootFiles.preview"
+    assert_includes runner, "run-ios-example-ui-smoke.sh"
+    assert_includes workflow, "./Scripts/run-quick-start-ui-smoke.sh"
   end
 
   def test_standalone_host_retains_runtime_across_scene_recreation
@@ -274,6 +302,10 @@ class ReleaseComplianceTests < Minitest::Test
       REPOSITORY_ROOT
         .join("Scripts/run-host-app-ui-smoke.sh")
         .binread
+    generic_runner =
+      REPOSITORY_ROOT
+        .join("Scripts/run-ios-example-ui-smoke.sh")
+        .binread
     device_runner =
       REPOSITORY_ROOT
         .join("Scripts/run-host-app-device-ui-smoke.sh")
@@ -293,7 +325,8 @@ class ReleaseComplianceTests < Minitest::Test
     assert_includes host_source, "PocketRootIshWorkspaceHost("
     assert_includes host_source, "workspaceHost.makeViewController()"
     assert_includes ui_test, "PocketRootHost.shutdown"
-    assert_includes runner, "-test-timeouts-enabled YES"
+    assert_includes runner, "run-ios-example-ui-smoke.sh"
+    assert_includes generic_runner, "-test-timeouts-enabled YES"
     assert_includes device_runner, "build-for-testing"
     assert_includes device_runner, "test-without-building"
     assert_includes device_runner, "result.deviceProperties.osVersionNumber"

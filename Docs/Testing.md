@@ -15,6 +15,7 @@ PocketRoot 把验证分成宿主逻辑、真实 RootFS、iOS 构建、完整原�
 | 工程 App/archive 扫描 | `ruby Scripts/scan-release-artifact.rb` | macOS + 外部 `.app`/`.xcarchive` | 确定性文件摘要、Mach-O、签名/entitlement 风险信号与文件级 SPDX | 最终导出制品、依赖许可证完备性或分发授权 |
 | development-signed archive 门禁 | `./Scripts/build-signed-engineering-archive.sh` | macOS + Xcode 账号/开发签名 | 标准 `.xcarchive`、development entitlement、clean 风险信号、复验与 SPDX schema | IPA/export、发行签名、安装、上传或分发授权 |
 | Simulator 原生 smoke | `./Scripts/run-runtime-smoke.sh` | Apple Silicon + iOS 18 Simulator + archive | prepare、boot、命令边界和 soft shutdown 返回 | 其他工具链、真机或发行可用 |
+| Quick Start UI smoke | `./Scripts/run-quick-start-ui-smoke.sh` | Apple Silicon + iOS 18 Simulator + archive | 最小业务 App 的 Files/Terminal 两个入口可从冷启动自动 boot，真实 PTY 创建的文件可由 Files 预览 | 真机、完整 Host 生命周期或发行可用 |
 | Host App UI smoke | `./Scripts/run-host-app-ui-smoke.sh` | Apple Silicon + iOS 18 Simulator + archive | iPhone/iPad Simulator 上的公开宿主 Boot、SwiftTerm PTY、生命周期、Workspace 会话持续性、Files 增删改/预览、系统 document picker 导入、share sheet 保存与再次导入 round-trip，以及有序 shutdown | 真机系统文件交互、真机键盘、iPad 真机或发行可用 |
 | Host App 真机 UI smoke | `./Scripts/run-host-app-device-ui-smoke.sh` | 支持设备 OS 的 Xcode + development-signed iPhone/iPad + archive | 同一 Host App 生命周期 UI 测试的真机执行、签名与 development entitlement | iPad、真实压力或发行可用 |
 | 物理设备原生 smoke | `./Scripts/run-runtime-device-smoke.sh` | 签名 iOS 18+ iPhone/iPad + archive | 同一 17 项检查、可选进程暂停/恢复、UIKit 前后台、强制重启持久化、受限存储故障或有界内存警告恢复，development entitlement 与 shutdown 返回 | 真实 storage/memory pressure、断电、jetsam、iPad 或发行可用 |
@@ -511,13 +512,17 @@ RootFS。这只是兼容性证据，不授权 RootFS 分发，也不改变正式
 
 最低工具链 job 另外固定选择 Xcode 16.0 / iOS 18.0 SDK，验证真实 RootFS install、
 安装 iOS 18.0 Simulator runtime、完成 Simulator/device final-link，执行 17 项原生
-smoke，并分别在 iPhone 16 与 iPad（第 10 代）Simulator 运行 Host App 的 PTY、
-Files、Workspace，以及系统 document picker 导入、share sheet 保存、guest 删除后
-再次导入并复验内容的 UI 闭环。测试 fixture 只在显式 `-PocketRootUITesting`
+smoke，并分别在 iPhone 16 与 iPad（第 10 代）Simulator 运行最小 Quick Start 的
+Files/Terminal 冷启动与 PTY-to-Files 文件闭环，以及 Host App 的 PTY、Files、
+Workspace、系统 document picker 导入、share sheet 保存、guest 删除后再次导入并
+复验内容的完整 UI 闭环。测试 fixture 只在显式 `-PocketRootUITesting`
 启动参数下写入独立 Host App 示例的 Documents，不依赖用户 iCloud 或 Files 数据。可用
 `POCKETROOT_HOST_UI_DEVICE_TYPE` / `POCKETROOT_HOST_UI_DEVICE_NAME` 选择 runner
-创建的 Simulator；失败诊断时设置 `POCKETROOT_KEEP_UI_RESULT=1` 可保留临时
-DerivedData 与 `.xcresult`。这些 Simulator 结果不证明签名真机或发行可用。
+创建的 Host Simulator，或使用 `POCKETROOT_QUICK_START_UI_DEVICE_TYPE` /
+`POCKETROOT_QUICK_START_UI_DEVICE_NAME` 选择 Quick Start Simulator；失败诊断时设置
+`POCKETROOT_KEEP_UI_RESULT=1` 可保留临时 DerivedData 与 `.xcresult`。两个 wrapper
+复用 `run-ios-example-ui-smoke.sh` 的相同 RootFS、超时、xcresult 和安全清理边界。
+这些 Simulator 结果不证明签名真机或发行可用。
 
 ## 9. 改动与最小验证矩阵
 
@@ -530,6 +535,7 @@ DerivedData 与 `.xcresult`。这些 Simulator 结果不证明签名真机或发
 | Package.swift 或 native dependency | `swift test` + Demo build + 两个 arm64 final-link + native smoke |
 | `Examples/PocketRootDemo/project.yml` 或 Demo | regenerate + Demo build |
 | smoke App/runner | shell syntax + Simulator smoke + 可用时 signed device smoke |
+| Quick Start 入口或示例 | strict iOS build + iPhone/iPad Quick Start UI smoke |
 | terminal/file browser | terminal tests（含二进制 stdin、原子导入、导出上限）+ strict iOS build + Demo build |
 | PTY/SwiftTerm | session/runtime unit + final-link + Host App UI smoke + signed iPhone/iPad lifecycle |
 | 文档 | `./Scripts/check-docs.sh` |

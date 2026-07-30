@@ -356,6 +356,17 @@ jobs:
           POCKETROOT_SMOKE_TIMEOUT_SECONDS: "600"
         run: ./Scripts/run-runtime-smoke.sh
 
+      - name: Run Quick Start two-entry UI smoke with Xcode 16.0
+        run: ./Scripts/run-quick-start-ui-smoke.sh
+
+      - name: Run Quick Start iPad UI smoke with Xcode 16.0
+        env:
+          POCKETROOT_QUICK_START_UI_DEVICE_TYPE: >-
+            com.apple.CoreSimulator.SimDeviceType.iPad-10th-generation
+          POCKETROOT_QUICK_START_UI_DEVICE_NAME: >-
+            PocketRoot-Quick-Start-iPad-UI-Smoke
+        run: ./Scripts/run-quick-start-ui-smoke.sh
+
       - name: Run Host App PTY and Files UI smoke with Xcode 16.0
         run: ./Scripts/run-host-app-ui-smoke.sh
 

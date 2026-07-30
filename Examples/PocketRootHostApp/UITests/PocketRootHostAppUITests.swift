@@ -114,6 +114,7 @@ final class PocketRootHostAppUITests: XCTestCase {
             evaluatedWith: folder,
             timeout: 30
         )
+        shutdownRuntime(in: app)
     }
 
     func testPTYCommandCreatesFileVisibleInFiles() {
@@ -168,20 +169,20 @@ final class PocketRootHostAppUITests: XCTestCase {
         let preview = app.staticTexts["PocketRootFiles.preview"]
         XCTAssertTrue(preview.waitForExistence(timeout: 30))
         XCTAssertEqual(preview.label, "PocketRoot UI smoke\n")
+        shutdownRuntime(in: app)
     }
 
     func testSystemFileImportAndShareExportRoundTrip() {
         let app = launchAndBoot()
         app.buttons["PocketRootHost.files"].tap()
 
-        let actions = app.buttons["PocketRootFiles.actions"]
-        XCTAssertTrue(actions.waitForExistence(timeout: 30))
-        waitForEnabled(actions)
         deleteGuestFileIfPresent(
             named: Self.systemImportFixtureName,
             in: app
         )
-        actions.tap()
+        guard openFileActionsMenu(in: app) else {
+            return
+        }
         let importFile = app.buttons["Import File"]
         XCTAssertTrue(importFile.waitForExistence(timeout: 10))
         guard waitForHittable(importFile) else {
@@ -267,8 +268,9 @@ final class PocketRootHostAppUITests: XCTestCase {
             timeout: 30
         )
 
-        waitForEnabled(actions)
-        actions.tap()
+        guard openFileActionsMenu(in: app) else {
+            return
+        }
         XCTAssertTrue(importFile.waitForExistence(timeout: 10))
         guard waitForHittable(importFile) else {
             return
@@ -297,11 +299,15 @@ final class PocketRootHostAppUITests: XCTestCase {
             named: Self.systemImportFixtureName,
             in: app
         )
+        shutdownRuntime(in: app)
     }
 
     func testPTYLifecycleAndShutdown() {
         addTeardownBlock {
-            XCUIDevice.shared.orientation = .portrait
+            let device = XCUIDevice.shared
+            if device.orientation != .portrait {
+                device.orientation = .portrait
+            }
         }
 
         let app = launchAndBoot()
@@ -417,17 +423,8 @@ final class PocketRootHostAppUITests: XCTestCase {
             "before-background\nafter-foreground\nafter-reopen\n"
         )
 
-        returnToHost(in: app)
+        shutdownRuntime(in: app)
         let shutdownButton = app.buttons["PocketRootHost.shutdown"]
-        XCTAssertTrue(shutdownButton.waitForExistence(timeout: 30))
-        shutdownButton.tap()
-
-        let status = app.staticTexts["PocketRootHost.status"]
-        wait(
-            for: NSPredicate(format: "label == %@", "Runtime: Restart App"),
-            evaluatedWith: status,
-            timeout: 30
-        )
         XCTAssertFalse(terminalButton.isEnabled)
         XCTAssertFalse(filesButton.isEnabled)
         XCTAssertFalse(shutdownButton.isEnabled)
@@ -496,6 +493,7 @@ final class PocketRootHostAppUITests: XCTestCase {
             evaluatedWith: workspaceButton,
             timeout: 30
         )
+        shutdownRuntime(in: app)
     }
 
     func testIntegratedWorkspaceBootsAndOwnsShutdownOrdering() {
@@ -560,17 +558,7 @@ final class PocketRootHostAppUITests: XCTestCase {
             timeout: 30
         )
 
-        let shutdownButton = app.buttons["PocketRootHost.shutdown"]
-        XCTAssertTrue(shutdownButton.isEnabled)
-        shutdownButton.tap()
-        wait(
-            for: NSPredicate(
-                format: "label == %@",
-                "Runtime: Restart App"
-            ),
-            evaluatedWith: hostStatus,
-            timeout: 30
-        )
+        shutdownRuntime(in: app)
         XCTAssertFalse(integratedButton.isEnabled)
     }
 
@@ -830,6 +818,21 @@ final class PocketRootHostAppUITests: XCTestCase {
         XCTAssertTrue(status.waitForExistence(timeout: 10))
     }
 
+    private func shutdownRuntime(in app: XCUIApplication) {
+        returnToHost(in: app)
+        let shutdownButton = app.buttons["PocketRootHost.shutdown"]
+        XCTAssertTrue(shutdownButton.waitForExistence(timeout: 30))
+        waitForEnabled(shutdownButton)
+        shutdownButton.tap()
+
+        let status = app.staticTexts["PocketRootHost.status"]
+        wait(
+            for: NSPredicate(format: "label == %@", "Runtime: Restart App"),
+            evaluatedWith: status,
+            timeout: 30
+        )
+    }
+
     private func allowTerminalToDrain() {
         RunLoop.current.run(until: Date().addingTimeInterval(1))
     }
@@ -940,6 +943,26 @@ final class PocketRootHostAppUITests: XCTestCase {
             failureDescription:
                 "element \(element.identifier) to become enabled"
         )
+    }
+
+    @discardableResult
+    private func openFileActionsMenu(
+        in app: XCUIApplication
+    ) -> Bool {
+        // System document and share controllers can finish dismissing after
+        // the host Files screen is visible. Re-query the button and wait for
+        // a valid activation point before tapping, especially on iPad.
+        let actions = app.buttons["PocketRootFiles.actions"]
+        guard actions.waitForExistence(timeout: 30) else {
+            XCTFail("file actions button to exist")
+            return false
+        }
+        waitForEnabled(actions)
+        guard waitForHittable(actions) else {
+            return false
+        }
+        actions.tap()
+        return true
     }
 
     @discardableResult

@@ -212,13 +212,17 @@ module PocketRootReleaseCompliance
     "Examples/PocketRootHostApp/project.yml" =>
       "5d2961cd344b85b5ca0102f3e7b80c3bba7ac8681b645e3d8efae0ec137d33e4",
     "Examples/PocketRootQuickStartApp/project.yml" =>
-      "7fccc3adea4ece71959dee0c54fb1d83a3fc1e49d7f9f13c881c440dd0cf7fdf",
+      "11c6f86f3be0f419a9a6f10dc884b4df9cb157bcdccb5568fe903972a6084416",
     "Scripts/inject-demo-rootfs.sh" =>
       "3982b5382b0d1e13e0c8e8a5bb5404c5bad1dfc4d6e9cd23a39e3395a83087bb",
     "Scripts/run-host-app-device-ui-smoke.sh" =>
       "f9528bd72aa40e6615633d1bc56ea8a31965b41f6570a0dc9f5fa390c5082490",
     "Scripts/run-host-app-ui-smoke.sh" =>
-      "557baabe9721bc65c484c299356176dc8c5300594c533f61245fd620c60f741b",
+      "811c58bd540512d35247970b994c54b28212145228fb40011c04456216052733",
+    "Scripts/run-ios-example-ui-smoke.sh" =>
+      "d401c53b2bfb731713a9d3a894c306ce0f406e02810b49bf4a6ddd9c0a280f23",
+    "Scripts/run-quick-start-ui-smoke.sh" =>
+      "acf26d68fc37250e24911c2d23791a0d12ff06a624dedcefee0ed7905bc31af2",
     "ThirdPartyNotices/SwiftTerm-LICENSE.txt" =>
       "1c34c11581e20feb2b7ea122146a6690261dae94b2c8444e8cff902e567df6ae"
   }.freeze
@@ -226,7 +230,9 @@ module PocketRootReleaseCompliance
     Sources
     Examples/PocketRootDemo/Sources/PocketRootDemo
     Examples/PocketRootHostApp/Sources
+    Examples/PocketRootHostApp/UITests
     Examples/PocketRootQuickStartApp/Sources
+    Examples/PocketRootQuickStartApp/UITests
     Spikes/PocketRootIshRuntimeCompileSpike
     Spikes/PocketRootIshRuntimeSmoke
   ].freeze
@@ -970,6 +976,16 @@ module PocketRootReleaseCompliance
         root.join("Scripts/run-host-app-ui-smoke.sh"),
         "Host App UI smoke script"
       )
+    example_ui_smoke_bytes =
+      read_regular(
+        root.join("Scripts/run-ios-example-ui-smoke.sh"),
+        "Shared example UI smoke script"
+      )
+    quick_start_ui_smoke_bytes =
+      read_regular(
+        root.join("Scripts/run-quick-start-ui-smoke.sh"),
+        "Quick Start UI smoke script"
+      )
     host_app_device_ui_smoke_bytes =
       read_regular(
         root.join("Scripts/run-host-app-device-ui-smoke.sh"),
@@ -1018,6 +1034,10 @@ module PocketRootReleaseCompliance
         Digest::SHA256.hexdigest(demo_rootfs_injection_bytes),
       "Scripts/run-host-app-ui-smoke.sh" =>
         Digest::SHA256.hexdigest(host_app_ui_smoke_bytes),
+      "Scripts/run-ios-example-ui-smoke.sh" =>
+        Digest::SHA256.hexdigest(example_ui_smoke_bytes),
+      "Scripts/run-quick-start-ui-smoke.sh" =>
+        Digest::SHA256.hexdigest(quick_start_ui_smoke_bytes),
       "Scripts/run-host-app-device-ui-smoke.sh" =>
         Digest::SHA256.hexdigest(host_app_device_ui_smoke_bytes),
       SWIFTTERM.fetch("noticePath") =>
