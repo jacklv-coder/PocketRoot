@@ -38,6 +38,7 @@ jobs:
           bash -n Scripts/run-runtime-device-smoke.sh
           bash -n Scripts/build-signed-engineering-archive.sh
           bash -n Scripts/inject-demo-rootfs.sh
+          bash -n Scripts/run-external-consumer-ui-smoke.sh
           ruby -c Scripts/prepare-rootfs-smoke-manifest.rb
           ruby -c Scripts/rootfs-corresponding-source-review-results.rb
           ruby -c Scripts/rootfs-license-review.rb
@@ -355,6 +356,16 @@ jobs:
         env:
           POCKETROOT_SMOKE_TIMEOUT_SECONDS: "600"
         run: ./Scripts/run-runtime-smoke.sh
+
+      - name: Run public-SHA External Consumer UI acceptance
+        env:
+          POCKETROOT_EXTERNAL_CONSUMER_REPOSITORY_URL: >-
+            ${{ github.event.pull_request.head.repo.clone_url ||
+                format('{0}/{1}.git', github.server_url, github.repository) }}
+          POCKETROOT_EXTERNAL_CONSUMER_REVISION: >-
+            ${{ github.event.pull_request.head.sha || github.sha }}
+          POCKETROOT_EXTERNAL_CONSUMER_REQUIRE_REMOTE: "1"
+        run: ./Scripts/run-external-consumer-ui-smoke.sh
 
       - name: Run Quick Start two-entry UI smoke with Xcode 16.0
         run: ./Scripts/run-quick-start-ui-smoke.sh

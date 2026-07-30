@@ -16,11 +16,13 @@ class ReleaseComplianceTests < Minitest::Test
     "Examples/PocketRootDemo/project.yml",
     "Examples/PocketRootHostApp/project.yml",
     "Examples/PocketRootQuickStartApp/project.yml",
+    "Tests/Integration/ExternalConsumerApp/project.yml.template",
     "Scripts/inject-demo-rootfs.sh",
     "Scripts/run-host-app-device-ui-smoke.sh",
     "Scripts/run-host-app-ui-smoke.sh",
     "Scripts/run-ios-example-ui-smoke.sh",
     "Scripts/run-quick-start-ui-smoke.sh",
+    "Scripts/run-external-consumer-ui-smoke.sh",
     "ThirdPartyNotices/SwiftTerm-LICENSE.txt",
     "Compliance/RootFS/v0.3.3/EVIDENCE.json",
     "Compliance/RootFS/v0.3.3/SBOM.spdx.json"
@@ -217,6 +219,58 @@ class ReleaseComplianceTests < Minitest::Test
     assert_includes workflow, "./Scripts/run-quick-start-ui-smoke.sh"
   end
 
+  def test_external_consumer_profile_resolves_public_products_and_lifecycle
+    composition =
+      JSON.parse(
+        PocketRootReleaseCompliance.build_outputs.fetch("COMPOSITION.json")
+      )
+    profile =
+      composition.fetch("profiles").find do |candidate|
+        candidate.fetch("id") == "external-consumer-acceptance"
+      end
+    fixture_root =
+      REPOSITORY_ROOT.join("Tests/Integration/ExternalConsumerApp")
+    project = fixture_root.join("project.yml.template").binread
+    source =
+      fixture_root.join("Sources/ExternalConsumerApp.swift").binread
+    ui_test =
+      fixture_root.join(
+        "UITests/ExternalConsumerAppUITests.swift"
+      ).binread
+    runner =
+      REPOSITORY_ROOT
+        .join("Scripts/run-external-consumer-ui-smoke.sh")
+        .binread
+    workflow = REPOSITORY_ROOT.join(".github/workflows/ci.yml").binread
+
+    assert_equal "PocketRootExternalConsumerApp", profile.fetch("rootTarget")
+    assert_equal(
+      ["PocketRoot", "PocketRootIshRuntimeIntegration"],
+      profile.fetch("swiftProducts")
+    )
+    assert profile.fetch("includesIshRuntime")
+    assert profile.fetch("requiresExternalRootFS")
+    refute profile.fetch("artifactBuiltAndScanned")
+    assert_includes project, "__POCKETROOT_PACKAGE_SOURCE__"
+    assert_includes project, "product: PocketRootIshRuntimeIntegration"
+    assert_includes source, "host.makeTerminalViewController()"
+    assert_includes source, "host.makeFilesViewController()"
+    assert_includes source, "try await host.shutdown()"
+    assert_includes ui_test,
+      "testRemoteConsumerTerminalFilesAndLifecycleClosure"
+    assert_includes ui_test, "XCUIDevice.shared.press(.home)"
+    assert_includes ui_test, "app.wait(for: .runningBackground"
+    assert_includes ui_test, "app.wait(for: .runningForeground"
+    assert_includes ui_test,
+      "__POCKETROOT_EXTERNAL_CONSUMER_FOREGROUND__"
+    assert_includes ui_test, "Runtime Terminated"
+    assert_includes runner, "POCKETROOT_EXTERNAL_CONSUMER_REVISION"
+    assert_includes runner,
+      "POCKETROOT_EXTERNAL_CONSUMER_REPOSITORY_URL"
+    assert_includes workflow,
+      "Run public-SHA External Consumer UI acceptance"
+  end
+
   def test_standalone_host_retains_runtime_across_scene_recreation
     source =
       REPOSITORY_ROOT
@@ -316,6 +370,8 @@ class ReleaseComplianceTests < Minitest::Test
     assert_includes project, "type: bundle.ui-testing"
     assert_includes ui_test, "terminal.typeText("
     assert_includes ui_test, "PocketRootFiles.preview"
+    assert_includes ui_test, '.matching(identifier: "ActivityListView")'
+    refute_includes ui_test, 'app.otherElements["ActivityListView"]'
     assert_includes ui_test, "testPTYLifecycleAndShutdown"
     assert_includes ui_test, "testWorkspaceKeepsPTYAliveAcrossFilesTab"
     assert_includes(

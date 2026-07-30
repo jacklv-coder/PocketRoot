@@ -263,6 +263,47 @@ Host 不会下载或选择 RootFS，也不会安装 Node.js、npm、Codex CLI �
 宿主位于 [`Examples/PocketRootHostApp`](../Examples/PocketRootHostApp)。两者只依赖公开
 Swift Package 产品，不读取 Demo 内部代码；CI 会真实编译并核对注入的 RootFS。
 
+### 外部消费者验收
+
+仓库内示例使用本地 package path，适合阅读和迭代；发布接入还需要证明一个不在
+PocketRoot 源码树中的新 App 能独立解析和使用公共产品。验收夹具位于
+[`Tests/Integration/ExternalConsumerApp`](../Tests/Integration/ExternalConsumerApp)，
+runner 会把它复制到系统临时目录、把调用方提供的 RootFS 作为 App 资源加入临时工程，
+然后执行一条真实 UI 流程：
+
+1. 打开 Terminal，等待自动安装 RootFS 并 boot；
+2. 通过持续 PTY 创建文件；
+3. 进入后台并恢复，确认同一 Terminal 会话仍在；
+4. 从 Files 打开并预览该文件；
+5. 显式 shutdown，确认三个入口全部进入终态。
+
+验证当前本地 checkout：
+
+```bash
+POCKETROOT_ROOTFS_ARCHIVE=/absolute/path/to/fs.tar.gz \
+POCKETROOT_EXTERNAL_CONSUMER_PACKAGE_PATH="$PWD" \
+  ./Scripts/run-external-consumer-ui-smoke.sh
+```
+
+验证公开仓库中的精确 commit：
+
+```bash
+POCKETROOT_ROOTFS_ARCHIVE=/absolute/path/to/fs.tar.gz \
+POCKETROOT_EXTERNAL_CONSUMER_REPOSITORY_URL=https://github.com/jacklv-coder/PocketRoot.git \
+POCKETROOT_EXTERNAL_CONSUMER_REVISION=<40-character-reviewed-sha> \
+  ./Scripts/run-external-consumer-ui-smoke.sh
+```
+
+远程模式只接受公开 HTTPS Git URL 和完整小写 SHA，不能退化为 tag、branch 或版本
+range。PR CI 使用贡献者 head 仓库的公开 `clone_url` 与 head SHA，因此 fork PR 也验证
+实际提交。临时 App 只选择 `PocketRoot` 和 `PocketRootIshRuntimeIntegration`，不读取
+仓库内 Demo 工程或 RootFS 注入脚本。测试完成后默认删除临时 App 和 Simulator；
+设置 `POCKETROOT_KEEP_EXTERNAL_CONSUMER_APP=1` 或
+`POCKETROOT_KEEP_UI_RESULT=1` 可保留诊断材料。
+
+这项验收证明公共 SwiftPM 边界与最小 UI/生命周期闭环可接入，不授权重新分发测试
+RootFS，也不解除 TestFlight、App Store、许可证、对应源码或最终制品门禁。
+
 ### 较低层宿主生命周期
 
 需要分别组织 Boot、Terminal 和 Files 控件的 App 可继续长期保留

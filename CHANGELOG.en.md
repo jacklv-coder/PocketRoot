@@ -60,6 +60,11 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   CI and its pinned Debug RootFS is verified. iPhone/iPad UI smoke covers cold
   Files and Terminal auto-boot and previews a real PTY-created file through
   Files; Quick Start and Host App share one bounded Simulator runner.
+- An External Consumer acceptance App materialized outside the repository.
+  Local runs use the current package path, while PR CI resolves the head's full
+  SHA through its public Git URL, bundles the reviewed RootFS as a
+  caller-owned resource, and verifies Terminal file creation,
+  background/foreground recovery, Files preview, and explicit shutdown.
 - Unified iOS 18 deployment baseline.
 - Experimental `PocketRootIshRuntime` pinned to IshEmbed release revision `38d25d6f8726145e7e988172f12000020d89a638` and the `v0.4.0-abi.6` XCFramework.
 - Experimental `PocketRootIshRuntime` upgraded to IshEmbed release revision
@@ -224,6 +229,9 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 
 ### Changed
 
+- Host App iPad UI smoke now locates the system share sheet by accessibility
+  identifier across element types, avoiding false XCTest failures when iOS 18
+  exposes `ActivityListView` through a different automation type.
 - Moved the complete Demo, its tests, and its XcodeGen source into the
   self-contained `Examples/PocketRootDemo` tree. Project generation and build
   scripts now use that public example path instead of mixing Demo and package

@@ -213,6 +213,8 @@ module PocketRootReleaseCompliance
       "5d2961cd344b85b5ca0102f3e7b80c3bba7ac8681b645e3d8efae0ec137d33e4",
     "Examples/PocketRootQuickStartApp/project.yml" =>
       "11c6f86f3be0f419a9a6f10dc884b4df9cb157bcdccb5568fe903972a6084416",
+    "Tests/Integration/ExternalConsumerApp/project.yml.template" =>
+      "95ca1929e779b1b91a304e68261c94ce42839b833a4e55a9768daa05b437cfb9",
     "Scripts/inject-demo-rootfs.sh" =>
       "3982b5382b0d1e13e0c8e8a5bb5404c5bad1dfc4d6e9cd23a39e3395a83087bb",
     "Scripts/run-host-app-device-ui-smoke.sh" =>
@@ -223,6 +225,8 @@ module PocketRootReleaseCompliance
       "d401c53b2bfb731713a9d3a894c306ce0f406e02810b49bf4a6ddd9c0a280f23",
     "Scripts/run-quick-start-ui-smoke.sh" =>
       "acf26d68fc37250e24911c2d23791a0d12ff06a624dedcefee0ed7905bc31af2",
+    "Scripts/run-external-consumer-ui-smoke.sh" =>
+      "d9544ede3ecbad8d42a114015fa77071d31aa84aafc1cbe0f0f001453b1a4d0d",
     "ThirdPartyNotices/SwiftTerm-LICENSE.txt" =>
       "1c34c11581e20feb2b7ea122146a6690261dae94b2c8444e8cff902e567df6ae"
   }.freeze
@@ -233,6 +237,8 @@ module PocketRootReleaseCompliance
     Examples/PocketRootHostApp/UITests
     Examples/PocketRootQuickStartApp/Sources
     Examples/PocketRootQuickStartApp/UITests
+    Tests/Integration/ExternalConsumerApp/Sources
+    Tests/Integration/ExternalConsumerApp/UITests
     Spikes/PocketRootIshRuntimeCompileSpike
     Spikes/PocketRootIshRuntimeSmoke
   ].freeze
@@ -965,6 +971,13 @@ module PocketRootReleaseCompliance
         root.join("Examples/PocketRootQuickStartApp/project.yml"),
         "Quick Start App project.yml"
       )
+    external_consumer_project_bytes =
+      read_regular(
+        root.join(
+          "Tests/Integration/ExternalConsumerApp/project.yml.template"
+        ),
+        "External Consumer App project template"
+      )
     license_bytes = read_regular(root.join("LICENSE"), "LICENSE")
     demo_rootfs_injection_bytes =
       read_regular(
@@ -985,6 +998,11 @@ module PocketRootReleaseCompliance
       read_regular(
         root.join("Scripts/run-quick-start-ui-smoke.sh"),
         "Quick Start UI smoke script"
+      )
+    external_consumer_ui_smoke_bytes =
+      read_regular(
+        root.join("Scripts/run-external-consumer-ui-smoke.sh"),
+        "External Consumer UI smoke script"
       )
     host_app_device_ui_smoke_bytes =
       read_regular(
@@ -1030,6 +1048,8 @@ module PocketRootReleaseCompliance
         Digest::SHA256.hexdigest(host_project_bytes),
       "Examples/PocketRootQuickStartApp/project.yml" =>
         Digest::SHA256.hexdigest(quick_start_project_bytes),
+      "Tests/Integration/ExternalConsumerApp/project.yml.template" =>
+        Digest::SHA256.hexdigest(external_consumer_project_bytes),
       "Scripts/inject-demo-rootfs.sh" =>
         Digest::SHA256.hexdigest(demo_rootfs_injection_bytes),
       "Scripts/run-host-app-ui-smoke.sh" =>
@@ -1038,6 +1058,8 @@ module PocketRootReleaseCompliance
         Digest::SHA256.hexdigest(example_ui_smoke_bytes),
       "Scripts/run-quick-start-ui-smoke.sh" =>
         Digest::SHA256.hexdigest(quick_start_ui_smoke_bytes),
+      "Scripts/run-external-consumer-ui-smoke.sh" =>
+        Digest::SHA256.hexdigest(external_consumer_ui_smoke_bytes),
       "Scripts/run-host-app-device-ui-smoke.sh" =>
         Digest::SHA256.hexdigest(host_app_device_ui_smoke_bytes),
       SWIFTTERM.fetch("noticePath") =>
@@ -1122,6 +1144,17 @@ module PocketRootReleaseCompliance
         {
           "id" => "two-entry-quick-start-example",
           "rootTarget" => "PocketRootQuickStartApp",
+          "swiftProducts" => %w[
+            PocketRoot
+            PocketRootIshRuntimeIntegration
+          ],
+          "includesIshRuntime" => true,
+          "requiresExternalRootFS" => true,
+          "artifactBuiltAndScanned" => false
+        },
+        {
+          "id" => "external-consumer-acceptance",
+          "rootTarget" => "PocketRootExternalConsumerApp",
           "swiftProducts" => %w[
             PocketRoot
             PocketRootIshRuntimeIntegration
@@ -1575,6 +1608,7 @@ module PocketRootReleaseCompliance
       native-runtime-smoke
       standalone-host-example
       two-entry-quick-start-example
+      external-consumer-acceptance
       swift-package-all-products
     ] &&
       profiles.all? { |profile| profile["artifactBuiltAndScanned"] == false } &&

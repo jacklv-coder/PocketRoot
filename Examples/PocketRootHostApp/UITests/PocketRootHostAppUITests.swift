@@ -693,7 +693,10 @@ final class PocketRootHostAppUITests: XCTestCase {
     private func dismissShareSheetIfNeeded(
         in app: XCUIApplication
     ) -> Bool {
-        let activityView = app.otherElements["ActivityListView"]
+        let activityView = app
+            .descendants(matching: .any)
+            .matching(identifier: "ActivityListView")
+            .firstMatch
         let hostActions = app.buttons["PocketRootFiles.actions"]
         let hostIsHittable = NSPredicate(format: "hittable == true")
 

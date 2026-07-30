@@ -15,10 +15,12 @@
     "Examples/PocketRootDemo/project.yml": "749cfea0c9a9e7cc4919d3dbee1c01720aa85d8f1b5fe4fc887b61d3a2d0f3fa",
     "Examples/PocketRootHostApp/project.yml": "5d2961cd344b85b5ca0102f3e7b80c3bba7ac8681b645e3d8efae0ec137d33e4",
     "Examples/PocketRootQuickStartApp/project.yml": "11c6f86f3be0f419a9a6f10dc884b4df9cb157bcdccb5568fe903972a6084416",
+    "Tests/Integration/ExternalConsumerApp/project.yml.template": "95ca1929e779b1b91a304e68261c94ce42839b833a4e55a9768daa05b437cfb9",
     "Scripts/inject-demo-rootfs.sh": "3982b5382b0d1e13e0c8e8a5bb5404c5bad1dfc4d6e9cd23a39e3395a83087bb",
     "Scripts/run-host-app-ui-smoke.sh": "811c58bd540512d35247970b994c54b28212145228fb40011c04456216052733",
     "Scripts/run-ios-example-ui-smoke.sh": "d401c53b2bfb731713a9d3a894c306ce0f406e02810b49bf4a6ddd9c0a280f23",
     "Scripts/run-quick-start-ui-smoke.sh": "acf26d68fc37250e24911c2d23791a0d12ff06a624dedcefee0ed7905bc31af2",
+    "Scripts/run-external-consumer-ui-smoke.sh": "d9544ede3ecbad8d42a114015fa77071d31aa84aafc1cbe0f0f001453b1a4d0d",
     "Scripts/run-host-app-device-ui-smoke.sh": "f9528bd72aa40e6615633d1bc56ea8a31965b41f6570a0dc9f5fa390c5082490",
     "ThirdPartyNotices/SwiftTerm-LICENSE.txt": "1c34c11581e20feb2b7ea122146a6690261dae94b2c8444e8cff902e567df6ae",
     "Sources/CPocketRootArchiveSupport/CPocketRootArchiveSupport.c": "0abfdca5894c5e888de4ba48a73880dbbe2a593785c509684b52bfa412249751",
@@ -110,10 +112,12 @@
     "Examples/PocketRootDemo/Sources/PocketRootDemo/Shared/UI/PlaceholderViewController.swift": "48e0f6462228a66face2aef51f9bd39ec02923c4d1c01b6b34f920948998f2b8",
     "Examples/PocketRootHostApp/Sources/HostApp.swift": "0c36bd3104ddc5bebb9e23675a44a92e3ce4aec2c1461b3e182d86d1a75159c9",
     "Examples/PocketRootHostApp/Sources/Info.plist": "711b38923f11fdb4ceb7d28cb90a51674afec0a64786a20f9bd68e3f406f8d26",
-    "Examples/PocketRootHostApp/UITests/PocketRootHostAppUITests.swift": "f8435d5c0a006e35b95804b49b485a05e0034265bb5ed0fd8e55458b8faaead6",
+    "Examples/PocketRootHostApp/UITests/PocketRootHostAppUITests.swift": "d4b358a4612d235833da0dc53f5a04a77aad43e7b8a78fa041cbc0274f45984b",
     "Examples/PocketRootQuickStartApp/Sources/Info.plist": "b3c0c96e89db99c72c9f020590b1c5cdc0c927fd3af4b6ae7865abfdc81049b8",
     "Examples/PocketRootQuickStartApp/Sources/QuickStartApp.swift": "1c77c9229281d0d1f9fbe3678bcc9995fff8c7d2189f4c6152daaa2999683fb6",
     "Examples/PocketRootQuickStartApp/UITests/PocketRootQuickStartAppUITests.swift": "17db21ce0e23489ea85b19cef285746f33e1b6f8f6efedda0599d1934a8766ba",
+    "Tests/Integration/ExternalConsumerApp/Sources/ExternalConsumerApp.swift": "580fa504ff16695c53d1d40a41f1a8531da21f961906a394394a0649c40ce11b",
+    "Tests/Integration/ExternalConsumerApp/UITests/ExternalConsumerAppUITests.swift": "315d16cfe24dffdf4c66eb6f1e0f2e7e57c2ce69eb501906cf9e23f0ec34072d",
     "Spikes/PocketRootIshRuntimeCompileSpike/PocketRootIshRuntimeCompileSpike.swift": "829a9ef79d67cb93aae5fbea32561c5c5497a7a017922bb1ebb344b4c0c32da8",
     "Spikes/PocketRootIshRuntimeSmoke/PocketRootIshRuntimeSmoke.swift": "e5a903fbb2f2994c45c5d57cf8df840263b5dd3a0716d8b9bbf0ad9018785af2",
     "Compliance/RootFS/v0.3.3/EVIDENCE.json": "98170847e01c3c738d600970ca479202e7f69bf9f3b2cef31138462d0bfc3deb",
@@ -505,6 +509,17 @@
     {
       "id": "two-entry-quick-start-example",
       "rootTarget": "PocketRootQuickStartApp",
+      "swiftProducts": [
+        "PocketRoot",
+        "PocketRootIshRuntimeIntegration"
+      ],
+      "includesIshRuntime": true,
+      "requiresExternalRootFS": true,
+      "artifactBuiltAndScanned": false
+    },
+    {
+      "id": "external-consumer-acceptance",
+      "rootTarget": "PocketRootExternalConsumerApp",
       "swiftProducts": [
         "PocketRoot",
         "PocketRootIshRuntimeIntegration"
