@@ -185,6 +185,8 @@ class ReleaseComplianceTests < Minitest::Test
     refute profile.fetch("artifactBuiltAndScanned")
     assert_includes source, "host.makeTerminalViewController()"
     assert_includes source, "host.makeFilesViewController()"
+    assert_includes source, "func sceneDidDisconnect(_ scene: UIScene)"
+    assert_includes source, "pocketRootHost?.closeWorkspaces()"
   end
 
   def test_standalone_host_retains_runtime_across_scene_recreation

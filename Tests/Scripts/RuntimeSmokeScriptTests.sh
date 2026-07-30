@@ -72,6 +72,8 @@ fi
 
 if ! grep -Fq -- 'makeTerminalViewController()' "$QUICK_START_SOURCE" \
   || ! grep -Fq -- 'makeFilesViewController()' "$QUICK_START_SOURCE" \
+  || ! grep -Fq -- 'func sceneDidDisconnect(_ scene: UIScene)' "$QUICK_START_SOURCE" \
+  || ! grep -Fq -- 'pocketRootHost?.closeWorkspaces()' "$QUICK_START_SOURCE" \
   || ! grep -Fq -- 'path: ../..' "$QUICK_START_PROJECT_SPEC" \
   || ! grep -Fq -- 'product: PocketRootIshRuntimeIntegration' "$QUICK_START_PROJECT_SPEC" \
   || ! grep -Fq -- '"$SRCROOT/../../Scripts/inject-demo-rootfs.sh"' "$QUICK_START_PROJECT_SPEC"; then

@@ -100,6 +100,15 @@ final class QuickStartSceneDelegate: UIResponder, UIWindowSceneDelegate {
         window.makeKeyAndVisible()
         self.window = window
     }
+
+    func sceneDidDisconnect(_ scene: UIScene) {
+        if let appDelegate =
+            UIApplication.shared.delegate as? QuickStartAppDelegate
+        {
+            appDelegate.pocketRootHost?.closeWorkspaces()
+        }
+        window = nil
+    }
 }
 
 @MainActor
