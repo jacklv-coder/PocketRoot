@@ -174,14 +174,13 @@ final class PocketRootHostAppUITests: XCTestCase {
         let app = launchAndBoot()
         app.buttons["PocketRootHost.files"].tap()
 
-        let actions = app.buttons["PocketRootFiles.actions"]
-        XCTAssertTrue(actions.waitForExistence(timeout: 30))
-        waitForEnabled(actions)
         deleteGuestFileIfPresent(
             named: Self.systemImportFixtureName,
             in: app
         )
-        actions.tap()
+        guard openFileActionsMenu(in: app) else {
+            return
+        }
         let importFile = app.buttons["Import File"]
         XCTAssertTrue(importFile.waitForExistence(timeout: 10))
         guard waitForHittable(importFile) else {
@@ -267,8 +266,9 @@ final class PocketRootHostAppUITests: XCTestCase {
             timeout: 30
         )
 
-        waitForEnabled(actions)
-        actions.tap()
+        guard openFileActionsMenu(in: app) else {
+            return
+        }
         XCTAssertTrue(importFile.waitForExistence(timeout: 10))
         guard waitForHittable(importFile) else {
             return
@@ -940,6 +940,26 @@ final class PocketRootHostAppUITests: XCTestCase {
             failureDescription:
                 "element \(element.identifier) to become enabled"
         )
+    }
+
+    @discardableResult
+    private func openFileActionsMenu(
+        in app: XCUIApplication
+    ) -> Bool {
+        // System document and share controllers can finish dismissing after
+        // the host Files screen is visible. Re-query the button and wait for
+        // a valid activation point before tapping, especially on iPad.
+        let actions = app.buttons["PocketRootFiles.actions"]
+        guard actions.waitForExistence(timeout: 30) else {
+            XCTFail("file actions button to exist")
+            return false
+        }
+        waitForEnabled(actions)
+        guard waitForHittable(actions) else {
+            return false
+        }
+        actions.tap()
+        return true
     }
 
     @discardableResult
