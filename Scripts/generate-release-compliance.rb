@@ -218,9 +218,9 @@ module PocketRootReleaseCompliance
     "Scripts/run-host-app-device-ui-smoke.sh" =>
       "f9528bd72aa40e6615633d1bc56ea8a31965b41f6570a0dc9f5fa390c5082490",
     "Scripts/run-host-app-ui-smoke.sh" =>
-      "78d0a94afd705ce65a97e11c2bd6ae2094becc0a0c00b3e53a0cace41cd49554",
+      "811c58bd540512d35247970b994c54b28212145228fb40011c04456216052733",
     "Scripts/run-ios-example-ui-smoke.sh" =>
-      "a9088ff7046992d6462558bd97ab54195cc07555951ab01ede7291058f9c1566",
+      "d401c53b2bfb731713a9d3a894c306ce0f406e02810b49bf4a6ddd9c0a280f23",
     "Scripts/run-quick-start-ui-smoke.sh" =>
       "acf26d68fc37250e24911c2d23791a0d12ff06a624dedcefee0ed7905bc31af2",
     "ThirdPartyNotices/SwiftTerm-LICENSE.txt" =>

@@ -56,6 +56,7 @@ bash -n "$QUICK_START_UI_RUNNER"
 if ! grep -Fq -- 'POCKETROOT_HOST_UI_SMOKE_DEVICE' "$HOST_UI_RUNNER" \
   || ! grep -Fq -- 'POCKETROOT_HOST_UI_DEVICE_TYPE' "$HOST_UI_RUNNER" \
   || ! grep -Fq -- 'PocketRootHostAppUITests' "$HOST_UI_RUNNER" \
+  || ! grep -Fq -- 'POCKETROOT_HOST_UI_DEFAULT_TEST_EXECUTION_TIME_ALLOWANCE:-600' "$HOST_UI_RUNNER" \
   || ! grep -Fq -- 'run-ios-example-ui-smoke.sh' "$HOST_UI_RUNNER" \
   || ! grep -Fq -- 'POCKETROOT_QUICK_START_UI_SMOKE_DEVICE' "$QUICK_START_UI_RUNNER" \
   || ! grep -Fq -- 'POCKETROOT_QUICK_START_UI_DEVICE_TYPE' "$QUICK_START_UI_RUNNER" \
@@ -68,8 +69,8 @@ fi
 if ! grep -Fq -- 'POCKETROOT_KEEP_UI_RESULT' "$GENERIC_UI_RUNNER" \
   || ! grep -Fq -- 'POCKETROOT_DEVELOPMENT_ROOTFS_ARCHIVE="$ARCHIVE_PATH"' "$GENERIC_UI_RUNNER" \
   || ! grep -Fq -- '-test-timeouts-enabled YES' "$GENERIC_UI_RUNNER" \
-  || ! grep -Fq -- '-default-test-execution-time-allowance 300' "$GENERIC_UI_RUNNER" \
-  || ! grep -Fq -- '-maximum-test-execution-time-allowance 600' "$GENERIC_UI_RUNNER" \
+  || ! grep -Fq -- '-default-test-execution-time-allowance "$DEFAULT_TEST_ALLOWANCE"' "$GENERIC_UI_RUNNER" \
+  || ! grep -Fq -- '-maximum-test-execution-time-allowance "$MAXIMUM_TEST_ALLOWANCE"' "$GENERIC_UI_RUNNER" \
   || ! grep -Fq -- 'xcrun simctl delete "$DEVICE_UDID"' "$GENERIC_UI_RUNNER"; then
     echo "Shared example UI runner is missing bounded execution or cleanup." >&2
     exit 1

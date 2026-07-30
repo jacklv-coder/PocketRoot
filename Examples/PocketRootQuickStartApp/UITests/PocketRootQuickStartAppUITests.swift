@@ -16,7 +16,11 @@ final class PocketRootQuickStartAppUITests: XCTestCase {
 
         let actions = app.buttons["PocketRootFiles.actions"]
         XCTAssertTrue(actions.waitForExistence(timeout: 90))
-        XCTAssertTrue(actions.isEnabled)
+        wait(
+            for: NSPredicate(format: "enabled == true"),
+            evaluatedWith: actions,
+            timeout: 30
+        )
     }
 
     func testTerminalCreatesFileThatFilesCanPreview() {

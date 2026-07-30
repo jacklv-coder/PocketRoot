@@ -19,6 +19,8 @@ DERIVED_DATA_ROOT="$(
 RESULT_BUNDLE_PATH="$DERIVED_DATA_ROOT/$TEST_BUNDLE.xcresult"
 CLONED_SOURCE_PACKAGES_DIR="${POCKETROOT_CLONED_SOURCE_PACKAGES_DIR:-${TMPDIR:-/tmp}/PocketRootSharedSourcePackages}"
 ONLY_TESTING="${POCKETROOT_UI_ONLY_TESTING:-$TEST_BUNDLE/$TEST_BUNDLE}"
+DEFAULT_TEST_ALLOWANCE="${POCKETROOT_UI_DEFAULT_TEST_EXECUTION_TIME_ALLOWANCE:-300}"
+MAXIMUM_TEST_ALLOWANCE="${POCKETROOT_UI_MAXIMUM_TEST_EXECUTION_TIME_ALLOWANCE:-600}"
 
 cleanup() {
     if [[ "$CREATED_DEVICE" == "true" &&
@@ -49,6 +51,12 @@ if [[ "$(uname -m)" != "arm64" ]]; then
 fi
 if ! command -v xcodegen >/dev/null 2>&1; then
     echo "$ARTIFACT_LABEL UI smoke requires XcodeGen." >&2
+    exit 2
+fi
+if [[ ! "$DEFAULT_TEST_ALLOWANCE" =~ ^[1-9][0-9]*$ ||
+      ! "$MAXIMUM_TEST_ALLOWANCE" =~ ^[1-9][0-9]*$ ||
+      "$DEFAULT_TEST_ALLOWANCE" -gt "$MAXIMUM_TEST_ALLOWANCE" ]]; then
+    echo "Example UI test allowances must be positive integers with default <= maximum." >&2
     exit 2
 fi
 
@@ -93,8 +101,8 @@ xcodebuild \
   -resultBundlePath "$RESULT_BUNDLE_PATH" \
   -clonedSourcePackagesDirPath "$CLONED_SOURCE_PACKAGES_DIR" \
   -test-timeouts-enabled YES \
-  -default-test-execution-time-allowance 300 \
-  -maximum-test-execution-time-allowance 600 \
+  -default-test-execution-time-allowance "$DEFAULT_TEST_ALLOWANCE" \
+  -maximum-test-execution-time-allowance "$MAXIMUM_TEST_ALLOWANCE" \
   "-only-testing:$ONLY_TESTING" \
   ARCHS=arm64 \
   ONLY_ACTIVE_ARCH=YES \
