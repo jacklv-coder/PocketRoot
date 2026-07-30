@@ -103,7 +103,7 @@ This establishes the current Simulator, minimum-Xcode 16, and single-iPhone one-
 | Demo and external-host runtime integration | Passed | The Demo and standalone Host App share the public controller; Debug injects only the exact verified external RootFS and Release remains payload-free |
 | Host-safe soft shutdown | Passed | v0.4.0-abi.6 soft-halts, joins, and returns to Swift; the process remains single-lifecycle |
 | Signed iPhone | Passed | v0.4.0-abi.6 completed the 17-check one-shot/soft-shutdown/peak-memory smoke; keep rerunning after runtime changes |
-| iPad Simulator Host UI | Passed | iOS 18 covers RootFS boot, PTY, Files, Workspace, rotation, and shutdown; destructive confirmation uses an alert stable across size classes |
+| iPad Simulator Host UI | Passed | iOS 18 covers RootFS boot, PTY, Files, Workspace, rotation, system document import/share-save round trips, and shutdown |
 | Signed iPad | Blocked | Physical boot and command smoke |
 | Minimum Xcode 16 native | Passed | Xcode 16.0 / iOS 18.0 SDK completed RootFS install, Simulator/device final links, and the 17-check native smoke |
 | App lifecycle and memory | In progress | Simulator and Jack iPhone have 256 MiB `ru_maxrss` gates; physical process suspend/resume, UIKit foreground/background, post-termination data recovery, and bounded App-delegate memory-warning recovery passed; add real memory-pressure/jetsam evidence |
@@ -206,6 +206,11 @@ Completed in this closure:
     through the share sheet. Import uses private same-directory staging and
     the atomic no-replace rename shipped in ABI.9, without shell interpolation
     or replacement.
+12. Automated system-file round trips on iPhone/iPad Simulators: select a
+    fixture from the standalone Host App example's Documents, import it into
+    the guest, save it back through the share sheet, delete the guest copy,
+    re-import it, and verify content. The fixture exists only under the
+    explicit UI-test launch argument.
 
 The remaining iPhone gate is execution under an Xcode whose device-support
 range includes the selected signed device. Jack iPhone currently runs iOS 26.6

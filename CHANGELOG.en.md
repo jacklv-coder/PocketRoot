@@ -76,7 +76,10 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   Cursor blinking is configurable for deterministic UI automation. The runner
   can select iPhone or iPad device types, CI executes the same complete suite
   on iPhone 16 and iPad (10th generation), and Files deletion uses an alert
-  that is stable across size classes.
+  that is stable across size classes. The standalone Host App example exposes
+  Documents through system Files, seeds a deterministic file only under the
+  explicit UI-test launch argument, and verifies the document-picker import,
+  share-sheet save, guest deletion, re-import, and content round trip.
 - A development-signed physical Host App UI runner that validates physical
   iOS, the device/Xcode support range, signing, and entitlements before reusing
   the same lifecycle test, with App and diagnostic cleanup by default.

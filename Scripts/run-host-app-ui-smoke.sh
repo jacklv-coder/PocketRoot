@@ -84,8 +84,8 @@ xcodebuild \
   -resultBundlePath "$RESULT_BUNDLE_PATH" \
   -clonedSourcePackagesDirPath "$CLONED_SOURCE_PACKAGES_DIR" \
   -test-timeouts-enabled YES \
-  -default-test-execution-time-allowance 180 \
-  -maximum-test-execution-time-allowance 300 \
+  -default-test-execution-time-allowance 300 \
+  -maximum-test-execution-time-allowance 600 \
   "-only-testing:$ONLY_TESTING" \
   ARCHS=arm64 \
   ONLY_ACTIVE_ARCH=YES \

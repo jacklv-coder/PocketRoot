@@ -5,7 +5,23 @@ import UIKit
 @main
 @MainActor
 final class HostAppDelegate: UIResponder, UIApplicationDelegate {
+    private static let uiTestImportFixtureName =
+        "pocketroot-system-file-ui-fixture.txt"
+    private static let uiTestImportFixtureContents =
+        "PocketRoot system file transfer UI fixture\n"
+
     var workspaceHost: PocketRootIshWorkspaceHost?
+
+    func application(
+        _ application: UIApplication,
+        didFinishLaunchingWithOptions launchOptions:
+            [UIApplication.LaunchOptionsKey: Any]? = nil
+    ) -> Bool {
+        if ProcessInfo.processInfo.arguments.contains("-PocketRootUITesting") {
+            prepareSystemFileUITestFixture()
+        }
+        return true
+    }
 
     func application(
         _ application: UIApplication,
@@ -18,6 +34,33 @@ final class HostAppDelegate: UIResponder, UIApplicationDelegate {
         )
         configuration.delegateClass = HostSceneDelegate.self
         return configuration
+    }
+
+    private func prepareSystemFileUITestFixture() {
+        guard let documentsURL = FileManager.default.urls(
+            for: .documentDirectory,
+            in: .userDomainMask
+        ).first else {
+            assertionFailure("The UI test Documents directory is unavailable.")
+            return
+        }
+        do {
+            try FileManager.default.createDirectory(
+                at: documentsURL,
+                withIntermediateDirectories: true
+            )
+            try Data(Self.uiTestImportFixtureContents.utf8).write(
+                to: documentsURL.appendingPathComponent(
+                    Self.uiTestImportFixtureName,
+                    isDirectory: false
+                ),
+                options: .atomic
+            )
+        } catch {
+            assertionFailure(
+                "Unable to prepare the system file UI test fixture: \(error)"
+            )
+        }
     }
 }
 

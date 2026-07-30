@@ -2,6 +2,13 @@ import XCTest
 
 @MainActor
 final class PocketRootHostAppUITests: XCTestCase {
+    private static let systemImportFixtureName =
+        "pocketroot-system-file-ui-fixture.txt"
+    private static let systemImportFixtureDisplayName =
+        "pocketroot-system-file-ui-fixture"
+    private static let systemFixtureContents =
+        "PocketRoot system file transfer UI fixture\n"
+
     func testFilesCreateAndDelete() {
         let app = launchAndBoot()
         app.buttons["PocketRootHost.files"].tap()
@@ -161,6 +168,121 @@ final class PocketRootHostAppUITests: XCTestCase {
         let preview = app.staticTexts["PocketRootFiles.preview"]
         XCTAssertTrue(preview.waitForExistence(timeout: 30))
         XCTAssertEqual(preview.label, "PocketRoot UI smoke\n")
+    }
+
+    func testSystemFileImportAndShareExportRoundTrip() {
+        let app = launchAndBoot()
+        app.buttons["PocketRootHost.files"].tap()
+
+        let actions = app.buttons["PocketRootFiles.actions"]
+        XCTAssertTrue(actions.waitForExistence(timeout: 30))
+        waitForEnabled(actions)
+        deleteGuestFileIfPresent(
+            named: Self.systemImportFixtureName,
+            in: app
+        )
+        actions.tap()
+        let importFile = app.buttons["Import File"]
+        XCTAssertTrue(importFile.waitForExistence(timeout: 10))
+        guard waitForHittable(importFile) else {
+            return
+        }
+        importFile.tap()
+
+        openHostDocuments(in: app)
+        let fixture = app.cells[
+            "\(Self.systemImportFixtureDisplayName), txt"
+        ]
+        XCTAssertTrue(fixture.waitForExistence(timeout: 30))
+        fixture.tap()
+
+        let imported = app.descendants(matching: .any)[
+            "PocketRootFiles.entry./root/\(Self.systemImportFixtureName)"
+        ]
+        XCTAssertTrue(imported.waitForExistence(timeout: 30))
+        guard waitForHittable(imported) else {
+            return
+        }
+        imported.press(forDuration: 1)
+        app.buttons["Share / Export"].tap()
+
+        let saveToFiles = app.cells.matching(
+            NSPredicate(
+                format: "label IN %@",
+                ["Save to Files", "存储到“文件”", "存储到文件"]
+            )
+        ).firstMatch
+        XCTAssertTrue(saveToFiles.waitForExistence(timeout: 30))
+        saveToFiles.coordinate(
+            withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)
+        ).tap()
+
+        openHostDocuments(in: app)
+        let save = app.buttons.matching(
+            NSPredicate(format: "label IN %@", ["Save", "存储"])
+        ).firstMatch
+        XCTAssertTrue(save.waitForExistence(timeout: 30))
+        save.tap()
+        let replace = app.buttons.matching(
+            NSPredicate(format: "label IN %@", ["Replace", "替换"])
+        ).firstMatch
+        if replace.waitForExistence(timeout: 10) {
+            replace.tap()
+        }
+        guard dismissShareSheetIfNeeded(in: app) else {
+            return
+        }
+        returnToHost(in: app)
+        let filesButton = app.buttons["PocketRootHost.files"]
+        XCTAssertTrue(filesButton.waitForExistence(timeout: 10))
+        filesButton.tap()
+
+        let persistedImport = app.descendants(matching: .any)[
+            "PocketRootFiles.entry./root/\(Self.systemImportFixtureName)"
+        ]
+        XCTAssertTrue(persistedImport.waitForExistence(timeout: 30))
+        guard waitForHittable(persistedImport) else {
+            return
+        }
+        persistedImport.press(forDuration: 1)
+        app.buttons["Delete"].tap()
+        confirmDeletion(of: Self.systemImportFixtureName, in: app)
+        wait(
+            for: NSPredicate(format: "exists == false"),
+            evaluatedWith: persistedImport,
+            timeout: 30
+        )
+
+        waitForEnabled(actions)
+        actions.tap()
+        XCTAssertTrue(importFile.waitForExistence(timeout: 10))
+        guard waitForHittable(importFile) else {
+            return
+        }
+        importFile.tap()
+        openHostDocuments(in: app)
+        let exported = app.cells[
+            "\(Self.systemImportFixtureDisplayName), txt"
+        ]
+        XCTAssertTrue(exported.waitForExistence(timeout: 30))
+        exported.tap()
+
+        let reimported = app.descendants(matching: .any)[
+            "PocketRootFiles.entry./root/\(Self.systemImportFixtureName)"
+        ]
+        XCTAssertTrue(reimported.waitForExistence(timeout: 30))
+        guard waitForHittable(reimported) else {
+            return
+        }
+        reimported.tap()
+        let preview = app.staticTexts["PocketRootFiles.preview"]
+        XCTAssertTrue(preview.waitForExistence(timeout: 30))
+        XCTAssertEqual(preview.label, Self.systemFixtureContents)
+        tapBackButton(in: app)
+        deleteGuestFileIfPresent(
+            named: Self.systemImportFixtureName,
+            in: app
+        )
     }
 
     func testPTYLifecycleAndShutdown() {
@@ -482,6 +604,91 @@ final class PocketRootHostAppUITests: XCTestCase {
         alert.buttons["Delete \(itemName)"].tap()
     }
 
+    private func deleteGuestFileIfPresent(
+        named itemName: String,
+        in app: XCUIApplication
+    ) {
+        let file = app.descendants(matching: .any)[
+            "PocketRootFiles.entry./root/\(itemName)"
+        ]
+        guard file.waitForExistence(timeout: 3) else {
+            return
+        }
+        guard waitForHittable(file) else {
+            return
+        }
+        file.press(forDuration: 1)
+        app.buttons["Delete"].tap()
+        confirmDeletion(of: itemName, in: app)
+        wait(
+            for: NSPredicate(format: "exists == false"),
+            evaluatedWith: file,
+            timeout: 30
+        )
+    }
+
+    private func openHostDocuments(in app: XCUIApplication) {
+        let browse = app.buttons.matching(
+            NSPredicate(format: "label IN %@", ["Browse", "浏览"])
+        ).firstMatch
+        if browse.waitForExistence(timeout: 10) {
+            browse.tap()
+        }
+
+        let localLocation = app.descendants(matching: .any).matching(
+            NSPredicate(
+                format: "label IN %@",
+                [
+                    "On My iPhone",
+                    "On My iPad",
+                    "我的 iPhone",
+                    "我的 iPad",
+                ]
+            )
+        ).firstMatch
+        XCTAssertTrue(localLocation.waitForExistence(timeout: 30))
+        localLocation.tap()
+
+        let hostDocuments = app.staticTexts["PocketRoot Host"]
+        XCTAssertTrue(hostDocuments.waitForExistence(timeout: 30))
+        hostDocuments.tap()
+    }
+
+    private func dismissShareSheetIfNeeded(
+        in app: XCUIApplication
+    ) -> Bool {
+        let activityView = app.otherElements["ActivityListView"]
+        let hostActions = app.buttons["PocketRootFiles.actions"]
+        guard activityView.waitForExistence(timeout: 3) else {
+            return waitForHittable(hostActions)
+        }
+        let close = app.buttons.matching(
+            NSPredicate(format: "label IN %@", ["Close", "关闭"])
+        ).firstMatch
+        let shareDismissedOrCloseHittable = NSPredicate { _, _ in
+            hostActions.isHittable || !activityView.exists
+                || close.isHittable
+        }
+        guard wait(
+            for: shareDismissedOrCloseHittable,
+            evaluatedWith: app,
+            timeout: 30
+        ) else {
+            return false
+        }
+        if hostActions.isHittable {
+            return true
+        }
+        guard activityView.exists else {
+            return waitForHittable(hostActions)
+        }
+        close.tap()
+        // Files can leave a non-visible ActivityListView accessibility node
+        // behind after dismissal. The host action button becoming hittable is
+        // the reliable signal that the system sheet no longer blocks input.
+        return waitForHittable(hostActions)
+    }
+
     private func tapBackButton(in app: XCUIApplication) {
         let backButton = app.navigationBars.buttons.element(boundBy: 0)
         XCTAssertTrue(backButton.waitForExistence(timeout: 10))
@@ -556,19 +763,19 @@ final class PocketRootHostAppUITests: XCTestCase {
         return result ?? (0, 0)
     }
 
+    @discardableResult
     private func wait(
         for predicate: NSPredicate,
         evaluatedWith object: Any,
         timeout: TimeInterval
-    ) {
+    ) -> Bool {
         let expectation = XCTNSPredicateExpectation(
             predicate: predicate,
             object: object
         )
-        XCTAssertEqual(
-            XCTWaiter.wait(for: [expectation], timeout: timeout),
-            .completed
-        )
+        let result = XCTWaiter.wait(for: [expectation], timeout: timeout)
+        XCTAssertEqual(result, .completed)
+        return result == .completed
     }
 
     private func waitForEnabled(
@@ -582,4 +789,15 @@ final class PocketRootHostAppUITests: XCTestCase {
         )
     }
 
+    @discardableResult
+    private func waitForHittable(
+        _ element: XCUIElement,
+        timeout: TimeInterval = 30
+    ) -> Bool {
+        wait(
+            for: NSPredicate(format: "hittable == true"),
+            evaluatedWith: element,
+            timeout: timeout
+        )
+    }
 }

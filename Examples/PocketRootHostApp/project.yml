@@ -53,6 +53,8 @@ targets:
         CFBundleDisplayName: PocketRoot Host
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        LSSupportsOpeningDocumentsInPlace: true
+        UIFileSharingEnabled: true
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
