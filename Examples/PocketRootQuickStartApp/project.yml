@@ -1,0 +1,88 @@
+name: PocketRootQuickStartApp
+
+options:
+  bundleIdPrefix: com.jacklv.examples
+  deploymentTarget:
+    iOS: "18.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    IPHONEOS_DEPLOYMENT_TARGET: "18.0"
+    TARGETED_DEVICE_FAMILY: "1,2"
+    GENERATE_INFOPLIST_FILE: YES
+    CURRENT_PROJECT_VERSION: 1
+    MARKETING_VERSION: 0.1.0
+
+packages:
+  PocketRoot:
+    path: ../..
+
+targets:
+  PocketRootQuickStartApp:
+    type: application
+    platform: iOS
+    deploymentTarget: "18.0"
+
+    sources:
+      - path: Sources
+
+    dependencies:
+      - package: PocketRoot
+        product: PocketRoot
+      - package: PocketRoot
+        product: PocketRootIshRuntimeIntegration
+
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jacklv.examples.PocketRootQuickStartApp
+        PRODUCT_NAME: PocketRootQuickStartApp
+        ARCHS: arm64
+        "EXCLUDED_ARCHS[sdk=iphonesimulator*]": x86_64
+        ONLY_ACTIVE_ARCH: YES
+        SUPPORTS_MACCATALYST: NO
+        ENABLE_DEBUG_DYLIB: NO
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+        SWIFT_STRICT_CONCURRENCY: complete
+        SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
+
+    info:
+      path: Sources/Info.plist
+      properties:
+        CFBundleDisplayName: PocketRoot Quick Start
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+          - UIInterfaceOrientationPortraitUpsideDown
+        "UISupportedInterfaceOrientations~ipad":
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+          UISceneConfigurations:
+            UIWindowSceneSessionRoleApplication:
+              - UISceneConfigurationName: Default Configuration
+                UISceneDelegateClassName: "$(PRODUCT_MODULE_NAME).QuickStartSceneDelegate"
+
+    postBuildScripts:
+      - name: Inject reviewed development RootFS
+        script: |
+          "$SRCROOT/../../Scripts/inject-demo-rootfs.sh"
+        basedOnDependencyAnalysis: false
+
+schemes:
+  PocketRootQuickStartApp:
+    build:
+      targets:
+        PocketRootQuickStartApp: all
+    run:
+      config: Debug
+    archive:
+      config: Release

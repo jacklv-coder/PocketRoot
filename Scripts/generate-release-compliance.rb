@@ -211,6 +211,8 @@ module PocketRootReleaseCompliance
       "749cfea0c9a9e7cc4919d3dbee1c01720aa85d8f1b5fe4fc887b61d3a2d0f3fa",
     "Examples/PocketRootHostApp/project.yml" =>
       "5d2961cd344b85b5ca0102f3e7b80c3bba7ac8681b645e3d8efae0ec137d33e4",
+    "Examples/PocketRootQuickStartApp/project.yml" =>
+      "7fccc3adea4ece71959dee0c54fb1d83a3fc1e49d7f9f13c881c440dd0cf7fdf",
     "Scripts/inject-demo-rootfs.sh" =>
       "3982b5382b0d1e13e0c8e8a5bb5404c5bad1dfc4d6e9cd23a39e3395a83087bb",
     "Scripts/run-host-app-device-ui-smoke.sh" =>
@@ -224,6 +226,7 @@ module PocketRootReleaseCompliance
     Sources
     Examples/PocketRootDemo/Sources/PocketRootDemo
     Examples/PocketRootHostApp/Sources
+    Examples/PocketRootQuickStartApp/Sources
     Spikes/PocketRootIshRuntimeCompileSpike
     Spikes/PocketRootIshRuntimeSmoke
   ].freeze
@@ -951,6 +954,11 @@ module PocketRootReleaseCompliance
         root.join("Examples/PocketRootHostApp/project.yml"),
         "Host App project.yml"
       )
+    quick_start_project_bytes =
+      read_regular(
+        root.join("Examples/PocketRootQuickStartApp/project.yml"),
+        "Quick Start App project.yml"
+      )
     license_bytes = read_regular(root.join("LICENSE"), "LICENSE")
     demo_rootfs_injection_bytes =
       read_regular(
@@ -1004,6 +1012,8 @@ module PocketRootReleaseCompliance
         Digest::SHA256.hexdigest(project_bytes),
       "Examples/PocketRootHostApp/project.yml" =>
         Digest::SHA256.hexdigest(host_project_bytes),
+      "Examples/PocketRootQuickStartApp/project.yml" =>
+        Digest::SHA256.hexdigest(quick_start_project_bytes),
       "Scripts/inject-demo-rootfs.sh" =>
         Digest::SHA256.hexdigest(demo_rootfs_injection_bytes),
       "Scripts/run-host-app-ui-smoke.sh" =>
@@ -1081,6 +1091,17 @@ module PocketRootReleaseCompliance
         {
           "id" => "standalone-host-example",
           "rootTarget" => "PocketRootHostApp",
+          "swiftProducts" => %w[
+            PocketRoot
+            PocketRootIshRuntimeIntegration
+          ],
+          "includesIshRuntime" => true,
+          "requiresExternalRootFS" => true,
+          "artifactBuiltAndScanned" => false
+        },
+        {
+          "id" => "two-entry-quick-start-example",
+          "rootTarget" => "PocketRootQuickStartApp",
           "swiftProducts" => %w[
             PocketRoot
             PocketRootIshRuntimeIntegration
@@ -1533,6 +1554,7 @@ module PocketRootReleaseCompliance
       default-demo
       native-runtime-smoke
       standalone-host-example
+      two-entry-quick-start-example
       swift-package-all-products
     ] &&
       profiles.all? { |profile| profile["artifactBuiltAndScanned"] == false } &&

@@ -8,12 +8,14 @@ import PocketRootTerminal
 /// Retain one host from the application or scene owner. Calling ``boot()``
 /// verifies and installs the caller-supplied RootFS archive, boots the
 /// process-global iSH runtime, and coalesces concurrent callers. On iOS,
-/// ``makeViewController()`` and ``PocketRootIshWorkspaceView`` automatically
-/// boot this host and present its persistent Terminal/Files workspace.
+/// ``makeTerminalViewController()``, ``makeFilesViewController()``,
+/// ``makeViewController()``, and ``PocketRootIshWorkspaceView`` automatically
+/// boot this host and present ready-made Terminal, Files, or combined
+/// Workspace screens.
 ///
-/// Removing a workspace closes only its PTY so another workspace can be opened
-/// with the same runtime. Call ``shutdown()`` once when the host intentionally
-/// terminates the process-global runtime.
+/// Removing a Terminal or Workspace closes only its PTY so another screen can
+/// be opened with the same runtime. Call ``shutdown()`` once when the host
+/// intentionally terminates the process-global runtime.
 @available(macOS 13.0, *)
 @MainActor
 public final class PocketRootIshWorkspaceHost {
@@ -143,8 +145,8 @@ public final class PocketRootIshWorkspaceHost {
         await runtimeController.refreshRuntimeState()
     }
 
-    /// Closes the PTY in every workspace made by this host without shutting
-    /// down the shared runtime.
+    /// Closes the PTY in every Terminal or Workspace screen made by this host
+    /// without shutting down the shared runtime.
     public func closeWorkspaces(
         completion: (@MainActor () -> Void)? = nil
     ) {
@@ -155,7 +157,7 @@ public final class PocketRootIshWorkspaceHost {
         }
     }
 
-    /// Closes all workspaces made by this host and then performs the terminal
+    /// Closes all screens made by this host and then performs the terminal
     /// process-global runtime shutdown. Repeated calls join the same operation;
     /// a successfully terminated host treats later calls as no-ops.
     public func shutdown() async throws {

@@ -35,6 +35,10 @@ IshEmbed XCFramework 没有 macOS 或 x86_64 Simulator 切片。macOS fallback �
 flowchart TB
     Demo["PocketRootDemo<br/>Debug 集成演示"] --> Umbrella["PocketRoot<br/>安全伞形产品"]
     Demo --> Integration
+    QuickStart["PocketRootQuickStartApp<br/>两入口接入"] --> Umbrella
+    QuickStart --> Integration
+    HostApp["PocketRootHostApp<br/>生命周期验证"] --> Umbrella
+    HostApp --> Integration
     Umbrella --> Core["PocketRootCore"]
     Umbrella --> Terminal["PocketRootTerminal"]
     Umbrella --> Resources["PocketRootResources"]
@@ -65,8 +69,9 @@ flowchart TB
 - `PocketRootIshRuntime` 依赖 Core 和仅 iOS 条件下的 IshEmbed。
 - `PocketRootIshRuntimeIntegration` 是 Resources 与 runtime 的唯一公共组合入口。
 - `PocketRoot` 只导出 Core、Terminal、Resources。
-- 默认 Swift Package 伞形产品仍不导出 iSH；仓库内 Demo、compile spike 和 smoke
-  显式依赖实验组合。Demo 只在 Debug 构建注入仓库外固定 RootFS。
+- 默认 Swift Package 伞形产品仍不导出 iSH；仓库内 Quick Start、Host App、Demo、
+  compile spike 和 smoke 显式依赖实验组合。三个 App 示例只在 Debug 构建注入仓库外
+  固定 RootFS。
 
 ## 4. 模块职责
 

@@ -11,6 +11,8 @@ HOST_DEVICE_UI_RUNNER="$ROOT_DIR/Scripts/run-host-app-device-ui-smoke.sh"
 HOST_APP_SOURCE="$ROOT_DIR/Examples/PocketRootHostApp/Sources/HostApp.swift"
 HOST_UI_TESTS="$ROOT_DIR/Examples/PocketRootHostApp/UITests/PocketRootHostAppUITests.swift"
 HOST_PROJECT_SPEC="$ROOT_DIR/Examples/PocketRootHostApp/project.yml"
+QUICK_START_SOURCE="$ROOT_DIR/Examples/PocketRootQuickStartApp/Sources/QuickStartApp.swift"
+QUICK_START_PROJECT_SPEC="$ROOT_DIR/Examples/PocketRootQuickStartApp/project.yml"
 PROJECT_SPEC="$ROOT_DIR/Examples/PocketRootDemo/project.yml"
 SMOKE_APP="$ROOT_DIR/Spikes/PocketRootIshRuntimeSmoke/PocketRootIshRuntimeSmoke.swift"
 
@@ -65,6 +67,15 @@ if ! grep -Fq -- 'pocketroot-system-file-ui-fixture.txt' "$HOST_APP_SOURCE" \
   || ! grep -Fq -- 'LSSupportsOpeningDocumentsInPlace: true' "$HOST_PROJECT_SPEC" \
   || ! grep -Fq -- 'UIFileSharingEnabled: true' "$HOST_PROJECT_SPEC"; then
     echo "Host App UI smoke is missing the system file transfer closure." >&2
+    exit 1
+fi
+
+if ! grep -Fq -- 'makeTerminalViewController()' "$QUICK_START_SOURCE" \
+  || ! grep -Fq -- 'makeFilesViewController()' "$QUICK_START_SOURCE" \
+  || ! grep -Fq -- 'path: ../..' "$QUICK_START_PROJECT_SPEC" \
+  || ! grep -Fq -- 'product: PocketRootIshRuntimeIntegration' "$QUICK_START_PROJECT_SPEC" \
+  || ! grep -Fq -- '"$SRCROOT/../../Scripts/inject-demo-rootfs.sh"' "$QUICK_START_PROJECT_SPEC"; then
+    echo "Quick Start App is missing its two public entry points or package boundary." >&2
     exit 1
 fi
 

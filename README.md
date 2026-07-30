@@ -26,7 +26,8 @@ PocketRoot 是面向 iPhone 和 iPad App 的本地 Linux Workspace SDK。它把�
 
 PocketRoot 的定位不是另一个终端 App，也不是新的操作系统：它是让现有 iOS App
 嵌入本地 Linux Terminal + Files 工作区的 SDK。可以先查看
-[完整 Demo](Examples/PocketRootDemo)、[最小宿主 App](Examples/PocketRootHostApp)
+[两入口 Quick Start](Examples/PocketRootQuickStartApp)、
+[完整 Demo](Examples/PocketRootDemo)、[生命周期宿主 App](Examples/PocketRootHostApp)
 和[应用接入指南](Docs/IntegrationGuide.md)。
 
 > [!WARNING]
@@ -56,9 +57,9 @@ PocketRoot 的定位不是另一个终端 App，也不是新的操作系统：�
 
 ## 最短 UI 接入
 
-业务 App 长期保留一个 `PocketRootIshWorkspaceHost`，然后直接打开集成页面。页面会
-准备本地 RootFS、boot runtime，并展示共享同一个 Linux guest 的 Terminal / Files
-Workspace；切换到 Files 时 Terminal 的 PTY session 会继续保持：
+业务 App 长期保留一个 `PocketRootIshWorkspaceHost`，然后直接打开 Terminal 或 Files
+页面。页面首次展示时会准备本地 RootFS 并 boot runtime，不需要业务层先轮询
+`readySystem`：
 
 ```swift
 import PocketRoot
@@ -71,14 +72,25 @@ let host = PocketRootIshWorkspaceHost(
     )
 )
 
-navigationController?.pushViewController(
-    host.makeViewController(),
-    animated: true
-)
+func openTerminal() {
+    navigationController?.pushViewController(
+        host.makeTerminalViewController(),
+        animated: true
+    )
+}
+
+func openFiles() {
+    navigationController?.pushViewController(
+        host.makeFilesViewController(),
+        animated: true
+    )
+}
 ```
 
 `localReviewedRootFSURL` 必须是 App 已合法取得并完成审查的本地归档。PocketRoot
-当前不会从网络下载、选择或公开分发 RootFS。SwiftUI 使用同一个长期保留的 host：
+当前不会从网络下载、选择或公开分发 RootFS。若要一个页面同时包含 Terminal 与
+Files，使用 `host.makeViewController()`；切换到 Files 时同一个 PTY 会继续保持。
+SwiftUI 使用同一个长期保留的 host：
 
 ```swift
 PocketRootIshWorkspaceView(host: host)
@@ -146,9 +158,8 @@ cd PocketRoot
 open Examples/PocketRootDemo/PocketRootDemo.xcodeproj
 ```
 
-`bootstrap.sh` 会解析 Swift Package，并根据
-`Examples/PocketRootDemo/project.yml` 生成 Demo 工程。生成的
-`Examples/PocketRootDemo/PocketRootDemo.xcodeproj` 不提交到 Git。
+`bootstrap.sh` 会解析 Swift Package，并根据 XcodeGen 规格生成完整 Demo 和两入口
+Quick Start 工程。生成的 `.xcodeproj` 不提交到 Git。
 
 Demo 已接通实验性 iSH、SwiftTerm PTY、Commands 和 Files 页面。RootFS 不提交到
 仓库；首次运行前把固定归档配置为本机 Debug 开发资产：
@@ -215,9 +226,10 @@ print("stderr:", result.stderr)
 7. 真实 `shutdown()` 会 soft-halt 并 join 原生 kernel 后返回；成功后状态为 `.terminated`，同一宿主进程不能再次 boot。
 8. 公共调用结束后只发布稳定 state；失败关闭会公开 `.failed`，重入调用不会泄漏 runtime 内部过渡态，旧的异步快照也不能覆盖较新的失败状态。
 
-可直接编译的独立宿主见
-[`Examples/PocketRootHostApp`](Examples/PocketRootHostApp)；完整依赖选择、错误处理和
-生命周期约束见[应用接入指南](Docs/IntegrationGuide.md)。
+最小的两入口接入见
+[`Examples/PocketRootQuickStartApp`](Examples/PocketRootQuickStartApp)；完整生命周期
+宿主见 [`Examples/PocketRootHostApp`](Examples/PocketRootHostApp)。依赖选择、错误
+处理和生命周期约束见[应用接入指南](Docs/IntegrationGuide.md)。
 
 ## RootFS 策略
 

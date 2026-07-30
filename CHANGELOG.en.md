@@ -54,6 +54,10 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   are enough to prepare, boot, and open Workspace; concurrent boot is
   coalesced, removal closes only the PTY, and explicit shutdown closes every
   host-created workspace first.
+- Direct Terminal and Files entry points on `PocketRootIshWorkspaceHost`.
+  Screens prepare and boot automatically without consumer-side `readySystem`
+  polling. A two-button `Examples/PocketRootQuickStartApp` is final-linked in
+  CI and its pinned Debug RootFS is verified.
 - Unified iOS 18 deployment baseline.
 - Experimental `PocketRootIshRuntime` pinned to IshEmbed release revision `38d25d6f8726145e7e988172f12000020d89a638` and the `v0.4.0-abi.6` XCFramework.
 - Experimental `PocketRootIshRuntime` upgraded to IshEmbed release revision
