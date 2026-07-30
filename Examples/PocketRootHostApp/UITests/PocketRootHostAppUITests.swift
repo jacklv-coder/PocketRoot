@@ -649,7 +649,13 @@ final class PocketRootHostAppUITests: XCTestCase {
         XCTAssertTrue(localLocation.waitForExistence(timeout: 30))
         localLocation.tap()
 
-        let hostDocuments = app.staticTexts["PocketRoot Host"]
+        let hostDocuments = app.cells.matching(
+            NSPredicate(
+                format: "identifier == %@ OR label BEGINSWITH %@",
+                "PocketRoot Host, Container",
+                "PocketRoot Host,"
+            )
+        ).firstMatch
         XCTAssertTrue(hostDocuments.waitForExistence(timeout: 30))
         hostDocuments.tap()
     }
@@ -659,6 +665,13 @@ final class PocketRootHostAppUITests: XCTestCase {
     ) -> Bool {
         let activityView = app.otherElements["ActivityListView"]
         let hostActions = app.buttons["PocketRootFiles.actions"]
+        if waitWithoutAssertion(
+            for: NSPredicate(format: "hittable == true"),
+            evaluatedWith: hostActions,
+            timeout: 3
+        ) {
+            return true
+        }
         guard activityView.waitForExistence(timeout: 3) else {
             return waitForHittable(hostActions)
         }
@@ -669,24 +682,76 @@ final class PocketRootHostAppUITests: XCTestCase {
             hostActions.isHittable || !activityView.exists
                 || close.isHittable
         }
-        guard wait(
+        _ = waitWithoutAssertion(
             for: shareDismissedOrCloseHittable,
             evaluatedWith: app,
-            timeout: 30
-        ) else {
-            return false
-        }
+            timeout: 10
+        )
         if hostActions.isHittable {
             return true
         }
         guard activityView.exists else {
             return waitForHittable(hostActions)
         }
-        close.tap()
-        // Files can leave a non-visible ActivityListView accessibility node
-        // behind after dismissal. The host action button becoming hittable is
-        // the reliable signal that the system sheet no longer blocks input.
+
+        if close.isHittable {
+            tapCurrentFrame(of: close, in: app)
+        } else {
+            // iPad presents the activity view as a popover without a Close
+            // button. Tapping a point outside its current frame dismisses it.
+            guard tapOutsideCurrentFrame(of: activityView, in: app) else {
+                return waitForHittable(hostActions)
+            }
+        }
+
+        // System UI can leave a stale ActivityListView accessibility node
+        // behind. The host action button becoming hittable is the reliable
+        // signal that the share sheet no longer blocks input.
         return waitForHittable(hostActions)
+    }
+
+    private func tapCurrentFrame(
+        of element: XCUIElement,
+        in app: XCUIApplication
+    ) {
+        let appFrame = app.frame
+        let elementFrame = element.frame
+        app.coordinate(withNormalizedOffset: .zero)
+            .withOffset(
+                CGVector(
+                    dx: elementFrame.midX - appFrame.minX,
+                    dy: elementFrame.midY - appFrame.minY
+                )
+            )
+            .tap()
+    }
+
+    private func tapOutsideCurrentFrame(
+        of element: XCUIElement,
+        in app: XCUIApplication
+    ) -> Bool {
+        let appFrame = app.frame
+        let elementFrame = element.frame
+        guard appFrame.width > 2, appFrame.height > 2 else {
+            return false
+        }
+        let candidatePoints = [
+            CGPoint(x: appFrame.minX + 1, y: appFrame.minY + 1),
+            CGPoint(x: appFrame.maxX - 1, y: appFrame.minY + 1),
+            CGPoint(x: appFrame.minX + 1, y: appFrame.maxY - 1),
+            CGPoint(x: appFrame.maxX - 1, y: appFrame.maxY - 1),
+        ]
+        guard let point = candidatePoints.first(
+            where: { !elementFrame.contains($0) }
+        ) else {
+            return false
+        }
+        let offset = CGVector(
+            dx: (point.x - appFrame.minX) / appFrame.width,
+            dy: (point.y - appFrame.minY) / appFrame.height
+        )
+        app.coordinate(withNormalizedOffset: offset).tap()
+        return true
     }
 
     private func tapBackButton(in app: XCUIApplication) {
@@ -776,6 +841,21 @@ final class PocketRootHostAppUITests: XCTestCase {
         let result = XCTWaiter.wait(for: [expectation], timeout: timeout)
         XCTAssertEqual(result, .completed)
         return result == .completed
+    }
+
+    private func waitWithoutAssertion(
+        for predicate: NSPredicate,
+        evaluatedWith object: Any,
+        timeout: TimeInterval
+    ) -> Bool {
+        let expectation = XCTNSPredicateExpectation(
+            predicate: predicate,
+            object: object
+        )
+        return XCTWaiter.wait(
+            for: [expectation],
+            timeout: timeout
+        ) == .completed
     }
 
     private func waitForEnabled(
