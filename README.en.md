@@ -50,7 +50,7 @@ an existing iOS App. Start with the
 | iSH boot and one-shot commands | Experimental | `iOS + arm64`; one-shot cancellation confirms guest exit |
 | Terminal and file browser | Embeddable / Experimental | UIKit/SwiftUI inject a booted system; persistent SwiftTerm PTY plus inline tree expansion, navigation, bounded previews, safe mutations, and 1 MiB-capped document import/share export |
 | Lightweight agent loop | Core, OpenAI transport, and approval-gated command tool available | Agent and Runtime Tools are explicit opt-ins; no Codex CLI install or automatic shell approval |
-| Interactive PTY and SwiftTerm | Implemented; broader device validation pending | Public sessions, bounded reads, input, resize, signal/EOF, registry, and close-before-shutdown are connected; iPhone/iPad Simulators pass sustained PTY, lifecycle, rotation, Files, Workspace, and ordered-shutdown UI coverage |
+| Interactive PTY and SwiftTerm | Implemented; broader device validation pending | Public sessions, bounded reads, input, resize, signal/EOF, registry, and close-before-shutdown are connected; iPhone/iPad Simulators pass PTY, lifecycle, Files/Workspace, system document import/share-save round trips, and ordered shutdown |
 | Physical devices and distribution | Partially passed / blocked | One-shot iPhone gates and unsigned engineering App scanning passed; the new PTY still needs device lifecycle coverage, plus storage pressure, physical iPad, jetsam/power-cut, final artifact, and compliance gates |
 
 The default `PocketRoot` product includes neither the agent loop nor native

@@ -8,6 +8,9 @@ SIMULATOR_RUNNER="$ROOT_DIR/Scripts/run-runtime-smoke.sh"
 DEVICE_RUNNER="$ROOT_DIR/Scripts/run-runtime-device-smoke.sh"
 HOST_UI_RUNNER="$ROOT_DIR/Scripts/run-host-app-ui-smoke.sh"
 HOST_DEVICE_UI_RUNNER="$ROOT_DIR/Scripts/run-host-app-device-ui-smoke.sh"
+HOST_APP_SOURCE="$ROOT_DIR/Examples/PocketRootHostApp/Sources/HostApp.swift"
+HOST_UI_TESTS="$ROOT_DIR/Examples/PocketRootHostApp/UITests/PocketRootHostAppUITests.swift"
+HOST_PROJECT_SPEC="$ROOT_DIR/Examples/PocketRootHostApp/project.yml"
 PROJECT_SPEC="$ROOT_DIR/project.yml"
 SMOKE_APP="$ROOT_DIR/Spikes/PocketRootIshRuntimeSmoke/PocketRootIshRuntimeSmoke.swift"
 
@@ -51,6 +54,15 @@ if ! grep -Fq -- 'POCKETROOT_HOST_UI_SMOKE_DEVICE' "$HOST_UI_RUNNER" \
   || ! grep -Fq -- '-test-timeouts-enabled YES' "$HOST_UI_RUNNER" \
   || ! grep -Fq -- 'xcrun simctl delete "$DEVICE_UDID"' "$HOST_UI_RUNNER"; then
     echo "Host App UI smoke runner is missing deterministic inputs or cleanup." >&2
+    exit 1
+fi
+
+if ! grep -Fq -- 'pocketroot-system-file-ui-fixture.txt' "$HOST_APP_SOURCE" \
+  || ! grep -Fq -- 'testSystemFileImportAndShareExportRoundTrip' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'Save to Files' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'LSSupportsOpeningDocumentsInPlace: true' "$HOST_PROJECT_SPEC" \
+  || ! grep -Fq -- 'UIFileSharingEnabled: true' "$HOST_PROJECT_SPEC"; then
+    echo "Host App UI smoke is missing the system file transfer closure." >&2
     exit 1
 fi
 

@@ -210,7 +210,7 @@ module PocketRootReleaseCompliance
     "project.yml" =>
       "dde326aa375b5c63362e3696402e52e023c9d1f88a26c751a652d42fa24a2800",
     "Examples/PocketRootHostApp/project.yml" =>
-      "43fbf8a7dc8aa2b598fcc6595562398102d89888eb0f931233e0440bca731a9c",
+      "5d2961cd344b85b5ca0102f3e7b80c3bba7ac8681b645e3d8efae0ec137d33e4",
     "Scripts/inject-demo-rootfs.sh" =>
       "3982b5382b0d1e13e0c8e8a5bb5404c5bad1dfc4d6e9cd23a39e3395a83087bb",
     "Scripts/run-host-app-device-ui-smoke.sh" =>

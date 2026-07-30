@@ -11,7 +11,8 @@ Package 产品即可完成：
 4. 浏览同一个 guest 的 `/root` 文件夹；
 5. 通过公开 Workspace 在持续 PTY 与 Files 间切换，终端 session 不重建；
 6. 通过一体化入口从未 boot 状态自动准备并打开 Workspace；
-7. 先关闭所有终端 session，再有序 shutdown runtime。
+7. 通过系统 document picker 导入 guest 文件，并经 share sheet 导出；
+8. 先关闭所有终端 session，再有序 shutdown runtime。
 
 它只依赖 `PocketRoot` 和 `PocketRootIshRuntimeIntegration`，不复制或导入 Demo
 内部实现。工程文件由本目录的 `project.yml` 生成：
@@ -50,7 +51,9 @@ POCKETROOT_ROOTFS_ARCHIVE=/absolute/path/to/fs.tar.gz \
 
 该测试在临时 iOS 18 Simulator 中 Boot，向 SwiftTerm PTY 输入命令创建文件，并覆盖
 持续输出、前后台、旋转 resize、关闭/重开终端、Workspace 跨页面 PTY 持续性、
-一体化入口自动 boot、Files 预览与有序 shutdown。可用
+一体化入口自动 boot、Files 预览、系统 Files 导入/分享保存 round-trip 与有序
+shutdown。Host App Documents 对系统 Files 可见；固定 fixture 只在显式
+`-PocketRootUITesting` 启动参数下生成。可用
 `POCKETROOT_HOST_UI_SMOKE_DEVICE=<Simulator-UDID>` 复用已有模拟器。
 
 用签名真机运行同一生命周期测试：
@@ -87,7 +90,9 @@ POCKETROOT_ROOTFS_ARCHIVE=/absolute/path/to/fs.tar.gz \
 This runs the real Simulator UI closure: boot, sustained SwiftTerm PTY input
 and output, background/foreground, rotation resize, terminal close/reopen,
 Workspace session persistence across Files, integrated auto-boot, preview, and
-ordered shutdown. Set
+system document-picker import/share-save round trip, and ordered shutdown.
+Host App Documents are visible in system Files; the deterministic fixture is
+created only under the explicit `-PocketRootUITesting` launch argument. Set
 `POCKETROOT_HOST_UI_SMOKE_DEVICE` to
 reuse an existing Simulator. Use `run-host-app-device-ui-smoke.sh` with
 `POCKETROOT_HOST_DEVICE_UI_SMOKE_DEVICE` and the development certificate

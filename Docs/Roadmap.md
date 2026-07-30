@@ -105,7 +105,7 @@
 | Demo 与外部宿主 runtime 接入 | 已通过 | Demo 和独立 Host App 共用公开 controller；Debug 只注入精确校验的仓库外 RootFS，Release 保持不注入 |
 | 进程安全 soft shutdown | 已通过 | v0.4.0-abi.6 soft-halt/join 返回 Swift；同进程仍只允许一次 lifecycle |
 | 签名 iPhone | 已通过 | v0.4.0-abi.6 完成 17 项 one-shot/soft-shutdown/peak-memory smoke；runtime 变更后继续重跑 |
-| iPad Simulator Host UI | 已通过 | iOS 18 上覆盖 RootFS boot、PTY、Files、Workspace、旋转与 shutdown；删除确认使用跨 size class 稳定的 alert |
+| iPad Simulator Host UI | 已通过 | iOS 18 上覆盖 RootFS boot、PTY、Files、Workspace、旋转、系统文件导入/分享保存 round-trip 与 shutdown |
 | 签名 iPad | 阻塞 | physical boot 与 command smoke |
 | 最低 Xcode 16 原生兼容 | 已通过 | Xcode 16.0 / iOS 18.0 SDK 完成 RootFS install、Simulator/device final-link 和 17 项 native smoke |
 | App lifecycle 与内存 | 进行中 | Simulator 与 Jack iPhone 均有 256 MiB `ru_maxrss` 门禁；真机 process suspend/resume、UIKit foreground/background、强制终止后数据恢复和有界 App delegate memory-warning 回调恢复已通过；补真实 memory pressure/jetsam |
@@ -202,6 +202,9 @@
 14. 打通 host ↔ guest 文件交换：一次性命令支持 1 MiB 有界二进制 stdin；Files
     页面通过系统 document picker 导入、share sheet 导出。导入使用同目录私有
     staging 与 ABI.9 中的原子 no-replace rename，不把文件内容拼入 shell，也不覆盖目标。
+15. 在 iPhone/iPad Simulator 自动验证系统文件完整路径：从独立 Host App 示例的
+    Documents 选择 fixture 导入 guest，经 share sheet 保存回 Files，删除 guest
+    副本后再次导入并复验内容；fixture 只在显式 UI-test 启动参数下生成。
 
 未完成门禁：
 
