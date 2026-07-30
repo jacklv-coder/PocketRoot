@@ -658,30 +658,35 @@ final class PocketRootHostAppUITests: XCTestCase {
         in app: XCUIApplication
     ) -> Bool {
         let activityView = app.otherElements["ActivityListView"]
+        let hostActions = app.buttons["PocketRootFiles.actions"]
         guard activityView.waitForExistence(timeout: 3) else {
-            return waitForHittable(app.buttons["PocketRootFiles.actions"])
+            return waitForHittable(hostActions)
         }
         let close = app.buttons.matching(
             NSPredicate(format: "label IN %@", ["Close", "关闭"])
         ).firstMatch
-        let activityDismissedOrCloseHittable = NSPredicate { _, _ in
-            !activityView.exists || close.isHittable
+        let shareDismissedOrCloseHittable = NSPredicate { _, _ in
+            hostActions.isHittable || !activityView.exists
+                || close.isHittable
         }
         guard wait(
-            for: activityDismissedOrCloseHittable,
+            for: shareDismissedOrCloseHittable,
             evaluatedWith: app,
             timeout: 30
         ) else {
             return false
         }
+        if hostActions.isHittable {
+            return true
+        }
         guard activityView.exists else {
-            return waitForHittable(app.buttons["PocketRootFiles.actions"])
+            return waitForHittable(hostActions)
         }
         close.tap()
         // Files can leave a non-visible ActivityListView accessibility node
         // behind after dismissal. The host action button becoming hittable is
         // the reliable signal that the system sheet no longer blocks input.
-        return waitForHittable(app.buttons["PocketRootFiles.actions"])
+        return waitForHittable(hostActions)
     }
 
     private func tapBackButton(in app: XCUIApplication) {

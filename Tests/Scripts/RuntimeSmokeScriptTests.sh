@@ -52,6 +52,8 @@ if ! grep -Fq -- 'POCKETROOT_HOST_UI_SMOKE_DEVICE' "$HOST_UI_RUNNER" \
   || ! grep -Fq -- 'PocketRootHostAppUITests' "$HOST_UI_RUNNER" \
   || ! grep -Fq -- 'POCKETROOT_DEVELOPMENT_ROOTFS_ARCHIVE="$ARCHIVE_PATH"' "$HOST_UI_RUNNER" \
   || ! grep -Fq -- '-test-timeouts-enabled YES' "$HOST_UI_RUNNER" \
+  || ! grep -Fq -- '-default-test-execution-time-allowance 300' "$HOST_UI_RUNNER" \
+  || ! grep -Fq -- '-maximum-test-execution-time-allowance 600' "$HOST_UI_RUNNER" \
   || ! grep -Fq -- 'xcrun simctl delete "$DEVICE_UDID"' "$HOST_UI_RUNNER"; then
     echo "Host App UI smoke runner is missing deterministic inputs or cleanup." >&2
     exit 1
