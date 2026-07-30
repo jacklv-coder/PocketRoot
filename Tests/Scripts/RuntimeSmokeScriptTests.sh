@@ -8,10 +8,13 @@ SIMULATOR_RUNNER="$ROOT_DIR/Scripts/run-runtime-smoke.sh"
 DEVICE_RUNNER="$ROOT_DIR/Scripts/run-runtime-device-smoke.sh"
 HOST_UI_RUNNER="$ROOT_DIR/Scripts/run-host-app-ui-smoke.sh"
 HOST_DEVICE_UI_RUNNER="$ROOT_DIR/Scripts/run-host-app-device-ui-smoke.sh"
+GENERIC_UI_RUNNER="$ROOT_DIR/Scripts/run-ios-example-ui-smoke.sh"
+QUICK_START_UI_RUNNER="$ROOT_DIR/Scripts/run-quick-start-ui-smoke.sh"
 HOST_APP_SOURCE="$ROOT_DIR/Examples/PocketRootHostApp/Sources/HostApp.swift"
 HOST_UI_TESTS="$ROOT_DIR/Examples/PocketRootHostApp/UITests/PocketRootHostAppUITests.swift"
 HOST_PROJECT_SPEC="$ROOT_DIR/Examples/PocketRootHostApp/project.yml"
 QUICK_START_SOURCE="$ROOT_DIR/Examples/PocketRootQuickStartApp/Sources/QuickStartApp.swift"
+QUICK_START_UI_TESTS="$ROOT_DIR/Examples/PocketRootQuickStartApp/UITests/PocketRootQuickStartAppUITests.swift"
 QUICK_START_PROJECT_SPEC="$ROOT_DIR/Examples/PocketRootQuickStartApp/project.yml"
 PROJECT_SPEC="$ROOT_DIR/Examples/PocketRootDemo/project.yml"
 SMOKE_APP="$ROOT_DIR/Spikes/PocketRootIshRuntimeSmoke/PocketRootIshRuntimeSmoke.swift"
@@ -47,17 +50,28 @@ bash -n "$SIMULATOR_RUNNER"
 bash -n "$DEVICE_RUNNER"
 bash -n "$HOST_UI_RUNNER"
 bash -n "$HOST_DEVICE_UI_RUNNER"
+bash -n "$GENERIC_UI_RUNNER"
+bash -n "$QUICK_START_UI_RUNNER"
 
 if ! grep -Fq -- 'POCKETROOT_HOST_UI_SMOKE_DEVICE' "$HOST_UI_RUNNER" \
   || ! grep -Fq -- 'POCKETROOT_HOST_UI_DEVICE_TYPE' "$HOST_UI_RUNNER" \
-  || ! grep -Fq -- 'POCKETROOT_KEEP_UI_RESULT' "$HOST_UI_RUNNER" \
   || ! grep -Fq -- 'PocketRootHostAppUITests' "$HOST_UI_RUNNER" \
-  || ! grep -Fq -- 'POCKETROOT_DEVELOPMENT_ROOTFS_ARCHIVE="$ARCHIVE_PATH"' "$HOST_UI_RUNNER" \
-  || ! grep -Fq -- '-test-timeouts-enabled YES' "$HOST_UI_RUNNER" \
-  || ! grep -Fq -- '-default-test-execution-time-allowance 300' "$HOST_UI_RUNNER" \
-  || ! grep -Fq -- '-maximum-test-execution-time-allowance 600' "$HOST_UI_RUNNER" \
-  || ! grep -Fq -- 'xcrun simctl delete "$DEVICE_UDID"' "$HOST_UI_RUNNER"; then
-    echo "Host App UI smoke runner is missing deterministic inputs or cleanup." >&2
+  || ! grep -Fq -- 'run-ios-example-ui-smoke.sh' "$HOST_UI_RUNNER" \
+  || ! grep -Fq -- 'POCKETROOT_QUICK_START_UI_SMOKE_DEVICE' "$QUICK_START_UI_RUNNER" \
+  || ! grep -Fq -- 'POCKETROOT_QUICK_START_UI_DEVICE_TYPE' "$QUICK_START_UI_RUNNER" \
+  || ! grep -Fq -- 'PocketRootQuickStartAppUITests' "$QUICK_START_UI_RUNNER" \
+  || ! grep -Fq -- 'run-ios-example-ui-smoke.sh' "$QUICK_START_UI_RUNNER"; then
+    echo "Example UI wrappers are missing deterministic target mappings." >&2
+    exit 1
+fi
+
+if ! grep -Fq -- 'POCKETROOT_KEEP_UI_RESULT' "$GENERIC_UI_RUNNER" \
+  || ! grep -Fq -- 'POCKETROOT_DEVELOPMENT_ROOTFS_ARCHIVE="$ARCHIVE_PATH"' "$GENERIC_UI_RUNNER" \
+  || ! grep -Fq -- '-test-timeouts-enabled YES' "$GENERIC_UI_RUNNER" \
+  || ! grep -Fq -- '-default-test-execution-time-allowance 300' "$GENERIC_UI_RUNNER" \
+  || ! grep -Fq -- '-maximum-test-execution-time-allowance 600' "$GENERIC_UI_RUNNER" \
+  || ! grep -Fq -- 'xcrun simctl delete "$DEVICE_UDID"' "$GENERIC_UI_RUNNER"; then
+    echo "Shared example UI runner is missing bounded execution or cleanup." >&2
     exit 1
 fi
 
@@ -74,10 +88,15 @@ if ! grep -Fq -- 'makeTerminalViewController()' "$QUICK_START_SOURCE" \
   || ! grep -Fq -- 'makeFilesViewController()' "$QUICK_START_SOURCE" \
   || ! grep -Fq -- 'func sceneDidDisconnect(_ scene: UIScene)' "$QUICK_START_SOURCE" \
   || ! grep -Fq -- 'pocketRootHost?.closeWorkspaces()' "$QUICK_START_SOURCE" \
+  || ! grep -Fq -- 'testFilesEntryAutoBootsFromColdLaunch' "$QUICK_START_UI_TESTS" \
+  || ! grep -Fq -- 'testTerminalCreatesFileThatFilesCanPreview' "$QUICK_START_UI_TESTS" \
+  || ! grep -Fq -- 'PocketRootTerminal.pty' "$QUICK_START_UI_TESTS" \
+  || ! grep -Fq -- 'PocketRootFiles.preview' "$QUICK_START_UI_TESTS" \
+  || ! grep -Fq -- 'PocketRootQuickStartAppUITests:' "$QUICK_START_PROJECT_SPEC" \
   || ! grep -Fq -- 'path: ../..' "$QUICK_START_PROJECT_SPEC" \
   || ! grep -Fq -- 'product: PocketRootIshRuntimeIntegration' "$QUICK_START_PROJECT_SPEC" \
   || ! grep -Fq -- '"$SRCROOT/../../Scripts/inject-demo-rootfs.sh"' "$QUICK_START_PROJECT_SPEC"; then
-    echo "Quick Start App is missing its two public entry points or package boundary." >&2
+    echo "Quick Start App is missing its two-entry UI closure or package boundary." >&2
     exit 1
 fi
 

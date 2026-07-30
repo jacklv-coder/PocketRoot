@@ -15,6 +15,7 @@ PocketRoot separates host logic, real RootFS, iOS build, native final-link, and 
 | Engineering App/archive scan | `ruby Scripts/scan-release-artifact.rb` | Deterministic external `.app`/`.xcarchive` file hashes, Mach-O, signature/entitlement risk signals, and file-level SPDX | Final exported artifact, dependency-license completeness, or distribution authorization |
 | Development-signed archive gate | `./Scripts/build-signed-engineering-archive.sh` | Standard `.xcarchive`, development entitlements, clean risk signals, deterministic re-verification, and SPDX schema validation | IPA export, release signing, installation, upload, or distribution authorization |
 | Simulator native smoke | `./Scripts/run-runtime-smoke.sh` | Prepare, boot, command bounds, returning soft shutdown | Other toolchains, physical devices, distribution |
+| Quick Start UI smoke | `./Scripts/run-quick-start-ui-smoke.sh` | Cold Files and Terminal entries in the minimal consumer App auto-boot; a real PTY-created file is previewed through Files | Physical devices, full Host lifecycle, distribution |
 | Host App UI smoke | `./Scripts/run-host-app-ui-smoke.sh` | Public-host boot, SwiftTerm PTY, lifecycle, Workspace persistence, Files mutations/previews, system document-picker import, share-sheet save and re-import round trip, and ordered shutdown on iPhone/iPad iOS 18 Simulators | Physical-device system file interaction, physical keyboards, physical iPad, distribution |
 | Physical Host App UI smoke | `./Scripts/run-host-app-device-ui-smoke.sh` | The same lifecycle UI test on a development-signed iPhone/iPad, including signature and development entitlements | iPad, real pressure, distribution |
 | Physical native smoke | `./Scripts/run-runtime-device-smoke.sh` | Same 17 checks with optional process suspend/resume, UIKit lifecycle, forced-relaunch persistence, bounded storage-failure recovery, or bounded memory-warning recovery; development entitlements and returning soft shutdown | Real storage/memory pressure, power cut, jetsam, iPad, distribution |
@@ -435,7 +436,8 @@ uploads neither the App nor scan evidence.
 The minimum-toolchain job explicitly selects Xcode 16.0 / iOS 18.0 SDK,
 validates real RootFS installation, installs the iOS 18.0 Simulator runtime,
 final-links Simulator/device Apps, runs the 17-check native smoke, and executes
-the Host App PTY, Files, Workspace, and system document-picker import,
+the minimal Quick Start cold Files/Terminal and PTY-to-Files file closure plus
+the full Host App PTY, Files, Workspace, system document-picker import,
 share-sheet save, guest deletion, re-import, and content-verification UI
 closure on iPhone 16 and iPad (10th generation) Simulators. The fixture is
 written to the standalone Host App example's Documents only under the explicit
@@ -443,9 +445,12 @@ written to the standalone Host App example's Documents only under the explicit
 data. Set
 `POCKETROOT_HOST_UI_DEVICE_TYPE` and
 `POCKETROOT_HOST_UI_DEVICE_NAME` to select the Simulator created by the runner.
-For failure diagnosis, `POCKETROOT_KEEP_UI_RESULT=1` retains temporary
-DerivedData and the `.xcresult`. This Simulator evidence does not prove
-signed-device or distribution readiness.
+Use `POCKETROOT_QUICK_START_UI_DEVICE_TYPE` and
+`POCKETROOT_QUICK_START_UI_DEVICE_NAME` for Quick Start. Both wrappers share
+`run-ios-example-ui-smoke.sh` for the same RootFS, timeouts, xcresult, and safe
+cleanup boundaries. For failure diagnosis, `POCKETROOT_KEEP_UI_RESULT=1`
+retains temporary DerivedData and the `.xcresult`. This Simulator evidence
+does not prove signed-device or distribution readiness.
 
 ## Minimum checks by change
 
@@ -458,6 +463,7 @@ signed-device or distribution readiness.
 | Package/native dependency | Package + Demo + both final links + smoke |
 | `Examples/PocketRootDemo/project.yml` or Demo | Regenerate + Demo build |
 | smoke | Shell syntax + Simulator smoke + signed-device smoke when available |
+| Quick Start entry/example | Strict iOS build + iPhone/iPad Quick Start UI smoke |
 | terminal/files UI | Terminal tests + strict iOS build + Host App UI smoke |
 | docs | Documentation check |
 | release composition/compliance evidence | Generator tests + `--check` + pinned SPDX schema validation |

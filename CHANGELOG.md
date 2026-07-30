@@ -43,7 +43,10 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
   并发 boot 合并，页面退出只关闭 PTY，显式 shutdown 先关闭全部 host Workspace。
 - 为 `PocketRootIshWorkspaceHost` 加入独立 Terminal 与 Files 公共入口；页面自动
   prepare/boot，无需业务层轮询 `readySystem`。新增只有两个按钮的
-  `Examples/PocketRootQuickStartApp`，并在 CI 中最终链接和核对固定 Debug RootFS。
+  `Examples/PocketRootQuickStartApp`，并在 CI 中最终链接和核对固定 Debug RootFS；
+  iPhone/iPad UI smoke 从冷启动分别验证 Files 与 Terminal 自动 boot，并确认真实
+  PTY 创建的文件可由 Files 预览。Quick Start 与 Host App 复用同一个有界 Simulator
+  runner。
 - 统一 package、Demo、tests 和 CI 的 iOS 18.0 deployment baseline。
 - 固定 Experimental `PocketRootIshRuntime` 到 IshEmbed release revision `38d25d6f8726145e7e988172f12000020d89a638` 与 `v0.4.0-abi.6` XCFramework。
 - 将 Experimental `PocketRootIshRuntime` 升级到 IshEmbed release revision

@@ -68,7 +68,15 @@ final class QuickStartAppDelegate: UIResponder, UIApplicationDelegate {
                     archiveURL: archiveURL,
                     applicationSupportURL: applicationSupportURL,
                     workDirectory: "/"
+                ),
+            workspaceConfiguration: PocketRootWorkspaceConfiguration(
+                terminalConfiguration: .interactive(
+                    cursorBlinkEnabled:
+                        !ProcessInfo.processInfo.arguments.contains(
+                            "-PocketRootUITesting"
+                        )
                 )
+            )
         )
     }
 }
