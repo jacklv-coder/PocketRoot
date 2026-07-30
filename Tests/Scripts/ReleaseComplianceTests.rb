@@ -15,6 +15,7 @@ class ReleaseComplianceTests < Minitest::Test
     "Package.swift",
     "Examples/PocketRootDemo/project.yml",
     "Examples/PocketRootHostApp/project.yml",
+    "Examples/PocketRootQuickStartApp/project.yml",
     "Scripts/inject-demo-rootfs.sh",
     "Scripts/run-host-app-device-ui-smoke.sh",
     "Scripts/run-host-app-ui-smoke.sh",
@@ -158,6 +159,34 @@ class ReleaseComplianceTests < Minitest::Test
     assert host_profile.fetch("includesIshRuntime")
     assert host_profile.fetch("requiresExternalRootFS")
     refute host_profile.fetch("artifactBuiltAndScanned")
+  end
+
+  def test_quick_start_profile_uses_two_public_host_entries
+    composition =
+      JSON.parse(
+        PocketRootReleaseCompliance.build_outputs.fetch("COMPOSITION.json")
+      )
+    profile =
+      composition.fetch("profiles").find do |candidate|
+        candidate.fetch("id") == "two-entry-quick-start-example"
+      end
+    source =
+      REPOSITORY_ROOT
+        .join("Examples/PocketRootQuickStartApp/Sources/QuickStartApp.swift")
+        .binread
+
+    assert_equal "PocketRootQuickStartApp", profile.fetch("rootTarget")
+    assert_equal(
+      ["PocketRoot", "PocketRootIshRuntimeIntegration"],
+      profile.fetch("swiftProducts")
+    )
+    assert profile.fetch("includesIshRuntime")
+    assert profile.fetch("requiresExternalRootFS")
+    refute profile.fetch("artifactBuiltAndScanned")
+    assert_includes source, "host.makeTerminalViewController()"
+    assert_includes source, "host.makeFilesViewController()"
+    assert_includes source, "func sceneDidDisconnect(_ scene: UIScene)"
+    assert_includes source, "pocketRootHost?.closeWorkspaces()"
   end
 
   def test_standalone_host_retains_runtime_across_scene_recreation

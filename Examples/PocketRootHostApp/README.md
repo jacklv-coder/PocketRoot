@@ -7,15 +7,18 @@ Package 产品即可完成：
 
 1. 校验并安装调用方提供的 RootFS；
 2. boot 同一个 iSH runtime；
-3. 打开可交互 SwiftTerm PTY；
-4. 浏览同一个 guest 的 `/root` 文件夹；
+3. 通过 host 管理的公开入口直接打开可交互 SwiftTerm PTY；
+4. 通过 host 管理的公开入口直接浏览同一个 guest 的 `/root` 文件夹；
 5. 通过公开 Workspace 在持续 PTY 与 Files 间切换，终端 session 不重建；
 6. 通过一体化入口从未 boot 状态自动准备并打开 Workspace；
 7. 通过系统 document picker 导入 guest 文件，并经 share sheet 导出；
 8. 先关闭所有终端 session，再有序 shutdown runtime。
 
 它只依赖 `PocketRoot` 和 `PocketRootIshRuntimeIntegration`，不复制或导入 Demo
-内部实现。工程文件由本目录的 `project.yml` 生成：
+内部实现。只需要两个入口的接入者可先看
+[`Examples/PocketRootQuickStartApp`](../PocketRootQuickStartApp)；本工程保留了更完整
+的 boot、健康检查、生命周期与 shutdown 验证。工程文件由本目录的 `project.yml`
+生成：
 
 ```bash
 ./Scripts/inject-demo-rootfs.sh \
@@ -72,9 +75,9 @@ POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
 
 This standalone iOS host proves that a consumer can validate and install a
 caller-provided RootFS, boot one shared iSH runtime, open an interactive
-SwiftTerm PTY, and use either the ready-system Workspace or the integrated
-auto-boot entry point to switch between that persistent PTY and `/root`
-browsing using only the public `PocketRoot` and
+SwiftTerm PTY or Files directly through host-managed public entry points, and
+use either the ready-system Workspace or the integrated auto-boot entry point
+to switch between that persistent PTY and `/root` browsing using only the public `PocketRoot` and
 `PocketRootIshRuntimeIntegration` products. Generate the project from
 `project.yml` with XcodeGen. The commands above configure the reviewed
 development RootFS or provide it to one Debug build. Release builds always

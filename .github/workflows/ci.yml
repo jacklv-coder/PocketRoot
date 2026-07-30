@@ -169,6 +169,10 @@ jobs:
             cd Examples/PocketRootHostApp
             xcodegen generate --spec project.yml
           )
+          (
+            cd Examples/PocketRootQuickStartApp
+            xcodegen generate --spec project.yml
+          )
 
       - name: Build for generic iOS Simulator
         run: |
@@ -200,6 +204,22 @@ jobs:
           host_rootfs="$RUNNER_TEMP/PocketRootHostAppDerivedData/Build/Products/Debug-iphonesimulator/PocketRootHostApp.app/pocketroot-fs-v0.3.3.tar.gz"
           test "$(stat -f '%z' "$host_rootfs")" = "6581376"
           echo "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4  $host_rootfs" \
+            | shasum -a 256 --check
+
+      - name: Build two-entry Quick Start integration example
+        run: |
+          xcodebuild \
+            -project Examples/PocketRootQuickStartApp/PocketRootQuickStartApp.xcodeproj \
+            -scheme PocketRootQuickStartApp \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/PocketRootQuickStartDerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            POCKETROOT_DEVELOPMENT_ROOTFS_ARCHIVE="$POCKETROOT_DEVELOPMENT_ROOTFS_ARCHIVE" \
+            build
+          quick_start_rootfs="$RUNNER_TEMP/PocketRootQuickStartDerivedData/Build/Products/Debug-iphonesimulator/PocketRootQuickStartApp.app/pocketroot-fs-v0.3.3.tar.gz"
+          test "$(stat -f '%z' "$quick_start_rootfs")" = "6581376"
+          echo "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4  $quick_start_rootfs" \
             | shasum -a 256 --check
 
       - name: Compile Demo unit tests

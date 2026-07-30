@@ -205,11 +205,14 @@ final class PocketRootHostAppUITests: XCTestCase {
         }
         flushGuestState(in: app)
         app.buttons["PocketRootHost.files"].tap()
-        XCTAssertTrue(imported.waitForExistence(timeout: 30))
-        guard waitForHittable(imported) else {
+        let reopenedImport = app.descendants(matching: .any)[
+            "PocketRootFiles.entry./root/\(Self.systemImportFixtureName)"
+        ]
+        XCTAssertTrue(reopenedImport.waitForExistence(timeout: 30))
+        guard waitForHittable(reopenedImport) else {
             return
         }
-        imported.press(forDuration: 1)
+        reopenedImport.press(forDuration: 1)
         app.buttons["Share / Export"].tap()
 
         let saveToFiles = app.cells.matching(

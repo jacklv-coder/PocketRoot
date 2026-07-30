@@ -35,7 +35,8 @@ PocketRoot is not another terminal App and it is not a new operating system.
 It is the SDK layer for embedding a local Linux Terminal + Files workspace in
 an existing iOS App. Start with the
 [complete Demo](Examples/PocketRootDemo), the
-[minimal host App](Examples/PocketRootHostApp), or the
+[two-entry Quick Start](Examples/PocketRootQuickStartApp), the
+[lifecycle Host App](Examples/PocketRootHostApp), or the
 [integration guide](Docs/en/IntegrationGuide.md).
 
 > [!WARNING]
@@ -64,9 +65,9 @@ placeholder.
 ## Smallest UI integration
 
 Retain one `PocketRootIshWorkspaceHost` in the App or scene owner, then present
-its integrated screen. The screen prepares the local RootFS, boots the runtime,
-and displays a Terminal / Files Workspace backed by one Linux guest. The
-Terminal's PTY session stays alive while the user switches to Files:
+the Terminal or Files screen directly. On first presentation the screen
+prepares the local RootFS and boots the runtime; the App does not need to poll
+`readySystem` first:
 
 ```swift
 import PocketRoot
@@ -79,16 +80,26 @@ let host = PocketRootIshWorkspaceHost(
     )
 )
 
-navigationController?.pushViewController(
-    host.makeViewController(),
-    animated: true
-)
+func openTerminal() {
+    navigationController?.pushViewController(
+        host.makeTerminalViewController(),
+        animated: true
+    )
+}
+
+func openFiles() {
+    navigationController?.pushViewController(
+        host.makeFilesViewController(),
+        animated: true
+    )
+}
 ```
 
 `localReviewedRootFSURL` must identify a local archive that the App has
 lawfully obtained and reviewed. PocketRoot currently does not download,
-select, or publicly distribute a RootFS. SwiftUI presents the same retained
-host:
+select, or publicly distribute a RootFS. Use `host.makeViewController()` for
+the combined Terminal / Files Workspace; its PTY remains alive while the user
+switches to Files. SwiftUI presents the same retained host:
 
 ```swift
 PocketRootIshWorkspaceView(host: host)
@@ -154,9 +165,9 @@ cd PocketRoot
 open Examples/PocketRootDemo/PocketRootDemo.xcodeproj
 ```
 
-`bootstrap.sh` resolves packages and generates the Demo project from
-`Examples/PocketRootDemo/project.yml` with XcodeGen. The generated
-`Examples/PocketRootDemo/PocketRootDemo.xcodeproj` is ignored.
+`bootstrap.sh` resolves packages and uses XcodeGen to generate both the full
+Demo and two-entry Quick Start projects. Generated `.xcodeproj` directories
+are ignored.
 
 The Demo now connects the Experimental iSH runtime, SwiftTerm PTY, Commands,
 and Files pages. The RootFS is not committed. Configure the pinned archive as a
@@ -225,9 +236,10 @@ Contract:
 7. Native shutdown soft-halts and joins the kernel before returning. It publishes `.terminated`, and the same host process cannot boot again.
 8. Completed public calls publish only stable states. Fail-close exposes `.failed`; reentrant calls cannot leak internal transitions, and older asynchronous snapshots cannot overwrite a newer failure.
 
-See the buildable standalone
-[`Examples/PocketRootHostApp`](Examples/PocketRootHostApp) and the
-[Integration Guide](Docs/en/IntegrationGuide.md).
+See the minimal two-entry
+[`Examples/PocketRootQuickStartApp`](Examples/PocketRootQuickStartApp), the
+full-lifecycle [`Examples/PocketRootHostApp`](Examples/PocketRootHostApp), and
+the [Integration Guide](Docs/en/IntegrationGuide.md).
 
 ## RootFS policy
 

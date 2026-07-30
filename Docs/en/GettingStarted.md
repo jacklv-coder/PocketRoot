@@ -39,9 +39,8 @@ The repository Git remote uses SSH.
 ```
 
 The script installs XcodeGen through Homebrew when required, runs
-`swift package resolve`, and generates
-`Examples/PocketRootDemo/PocketRootDemo.xcodeproj` from
-`Examples/PocketRootDemo/project.yml`.
+`swift package resolve`, and generates both the full Demo and two-entry Quick
+Start projects from their respective `project.yml` files.
 
 To regenerate only:
 
@@ -49,18 +48,24 @@ To regenerate only:
 ./Scripts/generate-project.sh
 ```
 
-Do not edit `project.pbxproj` manually. The generated project is ignored;
-`Examples/PocketRootDemo/project.yml` is the source of truth.
+Do not edit `project.pbxproj` manually. Generated projects are ignored; each
+example's `project.yml` is its source of truth.
 
 ## 4. Basic validation
 
 ```bash
 ./Scripts/test.sh
 ./Scripts/build.sh
+open Examples/PocketRootQuickStartApp/PocketRootQuickStartApp.xcodeproj
 open Examples/PocketRootDemo/PocketRootDemo.xcodeproj
 ```
 
 `test.sh` runs host Swift Package tests. The real release-asset test skips unless `POCKETROOT_ROOTFS_ARCHIVE` is set; synthetic fixtures still cover installer reuse and related paths. `build.sh` final-links the arm64 Demo; without a configured RootFS it does not boot a guest.
+
+Run `PocketRootQuickStartApp` first to validate consumer integration. Its home
+screen has only Terminal and Files entry points, and either screen prepares and
+boots the runtime automatically. Use `PocketRootDemo` for diagnostics and
+lower-level controls.
 
 ## 5. Run the real Demo
 

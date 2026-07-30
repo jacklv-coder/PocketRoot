@@ -208,7 +208,7 @@ let prepared = try await PocketRootIshSystemFactory.prepareSystem(
 
 业务 App 应在 App/Scene owner 中长期保留一个 `PocketRootIshWorkspaceHost`。宿主只需
 提供本地已审核 RootFS 归档和 Application Support 目录；它会合并并发 boot，自动完成
-RootFS 准备与 runtime boot，并创建保持同一 PTY 的 Terminal/Files 页面：
+RootFS 准备与 runtime boot，并直接创建 Terminal、Files 或组合 Workspace 页面：
 
 ```swift
 import PocketRoot
@@ -230,18 +230,27 @@ let pocketRootHost = PocketRootIshWorkspaceHost(
 )
 
 navigationController?.pushViewController(
-    pocketRootHost.makeViewController(),
+    pocketRootHost.makeTerminalViewController(),
+    animated: true
+)
+
+navigationController?.pushViewController(
+    pocketRootHost.makeFilesViewController(),
     animated: true
 )
 ```
+
+两个直接入口都不要求业务层先 boot 或轮询 `readySystem`。Terminal 页面离开层级时只
+关闭自己的 PTY，runtime 会保留给之后的 Terminal、Files 或 Workspace。需要一个页面
+同时包含两个 tab 时使用 `pocketRootHost.makeViewController()`；切换到 Files 时同一个
+PTY 会继续保持。
 
 若整个 Workspace 的 Files tab 只允许浏览和预览，在
 `PocketRootWorkspaceConfiguration` 中设置 `allowsFileOperations: false`；
 SwiftUI 与 UIKit Workspace 会使用同一个只读边界。
 
-页面首次展示时自动 boot；移除页面只关闭该页面 PTY，runtime 仍可供之后重新打开。
 宿主明确结束 Linux 能力时调用 `try await pocketRootHost.shutdown()`，它会先等待该 host
-创建的全部 Workspace 关闭 PTY，再 shutdown process-global runtime。不要在 SwiftUI
+创建的全部页面关闭 PTY，再 shutdown process-global runtime。不要在 SwiftUI
 `body` 中反复创建 host；SwiftUI 使用长期保留的同一个 host：
 
 ```swift
@@ -249,9 +258,10 @@ PocketRootIshWorkspaceView(host: pocketRootHost)
 ```
 
 Host 不会下载或选择 RootFS，也不会安装 Node.js、npm、Codex CLI 或 Agent Loop。
-完整的独立 XcodeGen 宿主位于
-[`Examples/PocketRootHostApp`](../Examples/PocketRootHostApp)，只依赖公开 Swift Package
-产品，不读取 Demo 内部代码。CI 会真实编译它并核对注入的 RootFS。
+只有 Terminal / Files 两个入口的最小 XcodeGen 宿主位于
+[`Examples/PocketRootQuickStartApp`](../Examples/PocketRootQuickStartApp)；完整生命周期
+宿主位于 [`Examples/PocketRootHostApp`](../Examples/PocketRootHostApp)。两者只依赖公开
+Swift Package 产品，不读取 Demo 内部代码；CI 会真实编译并核对注入的 RootFS。
 
 ### 较低层宿主生命周期
 

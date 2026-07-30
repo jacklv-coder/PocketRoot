@@ -52,8 +52,9 @@ git remote -v
 
 1. 检查 `xcodegen`，缺少时执行 `brew install xcodegen`。
 2. 执行 `swift package resolve`。
-3. 根据 `Examples/PocketRootDemo/project.yml` 生成
-   `Examples/PocketRootDemo/PocketRootDemo.xcodeproj`。
+3. 根据各自的 `project.yml` 生成完整 Demo 和两入口 Quick Start：
+   `Examples/PocketRootDemo/PocketRootDemo.xcodeproj` 与
+   `Examples/PocketRootQuickStartApp/PocketRootQuickStartApp.xcodeproj`。
 
 只重新生成工程时使用：
 
@@ -61,10 +62,9 @@ git remote -v
 ./Scripts/generate-project.sh
 ```
 
-不要手工维护 `project.pbxproj`。生成的
-`Examples/PocketRootDemo/PocketRootDemo.xcodeproj` 已被 `.gitignore` 忽略，
-所有 target、scheme、依赖和 deployment target 变更都应写入
-`Examples/PocketRootDemo/project.yml`。
+不要手工维护 `project.pbxproj`。生成的 `.xcodeproj` 已被 `.gitignore` 忽略，
+所有 target、scheme、依赖和 deployment target 变更都应写入对应示例的
+`project.yml`。
 
 ## 4. 运行基础验证
 
@@ -79,10 +79,13 @@ git remote -v
 打开工程：
 
 ```bash
+open Examples/PocketRootQuickStartApp/PocketRootQuickStartApp.xcodeproj
 open Examples/PocketRootDemo/PocketRootDemo.xcodeproj
 ```
 
-在 Xcode 中选择 `PocketRootDemo` scheme 和任意 iOS 18 Simulator 后运行。
+首次验证业务接入时运行 `PocketRootQuickStartApp`：首页只有 Terminal 和 Files
+两个入口，两者都会自动准备并启动 runtime。需要查看完整诊断与底层控制时再运行
+`PocketRootDemo`。
 
 ## 5. 运行真实 Demo
 

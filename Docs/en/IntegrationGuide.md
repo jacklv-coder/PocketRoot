@@ -172,8 +172,8 @@ See [RootFS security](RootFS.md) for the storage and recovery algorithm.
 
 Retain one `PocketRootIshWorkspaceHost` in the App or scene owner. The caller
 provides a reviewed local RootFS archive and Application Support location; the
-host coalesces boot, prepares the RootFS, boots the runtime, and creates a
-persistent Terminal/Files screen:
+host coalesces boot, prepares the RootFS, boots the runtime, and directly
+creates Terminal, Files, or combined Workspace screens:
 
 ```swift
 import PocketRoot
@@ -195,10 +195,21 @@ let pocketRootHost = PocketRootIshWorkspaceHost(
 )
 
 navigationController?.pushViewController(
-    pocketRootHost.makeViewController(),
+    pocketRootHost.makeTerminalViewController(),
+    animated: true
+)
+
+navigationController?.pushViewController(
+    pocketRootHost.makeFilesViewController(),
     animated: true
 )
 ```
+
+Neither direct entry requires the App to boot first or poll `readySystem`.
+Leaving a Terminal screen closes only its PTY while preserving the runtime for
+a later Terminal, Files, or Workspace screen. Use
+`pocketRootHost.makeViewController()` for the combined two-tab Workspace; its
+PTY stays alive while the user switches to Files.
 
 Set `allowsFileOperations: false` on
 `PocketRootWorkspaceConfiguration` when the entire Workspace Files tab must be
@@ -206,20 +217,20 @@ browse-and-preview only. The SwiftUI and UIKit workspace wrappers enforce the
 same read-only boundary.
 
 Retain one `PocketRootIshWorkspaceHost` in the App or scene owner. The first
-screen presentation coalesces concurrent boot requests, prepares the
-caller-supplied local RootFS, boots the runtime, and installs one persistent
-Terminal/Files workspace. Removing the screen closes only that PTY so the same
-runtime can open another workspace. When intentionally ending Linux support,
-call `try await pocketRootHost.shutdown()`; it closes every workspace made by
-that host before process-global shutdown.
+screen presentation coalesces concurrent boot requests and prepares the
+caller-supplied local RootFS. When intentionally ending Linux support, call
+`try await pocketRootHost.shutdown()`; it closes every screen made by that host
+before process-global shutdown.
 
 SwiftUI passes the same process-retained host to
 `PocketRootIshWorkspaceView(host: pocketRootHost)`; do not recreate the host
 from `body`. The host never downloads or chooses a RootFS and does not install
-Node.js, npm, Codex CLI, or an Agent Loop. The standalone
-[`Examples/PocketRootHostApp`](../../Examples/PocketRootHostApp) XcodeGen App
-uses only public Swift Package products. CI builds it and verifies its injected
-RootFS.
+Node.js, npm, Codex CLI, or an Agent Loop. The two-entry
+[`Examples/PocketRootQuickStartApp`](../../Examples/PocketRootQuickStartApp)
+and full-lifecycle
+[`Examples/PocketRootHostApp`](../../Examples/PocketRootHostApp) XcodeGen Apps
+use only public Swift Package products. CI builds both and verifies their
+injected RootFS.
 
 ### Lower-level host lifecycle
 

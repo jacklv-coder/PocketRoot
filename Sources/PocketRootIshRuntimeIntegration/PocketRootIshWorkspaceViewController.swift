@@ -4,24 +4,59 @@ import PocketRootTerminal
 import SwiftUI
 import UIKit
 
-/// A one-screen UIKit integration that prepares RootFS, boots iSH, and embeds
-/// the persistent Terminal/Files workspace owned by its process-lifetime host.
+/// A host-managed UIKit screen that prepares RootFS, boots iSH, and embeds a
+/// Terminal, Files browser, or combined workspace.
 @available(iOS 18.0, *)
 @MainActor
 public final class PocketRootIshWorkspaceViewController: UIViewController {
     public let host: PocketRootIshWorkspaceHost
 
+    fileprivate enum Content {
+        case workspace
+        case terminal
+        case files
+
+        var title: String {
+            switch self {
+            case .workspace:
+                "PocketRoot"
+            case .terminal:
+                "Terminal"
+            case .files:
+                "Files"
+            }
+        }
+
+        var accessibilityIdentifier: String {
+            switch self {
+            case .workspace:
+                "PocketRootIshWorkspace"
+            case .terminal:
+                "PocketRootIshTerminal"
+            case .files:
+                "PocketRootIshFiles"
+            }
+        }
+    }
+
     private let statusLabel = UILabel()
     private let activityIndicator = UIActivityIndicatorView(style: .large)
     private let retryButton = UIButton(type: .system)
     private let statusStack = UIStackView()
+    private let content: Content
+    private var contentController: UIViewController?
     private var workspaceController: PocketRootWorkspaceViewController?
+    private var terminalController: PocketRootTerminalViewController?
     private var hasRequestedBoot = false
     private var wasAttachedToParent = false
     private var isDetached = false
 
-    init(host: PocketRootIshWorkspaceHost) {
+    fileprivate init(
+        host: PocketRootIshWorkspaceHost,
+        content: Content
+    ) {
         self.host = host
+        self.content = content
         super.init(nibName: nil, bundle: nil)
         host.register(self)
     }
@@ -33,9 +68,9 @@ public final class PocketRootIshWorkspaceViewController: UIViewController {
 
     public override func viewDidLoad() {
         super.viewDidLoad()
-        title = "PocketRoot"
+        title = content.title
         view.backgroundColor = .systemBackground
-        view.accessibilityIdentifier = "PocketRootIshWorkspace"
+        view.accessibilityIdentifier = content.accessibilityIdentifier
         configureStatusView()
         render(host.phase)
     }
@@ -76,11 +111,13 @@ public final class PocketRootIshWorkspaceViewController: UIViewController {
     public func closeSession(
         completion: (@MainActor () -> Void)? = nil
     ) {
-        guard let workspaceController else {
+        if let workspaceController {
+            workspaceController.closeSession(completion: completion)
+        } else if let terminalController {
+            terminalController.closeSession(completion: completion)
+        } else {
             completion?()
-            return
         }
-        workspaceController.closeSession(completion: completion)
     }
 
     func runtimePhaseDidChange(_ phase: PocketRootIshRuntimePhase) {
@@ -92,7 +129,7 @@ public final class PocketRootIshWorkspaceViewController: UIViewController {
            host.canOpenWorkspace,
            let system = host.readySystem
         {
-            installWorkspaceIfNeeded(system: system)
+            installContentIfNeeded(system: system)
         }
     }
 
@@ -159,7 +196,7 @@ public final class PocketRootIshWorkspaceViewController: UIViewController {
             return
         }
         if let system = host.readySystem {
-            installWorkspaceIfNeeded(system: system)
+            installContentIfNeeded(system: system)
             return
         }
         guard host.canBoot, !hasRequestedBoot else {
@@ -175,7 +212,7 @@ public final class PocketRootIshWorkspaceViewController: UIViewController {
                 guard let self, !self.isDetached else {
                     return
                 }
-                self.installWorkspaceIfNeeded(system: system)
+                self.installContentIfNeeded(system: system)
             } catch {
                 guard let self, !self.isDetached else {
                     return
@@ -189,42 +226,77 @@ public final class PocketRootIshWorkspaceViewController: UIViewController {
         }
     }
 
-    private func installWorkspaceIfNeeded(system: PocketRootSystem) {
-        guard workspaceController == nil,
+    private func installContentIfNeeded(system: PocketRootSystem) {
+        guard contentController == nil,
               !isDetached,
               host.canOpenWorkspace,
               host.readySystem === system
         else {
             return
         }
-        let workspace = PocketRootWorkspaceViewController(
-            system: system,
-            configuration: host.workspaceConfiguration
-        )
-        workspace.loadViewIfNeeded()
-        navigationItem.titleView = workspace.navigationItem.titleView
-        workspace.onTerminalSessionEnded = { [weak self] reason in
+
+        let controller: UIViewController
+        switch content {
+        case .workspace:
+            let workspace = PocketRootWorkspaceViewController(
+                system: system,
+                configuration: host.workspaceConfiguration
+            )
+            workspace.loadViewIfNeeded()
+            navigationItem.titleView = workspace.navigationItem.titleView
+            workspace.onTerminalSessionEnded = makeSessionEndHandler()
+            workspaceController = workspace
+            controller = workspace
+        case .terminal:
+            let configuration = host.workspaceConfiguration
+            let terminal = PocketRootTerminalViewController(
+                system: system,
+                sessionConfiguration:
+                    configuration.terminalSessionConfiguration,
+                configuration: configuration.terminalConfiguration,
+                theme: configuration.terminalTheme
+            )
+            terminal.onSessionEnded = makeSessionEndHandler()
+            terminalController = terminal
+            controller = terminal
+        case .files:
+            controller = PocketRootFileBrowserViewController(
+                system: system,
+                initialPath: host.workspaceConfiguration.initialFilePath,
+                allowsFileOperations:
+                    host.workspaceConfiguration.allowsFileOperations
+            )
+        }
+
+        controller.loadViewIfNeeded()
+        addChild(controller)
+        controller.view.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(controller.view)
+        NSLayoutConstraint.activate([
+            controller.view.topAnchor.constraint(equalTo: view.topAnchor),
+            controller.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            controller.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            controller.view.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
+        controller.didMove(toParent: self)
+        contentController = controller
+        statusStack.isHidden = true
+    }
+
+    private func makeSessionEndHandler() -> (
+        PocketRootTerminalSessionEndReason
+    ) -> Void {
+        { [weak self] reason in
             guard let self else {
                 return
             }
+            title = Self.sessionEndTitle(reason)
             if case .failed = reason {
                 Task {
                     await self.host.refreshRuntimeState()
                 }
             }
         }
-        addChild(workspace)
-        workspace.view.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(workspace.view)
-        NSLayoutConstraint.activate([
-            workspace.view.topAnchor.constraint(equalTo: view.topAnchor),
-            workspace.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            workspace.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            workspace.view.bottomAnchor.constraint(equalTo: view.bottomAnchor)
-        ])
-        workspace.didMove(toParent: self)
-        workspaceController = workspace
-        statusStack.isHidden = true
     }
 
     private func render(
@@ -251,7 +323,7 @@ public final class PocketRootIshWorkspaceViewController: UIViewController {
             description = "Boot failed: \(failure ?? message)"
         }
         statusLabel.text = description
-        statusStack.isHidden = workspaceController != nil
+        statusStack.isHidden = contentController != nil
         switch phase {
         case .preparingRootFS, .booting, .shuttingDown:
             activityIndicator.startAnimating()
@@ -276,6 +348,17 @@ public final class PocketRootIshWorkspaceViewController: UIViewController {
         hasRequestedBoot = false
         startIfNeeded()
     }
+
+    private static func sessionEndTitle(
+        _ reason: PocketRootTerminalSessionEndReason
+    ) -> String {
+        switch reason {
+        case .exited(let code):
+            "Terminal Exited (\(code))"
+        case .failed:
+            "Terminal Failed"
+        }
+    }
 }
 
 @available(iOS 18.0, *)
@@ -283,7 +366,33 @@ public extension PocketRootIshWorkspaceHost {
     /// Creates a workspace screen that automatically prepares and boots this
     /// process-lifetime host.
     func makeViewController() -> PocketRootIshWorkspaceViewController {
-        PocketRootIshWorkspaceViewController(host: self)
+        PocketRootIshWorkspaceViewController(
+            host: self,
+            content: .workspace
+        )
+    }
+
+    /// Creates a full PTY Terminal screen that automatically prepares and
+    /// boots this process-lifetime host. Removing the screen closes only its
+    /// terminal session, leaving the runtime ready for another screen.
+    func makeTerminalViewController()
+        -> PocketRootIshWorkspaceViewController
+    {
+        PocketRootIshWorkspaceViewController(
+            host: self,
+            content: .terminal
+        )
+    }
+
+    /// Creates a Files screen that automatically prepares and boots this
+    /// process-lifetime host.
+    func makeFilesViewController()
+        -> PocketRootIshWorkspaceViewController
+    {
+        PocketRootIshWorkspaceViewController(
+            host: self,
+            content: .files
+        )
     }
 }
 #endif

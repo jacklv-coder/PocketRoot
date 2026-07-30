@@ -14,6 +14,7 @@
     "Package.swift": "3c53631753e44d6de1d0cd04cb1c725a105e65b2ba332ec19465c34048d5f339",
     "Examples/PocketRootDemo/project.yml": "749cfea0c9a9e7cc4919d3dbee1c01720aa85d8f1b5fe4fc887b61d3a2d0f3fa",
     "Examples/PocketRootHostApp/project.yml": "5d2961cd344b85b5ca0102f3e7b80c3bba7ac8681b645e3d8efae0ec137d33e4",
+    "Examples/PocketRootQuickStartApp/project.yml": "7fccc3adea4ece71959dee0c54fb1d83a3fc1e49d7f9f13c881c440dd0cf7fdf",
     "Scripts/inject-demo-rootfs.sh": "3982b5382b0d1e13e0c8e8a5bb5404c5bad1dfc4d6e9cd23a39e3395a83087bb",
     "Scripts/run-host-app-ui-smoke.sh": "557baabe9721bc65c484c299356176dc8c5300594c533f61245fd620c60f741b",
     "Scripts/run-host-app-device-ui-smoke.sh": "f9528bd72aa40e6615633d1bc56ea8a31965b41f6570a0dc9f5fa390c5082490",
@@ -66,9 +67,9 @@
     "Sources/PocketRootIshRuntime/Runtime/IshRuntimeHealthCheck.swift": "341b50a113026e1bcc6e38e6c69ad3106ee3327483ae62dde699bf8fd59a556b",
     "Sources/PocketRootIshRuntimeIntegration/PocketRootIshRuntimeController.swift": "8b6fee7ab14f07059c051540173eb6a607678a2735d259075de63a86b0e56eb8",
     "Sources/PocketRootIshRuntimeIntegration/PocketRootIshSystemFactory.swift": "bd4a6177bd72e763b3141473cf599214d1cb208eeeca670431e9dcaadf55b48a",
-    "Sources/PocketRootIshRuntimeIntegration/PocketRootIshWorkspaceHost.swift": "438b8f7b761f582b19d4bcdff9ec85bf65d33d6936dc70959d5d32ac48e026f4",
+    "Sources/PocketRootIshRuntimeIntegration/PocketRootIshWorkspaceHost.swift": "aebd49030bf37bfd0c6f3957f49e8c03a592357dca5bb899536a88bb304e205d",
     "Sources/PocketRootIshRuntimeIntegration/PocketRootIshWorkspaceView.swift": "d8b59020c96691f8cbf8cda4f123985f91ac7fe730cb687366b504b8c87d4aa1",
-    "Sources/PocketRootIshRuntimeIntegration/PocketRootIshWorkspaceViewController.swift": "7d988c92736fa22c764750870101b936ee343adef829a4c6cb9364e76124c2fd",
+    "Sources/PocketRootIshRuntimeIntegration/PocketRootIshWorkspaceViewController.swift": "5d01daf5ac4a9f90a16e6196ba808c047f8e947d75974f03dcb9130ec9a2be27",
     "Sources/PocketRootResources/BundledRootFSProvider.swift": "8bac007da6251dd8dcaf25fbe791687a847ee93bbf5bf3b705bbe600b62e17bc",
     "Sources/PocketRootResources/Resources/.gitkeep": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
     "Sources/PocketRootResources/Resources/README.txt": "41df51e7edc0774f807c1cb7e423e2cd04f2a1029ac2d6bbcd097f9bb679a5ea",
@@ -105,8 +106,10 @@
     "Examples/PocketRootDemo/Sources/PocketRootDemo/Shared/Runtime/DemoRuntimeStore.swift": "a1c48ac00bda87dc5332daf5ddd75715b6d18e84d5eaae80e6c8da11f63db8da",
     "Examples/PocketRootDemo/Sources/PocketRootDemo/Shared/Support/DemoConstants.swift": "9e47feedb5056ecb96f4d297324c29c2ff975031cce63abb46f112f324a4f610",
     "Examples/PocketRootDemo/Sources/PocketRootDemo/Shared/UI/PlaceholderViewController.swift": "48e0f6462228a66face2aef51f9bd39ec02923c4d1c01b6b34f920948998f2b8",
-    "Examples/PocketRootHostApp/Sources/HostApp.swift": "5fceef4899e644e2de32f3e03c242fca1ccbc9004f1de8a22f8dddc4c1462393",
+    "Examples/PocketRootHostApp/Sources/HostApp.swift": "0c36bd3104ddc5bebb9e23675a44a92e3ce4aec2c1461b3e182d86d1a75159c9",
     "Examples/PocketRootHostApp/Sources/Info.plist": "711b38923f11fdb4ceb7d28cb90a51674afec0a64786a20f9bd68e3f406f8d26",
+    "Examples/PocketRootQuickStartApp/Sources/Info.plist": "b3c0c96e89db99c72c9f020590b1c5cdc0c927fd3af4b6ae7865abfdc81049b8",
+    "Examples/PocketRootQuickStartApp/Sources/QuickStartApp.swift": "25ca44394da42e62d93b563aad932c63452c4b65d478a0847d01635ff2cc6439",
     "Spikes/PocketRootIshRuntimeCompileSpike/PocketRootIshRuntimeCompileSpike.swift": "829a9ef79d67cb93aae5fbea32561c5c5497a7a017922bb1ebb344b4c0c32da8",
     "Spikes/PocketRootIshRuntimeSmoke/PocketRootIshRuntimeSmoke.swift": "e5a903fbb2f2994c45c5d57cf8df840263b5dd3a0716d8b9bbf0ad9018785af2",
     "Compliance/RootFS/v0.3.3/EVIDENCE.json": "98170847e01c3c738d600970ca479202e7f69bf9f3b2cef31138462d0bfc3deb",
@@ -487,6 +490,17 @@
     {
       "id": "standalone-host-example",
       "rootTarget": "PocketRootHostApp",
+      "swiftProducts": [
+        "PocketRoot",
+        "PocketRootIshRuntimeIntegration"
+      ],
+      "includesIshRuntime": true,
+      "requiresExternalRootFS": true,
+      "artifactBuiltAndScanned": false
+    },
+    {
+      "id": "two-entry-quick-start-example",
+      "rootTarget": "PocketRootQuickStartApp",
       "swiftProducts": [
         "PocketRoot",
         "PocketRootIshRuntimeIntegration"

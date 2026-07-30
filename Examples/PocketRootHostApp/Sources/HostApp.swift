@@ -111,7 +111,7 @@ final class HostViewController: UIViewController {
     private let shutdownButton = UIButton(type: .system)
 
     private unowned let runtimeOwner: HostAppDelegate
-    private var activeTerminal: PocketRootTerminalViewController?
+    private var activeTerminal: PocketRootIshWorkspaceViewController?
     private var activeWorkspace: PocketRootWorkspaceViewController?
     private var isClosingTerminal = false
     private var isClosingWorkspace = false
@@ -335,27 +335,11 @@ final class HostViewController: UIViewController {
     @objc
     private func openTerminal() {
         guard !isClosingTerminal,
-              let system = workspaceHost?.readySystem
+              let workspaceHost
         else {
             return
         }
-        let terminal = PocketRootTerminalViewController(
-            system: system,
-            configuration: .interactive(
-                initialWorkingDirectory: "/root",
-                cursorBlinkEnabled: !isUITesting
-            ),
-            theme: .dark
-        )
-        let host = workspaceHost
-        terminal.onSessionEnded = { [weak terminal, weak host] reason in
-            terminal?.title = Self.sessionEndTitle(reason)
-            if case .failed = reason {
-                Task {
-                    await host?.refreshRuntimeState()
-                }
-            }
-        }
+        let terminal = workspaceHost.makeTerminalViewController()
         activeTerminal = terminal
         terminalButton.accessibilityValue = "Session Open"
         navigationController?.pushViewController(terminal, animated: true)
@@ -363,13 +347,10 @@ final class HostViewController: UIViewController {
 
     @objc
     private func openFiles() {
-        guard let system = workspaceHost?.readySystem else {
+        guard let workspaceHost else {
             return
         }
-        let files = PocketRootFileBrowserViewController(
-            system: system,
-            initialPath: "/root"
-        )
+        let files = workspaceHost.makeFilesViewController()
         navigationController?.pushViewController(files, animated: true)
     }
 
