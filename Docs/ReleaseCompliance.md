@@ -26,8 +26,9 @@ PocketRoot 的实验性 iSH runtime、XCFramework 和候选 RootFS 当前仅用�
 
 1. **源码与 Swift Package 发布**：只包含 PocketRoot 源码和 Swift Package
    元数据，不包含 RootFS、App、IPA、XCFramework 镜像或二进制 SDK；
-2. **Runtime 分发**：覆盖 App、TestFlight/App Store、二进制 SDK、RootFS 或
-   其他重新分发的 runtime 制品。
+2. **Runtime 分发**：覆盖 App、TestFlight/App Store、二进制 SDK 和其他重新分发的
+   runtime 制品，但明确不包含任何 RootFS 资产；RootFS 仍只能由调用方在本地取得
+   并自行确认授权。
 
 两条轨道当前均为 **Blocked**。机器可读状态见
 [`READINESS.json`](../Compliance/Release/experimental-v0.1.0/READINESS.json)，
@@ -35,8 +36,8 @@ PocketRoot 的实验性 iSH runtime、XCFramework 和候选 RootFS 当前仅用�
 [`RELEASE-CHECKLIST.md`](../Compliance/Release/experimental-v0.1.0/RELEASE-CHECKLIST.md)，
 未授权决定源见
 [`RELEASE-DECISIONS.json`](../Compliance/Release/RELEASE-DECISIONS.json)。
-工程测试通过不会授予分发权限；未来源码轨道变为 Ready，也不会允许打包或分发
-RootFS/runtime。
+工程测试通过不会授予分发权限；未来源码轨道变为 Ready，不会允许 runtime 分发；
+即使 runtime 轨道未来变为 Ready，也不会允许打包或分发 RootFS。
 
 ```bash
 ruby Scripts/generate-release-compliance.rb --status

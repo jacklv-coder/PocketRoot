@@ -141,6 +141,7 @@ class ReleaseComplianceTests < Minitest::Test
 
     assert_equal "blocked", source.fetch("status")
     assert_equal "blocked", runtime.fetch("status")
+    assert_includes runtime.fetch("scope"), "excludes every RootFS asset"
     assert_equal(
       [true, true, false, false, false, false],
       source.fetch("gates").map { |gate| gate.fetch("satisfied") }
@@ -157,6 +158,68 @@ class ReleaseComplianceTests < Minitest::Test
       source.fetch("gates").drop(2).map { |gate| gate.fetch("id") } +
         runtime.fetch("gates").drop(1).map { |gate| gate.fetch("id") },
       readiness.fetch("blockedGateIds")
+    )
+  end
+
+  def test_runtime_track_can_become_ready_only_for_scope_excluding_rootfs
+    outputs = PocketRootReleaseCompliance.build_outputs
+    composition = JSON.parse(outputs.fetch("COMPOSITION.json"))
+    decisions =
+      JSON.parse(
+        REPOSITORY_ROOT
+          .join("Compliance/Release/RELEASE-DECISIONS.json")
+          .binread
+      )
+    %w[
+      releaseArtifactBuilt
+      releaseArtifactScanned
+      binaryFilesAnalyzed
+      completeReleaseArtifactSBOM
+      completeLicenseAndNoticeBundle
+      correspondingSourceDeliveryApproved
+      appStorePolicyApproved
+      legalReviewApproved
+      distributionAuthorized
+    ].each do |key|
+      composition.fetch("coverage")[key] = true
+    end
+    decisions["status"] = "runtime-distribution-authorized"
+    runtime_decisions = decisions.fetch("runtimeDistribution")
+    %w[
+      completeLicenseAndNoticeBundleApproved
+      correspondingSourceDeliveryApproved
+      appStorePolicyApproved
+      privacyReviewApproved
+      legalReviewApproved
+      distributionAuthorized
+    ].each do |key|
+      runtime_decisions[key] = true
+    end
+    approval = decisions.fetch("approval")
+    approval["approvedBy"] = "project-owner"
+    approval["approvedAt"] = "2026-07-31T12:00:00Z"
+    approval["notes"] = "Reviewed RootFS-excluding runtime authorization."
+
+    assert PocketRootReleaseCompliance.validate_release_decisions(
+      decisions,
+      spdx_license_list
+    )
+    readiness =
+      PocketRootReleaseCompliance.readiness(
+        composition,
+        {release_decisions: decisions}
+      )
+
+    assert PocketRootReleaseCompliance.validate_readiness(readiness)
+    runtime = readiness.dig("tracks", "runtimeDistribution")
+    assert_equal "ready", runtime.fetch("status")
+    assert_includes runtime.fetch("scope"), "excludes every RootFS asset"
+    assert runtime.fetch("gates").find { |gate|
+      gate.fetch("id") == "rootfs-external-input-boundary"
+    }.fetch("satisfied")
+    assert PocketRootReleaseCompliance.require_ready_track(
+      readiness,
+      "runtimeDistribution"
     )
   end
 
@@ -207,9 +270,10 @@ class ReleaseComplianceTests < Minitest::Test
       PocketRootReleaseCompliance.build_outputs.fetch("RELEASE-CHECKLIST.md")
 
     assert_includes checklist, "源码与 Swift Package 发布"
-    assert_includes checklist, "Runtime / RootFS / App / 二进制分发"
+    assert_includes checklist, "Runtime / App / 二进制分发（不含 RootFS"
     assert_includes checklist, "Source and Swift Package release"
-    assert_includes checklist, "Runtime / RootFS / App / binary distribution"
+    assert_includes checklist,
+      "Runtime / App / binary distribution (RootFS excluded"
     assert_includes checklist, "--require-source-ready"
     assert_includes checklist, "--require-runtime-ready"
     assert_includes checklist, "生成器不会替项目所有者选择许可证"
@@ -242,10 +306,10 @@ class ReleaseComplianceTests < Minitest::Test
     assert_includes checklist,
       "源码与 Swift Package 发布（Ready / 已就绪）"
     assert_includes checklist,
-      "Runtime / RootFS / App / 二进制分发（Blocked / 未就绪）"
+      "Runtime / App / 二进制分发（不含 RootFS，Blocked / 未就绪）"
     assert_includes checklist, "Source and Swift Package release (Ready)"
     assert_includes checklist,
-      "Runtime / RootFS / App / binary distribution (Blocked)"
+      "Runtime / App / binary distribution (RootFS excluded, Blocked)"
   end
 
   def test_release_decisions_reject_unreviewed_authorization

@@ -2,9 +2,9 @@
 
 当前状态：**Blocked / 不可发布**。
 
-本清单把“源码/Swift Package 发布”和“包含 runtime、RootFS、App 或二进制
-SDK 的分发”分为两条独立轨道。工程测试通过不等于获得分发授权；源码轨道未来
-变为 Ready 也不会自动解除 runtime 轨道。
+本清单把“源码/Swift Package 发布”和“不包含任何 RootFS 资产的
+runtime、App 或二进制 SDK 分发”分为两条独立轨道。工程测试通过不等于获得
+分发授权；源码轨道未来变为 Ready 也不会自动解除 runtime 轨道。
 
 ## 源码与 Swift Package 发布（Blocked / 未就绪）
 
@@ -18,7 +18,7 @@ SDK 的分发”分为两条独立轨道。工程测试通过不等于获得分�
 第一项需要项目所有者明确选择 SPDX 许可证并替换当前不授予复制、修改或分发
 权限的 `LICENSE`。生成器不会替项目所有者选择许可证。
 
-## Runtime / RootFS / App / 二进制分发（Blocked / 未就绪）
+## Runtime / App / 二进制分发（不含 RootFS，Blocked / 未就绪）
 
 - [x] `rootfs-external-input-boundary` — RootFS 保持为调用方提供的本地输入
 - [ ] `release-artifact-built-and-scanned` — 最终签名导出制品已构建并扫描
@@ -47,8 +47,8 @@ ruby Scripts/generate-release-compliance.rb --require-runtime-ready
 
 Current status: **Blocked / not releasable**.
 
-This checklist separates a source/Swift Package release from any
-distribution containing a runtime, RootFS, App, archive, or binary SDK.
+This checklist separates a source/Swift Package release from runtime,
+App, archive, or binary SDK distribution that excludes every RootFS asset.
 Passing engineering tests is not distribution authorization, and a future
 Ready source track would not unblock the runtime track.
 
@@ -64,7 +64,7 @@ Ready source track would not unblock the runtime track.
 The project owner must select an SPDX license and replace the current
 no-permission `LICENSE`. The generator will not choose a license.
 
-### Runtime / RootFS / App / binary distribution (Blocked)
+### Runtime / App / binary distribution (RootFS excluded, Blocked)
 
 - [x] `rootfs-external-input-boundary` — RootFS remains a caller-provided local input
 - [ ] `release-artifact-built-and-scanned` — Final signed and exported artifact is built and scanned

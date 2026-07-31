@@ -1743,8 +1743,9 @@ module PocketRootReleaseCompliance
       },
       "runtimeDistribution" => {
         "scope" =>
-          "Any App, binary SDK, TestFlight/App Store build, RootFS asset, or " \
-          "redistributed runtime artifact.",
+          "Any App, binary SDK, TestFlight/App Store build, or redistributed " \
+          "runtime artifact; excludes every RootFS asset, which remains a " \
+          "caller-provided local input.",
         "status" =>
           runtime_gates.all? { |gate| gate.fetch("satisfied") } ?
             "ready" : "blocked",
@@ -1868,8 +1869,9 @@ module PocketRootReleaseCompliance
         "PocketRoot source and Swift Package metadata only; no RootFS, " \
         "XCFramework mirror, App, archive, IPA, or binary SDK asset." &&
       runtime.fetch("scope") ==
-        "Any App, binary SDK, TestFlight/App Store build, RootFS asset, or " \
-        "redistributed runtime artifact." &&
+        "Any App, binary SDK, TestFlight/App Store build, or redistributed " \
+        "runtime artifact; excludes every RootFS asset, which remains a " \
+        "caller-provided local input." &&
       source.fetch("status") == expected_source_status &&
       runtime.fetch("status") == expected_runtime_status &&
       source_ids == expected_source_ids &&
@@ -1927,9 +1929,9 @@ module PocketRootReleaseCompliance
 
       当前状态：**#{overall_status}**。
 
-      本清单把“源码/Swift Package 发布”和“包含 runtime、RootFS、App 或二进制
-      SDK 的分发”分为两条独立轨道。工程测试通过不等于获得分发授权；源码轨道未来
-      变为 Ready 也不会自动解除 runtime 轨道。
+      本清单把“源码/Swift Package 发布”和“不包含任何 RootFS 资产的
+      runtime、App 或二进制 SDK 分发”分为两条独立轨道。工程测试通过不等于获得
+      分发授权；源码轨道未来变为 Ready 也不会自动解除 runtime 轨道。
 
       ## 源码与 Swift Package 发布（#{source_status}）
 
@@ -1938,7 +1940,7 @@ module PocketRootReleaseCompliance
       第一项需要项目所有者明确选择 SPDX 许可证并替换当前不授予复制、修改或分发
       权限的 `LICENSE`。生成器不会替项目所有者选择许可证。
 
-      ## Runtime / RootFS / App / 二进制分发（#{runtime_status}）
+      ## Runtime / App / 二进制分发（不含 RootFS，#{runtime_status}）
 
       #{checklist_gate_lines(runtime, :zh)}
 
@@ -1960,8 +1962,8 @@ module PocketRootReleaseCompliance
 
       Current status: **#{overall_status_en}**.
 
-      This checklist separates a source/Swift Package release from any
-      distribution containing a runtime, RootFS, App, archive, or binary SDK.
+      This checklist separates a source/Swift Package release from runtime,
+      App, archive, or binary SDK distribution that excludes every RootFS asset.
       Passing engineering tests is not distribution authorization, and a future
       Ready source track would not unblock the runtime track.
 
@@ -1972,7 +1974,7 @@ module PocketRootReleaseCompliance
       The project owner must select an SPDX license and replace the current
       no-permission `LICENSE`. The generator will not choose a license.
 
-      ### Runtime / RootFS / App / binary distribution (#{runtime_status_en})
+      ### Runtime / App / binary distribution (RootFS excluded, #{runtime_status_en})
 
       #{checklist_gate_lines(runtime, :en)}
 
@@ -2302,7 +2304,7 @@ module PocketRootReleaseCompliance
       IshEmbed/XCFramework、精确 iSH gitlink、静态 supervisor 使用的 musl source、
       固定 SwiftTerm 与其解析依赖，以及调用方提供的外部 RootFS 和其中 15 个 Alpine 包。
       `READINESS.json` 和 `RELEASE-CHECKLIST.md` 把源码/Swift Package 发布与
-      runtime/RootFS/App/二进制分发拆成两个独立、默认关闭的轨道。
+      不含 RootFS 资产的 runtime/App/二进制分发拆成两个独立、默认关闭的轨道。
 
       默认 Demo 显式链接 IshEmbed，但仓库不包含 RootFS；只有本地 Debug 构建可把
       精确固定的仓库外资产注入 App，Release 明确跳过。RootFS 不由库下载。
@@ -2329,8 +2331,8 @@ module PocketRootReleaseCompliance
       supervisor, pinned SwiftTerm and its resolved dependency, and the
       caller-provided external RootFS with its 15 Alpine packages.
       `READINESS.json` and `RELEASE-CHECKLIST.md` split source/Swift Package
-      release from runtime/RootFS/App/binary distribution into two independent,
-      fail-closed tracks.
+      release from runtime/App/binary distribution that excludes every RootFS
+      asset into two independent, fail-closed tracks.
 
       The default Demo explicitly links IshEmbed, but the repository contains
       no RootFS. Only a local Debug build may inject the exact pinned external

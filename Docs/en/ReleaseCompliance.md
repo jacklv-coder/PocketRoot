@@ -22,7 +22,9 @@ The `v0.1.0` candidate is split into two independent tracks:
    Swift Package metadata, with no RootFS, App, IPA, mirrored XCFramework, or
    binary SDK.
 2. **Runtime distribution** covers Apps, TestFlight/App Store, binary SDKs,
-   RootFS assets, and other redistributed runtime artifacts.
+   and other redistributed runtime artifacts, but expressly excludes every
+   RootFS asset. The RootFS remains a caller-obtained, caller-authorized local
+   input.
 
 Both tracks are currently **Blocked**. The machine-readable state is
 [`READINESS.json`](../../Compliance/Release/experimental-v0.1.0/READINESS.json),
@@ -31,8 +33,8 @@ the review entry is
 and the closed authorization source is
 [`RELEASE-DECISIONS.json`](../../Compliance/Release/RELEASE-DECISIONS.json).
 Passing engineering tests does not grant distribution permission. A future
-Ready source track would not authorize bundling or distributing the
-RootFS/runtime.
+Ready source track would not authorize runtime distribution, and even a future
+Ready runtime track would not authorize bundling or distributing the RootFS.
 
 ```bash
 ruby Scripts/generate-release-compliance.rb --status

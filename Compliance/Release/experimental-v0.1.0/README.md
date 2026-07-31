@@ -6,7 +6,7 @@
 IshEmbed/XCFramework、精确 iSH gitlink、静态 supervisor 使用的 musl source、
 固定 SwiftTerm 与其解析依赖，以及调用方提供的外部 RootFS 和其中 15 个 Alpine 包。
 `READINESS.json` 和 `RELEASE-CHECKLIST.md` 把源码/Swift Package 发布与
-runtime/RootFS/App/二进制分发拆成两个独立、默认关闭的轨道。
+不含 RootFS 资产的 runtime/App/二进制分发拆成两个独立、默认关闭的轨道。
 
 默认 Demo 显式链接 IshEmbed，但仓库不包含 RootFS；只有本地 Debug 构建可把
 精确固定的仓库外资产注入 App，Release 明确跳过。RootFS 不由库下载。
@@ -33,8 +33,8 @@ the exact iSH gitlink, the musl source snapshot used by the static guest
 supervisor, pinned SwiftTerm and its resolved dependency, and the
 caller-provided external RootFS with its 15 Alpine packages.
 `READINESS.json` and `RELEASE-CHECKLIST.md` split source/Swift Package
-release from runtime/RootFS/App/binary distribution into two independent,
-fail-closed tracks.
+release from runtime/App/binary distribution that excludes every RootFS
+asset into two independent, fail-closed tracks.
 
 The default Demo explicitly links IshEmbed, but the repository contains
 no RootFS. Only a local Debug build may inject the exact pinned external
