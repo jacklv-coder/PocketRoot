@@ -17,6 +17,11 @@ No unreleased changes yet.
   snapshot; rejects RootFS, App/IPA/XCFramework, compressed/archive, native,
   and unknown binary payloads; the trusted `main` release workflow requires an
   annotated tag and resolves the exact SwiftPM version from an external consumer.
+- Version-based upstream pins for the same audited commits—
+  IshEmbed `0.4.0-abi.9.1` and the SwiftTerm mirror
+  `1.15.0-pocketroot.1`—so an external App can resolve PocketRoot at `0.1.0`.
+  Both package tags are locked by GitHub immutable Releases, and the release
+  gate rechecks their peeled commits.
 - Fail-closed `v0.1.0` two-track release gates. Machine-readable status, a
   bilingual checklist, and CI status separate source/Swift Package release
   from runtime/App/binary distribution that excludes every RootFS asset; each

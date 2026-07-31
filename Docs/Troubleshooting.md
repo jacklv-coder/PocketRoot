@@ -56,7 +56,7 @@ brew install xcodegen
 检查：
 
 - 当前网络能访问固定的 `ish-arm64-pkg` commit 和 parent release asset；
-- `Package.swift` 中完整 revision 没被改成 branch；
+- `Package.swift` 中精确版本没被改成 branch/revision；
 - `Package.resolved` 没有非预期漂移；
 - Xcode Command Line Tools 指向预期 Xcode。
 

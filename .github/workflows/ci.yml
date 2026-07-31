@@ -55,6 +55,7 @@ jobs:
           ruby -c Scripts/generate-release-compliance.rb
           ruby -c Scripts/scan-release-artifact.rb
           ruby -c Scripts/verify-source-release.rb
+          bash -n Scripts/verify-immutable-upstream-releases.sh
           bash -n Scripts/verify-swiftpm-release-tag.sh
           bash -n Tests/Scripts/RuntimeSmokeScriptTests.sh
           bash -n Tests/Scripts/SignedEngineeringArchiveScriptTests.sh

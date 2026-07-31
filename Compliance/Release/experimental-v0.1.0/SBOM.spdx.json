@@ -3,7 +3,7 @@
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "PocketRoot experimental full-graph composition 0.1.0",
-  "documentNamespace": "https://github.com/jacklv-coder/PocketRoot/sbom/release/experimental-v0.1.0/9d65604f843a90074964d35c2e54850e53dee9ce8450586326bb735c324a6045",
+  "documentNamespace": "https://github.com/jacklv-coder/PocketRoot/sbom/release/experimental-v0.1.0/8104cf080727e9a520e55b1a6f29bbe0b7a003afb3221eaa47345f8c17908b89",
   "creationInfo": {
     "created": "2026-07-28T00:00:00Z",
     "creators": [
@@ -31,7 +31,7 @@
     {
       "SPDXID": "SPDXRef-Package-IshEmbed",
       "name": "IshEmbed",
-      "versionInfo": "v0.4.0-abi.9",
+      "versionInfo": "0.4.0-abi.9.1",
       "supplier": "NOASSERTION",
       "downloadLocation": "https://github.com/jacklv-coder/ish-arm64-pkg/tree/2419f736b271beb52a699b2f780027cf280472b8",
       "filesAnalyzed": false,
@@ -51,9 +51,9 @@
     {
       "SPDXID": "SPDXRef-Package-SwiftTerm",
       "name": "SwiftTerm",
-      "versionInfo": "v1.15.0",
+      "versionInfo": "1.15.0-pocketroot.1",
       "supplier": "NOASSERTION",
-      "downloadLocation": "https://github.com/migueldeicaza/SwiftTerm/tree/dd2fb8ac5b861e7bf617c872895e338f38165648",
+      "downloadLocation": "https://github.com/jacklv-coder/SwiftTerm/tree/dd2fb8ac5b861e7bf617c872895e338f38165648",
       "filesAnalyzed": false,
       "licenseConcluded": "NOASSERTION",
       "licenseDeclared": "MIT",
@@ -64,7 +64,7 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:github/migueldeicaza/SwiftTerm@dd2fb8ac5b861e7bf617c872895e338f38165648"
+          "referenceLocator": "pkg:github/jacklv-coder/SwiftTerm@dd2fb8ac5b861e7bf617c872895e338f38165648"
         }
       ]
     },

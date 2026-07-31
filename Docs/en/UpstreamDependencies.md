@@ -6,7 +6,7 @@ This is the sole source of truth for immutable revisions, nested gitlinks,
 artifact URLs, sizes, and SHA-256 values used by the Experimental runtime.
 Branches, moving tags, unverified release aliases, and local caches are not pins.
 
-Audit date: 2026-07-30
+Audit date: 2026-07-31
 
 ## 1. IshEmbed Swift package
 
@@ -14,28 +14,34 @@ Audit date: 2026-07-30
 | --- | --- |
 | Repository | `https://github.com/jacklv-coder/ish-arm64-pkg.git` |
 | Exact wrapper revision | `2419f736b271beb52a699b2f780027cf280472b8` |
-| Release | `v0.4.0-abi.9` prerelease |
+| SwiftPM package release | `0.4.0-abi.9.1` immutable prerelease |
+| Binary asset release | `v0.4.0-abi.9` prerelease |
 | Tag peeled commit | `2419f736b271beb52a699b2f780027cf280472b8` |
 | Swift product | `IshEmbed` |
 | Manifest platform | iOS 18.0 |
 | Native slices | iOS arm64 device and arm64 Simulator |
 | System link dependency | `sqlite3` |
 
-Both `Package.swift` and `Package.resolved` pin the full revision:
+`Package.swift` uses an immutable exact SemVer while `Package.resolved` also
+records its peeled commit:
 
 ```swift
 .package(
     url: "https://github.com/jacklv-coder/ish-arm64-pkg.git",
-    revision: "2419f736b271beb52a699b2f780027cf280472b8"
+    exact: "0.4.0-abi.9.1"
 )
 ```
 
-Consumed revision `2419f736b271beb52a699b2f780027cf280472b8` is the ABI.9
+Exact version `0.4.0-abi.9.1` peels to revision
+`2419f736b271beb52a699b2f780027cf280472b8`, the ABI.9
 release commit. It contains ABI.7's atomic guest `RENAME_NOREPLACE` C/Swift
 APIs and makes finite-session stdin write/close reuse one SPAWN absolute
 deadline, while `Package.swift` pins the public, independently verified ABI.9 asset built from that source by
 URL/checksum. The peeled tag, Release target, and consumed package revision are
-identical. The package repository keeps an absolute SSH-over-443 submodule URL;
+identical. `0.4.0-abi.9.1` is an asset-free GitHub immutable Release that locks
+the package tag; the existing `v0.4.0-abi.9` continues to serve the
+checksum-pinned binary and corresponding-source assets. The package repository
+keeps an absolute SSH-over-443 submodule URL;
 GitHub CI without an SSH private key applies a public read-only HTTPS rewrite
 only while checking out source.
 
@@ -90,14 +96,20 @@ This release contains **no RootFS**.
 
 | Field | Audited value |
 | --- | --- |
-| Repository | `https://github.com/migueldeicaza/SwiftTerm.git` |
+| SwiftPM mirror repository | `https://github.com/jacklv-coder/SwiftTerm.git` |
+| Upstream repository | `https://github.com/migueldeicaza/SwiftTerm.git` |
 | Exact revision | `dd2fb8ac5b861e7bf617c872895e338f38165648` |
-| Corresponding tag | `v1.15.0` |
+| Upstream tag | `v1.15.0` |
+| Immutable package release | `1.15.0-pocketroot.1` |
 | Swift product | `SwiftTerm` |
 | License | MIT |
 | License copy | `ThirdPartyNotices/SwiftTerm-LICENSE.txt` |
 
-`PocketRootTerminal` links this product only on iOS. SwiftTerm's manifest also
+The PocketRoot fork's immutable Release mirrors the exact commit from upstream
+`v1.15.0` and attaches no binary assets. The release gate checks both package
+Releases' `immutable` state through the GitHub API and revalidates their remotely
+peeled tag commits. `PocketRootTerminal` links this product only on iOS.
+SwiftTerm's manifest also
 resolves `swift-argument-parser`, but the library target consumed by PocketRoot
 does not depend on or link that product.
 

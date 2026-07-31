@@ -15,8 +15,8 @@
     "CONTRIBUTING.en.md": "d1c2bfa841ea09a319c82d0a2ee465a6db62f51649b283a74cd3af7e71727041",
     "Compliance/SPDX/LICENSE-LIST-3.28.0.json": "7376db20698ff21511fe802aded9b5d7145520a86133b74f68b0c1568dd6dd1c",
     "Compliance/Release/RELEASE-DECISIONS.json": "5dfed061b0def6cca5572becece0b4de1fc34af53c501c9c0e7b647f02e4cf7f",
-    "Package.resolved": "a6c4a28788ed9d4a22f021248cadfd83ad8a0584fc2dd198a6e1bf0434b79167",
-    "Package.swift": "3c53631753e44d6de1d0cd04cb1c725a105e65b2ba332ec19465c34048d5f339",
+    "Package.resolved": "a121fd0f287bcb42e22d1860f915203447dd552fddc82461e9d385b957fb3718",
+    "Package.swift": "9ec4f31f7a91c5c001b6e5826c5ab2824e98c06eb61444027485a70f1efccfff",
     "Examples/PocketRootDemo/project.yml": "749cfea0c9a9e7cc4919d3dbee1c01720aa85d8f1b5fe4fc887b61d3a2d0f3fa",
     "Examples/PocketRootHostApp/project.yml": "5d2961cd344b85b5ca0102f3e7b80c3bba7ac8681b645e3d8efae0ec137d33e4",
     "Examples/PocketRootQuickStartApp/project.yml": "11c6f86f3be0f419a9a6f10dc884b4df9cb157bcdccb5568fe903972a6084416",
@@ -569,7 +569,9 @@
     "ishEmbed": {
       "repository": "https://github.com/jacklv-coder/ish-arm64-pkg.git",
       "revision": "2419f736b271beb52a699b2f780027cf280472b8",
-      "release": "v0.4.0-abi.9",
+      "packageVersion": "0.4.0-abi.9.1",
+      "release": "0.4.0-abi.9.1",
+      "assetRelease": "v0.4.0-abi.9",
       "licenseDeclared": "GPL-3.0-or-later",
       "xcframework": {
         "filename": "libIshKernel.xcframework.zip",
@@ -598,9 +600,10 @@
       }
     },
     "swiftTerm": {
-      "repository": "https://github.com/migueldeicaza/SwiftTerm.git",
+      "repository": "https://github.com/jacklv-coder/SwiftTerm.git",
       "revision": "dd2fb8ac5b861e7bf617c872895e338f38165648",
-      "release": "v1.15.0",
+      "packageVersion": "1.15.0-pocketroot.1",
+      "release": "1.15.0-pocketroot.1",
       "licenseDeclared": "MIT",
       "noticePath": "ThirdPartyNotices/SwiftTerm-LICENSE.txt",
       "noticeSha256": "1c34c11581e20feb2b7ea122146a6690261dae94b2c8444e8cff902e567df6ae"

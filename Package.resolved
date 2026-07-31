@@ -1,12 +1,13 @@
 {
-  "originHash" : "9b35c8e5271d5eb867b59df947215ce206f73a3a8233c2b330ca46b5d0b22870",
+  "originHash" : "9ec4f31f7a91c5c001b6e5826c5ab2824e98c06eb61444027485a70f1efccfff",
   "pins" : [
     {
       "identity" : "ish-arm64-pkg",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/jacklv-coder/ish-arm64-pkg.git",
       "state" : {
-        "revision" : "2419f736b271beb52a699b2f780027cf280472b8"
+        "revision" : "2419f736b271beb52a699b2f780027cf280472b8",
+        "version" : "0.4.0-abi.9.1"
       }
     },
     {
@@ -21,9 +22,10 @@
     {
       "identity" : "swiftterm",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/migueldeicaza/SwiftTerm.git",
+      "location" : "https://github.com/jacklv-coder/SwiftTerm.git",
       "state" : {
-        "revision" : "dd2fb8ac5b861e7bf617c872895e338f38165648"
+        "revision" : "dd2fb8ac5b861e7bf617c872895e338f38165648",
+        "version" : "1.15.0-pocketroot.1"
       }
     }
   ],

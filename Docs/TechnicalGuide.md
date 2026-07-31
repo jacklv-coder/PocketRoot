@@ -41,7 +41,7 @@ timeout 不是“调用必须在同一时刻返回”的承诺；真机持续负
 ```mermaid
 flowchart LR
     App["iOS App"] --> PR["PocketRoot<br/>Swift API、RootFS 安装、集成"]
-    PR --> Pkg["Package.swift 固定的<br/>ish-arm64-pkg revision"]
+    PR --> Pkg["Package.swift 固定的<br/>ish-arm64-pkg 精确版本"]
     Pkg --> Native["该 revision 固定的<br/>iSH gitlink"]
     Pkg --> XC["该 revision 的 binaryTarget<br/>URL/checksum 所固定的 XCFramework"]
     XC --> PR
@@ -422,7 +422,7 @@ POCKETROOT_ROOTFS_ARCHIVE=/absolute/path/to/fs.tar.gz \
 
 ### 第五步：理解原生供应链
 
-1. 查看 PocketRoot `Package.swift` 固定的 package revision；
+1. 查看 PocketRoot `Package.swift` 固定的 package 精确版本及 `Package.resolved` revision；
 2. 查看 ish-arm64-pkg 的 `third_party/ish` gitlink；
 3. 对照 ish-arm64 commit；
 4. 查看 XCFramework checksum、slice、minimum OS 和 license；
