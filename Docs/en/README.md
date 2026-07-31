@@ -13,7 +13,8 @@ This is the English documentation hub for PocketRoot. The Chinese documents at t
 1. [Product plan](ProductPlan.md) for users, use cases, value, non-goals, and release definitions.
 2. [Roadmap](Roadmap.md) for current completion, gates, and priorities.
 3. [Release and compliance](ReleaseCompliance.md) for licensing, RootFS, SBOM, and App Store constraints.
-4. [ADR-001](Decisions/ADR-001-IshEmbed-Feasibility.md) for the Experimental IshEmbed decision.
+4. [v0.1.0 release notes](Releases/0.1.0.md) for the first source release, integration, and release boundary.
+5. [ADR-001](Decisions/ADR-001-IshEmbed-Feasibility.md) for the Experimental IshEmbed decision.
 
 ### Application integrators
 
@@ -31,7 +32,7 @@ This is the English documentation hub for PocketRoot. The Chinese documents at t
 4. [Testing](Testing.md) for unit, real-asset, final-link, CI, and native smoke coverage.
 5. [Upstream dependencies](UpstreamDependencies.md) for immutable revisions, gitlinks, hashes, and update procedure.
 6. [Contributing](../../CONTRIBUTING.en.md) for branch, validation, and bilingual-document rules.
-7. [Changelog](../../CHANGELOG.en.md) for unreleased behavior and API changes.
+7. [Changelog](../../CHANGELOG.en.md) for released and unreleased behavior and API changes.
 
 ## Sources of truth
 
@@ -48,6 +49,7 @@ This is the English documentation hub for PocketRoot. The Chinese documents at t
 | [Testing](Testing.md) | Test commands, environments, scope, and evidence |
 | [Upstream dependencies](UpstreamDependencies.md) | Revisions, gitlinks, URLs, sizes, and hashes |
 | [Release and compliance](ReleaseCompliance.md) | License, NOTICE, source, SBOM, and store gates |
+| [Release notes](Releases/0.1.0.md) | Version capabilities, Swift Package integration, release boundary, and known limitations |
 | [ADR](Decisions/ADR-001-IshEmbed-Feasibility.md) | Frozen decisions, rationale, and consequences |
 | [Changelog](../../CHANGELOG.en.md) | Versioned and unreleased changes |
 

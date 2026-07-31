@@ -19,6 +19,7 @@ PocketRoot separates host logic, real RootFS, iOS build, native final-link, and 
 | Host App UI smoke | `./Scripts/run-host-app-ui-smoke.sh` | Public-host boot, SwiftTerm PTY, lifecycle, Workspace persistence, Files mutations/previews, system document-picker import, share-sheet save and re-import round trip, and ordered shutdown on iPhone/iPad iOS 18 Simulators | Physical-device system file interaction, physical keyboards, physical iPad, distribution |
 | Physical Host App UI smoke | `./Scripts/run-host-app-device-ui-smoke.sh` | The same lifecycle UI test on a development-signed iPhone/iPad, including signature and development entitlements | iPad, real pressure, distribution |
 | Physical native smoke | `./Scripts/run-runtime-device-smoke.sh` | Same 17 checks with optional process suspend/resume, UIKit lifecycle, forced-relaunch persistence, bounded storage-failure recovery, or bounded memory-warning recovery; development entitlements and returning soft shutdown | Real storage/memory pressure, power cut, jetsam, iPad, distribution |
+| Source-release audit | `ruby Scripts/verify-source-release.rb --version 0.1.0` | Source track Ready, complete version documents, and a `git archive` without RootFS, App, IPA, XCFramework mirror, compressed payload, or native binary content | Runtime/App/RootFS distribution authorization |
 | Documentation | `./Scripts/check-docs.sh` | Pairs, Chinese coverage, relative links | Implementation correctness |
 
 ## Package tests
@@ -452,6 +453,17 @@ cleanup boundaries. For failure diagnosis, `POCKETROOT_KEEP_UI_RESULT=1`
 retains temporary DerivedData and the `.xcresult`. This Simulator evidence
 does not prove signed-device or distribution readiness.
 
+After pushing the annotated `v0.1.0` tag, dispatch
+`.github/workflows/source-release.yml` manually from the protected `main`
+branch with `v0.1.0` as input. The current verifier and compliance snapshot are
+explicitly bound to `0.1.0`; a later release must update both first. The workflow
+uses trusted verifier tooling from the `main` checkout against a separate tag
+checkout, requires the annotated tag commit to belong to that trusted `main`
+history, regenerates and audits the `git archive`, then resolves the public
+package externally with `exact: "0.1.0"` and verifies both the resolved version
+and peeled commit. It does not create or upload a RootFS, App, IPA,
+XCFramework, or binary SDK.
+
 ## Minimum checks by change
 
 | Change | Required |
@@ -469,6 +481,7 @@ does not prove signed-device or distribution readiness.
 | release composition/compliance evidence | Generator tests + `--check` + pinned SPDX schema validation |
 | artifact scanner or CI scan gate | Ruby fixture security/drift tests + real unsigned-device App materialize/verify + pinned SPDX schema validation |
 | signed archive runner/project archive settings | Script-contract test + local development-signed `.xcarchive` materialize/verify + pinned SPDX schema validation |
+| source version or tag | Source-release Ruby tests + `verify-source-release.rb` + exact-version external resolution in the tag workflow |
 | upstream/RootFS update | Full suite + supply-chain/compliance reaudit |
 
 ## Evidence language

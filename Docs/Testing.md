@@ -19,6 +19,7 @@ PocketRoot 把验证分成宿主逻辑、真实 RootFS、iOS 构建、完整原�
 | Host App UI smoke | `./Scripts/run-host-app-ui-smoke.sh` | Apple Silicon + iOS 18 Simulator + archive | iPhone/iPad Simulator 上的公开宿主 Boot、SwiftTerm PTY、生命周期、Workspace 会话持续性、Files 增删改/预览、系统 document picker 导入、share sheet 保存与再次导入 round-trip，以及有序 shutdown | 真机系统文件交互、真机键盘、iPad 真机或发行可用 |
 | Host App 真机 UI smoke | `./Scripts/run-host-app-device-ui-smoke.sh` | 支持设备 OS 的 Xcode + development-signed iPhone/iPad + archive | 同一 Host App 生命周期 UI 测试的真机执行、签名与 development entitlement | iPad、真实压力或发行可用 |
 | 物理设备原生 smoke | `./Scripts/run-runtime-device-smoke.sh` | 签名 iOS 18+ iPhone/iPad + archive | 同一 17 项检查、可选进程暂停/恢复、UIKit 前后台、强制重启持久化、受限存储故障或有界内存警告恢复，development entitlement 与 shutdown 返回 | 真实 storage/memory pressure、断电、jetsam、iPad 或发行可用 |
+| 源码发布审计 | `ruby Scripts/verify-source-release.rb --version 0.1.0` | Git commit/tag | 源码轨道 Ready、版本文档齐全，`git archive` 不含 RootFS、App、IPA、XCFramework 镜像、压缩载荷或原生二进制 | Runtime/App/RootFS 分发授权 |
 | 文档检查 | `./Scripts/check-docs.sh` | macOS/Linux shell | 中英文成对、中文覆盖和相对链接 | 技术实现正确 |
 
 ## 2. 宿主 Swift Package 测试
@@ -524,6 +525,14 @@ Workspace、系统 document picker 导入、share sheet 保存、guest 删除后
 复用 `run-ios-example-ui-smoke.sh` 的相同 RootFS、超时、xcresult 和安全清理边界。
 这些 Simulator 结果不证明签名真机或发行可用。
 
+`v0.1.0` annotated tag 推送后，从受保护的 `main` 手动调度
+`.github/workflows/source-release.yml`，并把 `v0.1.0` 作为输入。当前校验器与合规快照
+明确绑定 `0.1.0`；后续版本必须先更新二者。工作流使用 `main` checkout
+里的可信校验工具审计独立的 tag checkout，要求 annotated tag 的 commit 位于该
+`main` 历史上，重新生成并扫描 `git archive`，随后从仓库外以 `exact: "0.1.0"`
+解析公开 Swift Package，并核对解析版本与 peeled commit。该工作流不会创建或上传
+RootFS、App、IPA、XCFramework 或二进制 SDK。
+
 ## 9. 改动与最小验证矩阵
 
 | 改动 | 必须运行 |
@@ -542,6 +551,7 @@ Workspace、系统 document picker 导入、share sheet 保存、guest 删除后
 | 发行组成或合规证据 | 生成器测试 + `--check` + 固定 SPDX schema 校验 |
 | 制品扫描器或 CI 扫描门禁 | Ruby fixture 安全/漂移测试 + 真实 unsigned device App 生成/复验 + 固定 SPDX schema 校验 |
 | signed archive runner/project archive 设置 | 脚本契约测试 + 本地 development-signed `.xcarchive` 生成/复验 + 固定 SPDX schema 校验 |
+| 源码版本或 tag | 源码发布 Ruby 测试 + `verify-source-release.rb` + tag workflow 的精确版本外部解析 |
 | 上游 revision/RootFS | 全部测试 + 供应链与合规重审 |
 
 ## 10. 真机门禁

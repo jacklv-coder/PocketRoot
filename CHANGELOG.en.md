@@ -2,12 +2,21 @@
 
 [简体中文](CHANGELOG.md) | [English](CHANGELOG.en.md) | [Documentation](Docs/en/README.md)
 
-All notable PocketRoot changes are recorded here. Semantic Versioning begins with the first public release. Everything below is currently Unreleased.
+All notable PocketRoot changes are recorded here. Semantic Versioning begins with the first public release.
 
 ## Unreleased
 
+No unreleased changes yet.
+
+## 0.1.0 - 2026-07-31
+
 ### Added
 
+- A `v0.1.0` source-tag audit that validates version authorization, release
+  documents, and source readiness inside the selected Git ref's isolated
+  snapshot; rejects RootFS, App/IPA/XCFramework, compressed/archive, native,
+  and unknown binary payloads; the trusted `main` release workflow requires an
+  annotated tag and resolves the exact SwiftPM version from an external consumer.
 - Fail-closed `v0.1.0` two-track release gates. Machine-readable status, a
   bilingual checklist, and CI status separate source/Swift Package release
   from runtime/App/binary distribution that excludes every RootFS asset; each

@@ -1,0 +1,74 @@
+name: Source Release Verification
+
+run-name: Verify source release ${{ inputs.tag }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Annotated v0.1.0 source-release tag
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  verify-source-release:
+    name: Verify source tag
+    runs-on: macos-15
+    timeout-minutes: 30
+
+    steps:
+      - name: Require trusted default-branch invocation
+        run: test "$GITHUB_REF" = "refs/heads/main"
+
+      - name: Check out trusted release tooling
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          path: trusted
+
+      - name: Check out candidate annotated tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          path: candidate
+          ref: ${{ inputs.tag }}
+
+      - name: Configure public package checkout
+        run: |
+          git config --global \
+            url."https://github.com/".insteadOf \
+            "ssh://git@ssh.github.com:443/"
+
+      - name: Require candidate commit on trusted main history
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          test "$RELEASE_TAG" = "v0.1.0"
+          candidate_commit="$(git -C candidate rev-parse "$RELEASE_TAG^{commit}")"
+          trusted_commit="$(git -C trusted rev-parse HEAD)"
+          git -C trusted merge-base --is-ancestor \
+            "$candidate_commit" \
+            "$trusted_commit"
+
+      - name: Verify source archive with trusted tooling
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          version="${RELEASE_TAG#v}"
+          ruby trusted/Scripts/verify-source-release.rb \
+            --root candidate \
+            --tooling-root trusted \
+            --version "$version" \
+            --ref "$RELEASE_TAG" \
+            --require-tag "$RELEASE_TAG"
+
+      - name: Resolve exact Swift Package version externally
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          version="${RELEASE_TAG#v}"
+          commit="$(git -C candidate rev-parse "$RELEASE_TAG^{commit}")"
+          ./trusted/Scripts/verify-swiftpm-release-tag.sh "$version" "$commit"

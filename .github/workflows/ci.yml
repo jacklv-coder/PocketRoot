@@ -54,6 +54,8 @@ jobs:
           ruby -c Scripts/pocketroot-deterministic-json.rb
           ruby -c Scripts/generate-release-compliance.rb
           ruby -c Scripts/scan-release-artifact.rb
+          ruby -c Scripts/verify-source-release.rb
+          bash -n Scripts/verify-swiftpm-release-tag.sh
           bash -n Tests/Scripts/RuntimeSmokeScriptTests.sh
           bash -n Tests/Scripts/SignedEngineeringArchiveScriptTests.sh
           bash -n Tests/Scripts/RootFSCandidateSmokeManifestTests.sh
@@ -69,6 +71,7 @@ jobs:
           ruby -c Tests/Scripts/RootFSSourceBundleTests.rb
           ruby -c Tests/Scripts/ReleaseComplianceTests.rb
           ruby -c Tests/Scripts/ReleaseArtifactScannerTests.rb
+          ruby -c Tests/Scripts/SourceReleaseVerificationTests.rb
           bash Tests/Scripts/RuntimeSmokeScriptTests.sh
           bash Tests/Scripts/SignedEngineeringArchiveScriptTests.sh
           bash Tests/Scripts/RootFSCandidateSmokeManifestTests.sh
@@ -84,6 +87,7 @@ jobs:
           ruby Tests/Scripts/RootFSSourceBundleTests.rb
           ruby Tests/Scripts/ReleaseComplianceTests.rb
           ruby Tests/Scripts/ReleaseArtifactScannerTests.rb
+          ruby Tests/Scripts/SourceReleaseVerificationTests.rb
           ruby Scripts/prepare-rootfs-license-review.rb --validate-only
           ruby Scripts/rootfs-corresponding-source-review-results.rb
           ruby Scripts/rootfs-license-review-results.rb
@@ -95,6 +99,9 @@ jobs:
           ruby Scripts/prepare-rootfs-source-bundle.rb --validate-only
           ruby Scripts/generate-release-compliance.rb --check
           ruby Scripts/generate-release-compliance.rb --status
+          ruby Scripts/verify-source-release.rb \
+            --version 0.1.0 \
+            --ref HEAD
 
       - name: Report Apple toolchain
         run: |

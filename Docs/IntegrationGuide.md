@@ -30,13 +30,14 @@ PocketRoot 暴露八个产品：
 `PocketRootIshRuntimeIntegration`。只有直接使用底层 runtime factory 时才需要再显式选择
 `PocketRootIshRuntime`；推荐的宿主控制器不需要业务 App 直接导入它。
 
-项目尚未发布稳定 Git tag。远程接入应固定到经过审核的完整 commit：
+首个源码版本为 `v0.1.0`。公共 API 仍处于 Experimental 阶段，因此远程接入建议
+固定精确版本，避免自动接收后续可能包含破坏性 API 调整的 `0.x` 版本：
 
 ```swift
 dependencies: [
     .package(
         url: "https://github.com/jacklv-coder/PocketRoot.git",
-        revision: "<reviewed-full-commit>"
+        exact: "0.1.0"
     )
 ],
 targets: [
@@ -57,7 +58,7 @@ targets: [
 
 1. 选择 **File → Add Package Dependencies**；
 2. 输入 `https://github.com/jacklv-coder/PocketRoot.git`；
-3. 在首个 release tag 前使用 **Commit** 规则并填入已审核完整 SHA；
+3. 选择 **Exact Version** 并填写 `0.1.0`；
 4. 默认接入选择 `PocketRoot`；
 5. 真实 runtime 另外选择 `PocketRootIshRuntimeIntegration`。
 
@@ -67,7 +68,9 @@ targets: [
 .package(path: "../PocketRoot")
 ```
 
-不要在首个 release tag 之前写 `from: "0.1.0"`，也不要依赖浮动分支作为可复现的生产输入。
+不要依赖浮动分支；Experimental `0.x` 阶段也不建议使用会自动接收后续 minor 版本的
+`from: "0.1.0"`。源码 tag 不包含 RootFS、App、IPA、XCFramework 镜像或二进制 SDK，
+也不解除 Runtime 分发门禁。
 
 ## 2. 平台可用性
 

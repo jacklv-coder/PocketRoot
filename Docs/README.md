@@ -17,7 +17,8 @@
 1. [产品规划](ProductPlan.md)：目标用户、核心场景、价值、非目标和版本定义。
 2. [路线图](Roadmap.md)：当前完成度、开放门禁和后续优先级。
 3. [发行与合规](ReleaseCompliance.md)：许可证、RootFS、SBOM 与 App Store 限制。
-4. [ADR-001](Decisions/ADR-001-IshEmbed-Feasibility.md)：为什么当前只以实验性方式采用 IshEmbed。
+4. [v0.1.0 发布说明](Releases/0.1.0.md)：首个源码版本的能力、接入方式与发布边界。
+5. [ADR-001](Decisions/ADR-001-IshEmbed-Feasibility.md)：为什么当前只以实验性方式采用 IshEmbed。
 
 ### 应用接入者
 
@@ -35,7 +36,7 @@
 4. [测试与验证](Testing.md)：单元测试、真实资产测试、最终链接、CI 和 smoke。
 5. [上游依赖清单](UpstreamDependencies.md)：不可变 revision、gitlink、制品哈希和更新流程。
 6. [贡献指南](../CONTRIBUTING.md)：分支、提交、验证和中英文同步规则。
-7. [变更日志](../CHANGELOG.md)：尚未发布的行为和 API 变化。
+7. [变更日志](../CHANGELOG.md)：已发布与尚未发布的行为和 API 变化。
 
 ## 文档职责
 
@@ -52,6 +53,7 @@
 | [测试与验证](Testing.md) | 测试命令、环境、覆盖范围和证据 |
 | [上游依赖清单](UpstreamDependencies.md) | revision、gitlink、URL、大小和哈希 |
 | [发行与合规](ReleaseCompliance.md) | 许可证、NOTICE、对应源码、SBOM 与商店门禁 |
+| [版本发布说明](Releases/0.1.0.md) | 版本能力、Swift Package 接入、发布边界与已知限制 |
 | [ADR](Decisions/ADR-001-IshEmbed-Feasibility.md) | 已冻结的技术决策、理由与后果 |
 | [变更日志](../CHANGELOG.md) | 每次版本或未发布变更 |
 

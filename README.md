@@ -186,7 +186,21 @@ App Bundle，首次点击 Boot 时再由 installer 校验并安装。未配置�
 
 ## 在应用中使用实验性运行时
 
-在 Swift Package 依赖中显式选择 `PocketRootIshRuntimeIntegration`。项目尚未发布稳定 Git tag；在首个正式版本前应固定到经过审核的完整 commit，而不是使用浮动分支。
+在 Swift Package 依赖中显式选择 `PocketRootIshRuntimeIntegration`。首个源码版本为
+`v0.1.0`；由于公共 API 仍处于 Experimental 阶段，建议固定精确版本，避免自动接收
+后续可能包含破坏性 API 调整的 `0.x` 版本：
+
+```swift
+dependencies: [
+    .package(
+        url: "https://github.com/jacklv-coder/PocketRoot.git",
+        exact: "0.1.0"
+    )
+]
+```
+
+这项源码发布不包含或授权分发 RootFS、App、IPA、XCFramework 镜像或二进制 SDK。
+真实 runtime 的调用方仍须自行取得并审查本地 RootFS。
 
 ```swift
 import Foundation
