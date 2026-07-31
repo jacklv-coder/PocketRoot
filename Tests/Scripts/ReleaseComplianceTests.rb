@@ -1464,6 +1464,36 @@ class ReleaseComplianceTests < Minitest::Test
     assert_includes error.message, "approved MIT license"
   end
 
+  def test_rejects_source_license_decision_that_contradicts_mit_text
+    root = input_fixture
+    mutate_json(
+      root.join("Compliance/Release/RELEASE-DECISIONS.json")
+    ) do |document|
+      document.fetch("sourceRelease")["topLevelLicenseSpdx"] = "Apache-2.0"
+    end
+
+    error = assert_raises(PocketRootReleaseCompliance::ComplianceError) do
+      PocketRootReleaseCompliance.build_outputs(root)
+    end
+
+    assert_includes error.message,
+      "source release decision must match the approved MIT license"
+  end
+
+  def test_source_license_decision_allows_fail_closed_pending_state
+    decisions =
+      JSON.parse(
+        REPOSITORY_ROOT
+          .join("Compliance/Release/RELEASE-DECISIONS.json")
+          .binread
+      )
+    decisions.fetch("sourceRelease")["topLevelLicenseSpdx"] = nil
+
+    assert PocketRootReleaseCompliance.validate_source_license_decision(
+      decisions
+    )
+  end
+
   def test_rejects_source_notice_and_contributor_policy_drift
     [
       [

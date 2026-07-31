@@ -1272,6 +1272,15 @@ module PocketRootReleaseCompliance
     raise ComplianceError, "release decisions are invalid: #{error.message}"
   end
 
+  def validate_source_license_decision(document)
+    license = document.dig("sourceRelease", "topLevelLicenseSpdx")
+    unless license.nil? || license == "MIT"
+      raise ComplianceError,
+        "source release decision must match the approved MIT license"
+    end
+    true
+  end
+
   def final_artifact_rootfs_asset_paths(inventory)
     rootfs_component = lambda do |component|
       normalized = component.downcase
@@ -1512,6 +1521,7 @@ module PocketRootReleaseCompliance
     end
     validate_spdx_license_list(spdx_license_list)
     validate_release_decisions(release_decisions, spdx_license_list)
+    validate_source_license_decision(release_decisions)
 
     package = parse_package_manifest(package_swift)
     resolved = parse_package_resolved(package_resolved)
