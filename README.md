@@ -314,4 +314,6 @@ UDID。它们验证 RootFS 准备、启动、guest 身份、命令上下文、�
 
 ## 许可证与发行状态
 
-PocketRoot 自身许可证仍在首个公开版本前确认中。实验性运行时链接 GPL 标识的上游代码，候选 RootFS 包含多种 copyleft 与 permissive 许可证。RootFS 包级、最大实验工程组合和 unsigned 工程 App 文件级 SPDX SBOM 已生成，但生产、TestFlight 和公开二进制分发保持关闭，直到完整真机生命周期、许可证、NOTICE、对应源码、最终签名/导出制品扫描后的完整发行物 SBOM 和 App Store Review Guideline 2.5.2 均有明确结论。
+PocketRoot 自身许可证仍在首个公开版本前确认中。实验性运行时链接 GPL 标识的上游代码，候选 RootFS 包含多种 copyleft 与 permissive 许可证。RootFS 包级、最大实验工程组合和 unsigned 工程 App 文件级 SPDX SBOM 已生成，但生产、TestFlight 和公开二进制分发保持关闭，直到完整真机生命周期、许可证、NOTICE、对应源码、最终签名/导出制品扫描后的完整发行物 SBOM 和 App Store Review Guideline 2.5.2 均有明确结论。`v0.1.0` 的[机器可读发布状态](Compliance/Release/experimental-v0.1.0/READINESS.json)把源码/Swift Package 与不含 RootFS 资产的 runtime/App 分为两个独立轨道；两者当前均为 **Blocked**，且两条轨道都不授权分发 RootFS。
+Runtime 轨道也必须先确定 PocketRoot 顶层许可证，并要求最终制品 inventory/SPDX
+SBOM 的制品 SHA-256 与代码评审过的发布决定一致；当前未提供这份最终制品证据。

@@ -8,6 +8,13 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
 
 ### Added
 
+- 新增 `v0.1.0` fail-closed 双轨发布闸门：机器可读状态、双语检查清单和 CI 状态
+  把源码/Swift Package 发布与不含 RootFS 资产的 runtime/App/二进制分发分开；
+  两条轨道均需显式授权，工程测试通过不会自动解除分发阻塞，也不会授权 RootFS
+  分发。Runtime Ready 现在同样要求顶层许可证和专用的最终发布证据；当前工程
+  扫描器即使读取签名 `.xcarchive` 也不能把 runtime 变为 Ready。未来验证 schema
+  必须把签名/entitlement/风险元数据绑定到人工复核的制品，并提供内容级 RootFS
+  排除证明。
 - 建立 `PocketRootCore`、`PocketRootTerminal`、`PocketRootResources` 和 `PocketRoot` Swift Package 产品。
 - 新增显式 opt-in `PocketRootAgent` 产品，提供 provider-agnostic、有 turn/tool/input/output 上限、ID 防重放、整批预检、顺序工具执行与取消传播的轻量 agent loop；不安装 Codex CLI，也不默认暴露 shell。
 - 为 `PocketRootAgent` 增加原生 OpenAI Responses API transport、宿主 bearer credential contract、strict function schema 预检、连续回合映射、脱敏错误与有界 HTTP request/response body。

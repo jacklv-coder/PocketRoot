@@ -14,6 +14,56 @@ mirroring, and claims of completed license/NOTICE/source/SBOM obligations
 remain blocked. A local Debug Demo may inject only the exact pinned external
 archive; this is engineering use, not distribution authorization.
 
+## v0.1.0 two-track release gates
+
+The `v0.1.0` candidate is split into two independent tracks:
+
+1. **Source and Swift Package release** includes only PocketRoot source and
+   Swift Package metadata, with no RootFS, App, IPA, mirrored XCFramework, or
+   binary SDK.
+2. **Runtime distribution** covers Apps, TestFlight/App Store, binary SDKs,
+   and other redistributed runtime artifacts, but expressly excludes every
+   RootFS asset. The RootFS remains a caller-obtained, caller-authorized local
+   input.
+
+Both tracks are currently **Blocked**. The machine-readable state is
+[`READINESS.json`](../../Compliance/Release/experimental-v0.1.0/READINESS.json),
+the review entry is
+[`RELEASE-CHECKLIST.md`](../../Compliance/Release/experimental-v0.1.0/RELEASE-CHECKLIST.md),
+and the closed authorization source is
+[`RELEASE-DECISIONS.json`](../../Compliance/Release/RELEASE-DECISIONS.json).
+Passing engineering tests does not grant distribution permission. A future
+Ready source track would not authorize runtime distribution, and even a future
+Ready runtime track would not authorize bundling or distributing the RootFS.
+The finalized PocketRoot top-level license is a prerequisite for both tracks;
+runtime third-party approvals cannot bypass permission to distribute
+PocketRoot itself.
+
+```bash
+ruby Scripts/generate-release-compliance.rb --status
+ruby Scripts/generate-release-compliance.rb --require-source-ready
+ruby Scripts/generate-release-compliance.rb --require-runtime-ready
+```
+
+The last two commands return nonzero while their track remains blocked. The
+first project-owner decision is selecting PocketRoot's top-level SPDX license;
+automation neither chooses that license nor records authorization.
+
+`RELEASE-DECISIONS.json` is a code-reviewed authorization input, not an
+automatic authorization switch. Any nonempty license or approval decision must
+also record a nonempty `approvedBy`, a UTC RFC 3339 `approvedAt`, and notes.
+Final source authorization requires approved license, contributor, and release
+notice decisions; final runtime authorization additionally requires the
+top-level license, a reviewed final-artifact SHA-256, and approved
+LICENSE/NOTICE, corresponding-source, App Store, privacy, and legal reviews.
+`finalArtifactSha256` must exactly match `artifact.sha256` in the final
+inventory described below.
+`topLevelLicenseSpdx` must be a valid ID from the
+[repository-pinned official SPDX License List 3.28.0](../../Compliance/SPDX/LICENSE-LIST-3.28.0.json),
+or an expression composed from those IDs, exceptions, `AND`, `OR`, `WITH`, and
+parentheses. The generator validates those invariants but never fills in a
+decision.
+
 ## Distribution composition
 
 A native-enabled app may contain PocketRoot source, ish-arm64-pkg source, a
@@ -50,6 +100,20 @@ exporting, or uploading the App. This closes only the engineering scan
 capability; the output keeps `signedReleaseArtifact=false`,
 `exportedReleaseArtifact=false`, `completeReleaseArtifactSBOM=false`, and
 `distributionAuthorized=false`.
+
+The current scanner cannot unblock the runtime track. If its
+`ARTIFACT-INVENTORY.json` and `SBOM.spdx.json` are placed under
+`Compliance/Release/FinalArtifact/v0.1.0/`, the release generator revalidates
+and records their digests in `repositoryEvidence`, but the status remains
+`engineering-evidence-only`, with `releaseSignatureValid=false` and
+`rootFSExcluded=false`. The current `artifact.sha256` is an App content-tree
+digest that does not cover signature, entitlement, or risk metadata, and path,
+filename, extension, pinned-digest, or size checks cannot prove that no RootFS
+was stored under a neutral path or repacked format. A dedicated final-release
+schema must bind signature/entitlement/risk evidence to the reviewed artifact
+and provide content-based RootFS absence evidence before the gate can open.
+That directory is currently absent, so the status remains `not-provided`; no
+final App or IPA binary is committed.
 
 ## Known facts
 

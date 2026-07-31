@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "releaseVersion": "0.1.0",
+  "status": "no-release-authorization-granted",
+  "sourceRelease": {
+    "topLevelLicenseSpdx": null,
+    "contributorPolicyApproved": false,
+    "releaseNoticeApproved": false,
+    "sourceReleaseAuthorized": false
+  },
+  "runtimeDistribution": {
+    "rootFSDeliveryModel": "caller-provided-local-input",
+    "rootFSBundlingApproved": false,
+    "finalArtifactSha256": null,
+    "completeLicenseAndNoticeBundleApproved": false,
+    "correspondingSourceDeliveryApproved": false,
+    "appStorePolicyApproved": false,
+    "privacyReviewApproved": false,
+    "legalReviewApproved": false,
+    "distributionAuthorized": false
+  },
+  "approval": {
+    "approvedBy": null,
+    "approvedAt": null,
+    "notes": "No source release or runtime distribution authorization has been granted."
+  }
+}

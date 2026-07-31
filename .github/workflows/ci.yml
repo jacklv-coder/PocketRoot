@@ -94,6 +94,7 @@ jobs:
           ruby Scripts/prepare-rootfs-delivery-candidate.rb --validate-only
           ruby Scripts/prepare-rootfs-source-bundle.rb --validate-only
           ruby Scripts/generate-release-compliance.rb --check
+          ruby Scripts/generate-release-compliance.rb --status
 
       - name: Report Apple toolchain
         run: |

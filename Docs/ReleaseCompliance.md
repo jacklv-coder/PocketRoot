@@ -20,6 +20,47 @@ PocketRoot 的实验性 iSH runtime、XCFramework 和候选 RootFS 当前仅用�
 
 默认 `PocketRoot` 产品不包含真实 iSH 或 RootFS，但 PocketRoot 自身首个公开 release 的许可证策略仍需正式确认。
 
+## v0.1.0 双轨发布闸门
+
+仓库把 `v0.1.0` 候选发布拆为两条互不替代的轨道：
+
+1. **源码与 Swift Package 发布**：只包含 PocketRoot 源码和 Swift Package
+   元数据，不包含 RootFS、App、IPA、XCFramework 镜像或二进制 SDK；
+2. **Runtime 分发**：覆盖 App、TestFlight/App Store、二进制 SDK 和其他重新分发的
+   runtime 制品，但明确不包含任何 RootFS 资产；RootFS 仍只能由调用方在本地取得
+   并自行确认授权。
+
+两条轨道当前均为 **Blocked**。机器可读状态见
+[`READINESS.json`](../Compliance/Release/experimental-v0.1.0/READINESS.json)，
+人工复核入口见
+[`RELEASE-CHECKLIST.md`](../Compliance/Release/experimental-v0.1.0/RELEASE-CHECKLIST.md)，
+未授权决定源见
+[`RELEASE-DECISIONS.json`](../Compliance/Release/RELEASE-DECISIONS.json)。
+工程测试通过不会授予分发权限；未来源码轨道变为 Ready，不会允许 runtime 分发；
+即使 runtime 轨道未来变为 Ready，也不会允许打包或分发 RootFS。
+PocketRoot 顶层许可证是两条轨道的共同前置条件，不能只批准 runtime 的第三方材料
+而绕过 PocketRoot 自身的分发许可。
+
+```bash
+ruby Scripts/generate-release-compliance.rb --status
+ruby Scripts/generate-release-compliance.rb --require-source-ready
+ruby Scripts/generate-release-compliance.rb --require-runtime-ready
+```
+
+后两个命令在对应轨道仍有阻塞项时返回非零。当前第一项需要项目所有者作出的决定是
+选择 PocketRoot 顶层 SPDX 许可证；自动化不会代替所有者选择许可证或记录授权。
+
+`RELEASE-DECISIONS.json` 是受代码评审的授权输入，不是自动授权开关。任何非空许可
+证或批准项都必须同时记录非空 `approvedBy`、UTC RFC 3339 `approvedAt` 和说明；
+最终源码授权必须建立在许可证、贡献者策略和发行说明均已批准的基础上，最终
+runtime 授权还要求顶层许可证、最终制品 SHA-256、LICENSE/NOTICE、对应源码、
+App Store、隐私和法律复核均已批准。`finalArtifactSha256` 必须与下述最终制品
+清单中的 `artifact.sha256` 完全一致。`topLevelLicenseSpdx` 必须是
+[仓库固定的官方 SPDX License List
+3.28.0](../Compliance/SPDX/LICENSE-LIST-3.28.0.json) 中的有效 ID，或由这些 ID、
+exception、`AND`、`OR`、`WITH` 与括号构成的表达式。生成器校验这些结构和先决
+条件，但不会自行填写决定。
+
 ## 发行组成
 
 一个启用真实 runtime 的 App 可能同时包含：
@@ -56,6 +97,17 @@ smoke `.xcarchive`，验证 `get-task-allow`、签名和 clean 风险信号并�
 `signedReleaseArtifact=false`、
 `exportedReleaseArtifact=false`、`completeReleaseArtifactSBOM=false` 和
 `distributionAuthorized=false`。
+
+当前扫描器不能解除 runtime 轨道。把它生成的 `ARTIFACT-INVENTORY.json` 和
+`SBOM.spdx.json` 放入 `Compliance/Release/FinalArtifact/v0.1.0/` 后，发布生成器
+会重新验证并把摘要写入 `repositoryEvidence`，但状态固定为
+`engineering-evidence-only`，`releaseSignatureValid=false`、
+`rootFSExcluded=false`。原因是当前 `artifact.sha256` 是 App 内容树摘要，不覆盖
+签名、entitlement 或风险元数据；路径、文件名、扩展名、固定摘要和大小检测也不能
+证明任意中性路径或重新打包格式中不存在 RootFS。真正解除门禁前必须引入专用最终
+发布验证 schema，把签名/entitlement/风险证据绑定到被人工复核的制品，并提供内容级
+RootFS 排除证明。当前目录不存在，因此状态保持 `not-provided`；仓库不提交最终
+App/IPA 二进制。
 
 ## 已知许可证事实
 
