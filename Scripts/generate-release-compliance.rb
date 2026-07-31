@@ -336,7 +336,15 @@ module PocketRootReleaseCompliance
   module_function
 
   def repository_root
-    Pathname(__dir__).parent.realpath
+    override = ENV["POCKETROOT_RELEASE_REPOSITORY_ROOT"]
+    return Pathname(__dir__).parent.realpath unless override
+
+    root = Pathname(override)
+    unless root.absolute? && root.directory? && !root.symlink?
+      raise ComplianceError,
+        "POCKETROOT_RELEASE_REPOSITORY_ROOT must be a real absolute directory"
+    end
+    root.realpath
   end
 
   def output_directory

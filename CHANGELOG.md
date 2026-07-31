@@ -2,12 +2,20 @@
 
 [简体中文](CHANGELOG.md) | [English](CHANGELOG.en.md) | [文档中心](Docs/README.md)
 
-PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Semantic Versioning。当前所有内容属于 `Unreleased`。
+PocketRoot 的重要变化记录在这里，并从首个公开版本开始遵循 Semantic Versioning。
 
 ## Unreleased
 
+当前暂无未发布变更。
+
+## 0.1.0 - 2026-07-31
+
 ### Added
 
+- 新增 `v0.1.0` 源码 tag 审计：在指定 Git ref 的隔离快照内核对版本授权、发布文档
+  和源码 Ready 状态，拒绝 RootFS、App/IPA/XCFramework、压缩/归档载荷、原生二进制
+  与未知二进制文件；可信 `main` 发布工作流还要求 annotated tag，并从仓库外按精确
+  版本解析 SwiftPM。
 - 新增 `v0.1.0` fail-closed 双轨发布闸门：机器可读状态、双语检查清单和 CI 状态
   把源码/Swift Package 发布与不含 RootFS 资产的 runtime/App/二进制分发分开；
   两条轨道均需显式授权，工程测试通过不会自动解除分发阻塞，也不会授权 RootFS

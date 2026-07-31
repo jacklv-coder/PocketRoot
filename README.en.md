@@ -199,7 +199,23 @@ See [Getting Started](Docs/en/GettingStarted.md).
 
 ## Experimental application use
 
-Select `PocketRootIshRuntimeIntegration` explicitly. No stable Git tag exists yet, so remote consumers must pin a reviewed full commit rather than a moving branch.
+Select `PocketRootIshRuntimeIntegration` explicitly. The first source release is
+`v0.1.0`. Because the public API remains Experimental, pin the exact version
+instead of automatically accepting a later `0.x` release that may contain
+breaking API changes:
+
+```swift
+dependencies: [
+    .package(
+        url: "https://github.com/jacklv-coder/PocketRoot.git",
+        exact: "0.1.0"
+    )
+]
+```
+
+This source release neither contains nor authorizes distribution of a RootFS,
+App, IPA, XCFramework mirror, or binary SDK. A native-runtime consumer must
+still obtain and review its local RootFS input.
 
 ```swift
 import Foundation
