@@ -35,6 +35,9 @@ and the closed authorization source is
 Passing engineering tests does not grant distribution permission. A future
 Ready source track would not authorize runtime distribution, and even a future
 Ready runtime track would not authorize bundling or distributing the RootFS.
+The finalized PocketRoot top-level license is a prerequisite for both tracks;
+runtime third-party approvals cannot bypass permission to distribute
+PocketRoot itself.
 
 ```bash
 ruby Scripts/generate-release-compliance.rb --status
@@ -50,8 +53,11 @@ automation neither chooses that license nor records authorization.
 automatic authorization switch. Any nonempty license or approval decision must
 also record a nonempty `approvedBy`, a UTC RFC 3339 `approvedAt`, and notes.
 Final source authorization requires approved license, contributor, and release
-notice decisions; final runtime authorization additionally requires approved
+notice decisions; final runtime authorization additionally requires the
+top-level license, a reviewed final-artifact SHA-256, and approved
 LICENSE/NOTICE, corresponding-source, App Store, privacy, and legal reviews.
+`finalArtifactSha256` must exactly match `artifact.sha256` in the final
+inventory described below.
 `topLevelLicenseSpdx` must be a valid ID from the
 [repository-pinned official SPDX License List 3.28.0](../../Compliance/SPDX/LICENSE-LIST-3.28.0.json),
 or an expression composed from those IDs, exceptions, `AND`, `OR`, `WITH`, and
@@ -94,6 +100,20 @@ exporting, or uploading the App. This closes only the engineering scan
 capability; the output keeps `signedReleaseArtifact=false`,
 `exportedReleaseArtifact=false`, `completeReleaseArtifactSBOM=false`, and
 `distributionAuthorized=false`.
+
+The current scanner cannot unblock the runtime track. If its
+`ARTIFACT-INVENTORY.json` and `SBOM.spdx.json` are placed under
+`Compliance/Release/FinalArtifact/v0.1.0/`, the release generator revalidates
+and records their digests in `repositoryEvidence`, but the status remains
+`engineering-evidence-only`, with `releaseSignatureValid=false` and
+`rootFSExcluded=false`. The current `artifact.sha256` is an App content-tree
+digest that does not cover signature, entitlement, or risk metadata, and path,
+filename, extension, pinned-digest, or size checks cannot prove that no RootFS
+was stored under a neutral path or repacked format. A dedicated final-release
+schema must bind signature/entitlement/risk evidence to the reviewed artifact
+and provide content-based RootFS absence evidence before the gate can open.
+That directory is currently absent, so the status remains `not-provided`; no
+final App or IPA binary is committed.
 
 ## Known facts
 

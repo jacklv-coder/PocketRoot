@@ -11,6 +11,7 @@
   "runtimeDistribution": {
     "rootFSDeliveryModel": "caller-provided-local-input",
     "rootFSBundlingApproved": false,
+    "finalArtifactSha256": null,
     "completeLicenseAndNoticeBundleApproved": false,
     "correspondingSourceDeliveryApproved": false,
     "appStorePolicyApproved": false,

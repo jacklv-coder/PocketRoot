@@ -9,6 +9,7 @@ require "securerandom"
 require "time"
 require "yaml"
 require_relative "pocketroot-deterministic-json"
+require_relative "scan-release-artifact"
 
 module PocketRootReleaseCompliance
   RELEASE_VERSION = "0.1.0"
@@ -82,6 +83,12 @@ module PocketRootReleaseCompliance
     "licenseCount" => 695,
     "exceptionCount" => 83
   }.freeze
+  FINAL_ARTIFACT_EVIDENCE_RELATIVE =
+    "Compliance/Release/FinalArtifact/v0.1.0"
+  FINAL_ARTIFACT_INVENTORY_RELATIVE =
+    "#{FINAL_ARTIFACT_EVIDENCE_RELATIVE}/ARTIFACT-INVENTORY.json"
+  FINAL_ARTIFACT_SBOM_RELATIVE =
+    "#{FINAL_ARTIFACT_EVIDENCE_RELATIVE}/SBOM.spdx.json"
   ROOTFS = {
     "version" => "v0.3.3",
     "guestVersion" => "3.19.1",
@@ -220,7 +227,7 @@ module PocketRootReleaseCompliance
     "Compliance/SPDX/LICENSE-LIST-3.28.0.json" =>
       "7376db20698ff21511fe802aded9b5d7145520a86133b74f68b0c1568dd6dd1c",
     "Compliance/Release/RELEASE-DECISIONS.json" =>
-      "ed53fd31728b7679bd5a46b54e5521b2390ea601f202d529d60888641f8081c7",
+      "a1d64250b5dea60bfad77221866e452e4b972e4d2f968c3a9fafaadc26985a9b",
     "Package.resolved" =>
       "a6c4a28788ed9d4a22f021248cadfd83ad8a0584fc2dd198a6e1bf0434b79167",
     "Package.swift" =>
@@ -235,6 +242,8 @@ module PocketRootReleaseCompliance
       "95ca1929e779b1b91a304e68261c94ce42839b833a4e55a9768daa05b437cfb9",
     "Scripts/inject-demo-rootfs.sh" =>
       "3982b5382b0d1e13e0c8e8a5bb5404c5bad1dfc4d6e9cd23a39e3395a83087bb",
+    "Scripts/scan-release-artifact.rb" =>
+      "48f27ab280491864228393e1675fe3a2889cbd616f79e3cb16bae7efedf647c0",
     "Scripts/run-host-app-device-ui-smoke.sh" =>
       "f9528bd72aa40e6615633d1bc56ea8a31965b41f6570a0dc9f5fa390c5082490",
     "Scripts/run-host-app-ui-smoke.sh" =>
@@ -1124,6 +1133,14 @@ module PocketRootReleaseCompliance
           source.fetch("topLevelLicenseSpdx"),
           license_list
         )
+    final_artifact_sha256 =
+      runtime.fetch("finalArtifactSha256")
+    valid_final_artifact_sha256 =
+      final_artifact_sha256.nil? ||
+        (
+          final_artifact_sha256.is_a?(String) &&
+            final_artifact_sha256.match?(HASH_PATTERN)
+        )
     decision_values = [
       source.fetch("contributorPolicyApproved"),
       source.fetch("releaseNoticeApproved"),
@@ -1138,6 +1155,7 @@ module PocketRootReleaseCompliance
     ]
     has_reviewed_decision =
       !source.fetch("topLevelLicenseSpdx").nil? ||
+        !final_artifact_sha256.nil? ||
         decision_values.any?
     approval_identity_valid =
       approval.fetch("approvedBy").is_a?(String) &&
@@ -1174,6 +1192,7 @@ module PocketRootReleaseCompliance
       runtime.keys == %w[
         rootFSDeliveryModel
         rootFSBundlingApproved
+        finalArtifactSha256
         completeLicenseAndNoticeBundleApproved
         correspondingSourceDeliveryApproved
         appStorePolicyApproved
@@ -1189,6 +1208,7 @@ module PocketRootReleaseCompliance
         "caller-provided-local-input" &&
       decision_values.all?(&boolean) &&
       valid_spdx &&
+      valid_final_artifact_sha256 &&
       approval.fetch("notes").is_a?(String) &&
       !approval.fetch("notes").strip.empty? &&
       approval_metadata_valid
@@ -1202,7 +1222,9 @@ module PocketRootReleaseCompliance
     runtime_authorization_valid =
       !runtime_authorized ||
         (
-          runtime.fetch("rootFSBundlingApproved") == false &&
+          !source.fetch("topLevelLicenseSpdx").nil? &&
+            runtime.fetch("rootFSBundlingApproved") == false &&
+            !final_artifact_sha256.nil? &&
             runtime.fetch("completeLicenseAndNoticeBundleApproved") &&
             runtime.fetch("correspondingSourceDeliveryApproved") &&
             runtime.fetch("appStorePolicyApproved") &&
@@ -1219,6 +1241,137 @@ module PocketRootReleaseCompliance
     true
   rescue ArgumentError, KeyError, TypeError => error
     raise ComplianceError, "release decisions are invalid: #{error.message}"
+  end
+
+  def final_artifact_rootfs_asset_paths(inventory)
+    rootfs_component = lambda do |component|
+      normalized = component.downcase
+      normalized.match?(
+        /(?:\A|[._-])(?:rootfs|fakefs)(?:\z|[._-])/
+      ) ||
+        normalized.match?(
+          /(?:\A|[._-])pocketroot[._-]fs(?:\z|[._-])/
+        )
+    end
+    matches = []
+    inventory.fetch("directories").each do |directory|
+      path =
+        PocketRootReleaseArtifactScanner.safe_relative_path(
+          directory.fetch("path"),
+          "final artifact directory path"
+        )
+      components = path.each_filename.map(&:downcase)
+      matches << path.to_s if components.any?(&rootfs_component)
+    end
+    inventory.fetch("files").each do |file|
+      path =
+        PocketRootReleaseArtifactScanner.safe_relative_path(
+          file.fetch("path"),
+          "final artifact file path"
+        )
+      basename = path.basename.to_s.downcase
+      components = path.each_filename.map(&:downcase)
+      rootfs_name = rootfs_component.call(basename)
+      archive_name =
+        basename == ROOTFS.fetch("filename").downcase ||
+          basename.match?(
+            /\.(?:tar(?:\.(?:gz|xz|bz2|zst))?|tgz|zip|cpio(?:\.gz)?|img|squashfs)\z/
+          )
+      known_payload =
+        file.fetch("sha256") == ROOTFS.fetch("sha256") ||
+          file.fetch("byteCount") == ROOTFS.fetch("byteCount")
+      if rootfs_name ||
+        archive_name ||
+        known_payload ||
+        components.any?(&rootfs_component)
+        matches << path.to_s
+      end
+    end
+    matches.uniq.sort
+  rescue KeyError, TypeError => error
+    raise ComplianceError,
+      "final artifact RootFS exclusion evidence is incomplete: #{error.message}"
+  end
+
+  def load_final_artifact_evidence(root)
+    directory = root.join(FINAL_ARTIFACT_EVIDENCE_RELATIVE)
+    absent = {
+      "status" => "not-provided",
+      "evidenceDirectory" => FINAL_ARTIFACT_EVIDENCE_RELATIVE,
+      "inventoryPath" => FINAL_ARTIFACT_INVENTORY_RELATIVE,
+      "inventorySha256" => nil,
+      "sbomPath" => FINAL_ARTIFACT_SBOM_RELATIVE,
+      "sbomSha256" => nil,
+      "artifactSha256" => nil,
+      "inputKind" => nil,
+      "releaseSignatureValid" => false,
+      "rootFSExcluded" => false,
+      "rootFSAssetPaths" => []
+    }
+    return [absent, {}] unless directory.exist? || directory.symlink?
+
+    if directory.symlink? || !directory.lstat.directory?
+      raise ComplianceError,
+        "final artifact evidence must be a real directory: #{directory}"
+    end
+    resolved_root = root.realpath
+    resolved_directory = directory.realpath
+    unless resolved_directory.to_s.start_with?(
+      "#{resolved_root}#{File::SEPARATOR}"
+    )
+      raise ComplianceError,
+        "final artifact evidence escapes the repository root"
+    end
+    expected_files = %w[ARTIFACT-INVENTORY.json SBOM.spdx.json]
+    actual_files = directory.children.map do |path|
+      path.basename.to_s
+    end.sort
+    unless actual_files == expected_files
+      raise ComplianceError,
+        "final artifact evidence file set drifted: #{actual_files.inspect}"
+    end
+    inventory, inventory_bytes =
+      load_json(
+        root.join(FINAL_ARTIFACT_INVENTORY_RELATIVE),
+        "final artifact inventory"
+      )
+    sbom, sbom_bytes =
+      load_json(
+        root.join(FINAL_ARTIFACT_SBOM_RELATIVE),
+        "final artifact SPDX SBOM"
+      )
+    PocketRootReleaseArtifactScanner.validate_inventory(inventory)
+    PocketRootReleaseArtifactScanner.validate_sbom(sbom, inventory)
+    artifact_sha256 = inventory.dig("artifact", "sha256")
+    unless artifact_sha256.is_a?(String) &&
+      artifact_sha256.match?(HASH_PATTERN)
+      raise ComplianceError,
+        "final artifact inventory has an invalid artifact SHA-256"
+    end
+    rootfs_asset_paths = final_artifact_rootfs_asset_paths(inventory)
+    inventory_sha256 = Digest::SHA256.hexdigest(inventory_bytes)
+    sbom_sha256 = Digest::SHA256.hexdigest(sbom_bytes)
+    summary = {
+      "status" => "engineering-evidence-only",
+      "evidenceDirectory" => FINAL_ARTIFACT_EVIDENCE_RELATIVE,
+      "inventoryPath" => FINAL_ARTIFACT_INVENTORY_RELATIVE,
+      "inventorySha256" => inventory_sha256,
+      "sbomPath" => FINAL_ARTIFACT_SBOM_RELATIVE,
+      "sbomSha256" => sbom_sha256,
+      "artifactSha256" => artifact_sha256,
+      "inputKind" => inventory.dig("input", "kind"),
+      "releaseSignatureValid" => false,
+      "rootFSExcluded" => false,
+      "rootFSAssetPaths" => rootfs_asset_paths
+    }
+    evidence_sha256 = {
+      FINAL_ARTIFACT_INVENTORY_RELATIVE => inventory_sha256,
+      FINAL_ARTIFACT_SBOM_RELATIVE => sbom_sha256
+    }
+    [summary, evidence_sha256]
+  rescue PocketRootReleaseArtifactScanner::ScanError => error
+    raise ComplianceError,
+      "final artifact evidence failed scanner validation: #{error.message}"
   end
 
   def collect_inputs(root = repository_root)
@@ -1264,6 +1417,11 @@ module PocketRootReleaseCompliance
         root.join("Scripts/inject-demo-rootfs.sh"),
         "Demo RootFS injection script"
       )
+    release_artifact_scanner_bytes =
+      read_regular(
+        root.join("Scripts/scan-release-artifact.rb"),
+        "release artifact scanner"
+      )
     host_app_ui_smoke_bytes =
       read_regular(
         root.join("Scripts/run-host-app-ui-smoke.sh"),
@@ -1301,6 +1459,8 @@ module PocketRootReleaseCompliance
       load_json(rootfs_directory.join("EVIDENCE.json"), "RootFS evidence")
     rootfs_sbom, rootfs_sbom_bytes =
       load_json(rootfs_directory.join("SBOM.spdx.json"), "RootFS SPDX SBOM")
+    final_artifact_evidence, final_artifact_file_sha256 =
+      load_final_artifact_evidence(root)
 
     unless license_bytes.include?("license has not yet been finalized") &&
       license_bytes.include?("no permission is granted")
@@ -1338,6 +1498,8 @@ module PocketRootReleaseCompliance
         Digest::SHA256.hexdigest(external_consumer_project_bytes),
       "Scripts/inject-demo-rootfs.sh" =>
         Digest::SHA256.hexdigest(demo_rootfs_injection_bytes),
+      "Scripts/scan-release-artifact.rb" =>
+        Digest::SHA256.hexdigest(release_artifact_scanner_bytes),
       "Scripts/run-host-app-ui-smoke.sh" =>
         Digest::SHA256.hexdigest(host_app_ui_smoke_bytes),
       "Scripts/run-ios-example-ui-smoke.sh" =>
@@ -1357,6 +1519,7 @@ module PocketRootReleaseCompliance
     end
     file_sha256.merge!(implementation_files)
     file_sha256.merge!(resource_files)
+    file_sha256.merge!(final_artifact_file_sha256)
     file_sha256["Compliance/RootFS/v0.3.3/EVIDENCE.json"] =
       Digest::SHA256.hexdigest(rootfs_evidence_bytes)
     file_sha256["Compliance/RootFS/v0.3.3/SBOM.spdx.json"] =
@@ -1368,6 +1531,7 @@ module PocketRootReleaseCompliance
       rootfs_evidence: rootfs_evidence,
       rootfs_sbom: rootfs_sbom,
       rootfs_packages: rootfs_packages,
+      final_artifact_evidence: final_artifact_evidence,
       release_decisions: release_decisions,
       spdx_license_list: spdx_license_list,
       file_sha256: file_sha256
@@ -1392,6 +1556,8 @@ module PocketRootReleaseCompliance
       "repositoryEvidence" => inputs.fetch(:file_sha256),
       "swiftPackage" => package,
       "application" => project,
+      "finalArtifactEvidence" =>
+        inputs.fetch(:final_artifact_evidence),
       "profiles" => [
         {
           "id" => "default-demo",
@@ -1528,7 +1694,10 @@ module PocketRootReleaseCompliance
 
     {
       "id" =>
-        blocked_gate.fetch("id") == "top-level-license-finalized" ?
+        %w[
+          top-level-license-finalized
+          runtime-top-level-license-finalized
+        ].include?(blocked_gate.fetch("id")) ?
           "select-top-level-license" : blocked_gate.fetch("id"),
       "owner" => blocked_gate.fetch("owner"),
       "reason" => blocked_gate.fetch("requiredAction")
@@ -1538,9 +1707,15 @@ module PocketRootReleaseCompliance
   def readiness(composition_document, inputs)
     coverage = composition_document.fetch("coverage")
     rootfs = composition_document.dig("externalComponents", "rootFS")
+    final_artifact =
+      composition_document.fetch("finalArtifactEvidence")
     decisions = inputs.fetch(:release_decisions)
     source_decisions = decisions.fetch("sourceRelease")
     runtime_decisions = decisions.fetch("runtimeDistribution")
+    final_artifact_identity_matches_review =
+      !runtime_decisions.fetch("finalArtifactSha256").nil? &&
+        final_artifact.fetch("artifactSha256") ==
+          runtime_decisions.fetch("finalArtifactSha256")
     source_gates = [
       readiness_gate(
         id: "source-boundary-excludes-rootfs",
@@ -1619,19 +1794,36 @@ module PocketRootReleaseCompliance
     ]
     runtime_gates = [
       readiness_gate(
+        id: "runtime-top-level-license-finalized",
+        title: "Top-level PocketRoot license is finalized for runtime distribution",
+        title_zh: "Runtime 分发使用的 PocketRoot 顶层许可证已确定",
+        satisfied:
+          coverage.fetch("topLevelLicenseFinalized") &&
+            !source_decisions.fetch("topLevelLicenseSpdx").nil?,
+        evidence: "LICENSE and Compliance/Release/RELEASE-DECISIONS.json",
+        owner: "project-owner",
+        action:
+          "Select an SPDX license and replace the current no-permission " \
+          "placeholder before distributing any runtime binary or App."
+      ),
+      readiness_gate(
         id: "rootfs-external-input-boundary",
         title: "RootFS remains a caller-provided local input",
         title_zh: "RootFS 保持为调用方提供的本地输入",
         satisfied:
           rootfs.fetch("deliveryModel") ==
             runtime_decisions.fetch("rootFSDeliveryModel") &&
-            runtime_decisions.fetch("rootFSBundlingApproved") == false,
+            runtime_decisions.fetch("rootFSBundlingApproved") == false &&
+            final_artifact_identity_matches_review &&
+            final_artifact.fetch("releaseSignatureValid") &&
+            final_artifact.fetch("rootFSExcluded"),
         evidence:
-          "COMPOSITION.json and Compliance/Release/RELEASE-DECISIONS.json",
+          "COMPOSITION.json finalArtifactEvidence, " \
+          "ARTIFACT-INVENTORY.json, SBOM.spdx.json, and release decisions",
         owner: "engineering",
         action:
-          "Do not attach the RootFS to GitHub Releases, SwiftPM, TestFlight, " \
-          "or an App bundle without reopening review."
+          "Scan the exact final artifact, record its reviewed SHA-256, and " \
+          "verify its inventory contains no RootFS payload."
       ),
       readiness_gate(
         id: "release-artifact-built-and-scanned",
@@ -1641,8 +1833,12 @@ module PocketRootReleaseCompliance
           coverage.fetch("releaseArtifactBuilt") &&
             coverage.fetch("releaseArtifactScanned") &&
             coverage.fetch("binaryFilesAnalyzed") &&
-            coverage.fetch("completeReleaseArtifactSBOM"),
-        evidence: "COMPOSITION.json coverage",
+            coverage.fetch("completeReleaseArtifactSBOM") &&
+            final_artifact_identity_matches_review &&
+            final_artifact.fetch("releaseSignatureValid"),
+        evidence:
+          "COMPOSITION.json coverage and finalArtifactEvidence bound to " \
+          "the reviewed artifact SHA-256",
         owner: "engineering",
         action:
           "Build the final signed/exported artifact and generate its complete " \
@@ -1797,6 +1993,7 @@ module PocketRootReleaseCompliance
       source-release-authorized
     ]
     expected_runtime_ids = %w[
+      runtime-top-level-license-finalized
       rootfs-external-input-boundary
       release-artifact-built-and-scanned
       complete-license-notice-bundle-approved
@@ -1945,7 +2142,15 @@ module PocketRootReleaseCompliance
       #{checklist_gate_lines(runtime, :zh)}
 
       RootFS 当前只能作为调用方自行取得并授权的本地输入；不得把它加入 Git、
-      SwiftPM、GitHub Release、TestFlight 或 App bundle。
+      SwiftPM、GitHub Release、TestFlight 或 App bundle。Runtime 轨道同样要求
+      PocketRoot 顶层许可证已确定。当前 `Scripts/scan-release-artifact.rb`
+      只生成工程证据；即使扫描签名 `.xcarchive`，也固定保持
+      `engineering-evidence-only`、`releaseSignatureValid=false` 和
+      `rootFSExcluded=false`。它可以把
+      `Compliance/Release/FinalArtifact/v0.1.0/ARTIFACT-INVENTORY.json` 与
+      `SBOM.spdx.json` 纳入 composition，但不能解除 runtime 门禁。后续专用最终
+      发布验证 schema 必须把签名、entitlement 和风险元数据绑定到被复核的制品，
+      并提供内容级 RootFS 排除证明；仅靠内容树摘要、路径、文件名或扩展名不足。
 
       ## 校验
 
@@ -1980,6 +2185,16 @@ module PocketRootReleaseCompliance
 
       The RootFS remains a caller-obtained and caller-authorized local input. Do
       not add it to Git, SwiftPM, GitHub Releases, TestFlight, or an App bundle.
+      The runtime track also requires the finalized PocketRoot top-level
+      license. The current `Scripts/scan-release-artifact.rb` schema produces
+      engineering evidence only; even a signed `.xcarchive` remains
+      `engineering-evidence-only`, with `releaseSignatureValid=false` and
+      `rootFSExcluded=false`. Its inventory and SPDX SBOM may be included under
+      `Compliance/Release/FinalArtifact/v0.1.0`, but cannot open the runtime
+      gate. A future dedicated final-release schema must bind signature,
+      entitlement, and risk metadata to the reviewed artifact and provide
+      content-based RootFS absence evidence; a content-tree digest, path,
+      filename, or extension check is not sufficient.
     MARKDOWN
   end
 
@@ -2294,7 +2509,45 @@ module PocketRootReleaseCompliance
     }
   end
 
-  def readme
+  def readme(final_artifact_evidence)
+    final_artifact_status_zh =
+      if final_artifact_evidence.fetch("status") == "not-provided"
+        <<~TEXT.chomp
+          顶层许可证、完整 LICENSE/NOTICE、对应源码交付、App Store 2.5.2、法律审查和
+          发行授权仍未完成。由于没有最终 archive，本目录明确保持
+          `completeReleaseArtifactSBOM=false`、`distributionAuthorized=false`。
+          `finalArtifactEvidence.status=not-provided` 还会阻止 Runtime 轨道在没有精确
+          制品清单、SBOM 和人工复核 SHA-256 的情况下变为 Ready。
+        TEXT
+      else
+        <<~TEXT.chomp
+          顶层许可证、完整 LICENSE/NOTICE、对应源码交付、App Store 2.5.2、法律审查和
+          发行授权仍未完成。当前已纳入最终制品目录中的工程扫描证据，但状态保持
+          `engineering-evidence-only`、`releaseSignatureValid=false`、
+          `rootFSExcluded=false`；这份证据不能解除 Runtime 发布门禁。
+        TEXT
+      end
+    final_artifact_status_en =
+      if final_artifact_evidence.fetch("status") == "not-provided"
+        <<~TEXT.chomp
+          top-level license, complete LICENSE/NOTICE set, corresponding-source delivery,
+          App Store 2.5.2 disposition, legal review, and distribution authorization
+          remain open. Because no final archive was scanned, this evidence keeps
+          `completeReleaseArtifactSBOM=false` and `distributionAuthorized=false`.
+          `finalArtifactEvidence.status=not-provided` also prevents the runtime
+          track from becoming Ready without an exact artifact inventory, SPDX SBOM,
+          and code-reviewed artifact SHA-256.
+        TEXT
+      else
+        <<~TEXT.chomp
+          current final-artifact directory contains engineering scan evidence,
+          while the top-level license, complete LICENSE/NOTICE set, corresponding-source delivery,
+          App Store 2.5.2 disposition, legal review, and distribution authorization
+          remain open. The imported evidence remains `engineering-evidence-only`, with
+          `releaseSignatureValid=false` and `rootFSExcluded=false`; it cannot open
+          the runtime release gate.
+        TEXT
+      end
     <<~MARKDOWN
       # PocketRoot experimental release-composition evidence
 
@@ -2308,9 +2561,7 @@ module PocketRootReleaseCompliance
 
       默认 Demo 显式链接 IshEmbed，但仓库不包含 RootFS；只有本地 Debug 构建可把
       精确固定的仓库外资产注入 App，Release 明确跳过。RootFS 不由库下载。
-      顶层许可证、完整 LICENSE/NOTICE、对应源码交付、App Store 2.5.2、法律审查和
-      发行授权仍未完成。由于没有最终 archive，本目录明确保持
-      `completeReleaseArtifactSBOM=false`、`distributionAuthorized=false`。
+      #{final_artifact_status_zh}
 
       校验：
 
@@ -2337,11 +2588,97 @@ module PocketRootReleaseCompliance
       The default Demo explicitly links IshEmbed, but the repository contains
       no RootFS. Only a local Debug build may inject the exact pinned external
       asset; Release skips it. The library never downloads the RootFS. The
-      top-level license, complete LICENSE/NOTICE set, corresponding-source delivery,
-      App Store 2.5.2 disposition, legal review, and distribution authorization
-      remain open. Because no final archive was scanned, this evidence keeps
-      `completeReleaseArtifactSBOM=false` and `distributionAuthorized=false`.
+      #{final_artifact_status_en}
     MARKDOWN
+  end
+
+  def validate_final_artifact_evidence(summary, repository_evidence)
+    expected_keys = %w[
+      status
+      evidenceDirectory
+      inventoryPath
+      inventorySha256
+      sbomPath
+      sbomSha256
+      artifactSha256
+      inputKind
+      releaseSignatureValid
+      rootFSExcluded
+      rootFSAssetPaths
+    ]
+    unless summary.keys == expected_keys &&
+      summary.fetch("evidenceDirectory") ==
+        FINAL_ARTIFACT_EVIDENCE_RELATIVE &&
+      summary.fetch("inventoryPath") ==
+        FINAL_ARTIFACT_INVENTORY_RELATIVE &&
+      summary.fetch("sbomPath") == FINAL_ARTIFACT_SBOM_RELATIVE &&
+      (
+        summary.fetch("rootFSExcluded").instance_of?(TrueClass) ||
+          summary.fetch("rootFSExcluded").instance_of?(FalseClass)
+      ) &&
+      (
+        summary.fetch("releaseSignatureValid").instance_of?(TrueClass) ||
+          summary.fetch("releaseSignatureValid").instance_of?(FalseClass)
+      )
+      raise ComplianceError,
+        "final artifact evidence summary shape drifted"
+    end
+    paths = summary.fetch("rootFSAssetPaths")
+    unless paths.is_a?(Array) &&
+      paths.all? { |path| path.is_a?(String) && !path.empty? } &&
+      paths == paths.uniq.sort
+      raise ComplianceError,
+        "final artifact RootFS asset path evidence drifted"
+    end
+    if summary.fetch("status") == "not-provided"
+      valid_absent =
+        %w[
+          inventorySha256
+          sbomSha256
+          artifactSha256
+        ].all? { |key| summary.fetch(key).nil? } &&
+          summary.fetch("inputKind").nil? &&
+          summary.fetch("releaseSignatureValid") == false &&
+          summary.fetch("rootFSExcluded") == false &&
+          paths.empty? &&
+          !repository_evidence.key?(FINAL_ARTIFACT_INVENTORY_RELATIVE) &&
+          !repository_evidence.key?(FINAL_ARTIFACT_SBOM_RELATIVE)
+      unless valid_absent
+        raise ComplianceError,
+          "absent final artifact evidence is not fail-closed"
+      end
+    elsif summary.fetch("status") == "engineering-evidence-only"
+      valid_hashes =
+        %w[
+          inventorySha256
+          sbomSha256
+          artifactSha256
+        ].all? do |key|
+          value = summary.fetch(key)
+          value.is_a?(String) && value.match?(HASH_PATTERN)
+        end
+      valid_repository_binding =
+        repository_evidence[FINAL_ARTIFACT_INVENTORY_RELATIVE] ==
+          summary.fetch("inventorySha256") &&
+          repository_evidence[FINAL_ARTIFACT_SBOM_RELATIVE] ==
+            summary.fetch("sbomSha256")
+      unless valid_hashes &&
+        valid_repository_binding &&
+        %w[app xcarchive].include?(summary.fetch("inputKind")) &&
+        summary.fetch("releaseSignatureValid") == false &&
+        summary.fetch("rootFSExcluded") == false
+        raise ComplianceError,
+          "present final artifact evidence is not fail-closed and " \
+          "content-addressed"
+      end
+    else
+      raise ComplianceError,
+        "final artifact evidence has an unsupported status"
+    end
+    true
+  rescue KeyError, TypeError => error
+    raise ComplianceError,
+      "final artifact evidence is incomplete: #{error.message}"
   end
 
   def validate_composition(document)
@@ -2377,6 +2714,10 @@ module PocketRootReleaseCompliance
         "release composition does not preserve its exact coverage gates"
     end
     profiles = document.fetch("profiles")
+    validate_final_artifact_evidence(
+      document.fetch("finalArtifactEvidence"),
+      document.fetch("repositoryEvidence")
+    )
     unless profiles.map { |profile| profile.fetch("id") } == %w[
       default-demo
       native-runtime-smoke
@@ -2475,7 +2816,8 @@ module PocketRootReleaseCompliance
     outputs = {
       "COMPOSITION.json" => pretty_json(composition_document),
       "READINESS.json" => pretty_json(readiness_document),
-      "README.md" => readme,
+      "README.md" =>
+        readme(composition_document.fetch("finalArtifactEvidence")),
       "RELEASE-CHECKLIST.md" => release_checklist(readiness_document),
       "SBOM.spdx.json" => pretty_json(sbom_document)
     }

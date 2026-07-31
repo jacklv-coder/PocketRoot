@@ -70,20 +70,29 @@
       "status": "blocked",
       "gates": [
         {
+          "id": "runtime-top-level-license-finalized",
+          "title": "Top-level PocketRoot license is finalized for runtime distribution",
+          "titleZh": "Runtime 分发使用的 PocketRoot 顶层许可证已确定",
+          "satisfied": false,
+          "evidence": "LICENSE and Compliance/Release/RELEASE-DECISIONS.json",
+          "owner": "project-owner",
+          "requiredAction": "Select an SPDX license and replace the current no-permission placeholder before distributing any runtime binary or App."
+        },
+        {
           "id": "rootfs-external-input-boundary",
           "title": "RootFS remains a caller-provided local input",
           "titleZh": "RootFS 保持为调用方提供的本地输入",
-          "satisfied": true,
-          "evidence": "COMPOSITION.json and Compliance/Release/RELEASE-DECISIONS.json",
+          "satisfied": false,
+          "evidence": "COMPOSITION.json finalArtifactEvidence, ARTIFACT-INVENTORY.json, SBOM.spdx.json, and release decisions",
           "owner": "engineering",
-          "requiredAction": "Do not attach the RootFS to GitHub Releases, SwiftPM, TestFlight, or an App bundle without reopening review."
+          "requiredAction": "Scan the exact final artifact, record its reviewed SHA-256, and verify its inventory contains no RootFS payload."
         },
         {
           "id": "release-artifact-built-and-scanned",
           "title": "Final signed and exported artifact is built and scanned",
           "titleZh": "最终签名导出制品已构建并扫描",
           "satisfied": false,
-          "evidence": "COMPOSITION.json coverage",
+          "evidence": "COMPOSITION.json coverage and finalArtifactEvidence bound to the reviewed artifact SHA-256",
           "owner": "engineering",
           "requiredAction": "Build the final signed/exported artifact and generate its complete file inventory, binary scan, entitlements, and SBOM."
         },
@@ -149,6 +158,8 @@
     "contributor-policy-approved",
     "release-notice-approved",
     "source-release-authorized",
+    "runtime-top-level-license-finalized",
+    "rootfs-external-input-boundary",
     "release-artifact-built-and-scanned",
     "complete-license-notice-bundle-approved",
     "corresponding-source-delivery-approved",

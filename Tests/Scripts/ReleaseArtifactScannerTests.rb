@@ -332,6 +332,19 @@ class ReleaseArtifactScannerTests < Minitest::Test
     refute Scanner.clean_engineering_signals?(inventory)
   end
 
+  def test_rejects_incomplete_mach_o_inventory_coverage
+    app = application_fixture
+    inventory = Scanner.build_inventory("app", app, runner: @runner)
+    inventory.fetch("machOBinaries").clear
+    inventory.fetch("artifact")["machOFileCount"] = 0
+
+    error = assert_raises(Scanner::ScanError) do
+      Scanner.validate_inventory(inventory)
+    end
+
+    assert_includes error.message, "Mach-O inventory coverage is incomplete"
+  end
+
   def test_detects_invalid_existing_signature
     app = application_fixture
     @runner.signed = true

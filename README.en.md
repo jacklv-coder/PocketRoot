@@ -342,3 +342,6 @@ See the [Documentation Hub](Docs/en/README.md).
 ## License and release
 
 PocketRoot's first-public-release license policy is still being finalized. The Experimental runtime links GPL-identified upstream code and the candidate RootFS contains multiple copyleft and permissive licenses. Package-level, maximal Experimental engineering-composition, and unsigned engineering-App file-level SPDX SBOMs are generated, but production, TestFlight, and public binary distribution remain blocked until complete physical-device lifecycle, license, NOTICE, corresponding source, a complete SBOM from the scanned final signed/exported artifact, and App Store 2.5.2 gates have explicit dispositions. The `v0.1.0` [machine-readable release status](Compliance/Release/experimental-v0.1.0/READINESS.json) separates source/Swift Package release from runtime/App distribution that excludes every RootFS asset; both tracks are currently **Blocked**, and neither track authorizes RootFS distribution.
+The runtime track also requires PocketRoot's finalized top-level license and
+binds the final artifact inventory/SPDX SBOM identity to a code-reviewed release
+decision; that final-artifact evidence is not currently provided.

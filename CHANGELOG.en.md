@@ -12,7 +12,11 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   bilingual checklist, and CI status separate source/Swift Package release
   from runtime/App/binary distribution that excludes every RootFS asset; each
   requires explicit authorization, and passing engineering tests never unblocks
-  distribution or authorizes RootFS distribution.
+  distribution or authorizes RootFS distribution. Runtime readiness now also
+  requires the top-level license and dedicated final-release evidence; the
+  current engineering scanner cannot make runtime Ready even for a signed
+  `.xcarchive`. A future schema must bind signature/entitlement/risk metadata
+  to the reviewed artifact and provide content-based RootFS absence evidence.
 - Swift Package products for Core, Terminal, Resources, and the safe umbrella.
 - An explicit opt-in `PocketRootAgent` product with a provider-agnostic lightweight loop, turn/tool/input/output bounds, ID replay rejection, whole-batch validation, sequential tool execution, and cancellation propagation; it neither installs Codex CLI nor exposes a default shell tool.
 - A native OpenAI Responses API transport for `PocketRootAgent` with host-owned bearer credentials, strict function-schema preflight, continuation mapping, sanitized failures, and bounded HTTP request/response bodies.

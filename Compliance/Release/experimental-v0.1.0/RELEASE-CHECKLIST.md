@@ -20,7 +20,8 @@ runtime、App 或二进制 SDK 分发”分为两条独立轨道。工程测试�
 
 ## Runtime / App / 二进制分发（不含 RootFS，Blocked / 未就绪）
 
-- [x] `rootfs-external-input-boundary` — RootFS 保持为调用方提供的本地输入
+- [ ] `runtime-top-level-license-finalized` — Runtime 分发使用的 PocketRoot 顶层许可证已确定
+- [ ] `rootfs-external-input-boundary` — RootFS 保持为调用方提供的本地输入
 - [ ] `release-artifact-built-and-scanned` — 最终签名导出制品已构建并扫描
 - [ ] `complete-license-notice-bundle-approved` — 完整 LICENSE 与 NOTICE 交付包已批准
 - [ ] `corresponding-source-delivery-approved` — 对应源码交付已批准
@@ -30,7 +31,15 @@ runtime、App 或二进制 SDK 分发”分为两条独立轨道。工程测试�
 - [ ] `runtime-distribution-authorized` — Runtime 二进制/App 分发已明确授权
 
 RootFS 当前只能作为调用方自行取得并授权的本地输入；不得把它加入 Git、
-SwiftPM、GitHub Release、TestFlight 或 App bundle。
+SwiftPM、GitHub Release、TestFlight 或 App bundle。Runtime 轨道同样要求
+PocketRoot 顶层许可证已确定。当前 `Scripts/scan-release-artifact.rb`
+只生成工程证据；即使扫描签名 `.xcarchive`，也固定保持
+`engineering-evidence-only`、`releaseSignatureValid=false` 和
+`rootFSExcluded=false`。它可以把
+`Compliance/Release/FinalArtifact/v0.1.0/ARTIFACT-INVENTORY.json` 与
+`SBOM.spdx.json` 纳入 composition，但不能解除 runtime 门禁。后续专用最终
+发布验证 schema 必须把签名、entitlement 和风险元数据绑定到被复核的制品，
+并提供内容级 RootFS 排除证明；仅靠内容树摘要、路径、文件名或扩展名不足。
 
 ## 校验
 
@@ -66,7 +75,8 @@ no-permission `LICENSE`. The generator will not choose a license.
 
 ### Runtime / App / binary distribution (RootFS excluded, Blocked)
 
-- [x] `rootfs-external-input-boundary` — RootFS remains a caller-provided local input
+- [ ] `runtime-top-level-license-finalized` — Top-level PocketRoot license is finalized for runtime distribution
+- [ ] `rootfs-external-input-boundary` — RootFS remains a caller-provided local input
 - [ ] `release-artifact-built-and-scanned` — Final signed and exported artifact is built and scanned
 - [ ] `complete-license-notice-bundle-approved` — Complete LICENSE and NOTICE bundle is approved
 - [ ] `corresponding-source-delivery-approved` — Corresponding-source delivery is approved
@@ -77,3 +87,13 @@ no-permission `LICENSE`. The generator will not choose a license.
 
 The RootFS remains a caller-obtained and caller-authorized local input. Do
 not add it to Git, SwiftPM, GitHub Releases, TestFlight, or an App bundle.
+The runtime track also requires the finalized PocketRoot top-level
+license. The current `Scripts/scan-release-artifact.rb` schema produces
+engineering evidence only; even a signed `.xcarchive` remains
+`engineering-evidence-only`, with `releaseSignatureValid=false` and
+`rootFSExcluded=false`. Its inventory and SPDX SBOM may be included under
+`Compliance/Release/FinalArtifact/v0.1.0`, but cannot open the runtime
+gate. A future dedicated final-release schema must bind signature,
+entitlement, and risk metadata to the reviewed artifact and provide
+content-based RootFS absence evidence; a content-tree digest, path,
+filename, or extension check is not sufficient.

@@ -13,6 +13,8 @@ IshEmbed/XCFramework、精确 iSH gitlink、静态 supervisor 使用的 musl sou
 顶层许可证、完整 LICENSE/NOTICE、对应源码交付、App Store 2.5.2、法律审查和
 发行授权仍未完成。由于没有最终 archive，本目录明确保持
 `completeReleaseArtifactSBOM=false`、`distributionAuthorized=false`。
+`finalArtifactEvidence.status=not-provided` 还会阻止 Runtime 轨道在没有精确
+制品清单、SBOM 和人工复核 SHA-256 的情况下变为 Ready。
 
 校验：
 
@@ -43,3 +45,6 @@ top-level license, complete LICENSE/NOTICE set, corresponding-source delivery,
 App Store 2.5.2 disposition, legal review, and distribution authorization
 remain open. Because no final archive was scanned, this evidence keeps
 `completeReleaseArtifactSBOM=false` and `distributionAuthorized=false`.
+`finalArtifactEvidence.status=not-provided` also prevents the runtime
+track from becoming Ready without an exact artifact inventory, SPDX SBOM,
+and code-reviewed artifact SHA-256.

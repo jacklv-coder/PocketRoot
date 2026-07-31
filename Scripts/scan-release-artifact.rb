@@ -1220,10 +1220,21 @@ module PocketRootReleaseArtifactScanner
       unless file.fetch("sha1").match?(/\A[0-9a-f]{40}\z/) &&
         file.fetch("sha256").match?(/\A[0-9a-f]{64}\z/) &&
         file.fetch("byteCount").is_a?(Integer) &&
-        file.fetch("byteCount") >= 0
+        file.fetch("byteCount") >= 0 &&
+        (
+          file.fetch("machO").instance_of?(TrueClass) ||
+            file.fetch("machO").instance_of?(FalseClass)
+        )
         raise ScanError, "artifact inventory contains invalid file metadata"
       end
       [file.fetch("path"), file.fetch("sha256")]
+    end
+    mach_o_file_paths =
+      files.select { |file| file.fetch("machO") }.
+        map { |file| file.fetch("path") }
+    binary_paths = binaries.map { |binary| binary.fetch("path") }
+    unless binary_paths == mach_o_file_paths
+      raise ScanError, "Mach-O inventory coverage is incomplete"
     end
     binaries.each do |binary|
       unless file_hashes.fetch(binary.fetch("path")) ==
