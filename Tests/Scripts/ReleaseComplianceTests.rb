@@ -1176,6 +1176,39 @@ class ReleaseComplianceTests < Minitest::Test
     assert_includes error.message, "Package.resolved external pins drifted"
   end
 
+  def test_rejects_package_resolved_version_drift
+    root = input_fixture
+    mutate_json(root.join("Package.resolved")) do |document|
+      pin = document.fetch("pins").find do |candidate|
+        candidate.fetch("identity") == "ish-arm64-pkg"
+      end
+      pin.fetch("state")["version"] = "0.4.0-abi.9"
+    end
+
+    error = assert_raises(PocketRootReleaseCompliance::ComplianceError) do
+      PocketRootReleaseCompliance.build_outputs(root)
+    end
+
+    assert_includes error.message, "Package.resolved external pins drifted"
+  end
+
+  def test_rejects_package_manifest_exact_version_drift
+    root = input_fixture
+    path = root.join("Package.swift")
+    path.binwrite(
+      path.binread.sub(
+        'exact: "0.4.0-abi.9.1"',
+        'exact: "0.4.0-abi.9"'
+      )
+    )
+
+    error = assert_raises(PocketRootReleaseCompliance::ComplianceError) do
+      PocketRootReleaseCompliance.build_outputs(root)
+    end
+
+    assert_includes error.message, "external dependency declarations"
+  end
+
   def test_rejects_package_resolved_origin_hash_drift
     root = input_fixture
     mutate_json(root.join("Package.resolved")) do |document|

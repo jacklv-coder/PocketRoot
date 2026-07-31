@@ -68,7 +68,9 @@ jobs:
       - name: Resolve exact Swift Package version externally
         env:
           RELEASE_TAG: ${{ inputs.tag }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           version="${RELEASE_TAG#v}"
           commit="$(git -C candidate rev-parse "$RELEASE_TAG^{commit}")"
+          ./trusted/Scripts/verify-immutable-upstream-releases.sh
           ./trusted/Scripts/verify-swiftpm-release-tag.sh "$version" "$commit"

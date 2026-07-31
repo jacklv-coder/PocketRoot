@@ -5,7 +5,7 @@
 本文是 PocketRoot 实验性 runtime 的不可变 revision、nested gitlink、制品 URL、大小和
 SHA-256 的唯一事实源。branch、moving tag、未验证 release alias 和本地缓存都不是有效 pin。
 
-审核日期：2026-07-30
+审核日期：2026-07-31
 
 ## 1. IshEmbed Swift Package
 
@@ -13,27 +13,31 @@ SHA-256 的唯一事实源。branch、moving tag、未验证 release alias 和�
 | --- | --- |
 | 仓库 | `https://github.com/jacklv-coder/ish-arm64-pkg.git` |
 | 完整 wrapper revision | `2419f736b271beb52a699b2f780027cf280472b8` |
-| Release | `v0.4.0-abi.9`（prerelease） |
+| SwiftPM package Release | `0.4.0-abi.9.1`（immutable prerelease） |
+| Binary asset Release | `v0.4.0-abi.9`（prerelease） |
 | Tag peeled commit | `2419f736b271beb52a699b2f780027cf280472b8` |
 | Swift product | `IshEmbed` |
 | Manifest platform | iOS 18.0 |
 | Native slices | iOS arm64 device、arm64 Simulator |
 | 系统链接依赖 | `sqlite3` |
 
-`Package.swift` 与 `Package.resolved` 都固定完整 revision：
+`Package.swift` 使用不可变的精确 SemVer，`Package.resolved` 同时记录其 peeled commit：
 
 ```swift
 .package(
     url: "https://github.com/jacklv-coder/ish-arm64-pkg.git",
-    revision: "2419f736b271beb52a699b2f780027cf280472b8"
+    exact: "0.4.0-abi.9.1"
 )
 ```
 
-消费 revision `2419f736b271beb52a699b2f780027cf280472b8` 就是 ABI.9 release
+精确版本 `0.4.0-abi.9.1` peel 到 revision
+`2419f736b271beb52a699b2f780027cf280472b8`，也就是 ABI.9 release
 commit。它包含 ABI.7 的原子 guest `RENAME_NOREPLACE` C/Swift API，并让有限 session
 的 stdin write/close 复用同一 SPAWN 绝对 deadline；`Package.swift` 以 URL/checksum
 固定由同一源码生成、公开且独立验证的 ABI.9 资产。Release tag peeled commit、Release target 与当前
-package revision 三者完全一致。包仓库继续使用绝对 SSH-over-443 submodule URL；
+package revision 三者完全一致。`0.4.0-abi.9.1` 是无附加资产的 GitHub immutable
+Release，锁定 package tag；原有 `v0.4.0-abi.9` 继续提供 checksum 固定的二进制和
+对应源码资产。包仓库继续使用绝对 SSH-over-443 submodule URL；
 无 SSH 私钥的 GitHub CI 只在 checkout 时应用公开 HTTPS 只读重写。
 
 ## 2. iSH source gitlink
@@ -83,14 +87,19 @@ XCFramework 只有 `ios-arm64` 和 `ios-arm64-simulator` 两个 arm64 slice，mi
 
 | 字段 | 审核值 |
 | --- | --- |
-| 仓库 | `https://github.com/migueldeicaza/SwiftTerm.git` |
+| SwiftPM 镜像仓库 | `https://github.com/jacklv-coder/SwiftTerm.git` |
+| 上游仓库 | `https://github.com/migueldeicaza/SwiftTerm.git` |
 | 完整 revision | `dd2fb8ac5b861e7bf617c872895e338f38165648` |
-| 对应 tag | `v1.15.0` |
+| 上游 tag | `v1.15.0` |
+| Immutable package Release | `1.15.0-pocketroot.1` |
 | Swift product | `SwiftTerm` |
 | 许可证 | MIT |
 | 许可证副本 | `ThirdPartyNotices/SwiftTerm-LICENSE.txt` |
 
-`PocketRootTerminal` 只在 iOS 链接该产品。SwiftTerm manifest 还解析
+PocketRoot fork 的 immutable Release 仅镜像上游 `v1.15.0` 的同一完整 commit，
+不附加二进制资产。发布门禁通过 GitHub API 检查两个 package Release 的
+`immutable` 状态，并从远端重新核对 tag peeled commit。`PocketRootTerminal` 只在
+iOS 链接该产品。SwiftTerm manifest 还解析
 `swift-argument-parser`，但 PocketRoot 使用的 library target 不依赖或链接它。
 
 ## 5. 单独固定的 Alpine RootFS

@@ -41,7 +41,9 @@ module PocketRootReleaseCompliance
   ISHEMBED = {
     "repository" => "https://github.com/jacklv-coder/ish-arm64-pkg.git",
     "revision" => "2419f736b271beb52a699b2f780027cf280472b8",
-    "release" => "v0.4.0-abi.9",
+    "packageVersion" => "0.4.0-abi.9.1",
+    "release" => "0.4.0-abi.9.1",
+    "assetRelease" => "v0.4.0-abi.9",
     "licenseDeclared" => "GPL-3.0-or-later",
     "xcframework" => {
       "filename" => "libIshKernel.xcframework.zip",
@@ -78,9 +80,10 @@ module PocketRootReleaseCompliance
     }
   }.freeze
   SWIFTTERM = {
-    "repository" => "https://github.com/migueldeicaza/SwiftTerm.git",
+    "repository" => "https://github.com/jacklv-coder/SwiftTerm.git",
     "revision" => "dd2fb8ac5b861e7bf617c872895e338f38165648",
-    "release" => "v1.15.0",
+    "packageVersion" => "1.15.0-pocketroot.1",
+    "release" => "1.15.0-pocketroot.1",
     "licenseDeclared" => "MIT",
     "noticePath" => "ThirdPartyNotices/SwiftTerm-LICENSE.txt",
     "noticeSha256" =>
@@ -258,9 +261,9 @@ module PocketRootReleaseCompliance
     "Compliance/Release/RELEASE-DECISIONS.json" =>
       "5dfed061b0def6cca5572becece0b4de1fc34af53c501c9c0e7b647f02e4cf7f",
     "Package.resolved" =>
-      "a6c4a28788ed9d4a22f021248cadfd83ad8a0584fc2dd198a6e1bf0434b79167",
+      "a121fd0f287bcb42e22d1860f915203447dd552fddc82461e9d385b957fb3718",
     "Package.swift" =>
-      "3c53631753e44d6de1d0cd04cb1c725a105e65b2ba332ec19465c34048d5f339",
+      "9ec4f31f7a91c5c001b6e5826c5ab2824e98c06eb61444027485a70f1efccfff",
     "Examples/PocketRootDemo/project.yml" =>
       "749cfea0c9a9e7cc4919d3dbee1c01720aa85d8f1b5fe4fc887b61d3a2d0f3fa",
     "Examples/PocketRootHostApp/project.yml" =>
@@ -668,7 +671,7 @@ module PocketRootReleaseCompliance
           /\A\s*url:\s*"#{Regexp.escape(expected.fetch("repository"))}"\s*,\s*/m
         ) &&
           body.match?(
-            /revision:\s*"#{Regexp.escape(expected.fetch("revision"))}"\s*\z/m
+            /exact:\s*"#{Regexp.escape(expected.fetch("packageVersion"))}"\s*\z/m
           )
       end
     unparsed_dependencies = dependency_source.dup
@@ -706,7 +709,10 @@ module PocketRootReleaseCompliance
         "identity" => "ish-arm64-pkg",
         "kind" => "remoteSourceControl",
         "location" => ISHEMBED.fetch("repository"),
-        "state" => {"revision" => ISHEMBED.fetch("revision")}
+        "state" => {
+          "revision" => ISHEMBED.fetch("revision"),
+          "version" => ISHEMBED.fetch("packageVersion")
+        }
       },
       {
         "identity" => "swift-argument-parser",
@@ -721,7 +727,10 @@ module PocketRootReleaseCompliance
         "identity" => "swiftterm",
         "kind" => "remoteSourceControl",
         "location" => SWIFTTERM.fetch("repository"),
-        "state" => {"revision" => SWIFTTERM.fetch("revision")}
+        "state" => {
+          "revision" => SWIFTTERM.fetch("revision"),
+          "version" => SWIFTTERM.fetch("packageVersion")
+        }
       }
     ]
     unless pins == expected_pins
@@ -2363,7 +2372,7 @@ module PocketRootReleaseCompliance
         name: "SwiftTerm",
         version: SWIFTTERM.fetch("release"),
         download:
-          "https://github.com/migueldeicaza/SwiftTerm/tree/" \
+          "https://github.com/jacklv-coder/SwiftTerm/tree/" \
           "#{SWIFTTERM.fetch("revision")}",
         license_declared: SWIFTTERM.fetch("licenseDeclared"),
         purpose: "LIBRARY",
@@ -2375,7 +2384,7 @@ module PocketRootReleaseCompliance
             "referenceCategory" => "PACKAGE-MANAGER",
             "referenceType" => "purl",
             "referenceLocator" =>
-              "pkg:github/migueldeicaza/SwiftTerm@" \
+              "pkg:github/jacklv-coder/SwiftTerm@" \
               "#{SWIFTTERM.fetch("revision")}"
           }
         ]
@@ -2406,7 +2415,7 @@ module PocketRootReleaseCompliance
       spdx_package(
         id: "SPDXRef-Package-IshKernel-XCFramework",
         name: "libIshKernel.xcframework",
-        version: ISHEMBED.fetch("release"),
+        version: ISHEMBED.fetch("assetRelease"),
         download: binary.fetch("url"),
         license_declared: "NOASSERTION",
         purpose: "FRAMEWORK",
@@ -2422,7 +2431,7 @@ module PocketRootReleaseCompliance
       spdx_package(
         id: "SPDXRef-Package-IshEmbed-Corresponding-Source",
         name: "IshEmbed corresponding source",
-        version: ISHEMBED.fetch("release"),
+        version: ISHEMBED.fetch("assetRelease"),
         download: corresponding_source.fetch("url"),
         license_declared: "NOASSERTION",
         purpose: "SOURCE",

@@ -47,14 +47,14 @@ sustained-load and jetsam behavior remain open.
 ```mermaid
 flowchart LR
     App["iOS App"] --> PR["PocketRoot<br/>Swift API, RootFS installation, integration"]
-    PR --> Pkg["ish-arm64-pkg revision<br/>pinned by Package.swift"]
+    PR --> Pkg["ish-arm64-pkg exact version<br/>pinned by Package.swift"]
     Pkg --> Native["iSH gitlink pinned<br/>by that revision"]
     Pkg --> XC["XCFramework pinned by that revision's<br/>binaryTarget URL/checksum"]
     XC --> PR
     RootFS["Reviewed RootFS<br/>local external asset"] --> PR
 
     PkgFix["ish-arm64-pkg<br/>reviewed maintenance"] --> NativeFork["jacklv-coder/ish-arm64<br/>native fork"]
-    PkgFix -. "effective after review and exact revision pin" .-> PR
+    PkgFix -. "effective after review and exact version pin" .-> PR
 ```
 
 The textual relationship is:
@@ -450,7 +450,8 @@ Start at `PocketRootIshSystemFactory`, then follow `PocketRootSystem`, `IshLinux
 
 ### Step five: understand the native supply chain
 
-1. Read the package revision pinned in PocketRoot's `Package.swift`.
+1. Read the exact package version in PocketRoot's `Package.swift` and the peeled
+   revision in `Package.resolved`.
 2. Read the `third_party/ish` gitlink in ish-arm64-pkg.
 3. Match it to the ish-arm64 commit.
 4. Inspect XCFramework checksum, slices, minimum OS, and licenses.

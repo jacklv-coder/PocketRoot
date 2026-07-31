@@ -25,7 +25,10 @@ Install with `brew install xcodegen` or run `./Scripts/bootstrap.sh`. Generate
 
 ## Dependency resolution
 
-Check network access to the exact package commit and parent release asset, unchanged `Package.resolved`, and the selected Xcode command-line tools. Run `swift package resolve` and regenerate. Never replace immutable inputs with moving tags or unrecorded binaries.
+Check network access to the exact package version/commit and parent release
+asset, unchanged `Package.resolved`, and the selected Xcode command-line tools.
+Run `swift package resolve` and regenerate. Never replace immutable inputs with
+branches, moving tags, revisions in a versioned release, or unrecorded binaries.
 
 ## IshEmbed unavailable or missing module
 

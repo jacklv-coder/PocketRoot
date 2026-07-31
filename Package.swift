@@ -47,11 +47,11 @@ let package = Package(
     dependencies: [
         .package(
             url: "https://github.com/jacklv-coder/ish-arm64-pkg.git",
-            revision: "2419f736b271beb52a699b2f780027cf280472b8"
+            exact: "0.4.0-abi.9.1"
         ),
         .package(
-            url: "https://github.com/migueldeicaza/SwiftTerm.git",
-            revision: "dd2fb8ac5b861e7bf617c872895e338f38165648"
+            url: "https://github.com/jacklv-coder/SwiftTerm.git",
+            exact: "1.15.0-pocketroot.1"
         )
     ],
     targets: [
