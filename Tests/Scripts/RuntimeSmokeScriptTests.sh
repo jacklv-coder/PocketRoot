@@ -90,6 +90,10 @@ fi
 if ! grep -Fq -- 'pocketroot-system-file-ui-fixture.txt' "$HOST_APP_SOURCE" \
   || ! grep -Fq -- 'testSystemFileImportAndShareExportRoundTrip' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'Save to Files' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'revealFileEntry' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- '"PocketRootFiles.list"' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'if element.isEnabled' "$HOST_UI_TESTS" \
+  || grep -Fq -- 'waitForHittable(imported)' "$HOST_UI_TESTS" \
   || ! grep -Fq -- '.matching(identifier: "ActivityListView")' "$HOST_UI_TESTS" \
   || grep -Fq -- 'app.otherElements["ActivityListView"]' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'LSSupportsOpeningDocumentsInPlace: true' "$HOST_PROJECT_SPEC" \

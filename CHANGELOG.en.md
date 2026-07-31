@@ -243,6 +243,10 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   `v0.1.0` source/Swift Package track is now Ready; Runtime, App, binary, and
   RootFS distribution remain fail-closed, and MIT does not relicense any
   third-party component or artifact.
+- Host App iPad file-import UI smoke now scrolls the target file row into the
+  List's valid visible frame before tapping or pressing it, avoiding false
+  Xcode 16 failures when `isHittable` computes an invalid activation point for
+  an offscreen SwiftUI row.
 - Host App iPad UI smoke now locates the system share sheet by accessibility
   identifier across element types, avoiding false XCTest failures when iOS 18
   exposes `ActivityListView` through a different automation type.

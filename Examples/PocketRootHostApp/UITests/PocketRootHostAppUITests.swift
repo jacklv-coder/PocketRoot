@@ -201,7 +201,7 @@ final class PocketRootHostAppUITests: XCTestCase {
             "PocketRootFiles.entry./root/\(Self.systemImportFixtureName)"
         ]
         XCTAssertTrue(imported.waitForExistence(timeout: 30))
-        guard waitForHittable(imported) else {
+        guard revealFileEntry(imported, in: app) else {
             return
         }
         flushGuestState(in: app)
@@ -210,10 +210,10 @@ final class PocketRootHostAppUITests: XCTestCase {
             "PocketRootFiles.entry./root/\(Self.systemImportFixtureName)"
         ]
         XCTAssertTrue(reopenedImport.waitForExistence(timeout: 30))
-        guard waitForHittable(reopenedImport) else {
+        guard revealFileEntry(reopenedImport, in: app) else {
             return
         }
-        reopenedImport.press(forDuration: 1)
+        pressCurrentFrame(of: reopenedImport, in: app)
         app.buttons["Share / Export"].tap()
 
         let saveToFiles = app.cells.matching(
@@ -256,10 +256,10 @@ final class PocketRootHostAppUITests: XCTestCase {
             "PocketRootFiles.entry./root/\(Self.systemImportFixtureName)"
         ]
         XCTAssertTrue(persistedImport.waitForExistence(timeout: 30))
-        guard waitForHittable(persistedImport) else {
+        guard revealFileEntry(persistedImport, in: app) else {
             return
         }
-        persistedImport.press(forDuration: 1)
+        pressCurrentFrame(of: persistedImport, in: app)
         app.buttons["Delete"].tap()
         confirmDeletion(of: Self.systemImportFixtureName, in: app)
         wait(
@@ -287,10 +287,10 @@ final class PocketRootHostAppUITests: XCTestCase {
             "PocketRootFiles.entry./root/\(Self.systemImportFixtureName)"
         ]
         XCTAssertTrue(reimported.waitForExistence(timeout: 30))
-        guard waitForHittable(reimported) else {
+        guard revealFileEntry(reimported, in: app) else {
             return
         }
-        reimported.tap()
+        tapCurrentFrame(of: reimported, in: app)
         let preview = app.staticTexts["PocketRootFiles.preview"]
         XCTAssertTrue(preview.waitForExistence(timeout: 30))
         XCTAssertEqual(preview.label, Self.systemFixtureContents)
@@ -644,10 +644,10 @@ final class PocketRootHostAppUITests: XCTestCase {
         guard file.waitForExistence(timeout: 3) else {
             return
         }
-        guard waitForHittable(file) else {
+        guard revealFileEntry(file, in: app) else {
             return
         }
-        file.press(forDuration: 1)
+        pressCurrentFrame(of: file, in: app)
         app.buttons["Delete"].tap()
         confirmDeletion(of: itemName, in: app)
         wait(
@@ -777,6 +777,22 @@ final class PocketRootHostAppUITests: XCTestCase {
                 )
             )
             .tap()
+    }
+
+    private func pressCurrentFrame(
+        of element: XCUIElement,
+        in app: XCUIApplication
+    ) {
+        let appFrame = app.frame
+        let elementFrame = element.frame
+        app.coordinate(withNormalizedOffset: .zero)
+            .withOffset(
+                CGVector(
+                    dx: elementFrame.midX - appFrame.minX,
+                    dy: elementFrame.midY - appFrame.minY
+                )
+            )
+            .press(forDuration: 1)
     }
 
     private func tapOutsideCurrentFrame(
@@ -946,6 +962,70 @@ final class PocketRootHostAppUITests: XCTestCase {
             failureDescription:
                 "element \(element.identifier) to become enabled"
         )
+    }
+
+    @discardableResult
+    private func revealFileEntry(
+        _ element: XCUIElement,
+        in app: XCUIApplication,
+        timeout: TimeInterval = 30
+    ) -> Bool {
+        let list = app.descendants(matching: .any)[
+            "PocketRootFiles.list"
+        ]
+        guard list.waitForExistence(timeout: 10) else {
+            XCTFail("file list to exist")
+            return false
+        }
+
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            let appFrame = app.frame
+            let listFrame = list.frame
+            let visibleFrame = appFrame.intersection(listFrame)
+            let elementFrame = element.frame
+            let hasVisibleCenter =
+                hasUsableFrame(elementFrame)
+                    && hasUsableFrame(visibleFrame)
+                    && visibleFrame.contains(
+                        CGPoint(x: elementFrame.midX, y: elementFrame.midY)
+                    )
+            if hasVisibleCenter {
+                if element.isEnabled {
+                    return true
+                }
+                RunLoop.current.run(
+                    until: Date().addingTimeInterval(0.2)
+                )
+                continue
+            }
+
+            if hasUsableFrame(elementFrame),
+               hasUsableFrame(visibleFrame),
+               elementFrame.midY < visibleFrame.minY
+            {
+                list.swipeDown()
+            } else {
+                list.swipeUp()
+            }
+            RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+        }
+
+        XCTFail(
+            "file entry \(element.identifier) to have a visible interaction frame"
+        )
+        return false
+    }
+
+    private func hasUsableFrame(_ frame: CGRect) -> Bool {
+        !frame.isNull
+            && !frame.isInfinite
+            && frame.minX.isFinite
+            && frame.minY.isFinite
+            && frame.maxX.isFinite
+            && frame.maxY.isFinite
+            && frame.width > 1
+            && frame.height > 1
     }
 
     @discardableResult
