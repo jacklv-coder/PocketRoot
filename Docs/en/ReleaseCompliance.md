@@ -13,6 +13,10 @@ RootFS inclusion in any Release/distributed bundle, unreviewed artifact
 mirroring, and claims of completed license/NOTICE/source/SBOM obligations
 remain blocked. A local Debug Demo may inject only the exact pinned external
 archive; this is engineering use, not distribution authorization.
+Original source copyrighted by PocketRoot contributors is authorized for
+release under the MIT License in the repository-root
+[`LICENSE`](../../LICENSE). Third-party components retain their respective
+licenses; see [`NOTICE.md`](../../NOTICE.md) for the scope boundary.
 
 ## v0.1.0 two-track release gates
 
@@ -26,18 +30,19 @@ The `v0.1.0` candidate is split into two independent tracks:
    RootFS asset. The RootFS remains a caller-obtained, caller-authorized local
    input.
 
-Both tracks are currently **Blocked**. The machine-readable state is
+The source and Swift Package track is currently **Ready**. The Runtime
+distribution track remains **Blocked**. The machine-readable state is
 [`READINESS.json`](../../Compliance/Release/experimental-v0.1.0/READINESS.json),
 the review entry is
 [`RELEASE-CHECKLIST.md`](../../Compliance/Release/experimental-v0.1.0/RELEASE-CHECKLIST.md),
-and the closed authorization source is
+and the code-reviewed authorization source is
 [`RELEASE-DECISIONS.json`](../../Compliance/Release/RELEASE-DECISIONS.json).
-Passing engineering tests does not grant distribution permission. A future
-Ready source track would not authorize runtime distribution, and even a future
+Passing engineering tests does not grant additional distribution permission.
+The Ready source track does not authorize runtime distribution, and even a future
 Ready runtime track would not authorize bundling or distributing the RootFS.
-The finalized PocketRoot top-level license is a prerequisite for both tracks;
-runtime third-party approvals cannot bypass permission to distribute
-PocketRoot itself.
+PocketRoot's top-level MIT License, contributor policy, and source-release
+notice are complete. They close only the source track and cannot bypass the
+Runtime's third-party, final-artifact, or distribution reviews.
 
 ```bash
 ruby Scripts/generate-release-compliance.rb --status
@@ -45,9 +50,11 @@ ruby Scripts/generate-release-compliance.rb --require-source-ready
 ruby Scripts/generate-release-compliance.rb --require-runtime-ready
 ```
 
-The last two commands return nonzero while their track remains blocked. The
-first project-owner decision is selecting PocketRoot's top-level SPDX license;
-automation neither chooses that license nor records authorization.
+The last two commands report their tracks independently:
+`--require-source-ready` currently succeeds, while
+`--require-runtime-ready` remains nonzero. The next Runtime engineering gate is
+to scan the exact final artifact, record its reviewed SHA-256, and provide
+content-based evidence that it contains no RootFS.
 
 `RELEASE-DECISIONS.json` is a code-reviewed authorization input, not an
 automatic authorization switch. Any nonempty license or approval decision must
@@ -232,9 +239,9 @@ The current code does not provide a complete product-level privacy policy.
 
 ### PocketRoot itself
 
-- [ ] Choose and commit a complete top-level license.
-- [ ] Define the contributor and copyright policy.
-- [ ] Generate a release notice.
+- [x] Choose and commit a complete top-level license (MIT).
+- [x] Define the contributor and copyright policy.
+- [x] Generate a release notice.
 - [ ] Declare public API stability and semantic-versioning policy.
 
 ### IshEmbed / iSH

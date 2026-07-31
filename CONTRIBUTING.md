@@ -4,6 +4,17 @@
 
 感谢参与 PocketRoot。项目当前处于实验性 runtime 阶段，普通代码质量、原生生命周期、供应链和中英文文档必须在同一个变更中保持一致。
 
+## 许可证与贡献
+
+PocketRoot 贡献者拥有版权的原创源码依据根目录 `LICENSE` 中的 MIT License
+提供。向本仓库提交 issue、patch 或 Pull Request 时，贡献者确认自己有权提交
+相关内容；除非另有书面约定，有意提交并被项目接收的原创代码与文档依据同一
+MIT License 提供。
+
+提交第三方或上游材料时，不得把它们重新标记为 MIT。必须保留原始版权与许可证，
+说明来源、版本、修改和分发影响，并按[上游依赖更新流程](Docs/UpstreamDependencies.md)
+补齐 NOTICE、源码对应关系和 SBOM 证据。
+
 ## 1. Git 与 GitHub
 
 代码 fetch/push 使用 SSH，不依赖 HTTPS OAuth token：

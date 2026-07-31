@@ -18,7 +18,9 @@ PocketRoot 的实验性 iSH runtime、XCFramework 和候选 RootFS 当前仅用�
 - 镜像未完成合规材料的 XCFramework 或 RootFS；
 - 宣称已经满足 GPL、NOTICE、对应源码或 SBOM 义务。
 
-默认 `PocketRoot` 产品不包含真实 iSH 或 RootFS，但 PocketRoot 自身首个公开 release 的许可证策略仍需正式确认。
+默认 `PocketRoot` 产品不包含真实 iSH 或 RootFS。PocketRoot 贡献者拥有版权的原创
+源码已经依据根目录 [`LICENSE`](../LICENSE) 中的 MIT License 获准发布；第三方
+组件仍适用各自许可证，范围说明见 [`NOTICE.md`](../NOTICE.md)。
 
 ## v0.1.0 双轨发布闸门
 
@@ -30,16 +32,17 @@ PocketRoot 的实验性 iSH runtime、XCFramework 和候选 RootFS 当前仅用�
    runtime 制品，但明确不包含任何 RootFS 资产；RootFS 仍只能由调用方在本地取得
    并自行确认授权。
 
-两条轨道当前均为 **Blocked**。机器可读状态见
+源码与 Swift Package 轨道当前为 **Ready**；Runtime 分发轨道仍为
+**Blocked**。机器可读状态见
 [`READINESS.json`](../Compliance/Release/experimental-v0.1.0/READINESS.json)，
 人工复核入口见
 [`RELEASE-CHECKLIST.md`](../Compliance/Release/experimental-v0.1.0/RELEASE-CHECKLIST.md)，
-未授权决定源见
+代码评审后的决定源见
 [`RELEASE-DECISIONS.json`](../Compliance/Release/RELEASE-DECISIONS.json)。
-工程测试通过不会授予分发权限；未来源码轨道变为 Ready，不会允许 runtime 分发；
+工程测试通过不会授予额外分发权限；源码轨道 Ready 不会允许 runtime 分发；
 即使 runtime 轨道未来变为 Ready，也不会允许打包或分发 RootFS。
-PocketRoot 顶层许可证是两条轨道的共同前置条件，不能只批准 runtime 的第三方材料
-而绕过 PocketRoot 自身的分发许可。
+PocketRoot 顶层 MIT License、贡献政策和源码发行 NOTICE 已完成；它们只关闭源码
+轨道，不能用来绕过 Runtime 的第三方材料、最终制品和分发复核。
 
 ```bash
 ruby Scripts/generate-release-compliance.rb --status
@@ -47,8 +50,9 @@ ruby Scripts/generate-release-compliance.rb --require-source-ready
 ruby Scripts/generate-release-compliance.rb --require-runtime-ready
 ```
 
-后两个命令在对应轨道仍有阻塞项时返回非零。当前第一项需要项目所有者作出的决定是
-选择 PocketRoot 顶层 SPDX 许可证；自动化不会代替所有者选择许可证或记录授权。
+后两个命令分别反映各自轨道：`--require-source-ready` 当前返回成功，
+`--require-runtime-ready` 仍返回非零。下一项 Runtime 工程门禁是扫描精确的最终
+制品、记录人工复核的 SHA-256，并以内容级证据确认制品不包含 RootFS。
 
 `RELEASE-DECISIONS.json` 是受代码评审的授权输入，不是自动授权开关。任何非空许可
 证或批准项都必须同时记录非空 `approvedBy`、UTC RFC 3339 `approvedAt` 和说明；
@@ -256,9 +260,9 @@ Alpine `apk` 可以下载、安装和执行新增代码。即使初始 RootFS �
 
 ### PocketRoot 自身
 
-- [ ] 选择并提交完整顶层许可证。
-- [ ] 明确贡献者和版权政策。
-- [ ] 生成 release notice。
+- [x] 选择并提交完整顶层许可证（MIT）。
+- [x] 明确贡献者和版权政策。
+- [x] 生成 release notice。
 - [ ] 标记 public API stability 和 semantic version。
 
 ### IshEmbed / iSH

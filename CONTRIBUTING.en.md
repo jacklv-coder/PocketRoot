@@ -4,6 +4,21 @@
 
 PocketRoot is in an Experimental runtime phase. Code quality, native lifecycle, supply-chain records, and both documentation languages must move together.
 
+## License and contributions
+
+Original source code copyrighted by PocketRoot contributors is provided under
+the MIT License in the repository-root `LICENSE`. By submitting an issue,
+patch, or pull request, a contributor represents that they have the right to
+submit the material. Unless separately agreed in writing, original code and
+documentation intentionally submitted and accepted by the project are
+provided under the same MIT License.
+
+Do not re-label third-party or upstream material as MIT. Preserve its original
+copyright and license notices, disclose provenance, version, modifications,
+and distribution impact, and follow the
+[upstream dependency procedure](Docs/en/UpstreamDependencies.md) for NOTICE,
+source-correspondence, and SBOM evidence.
+
 ## Git and GitHub
 
 Use SSH for fetch and push:
