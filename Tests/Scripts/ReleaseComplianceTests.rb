@@ -11,6 +11,9 @@ class ReleaseComplianceTests < Minitest::Test
   REPOSITORY_ROOT = Pathname(__dir__).join("../..").realpath
   INPUT_PATHS = [
     "LICENSE",
+    "NOTICE.md",
+    "CONTRIBUTING.md",
+    "CONTRIBUTING.en.md",
     "Compliance/SPDX/LICENSE-LIST-3.28.0.json",
     "Compliance/Release/RELEASE-DECISIONS.json",
     "Package.resolved",
@@ -103,6 +106,16 @@ class ReleaseComplianceTests < Minitest::Test
       outputs.keys.sort
     )
     assert_equal 24, sbom.fetch("packages").length
+    pocketroot_package = sbom.fetch("packages").find do |package|
+      package.fetch("SPDXID") == "SPDXRef-Package-PocketRoot"
+    end
+    assert_equal "MIT", pocketroot_package.fetch("licenseDeclared")
+    %w[LICENSE NOTICE.md CONTRIBUTING.md CONTRIBUTING.en.md].each do |path|
+      assert_match(
+        /\A[0-9a-f]{64}\z/,
+        composition.fetch("repositoryEvidence").fetch(path)
+      )
+    end
     assert_equal(
       "dd2fb8ac5b861e7bf617c872895e338f38165648",
       composition.dig("externalComponents", "swiftTerm", "revision")
@@ -129,7 +142,7 @@ class ReleaseComplianceTests < Minitest::Test
     refute composition.dig("coverage", "distributionAuthorized")
     assert_equal "blocked", readiness.fetch("overallStatus")
     assert_equal(
-      "select-top-level-license",
+      "rootfs-external-input-boundary",
       readiness.dig("nextRequiredDecision", "id")
     )
   end
@@ -140,15 +153,15 @@ class ReleaseComplianceTests < Minitest::Test
     source = readiness.dig("tracks", "sourcePackageRelease")
     runtime = readiness.dig("tracks", "runtimeDistribution")
 
-    assert_equal "blocked", source.fetch("status")
+    assert_equal "ready", source.fetch("status")
     assert_equal "blocked", runtime.fetch("status")
     assert_includes runtime.fetch("scope"), "excludes every RootFS asset"
     assert_equal(
-      [true, true, false, false, false, false],
+      [true, true, true, true, true, true],
       source.fetch("gates").map { |gate| gate.fetch("satisfied") }
     )
     assert_equal(
-      [false, false, false, false, false, false, false, false, false],
+      [true, false, false, false, false, false, false, false, false],
       runtime.fetch("gates").map { |gate| gate.fetch("satisfied") }
     )
     assert_includes(
@@ -156,8 +169,7 @@ class ReleaseComplianceTests < Minitest::Test
       "source track would not authorize runtime"
     )
     assert_equal(
-      source.fetch("gates").drop(2).map { |gate| gate.fetch("id") } +
-        runtime.fetch("gates").map { |gate| gate.fetch("id") },
+      runtime.fetch("gates").drop(1).map { |gate| gate.fetch("id") },
       readiness.fetch("blockedGateIds")
     )
   end
@@ -187,7 +199,7 @@ class ReleaseComplianceTests < Minitest::Test
     ].each do |key|
       composition.fetch("coverage")[key] = true
     end
-    decisions["status"] = "runtime-distribution-authorized"
+    decisions["status"] = "source-and-runtime-distribution-authorized"
     decisions.fetch("sourceRelease")["topLevelLicenseSpdx"] = "MIT"
     runtime_decisions = decisions.fetch("runtimeDistribution")
     runtime_decisions["finalArtifactSha256"] =
@@ -541,6 +553,7 @@ class ReleaseComplianceTests < Minitest::Test
     (runtime_ready_coverage - ["topLevelLicenseFinalized"]).each do |key|
       composition.fetch("coverage")[key] = true
     end
+    composition.fetch("coverage")["topLevelLicenseFinalized"] = false
 
     readiness =
       PocketRootReleaseCompliance.readiness(
@@ -609,7 +622,7 @@ class ReleaseComplianceTests < Minitest::Test
       "Runtime / App / binary distribution (RootFS excluded"
     assert_includes checklist, "--require-source-ready"
     assert_includes checklist, "--require-runtime-ready"
-    assert_includes checklist, "生成器不会替项目所有者选择许可证"
+    assert_includes checklist, "项目所有者确定为 MIT"
   end
 
   def test_release_checklist_reports_independent_track_statuses
@@ -695,7 +708,7 @@ class ReleaseComplianceTests < Minitest::Test
           .join("Compliance/Release/RELEASE-DECISIONS.json")
           .binread
       )
-    decisions["status"] = "runtime-distribution-authorized"
+    decisions["status"] = "source-and-runtime-distribution-authorized"
     decisions.fetch("sourceRelease")["topLevelLicenseSpdx"] = "MIT"
     runtime = decisions.fetch("runtimeDistribution")
     runtime["finalArtifactSha256"] = "a" * 64
@@ -816,26 +829,26 @@ class ReleaseComplianceTests < Minitest::Test
     )
   end
 
-  def test_readiness_cli_reports_status_and_blocks_both_release_tracks
+  def test_readiness_cli_reports_source_ready_and_runtime_blocked
     status_output, status_error =
       capture_io do
         assert_equal 0, PocketRootReleaseCompliance.execute(["--status"])
       end
     assert_empty status_error
     assert_includes status_output, "release readiness: BLOCKED"
-    assert_includes status_output, "sourcePackageRelease: BLOCKED"
+    assert_includes status_output, "sourcePackageRelease: READY"
     assert_includes status_output, "runtimeDistribution: BLOCKED"
 
     source_output, source_error =
       capture_io do
         assert_equal(
-          2,
+          0,
           PocketRootReleaseCompliance.execute(["--require-source-ready"])
         )
       end
-    assert_empty source_output
-    assert_includes source_error, "sourcePackageRelease is BLOCKED"
-    assert_includes source_error, "top-level-license-finalized"
+    assert_includes source_output,
+      "Source and Swift Package release track is READY."
+    assert_empty source_error
 
     runtime_output, runtime_error =
       capture_io do
@@ -1448,7 +1461,33 @@ class ReleaseComplianceTests < Minitest::Test
       PocketRootReleaseCompliance.build_outputs(root)
     end
 
-    assert_includes error.message, "unfinalized-license gate"
+    assert_includes error.message, "approved MIT license"
+  end
+
+  def test_rejects_source_notice_and_contributor_policy_drift
+    [
+      [
+        "NOTICE.md",
+        "does not cover or relicense third-party components",
+        "silently relicenses third-party components"
+      ],
+      [
+        "CONTRIBUTING.en.md",
+        "provided under the same MIT License",
+        "provided under an unspecified license"
+      ]
+    ].each_with_index do |(relative, expected, replacement), index|
+      root = input_fixture("source-policy-#{index}")
+      path = root.join(relative)
+      path.binwrite(path.binread.sub(expected, replacement))
+
+      error = assert_raises(PocketRootReleaseCompliance::ComplianceError) do
+        PocketRootReleaseCompliance.build_outputs(root)
+      end
+
+      assert_includes error.message,
+        "source release notice or contributor policy drifted"
+    end
   end
 
   def test_rejects_rootfs_distribution_approval_drift
@@ -1676,7 +1715,7 @@ class ReleaseComplianceTests < Minitest::Test
           .join("Compliance/Release/RELEASE-DECISIONS.json")
           .binread
       )
-    decisions["status"] = "runtime-distribution-authorized"
+    decisions["status"] = "source-and-runtime-distribution-authorized"
     decisions.fetch("sourceRelease")["topLevelLicenseSpdx"] = "MIT"
     runtime = decisions.fetch("runtimeDistribution")
     runtime["finalArtifactSha256"] = artifact_sha256

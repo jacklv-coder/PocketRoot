@@ -4,23 +4,24 @@
 
 本清单把“源码/Swift Package 发布”和“不包含任何 RootFS 资产的
 runtime、App 或二进制 SDK 分发”分为两条独立轨道。工程测试通过不等于获得
-分发授权；源码轨道未来变为 Ready 也不会自动解除 runtime 轨道。
+额外分发授权；源码轨道 Ready 不会自动解除 runtime 轨道。
 
-## 源码与 Swift Package 发布（Blocked / 未就绪）
+## 源码与 Swift Package 发布（Ready / 已就绪）
 
 - [x] `source-boundary-excludes-rootfs` — 源码发布不包含 RootFS 载荷
 - [x] `public-api-status-declared` — 公共 API 状态已声明为 Experimental
-- [ ] `top-level-license-finalized` — PocketRoot 顶层许可证已确定
-- [ ] `contributor-policy-approved` — 贡献者与版权政策已批准
-- [ ] `release-notice-approved` — 源码发行 NOTICE 已批准
-- [ ] `source-release-authorized` — PocketRoot 源码发布已明确授权
+- [x] `top-level-license-finalized` — PocketRoot 顶层许可证已确定
+- [x] `contributor-policy-approved` — 贡献者与版权政策已批准
+- [x] `release-notice-approved` — 源码发行 NOTICE 已批准
+- [x] `source-release-authorized` — PocketRoot 源码发布已明确授权
 
-第一项需要项目所有者明确选择 SPDX 许可证并替换当前不授予复制、修改或分发
-权限的 `LICENSE`。生成器不会替项目所有者选择许可证。
+PocketRoot 原创源码的顶层许可证已由项目所有者确定为 MIT；贡献政策与
+`NOTICE.md` 同步生效。源码轨道 Ready 不授权 Runtime、RootFS、App 或二进制
+分发。
 
 ## Runtime / App / 二进制分发（不含 RootFS，Blocked / 未就绪）
 
-- [ ] `runtime-top-level-license-finalized` — Runtime 分发使用的 PocketRoot 顶层许可证已确定
+- [x] `runtime-top-level-license-finalized` — Runtime 分发使用的 PocketRoot 顶层许可证已确定
 - [ ] `rootfs-external-input-boundary` — RootFS 保持为调用方提供的本地输入
 - [ ] `release-artifact-built-and-scanned` — 最终签名导出制品已构建并扫描
 - [ ] `complete-license-notice-bundle-approved` — 完整 LICENSE 与 NOTICE 交付包已批准
@@ -50,7 +51,8 @@ ruby Scripts/generate-release-compliance.rb --require-source-ready
 ruby Scripts/generate-release-compliance.rb --require-runtime-ready
 ```
 
-后两个命令在对应轨道仍被阻塞时故意返回非零状态。
+两个 `--require-*-ready` 命令分别反映各自轨道；源码轨道当前返回成功，
+Runtime 轨道仍故意返回非零状态。
 
 ## English
 
@@ -58,24 +60,25 @@ Current status: **Blocked / not releasable**.
 
 This checklist separates a source/Swift Package release from runtime,
 App, archive, or binary SDK distribution that excludes every RootFS asset.
-Passing engineering tests is not distribution authorization, and a future
-Ready source track would not unblock the runtime track.
+Passing engineering tests is not additional distribution authorization,
+and the Ready source track does not unblock the runtime track.
 
-### Source and Swift Package release (Blocked)
+### Source and Swift Package release (Ready)
 
 - [x] `source-boundary-excludes-rootfs` — Source release excludes the RootFS payload
 - [x] `public-api-status-declared` — Public API status is declared experimental
-- [ ] `top-level-license-finalized` — Top-level PocketRoot license is finalized
-- [ ] `contributor-policy-approved` — Contributor and copyright policy is approved
-- [ ] `release-notice-approved` — Source-release notice is approved
-- [ ] `source-release-authorized` — PocketRoot source release is explicitly authorized
+- [x] `top-level-license-finalized` — Top-level PocketRoot license is finalized
+- [x] `contributor-policy-approved` — Contributor and copyright policy is approved
+- [x] `release-notice-approved` — Source-release notice is approved
+- [x] `source-release-authorized` — PocketRoot source release is explicitly authorized
 
-The project owner must select an SPDX license and replace the current
-no-permission `LICENSE`. The generator will not choose a license.
+The project owner selected MIT for original PocketRoot source. The
+contributor policy and `NOTICE.md` apply with it. A Ready source track
+does not authorize Runtime, RootFS, App, or binary distribution.
 
 ### Runtime / App / binary distribution (RootFS excluded, Blocked)
 
-- [ ] `runtime-top-level-license-finalized` — Top-level PocketRoot license is finalized for runtime distribution
+- [x] `runtime-top-level-license-finalized` — Top-level PocketRoot license is finalized for runtime distribution
 - [ ] `rootfs-external-input-boundary` — RootFS remains a caller-provided local input
 - [ ] `release-artifact-built-and-scanned` — Final signed and exported artifact is built and scanned
 - [ ] `complete-license-notice-bundle-approved` — Complete LICENSE and NOTICE bundle is approved

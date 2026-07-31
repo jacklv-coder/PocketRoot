@@ -3,7 +3,7 @@
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "PocketRoot experimental full-graph composition 0.1.0",
-  "documentNamespace": "https://github.com/jacklv-coder/PocketRoot/sbom/release/experimental-v0.1.0/817c2e658e2cc63da46124f0625953917858ffbf0fa4ea9eb423526183fa4744",
+  "documentNamespace": "https://github.com/jacklv-coder/PocketRoot/sbom/release/experimental-v0.1.0/b6567a7690a8d9bdd59c3cd938c0cb2709c0c07e9085f1af3ed30701abc0db47",
   "creationInfo": {
     "created": "2026-07-28T00:00:00Z",
     "creators": [
@@ -22,11 +22,11 @@
       "downloadLocation": "NOASSERTION",
       "filesAnalyzed": false,
       "licenseConcluded": "NOASSERTION",
-      "licenseDeclared": "NOASSERTION",
+      "licenseDeclared": "MIT",
       "copyrightText": "NOASSERTION",
       "primaryPackagePurpose": "LIBRARY",
-      "sourceInfo": "Current repository source composition; no release commit or distribution artifact is asserted.",
-      "licenseComments": "The checked-in PocketRoot licensing notice states that the top-level license is not finalized and grants no permission."
+      "sourceInfo": "Original PocketRoot source and Swift Package metadata are authorized for source release under MIT. No Runtime, RootFS, App, archive, IPA, or binary distribution is asserted.",
+      "licenseComments": "The top-level MIT license covers original PocketRoot source only. Third-party components retain their respective upstream licenses."
     },
     {
       "SPDXID": "SPDXRef-Package-IshEmbed",

@@ -191,6 +191,9 @@ PocketRoot 的重要变化记录在这里。首个公开版本发布后遵循 Se
 
 ### Changed
 
+- PocketRoot 原创源码的顶层许可证确定为 MIT，并加入双语 `NOTICE.md` 与 MIT 入站
+  贡献政策；`v0.1.0` 源码/Swift Package 轨道变为 Ready。Runtime、App、二进制和
+  RootFS 分发轨道继续 fail-closed，MIT 不重新许可任何第三方组件或制品。
 - Host App iPad UI smoke 通过跨元素类型的 accessibility identifier 定位系统分享面板，
   避免 iOS 18 将 `ActivityListView` 暴露为不同自动化类型时出现 XCTest 假失败。
 - 将完整 Demo 与专属测试、XcodeGen 配置整理到自包含的

@@ -238,6 +238,11 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 
 ### Changed
 
+- Finalized MIT as the top-level license for original PocketRoot source and
+  added a bilingual `NOTICE.md` plus an MIT inbound-contribution policy. The
+  `v0.1.0` source/Swift Package track is now Ready; Runtime, App, binary, and
+  RootFS distribution remain fail-closed, and MIT does not relicense any
+  third-party component or artifact.
 - Host App iPad UI smoke now locates the system share sheet by accessibility
   identifier across element types, avoiding false XCTest failures when iOS 18
   exposes `ActivityListView` through a different automation type.

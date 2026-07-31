@@ -7,7 +7,7 @@
   "tracks": {
     "sourcePackageRelease": {
       "scope": "PocketRoot source and Swift Package metadata only; no RootFS, XCFramework mirror, App, archive, IPA, or binary SDK asset.",
-      "status": "blocked",
+      "status": "ready",
       "gates": [
         {
           "id": "source-boundary-excludes-rootfs",
@@ -31,7 +31,7 @@
           "id": "top-level-license-finalized",
           "title": "Top-level PocketRoot license is finalized",
           "titleZh": "PocketRoot 顶层许可证已确定",
-          "satisfied": false,
+          "satisfied": true,
           "evidence": "LICENSE and Compliance/Release/RELEASE-DECISIONS.json",
           "owner": "project-owner",
           "requiredAction": "Select an SPDX license and replace the current no-permission placeholder with its complete terms."
@@ -40,7 +40,7 @@
           "id": "contributor-policy-approved",
           "title": "Contributor and copyright policy is approved",
           "titleZh": "贡献者与版权政策已批准",
-          "satisfied": false,
+          "satisfied": true,
           "evidence": "Compliance/Release/RELEASE-DECISIONS.json",
           "owner": "project-owner",
           "requiredAction": "Record the contributor, copyright, and inbound-license policy."
@@ -49,7 +49,7 @@
           "id": "release-notice-approved",
           "title": "Source-release notice is approved",
           "titleZh": "源码发行 NOTICE 已批准",
-          "satisfied": false,
+          "satisfied": true,
           "evidence": "Compliance/Release/RELEASE-DECISIONS.json",
           "owner": "project-owner",
           "requiredAction": "Approve the release notice covering PocketRoot and referenced third-party source dependencies."
@@ -58,7 +58,7 @@
           "id": "source-release-authorized",
           "title": "PocketRoot source release is explicitly authorized",
           "titleZh": "PocketRoot 源码发布已明确授权",
-          "satisfied": false,
+          "satisfied": true,
           "evidence": "Compliance/Release/RELEASE-DECISIONS.json",
           "owner": "project-owner",
           "requiredAction": "Record the approving owner and date after every source-release gate is satisfied."
@@ -73,7 +73,7 @@
           "id": "runtime-top-level-license-finalized",
           "title": "Top-level PocketRoot license is finalized for runtime distribution",
           "titleZh": "Runtime 分发使用的 PocketRoot 顶层许可证已确定",
-          "satisfied": false,
+          "satisfied": true,
           "evidence": "LICENSE and Compliance/Release/RELEASE-DECISIONS.json",
           "owner": "project-owner",
           "requiredAction": "Select an SPDX license and replace the current no-permission placeholder before distributing any runtime binary or App."
@@ -154,11 +154,6 @@
     }
   },
   "blockedGateIds": [
-    "top-level-license-finalized",
-    "contributor-policy-approved",
-    "release-notice-approved",
-    "source-release-authorized",
-    "runtime-top-level-license-finalized",
     "rootfs-external-input-boundary",
     "release-artifact-built-and-scanned",
     "complete-license-notice-bundle-approved",
@@ -169,9 +164,9 @@
     "runtime-distribution-authorized"
   ],
   "nextRequiredDecision": {
-    "id": "select-top-level-license",
-    "owner": "project-owner",
-    "reason": "Select an SPDX license and replace the current no-permission placeholder with its complete terms."
+    "id": "rootfs-external-input-boundary",
+    "owner": "engineering",
+    "reason": "Scan the exact final artifact, record its reviewed SHA-256, and verify its inventory contains no RootFS payload."
   },
   "warning": "Engineering validation is not distribution authorization. A ready source track would not authorize runtime, RootFS, App, or binary distribution."
 }
