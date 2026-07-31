@@ -10,6 +10,8 @@
   },
   "repositoryEvidence": {
     "LICENSE": "9858dd8b44db130c423cb772ec04d1a16fceb4fa57c679b27e301b9f76861bba",
+    "Compliance/SPDX/LICENSE-LIST-3.28.0.json": "7376db20698ff21511fe802aded9b5d7145520a86133b74f68b0c1568dd6dd1c",
+    "Compliance/Release/RELEASE-DECISIONS.json": "ed53fd31728b7679bd5a46b54e5521b2390ea601f202d529d60888641f8081c7",
     "Package.resolved": "a6c4a28788ed9d4a22f021248cadfd83ad8a0584fc2dd198a6e1bf0434b79167",
     "Package.swift": "3c53631753e44d6de1d0cd04cb1c725a105e65b2ba332ec19465c34048d5f339",
     "Examples/PocketRootDemo/project.yml": "749cfea0c9a9e7cc4919d3dbee1c01720aa85d8f1b5fe4fc887b61d3a2d0f3fa",

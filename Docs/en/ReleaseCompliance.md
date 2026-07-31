@@ -14,6 +14,48 @@ mirroring, and claims of completed license/NOTICE/source/SBOM obligations
 remain blocked. A local Debug Demo may inject only the exact pinned external
 archive; this is engineering use, not distribution authorization.
 
+## v0.1.0 two-track release gates
+
+The `v0.1.0` candidate is split into two independent tracks:
+
+1. **Source and Swift Package release** includes only PocketRoot source and
+   Swift Package metadata, with no RootFS, App, IPA, mirrored XCFramework, or
+   binary SDK.
+2. **Runtime distribution** covers Apps, TestFlight/App Store, binary SDKs,
+   RootFS assets, and other redistributed runtime artifacts.
+
+Both tracks are currently **Blocked**. The machine-readable state is
+[`READINESS.json`](../../Compliance/Release/experimental-v0.1.0/READINESS.json),
+the review entry is
+[`RELEASE-CHECKLIST.md`](../../Compliance/Release/experimental-v0.1.0/RELEASE-CHECKLIST.md),
+and the closed authorization source is
+[`RELEASE-DECISIONS.json`](../../Compliance/Release/RELEASE-DECISIONS.json).
+Passing engineering tests does not grant distribution permission. A future
+Ready source track would not authorize bundling or distributing the
+RootFS/runtime.
+
+```bash
+ruby Scripts/generate-release-compliance.rb --status
+ruby Scripts/generate-release-compliance.rb --require-source-ready
+ruby Scripts/generate-release-compliance.rb --require-runtime-ready
+```
+
+The last two commands return nonzero while their track remains blocked. The
+first project-owner decision is selecting PocketRoot's top-level SPDX license;
+automation neither chooses that license nor records authorization.
+
+`RELEASE-DECISIONS.json` is a code-reviewed authorization input, not an
+automatic authorization switch. Any nonempty license or approval decision must
+also record a nonempty `approvedBy`, a UTC RFC 3339 `approvedAt`, and notes.
+Final source authorization requires approved license, contributor, and release
+notice decisions; final runtime authorization additionally requires approved
+LICENSE/NOTICE, corresponding-source, App Store, privacy, and legal reviews.
+`topLevelLicenseSpdx` must be a valid ID from the
+[repository-pinned official SPDX License List 3.28.0](../../Compliance/SPDX/LICENSE-LIST-3.28.0.json),
+or an expression composed from those IDs, exceptions, `AND`, `OR`, `WITH`, and
+parentheses. The generator validates those invariants but never fills in a
+decision.
+
 ## Distribution composition
 
 A native-enabled app may contain PocketRoot source, ish-arm64-pkg source, a

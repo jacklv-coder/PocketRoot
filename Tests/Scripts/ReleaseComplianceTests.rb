@@ -11,6 +11,8 @@ class ReleaseComplianceTests < Minitest::Test
   REPOSITORY_ROOT = Pathname(__dir__).join("../..").realpath
   INPUT_PATHS = [
     "LICENSE",
+    "Compliance/SPDX/LICENSE-LIST-3.28.0.json",
+    "Compliance/Release/RELEASE-DECISIONS.json",
     "Package.resolved",
     "Package.swift",
     "Examples/PocketRootDemo/project.yml",
@@ -92,8 +94,13 @@ class ReleaseComplianceTests < Minitest::Test
   def test_full_graph_has_exact_packages_relationships_and_closed_gates
     outputs = PocketRootReleaseCompliance.build_outputs
     composition = JSON.parse(outputs.fetch("COMPOSITION.json"))
+    readiness = JSON.parse(outputs.fetch("READINESS.json"))
     sbom = JSON.parse(outputs.fetch("SBOM.spdx.json"))
 
+    assert_equal(
+      PocketRootReleaseCompliance::OUTPUT_FILENAMES.sort,
+      outputs.keys.sort
+    )
     assert_equal 24, sbom.fetch("packages").length
     assert_equal(
       "dd2fb8ac5b861e7bf617c872895e338f38165648",
@@ -119,6 +126,275 @@ class ReleaseComplianceTests < Minitest::Test
     assert composition.dig("coverage", "releaseCompositionSBOMGenerated")
     refute composition.dig("coverage", "completeReleaseArtifactSBOM")
     refute composition.dig("coverage", "distributionAuthorized")
+    assert_equal "blocked", readiness.fetch("overallStatus")
+    assert_equal(
+      "select-top-level-license",
+      readiness.dig("nextRequiredDecision", "id")
+    )
+  end
+
+  def test_release_readiness_has_independent_fail_closed_tracks
+    outputs = PocketRootReleaseCompliance.build_outputs
+    readiness = JSON.parse(outputs.fetch("READINESS.json"))
+    source = readiness.dig("tracks", "sourcePackageRelease")
+    runtime = readiness.dig("tracks", "runtimeDistribution")
+
+    assert_equal "blocked", source.fetch("status")
+    assert_equal "blocked", runtime.fetch("status")
+    assert_equal(
+      [true, true, false, false, false, false],
+      source.fetch("gates").map { |gate| gate.fetch("satisfied") }
+    )
+    assert_equal(
+      [true, false, false, false, false, false, false, false],
+      runtime.fetch("gates").map { |gate| gate.fetch("satisfied") }
+    )
+    assert_includes(
+      readiness.fetch("warning"),
+      "source track would not authorize runtime"
+    )
+    assert_equal(
+      source.fetch("gates").drop(2).map { |gate| gate.fetch("id") } +
+        runtime.fetch("gates").drop(1).map { |gate| gate.fetch("id") },
+      readiness.fetch("blockedGateIds")
+    )
+  end
+
+  def test_readiness_validator_allows_source_track_to_become_ready_independently
+    outputs = PocketRootReleaseCompliance.build_outputs
+    composition = JSON.parse(outputs.fetch("COMPOSITION.json"))
+    decisions =
+      JSON.parse(
+        REPOSITORY_ROOT
+          .join("Compliance/Release/RELEASE-DECISIONS.json")
+          .binread
+      )
+    composition.fetch("coverage")["topLevelLicenseFinalized"] = true
+    source_decisions = decisions.fetch("sourceRelease")
+    source_decisions["topLevelLicenseSpdx"] = "MIT"
+    source_decisions["contributorPolicyApproved"] = true
+    source_decisions["releaseNoticeApproved"] = true
+    source_decisions["sourceReleaseAuthorized"] = true
+
+    readiness =
+      PocketRootReleaseCompliance.readiness(
+        composition,
+        {release_decisions: decisions}
+      )
+
+    assert PocketRootReleaseCompliance.validate_readiness(readiness)
+    assert_equal(
+      "ready",
+      readiness.dig("tracks", "sourcePackageRelease", "status")
+    )
+    assert_equal(
+      "blocked",
+      readiness.dig("tracks", "runtimeDistribution", "status")
+    )
+    assert_equal "blocked", readiness.fetch("overallStatus")
+    assert_equal(
+      "release-artifact-built-and-scanned",
+      readiness.dig("nextRequiredDecision", "id")
+    )
+    assert PocketRootReleaseCompliance.require_ready_track(
+      readiness,
+      "sourcePackageRelease"
+    )
+  end
+
+  def test_release_checklist_documents_both_tracks_and_enforcement_commands
+    checklist =
+      PocketRootReleaseCompliance.build_outputs.fetch("RELEASE-CHECKLIST.md")
+
+    assert_includes checklist, "源码与 Swift Package 发布"
+    assert_includes checklist, "Runtime / RootFS / App / 二进制分发"
+    assert_includes checklist, "Source and Swift Package release"
+    assert_includes checklist, "Runtime / RootFS / App / binary distribution"
+    assert_includes checklist, "--require-source-ready"
+    assert_includes checklist, "--require-runtime-ready"
+    assert_includes checklist, "生成器不会替项目所有者选择许可证"
+  end
+
+  def test_release_checklist_reports_independent_track_statuses
+    outputs = PocketRootReleaseCompliance.build_outputs
+    composition = JSON.parse(outputs.fetch("COMPOSITION.json"))
+    decisions =
+      JSON.parse(
+        REPOSITORY_ROOT
+          .join("Compliance/Release/RELEASE-DECISIONS.json")
+          .binread
+      )
+    composition.fetch("coverage")["topLevelLicenseFinalized"] = true
+    source = decisions.fetch("sourceRelease")
+    source["topLevelLicenseSpdx"] = "MIT"
+    source["contributorPolicyApproved"] = true
+    source["releaseNoticeApproved"] = true
+    source["sourceReleaseAuthorized"] = true
+    readiness =
+      PocketRootReleaseCompliance.readiness(
+        composition,
+        {release_decisions: decisions}
+      )
+
+    checklist = PocketRootReleaseCompliance.release_checklist(readiness)
+
+    assert_includes checklist, "当前状态：**Blocked / 不可发布**"
+    assert_includes checklist,
+      "源码与 Swift Package 发布（Ready / 已就绪）"
+    assert_includes checklist,
+      "Runtime / RootFS / App / 二进制分发（Blocked / 未就绪）"
+    assert_includes checklist, "Source and Swift Package release (Ready)"
+    assert_includes checklist,
+      "Runtime / RootFS / App / binary distribution (Blocked)"
+  end
+
+  def test_release_decisions_reject_unreviewed_authorization
+    decisions =
+      JSON.parse(
+        REPOSITORY_ROOT
+          .join("Compliance/Release/RELEASE-DECISIONS.json")
+          .binread
+      )
+    decisions.fetch("runtimeDistribution")["distributionAuthorized"] = true
+
+    error = assert_raises(PocketRootReleaseCompliance::ComplianceError) do
+      PocketRootReleaseCompliance.validate_release_decisions(
+        decisions,
+        spdx_license_list
+      )
+    end
+
+    assert_includes error.message, "fail-closed invariants"
+  end
+
+  def test_release_decisions_accept_reviewed_source_authorization
+    decisions =
+      JSON.parse(
+        REPOSITORY_ROOT
+          .join("Compliance/Release/RELEASE-DECISIONS.json")
+          .binread
+      )
+    decisions["status"] = "source-release-authorized"
+    source = decisions.fetch("sourceRelease")
+    source["topLevelLicenseSpdx"] = "MIT"
+    source["contributorPolicyApproved"] = true
+    source["releaseNoticeApproved"] = true
+    source["sourceReleaseAuthorized"] = true
+    approval = decisions.fetch("approval")
+    approval["approvedBy"] = "project-owner"
+    approval["approvedAt"] = "2026-07-31T12:00:00Z"
+    approval["notes"] = "Reviewed source-release authorization."
+
+    assert PocketRootReleaseCompliance.validate_release_decisions(
+      decisions,
+      spdx_license_list
+    )
+  end
+
+  def test_release_decisions_accept_reviewed_runtime_authorization
+    decisions =
+      JSON.parse(
+        REPOSITORY_ROOT
+          .join("Compliance/Release/RELEASE-DECISIONS.json")
+          .binread
+      )
+    decisions["status"] = "runtime-distribution-authorized"
+    runtime = decisions.fetch("runtimeDistribution")
+    runtime["completeLicenseAndNoticeBundleApproved"] = true
+    runtime["correspondingSourceDeliveryApproved"] = true
+    runtime["appStorePolicyApproved"] = true
+    runtime["privacyReviewApproved"] = true
+    runtime["legalReviewApproved"] = true
+    runtime["distributionAuthorized"] = true
+    approval = decisions.fetch("approval")
+    approval["approvedBy"] = "project-owner"
+    approval["approvedAt"] = "2026-07-31T12:00:00Z"
+    approval["notes"] = "Reviewed runtime-distribution authorization."
+
+    assert PocketRootReleaseCompliance.validate_release_decisions(
+      decisions,
+      spdx_license_list
+    )
+  end
+
+  def test_release_decisions_reject_invalid_spdx_expression
+    decisions =
+      JSON.parse(
+        REPOSITORY_ROOT
+          .join("Compliance/Release/RELEASE-DECISIONS.json")
+          .binread
+      )
+    decisions["status"] = "source-release-authorized"
+    source = decisions.fetch("sourceRelease")
+    source["topLevelLicenseSpdx"] = "definitely-not-an-spdx-license"
+    source["contributorPolicyApproved"] = true
+    source["releaseNoticeApproved"] = true
+    source["sourceReleaseAuthorized"] = true
+    approval = decisions.fetch("approval")
+    approval["approvedBy"] = "project-owner"
+    approval["approvedAt"] = "2026-07-31T12:00:00Z"
+    approval["notes"] = "Invalid license value must fail closed."
+
+    error = assert_raises(PocketRootReleaseCompliance::ComplianceError) do
+      PocketRootReleaseCompliance.validate_release_decisions(
+        decisions,
+        spdx_license_list
+      )
+    end
+
+    assert_includes error.message, "fail-closed invariants"
+  end
+
+  def test_spdx_expression_accepts_pinned_ids_operators_and_exception
+    expression =
+      "(MIT OR Apache-2.0) AND " \
+      "(GPL-2.0-only WITH Classpath-exception-2.0)"
+
+    assert PocketRootReleaseCompliance.valid_spdx_license_expression?(
+      expression,
+      spdx_license_list
+    )
+    refute PocketRootReleaseCompliance.valid_spdx_license_expression?(
+      "MIT WITH definitely-not-an-spdx-exception",
+      spdx_license_list
+    )
+    refute PocketRootReleaseCompliance.valid_spdx_license_expression?(
+      "(MIT OR Apache-2.0",
+      spdx_license_list
+    )
+  end
+
+  def test_readiness_cli_reports_status_and_blocks_both_release_tracks
+    status_output, status_error =
+      capture_io do
+        assert_equal 0, PocketRootReleaseCompliance.execute(["--status"])
+      end
+    assert_empty status_error
+    assert_includes status_output, "release readiness: BLOCKED"
+    assert_includes status_output, "sourcePackageRelease: BLOCKED"
+    assert_includes status_output, "runtimeDistribution: BLOCKED"
+
+    source_output, source_error =
+      capture_io do
+        assert_equal(
+          2,
+          PocketRootReleaseCompliance.execute(["--require-source-ready"])
+        )
+      end
+    assert_empty source_output
+    assert_includes source_error, "sourcePackageRelease is BLOCKED"
+    assert_includes source_error, "top-level-license-finalized"
+
+    runtime_output, runtime_error =
+      capture_io do
+        assert_equal(
+          2,
+          PocketRootReleaseCompliance.execute(["--require-runtime-ready"])
+        )
+      end
+    assert_empty runtime_output
+    assert_includes runtime_error, "runtimeDistribution is BLOCKED"
+    assert_includes runtime_error, "runtime-distribution-authorized"
   end
 
   def test_default_demo_links_runtime_but_does_not_bundle_rootfs_by_default
@@ -923,6 +1199,15 @@ class ReleaseComplianceTests < Minitest::Test
   end
 
   private
+
+  def spdx_license_list
+    @spdx_license_list ||=
+      JSON.parse(
+        REPOSITORY_ROOT
+          .join("Compliance/SPDX/LICENSE-LIST-3.28.0.json")
+          .binread
+      )
+  end
 
   def input_fixture(name = "repository")
     root = @temporary_directory.join(name)

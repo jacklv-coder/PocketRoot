@@ -8,6 +8,10 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 
 ### Added
 
+- Fail-closed `v0.1.0` two-track release gates. Machine-readable status, a
+  bilingual checklist, and CI status separate source/Swift Package release
+  from runtime/RootFS/App/binary distribution; each requires explicit
+  authorization, and passing engineering tests never unblocks distribution.
 - Swift Package products for Core, Terminal, Resources, and the safe umbrella.
 - An explicit opt-in `PocketRootAgent` product with a provider-agnostic lightweight loop, turn/tool/input/output bounds, ID replay rejection, whole-batch validation, sequential tool execution, and cancellation propagation; it neither installs Codex CLI nor exposes a default shell tool.
 - A native OpenAI Responses API transport for `PocketRootAgent` with host-owned bearer credentials, strict function-schema preflight, continuation mapping, sanitized failures, and bounded HTTP request/response bodies.

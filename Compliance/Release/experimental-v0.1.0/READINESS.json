@@ -1,0 +1,166 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-28T00:00:00Z",
+  "releaseVersion": "0.1.0",
+  "overallStatus": "blocked",
+  "authorizationSource": "Compliance/Release/RELEASE-DECISIONS.json",
+  "tracks": {
+    "sourcePackageRelease": {
+      "scope": "PocketRoot source and Swift Package metadata only; no RootFS, XCFramework mirror, App, archive, IPA, or binary SDK asset.",
+      "status": "blocked",
+      "gates": [
+        {
+          "id": "source-boundary-excludes-rootfs",
+          "title": "Source release excludes the RootFS payload",
+          "titleZh": "源码发布不包含 RootFS 载荷",
+          "satisfied": true,
+          "evidence": "COMPOSITION.json externalComponents.rootFS bundledByDefault=false and downloadedByLibrary=false",
+          "owner": "engineering",
+          "requiredAction": "Keep the RootFS outside Git, SwiftPM resources, and source-release assets."
+        },
+        {
+          "id": "public-api-status-declared",
+          "title": "Public API status is declared experimental",
+          "titleZh": "公共 API 状态已声明为 Experimental",
+          "satisfied": true,
+          "evidence": "COMPOSITION.json release.status",
+          "owner": "engineering",
+          "requiredAction": "Keep the Experimental label until a separately reviewed stability decision is recorded."
+        },
+        {
+          "id": "top-level-license-finalized",
+          "title": "Top-level PocketRoot license is finalized",
+          "titleZh": "PocketRoot 顶层许可证已确定",
+          "satisfied": false,
+          "evidence": "LICENSE and Compliance/Release/RELEASE-DECISIONS.json",
+          "owner": "project-owner",
+          "requiredAction": "Select an SPDX license and replace the current no-permission placeholder with its complete terms."
+        },
+        {
+          "id": "contributor-policy-approved",
+          "title": "Contributor and copyright policy is approved",
+          "titleZh": "贡献者与版权政策已批准",
+          "satisfied": false,
+          "evidence": "Compliance/Release/RELEASE-DECISIONS.json",
+          "owner": "project-owner",
+          "requiredAction": "Record the contributor, copyright, and inbound-license policy."
+        },
+        {
+          "id": "release-notice-approved",
+          "title": "Source-release notice is approved",
+          "titleZh": "源码发行 NOTICE 已批准",
+          "satisfied": false,
+          "evidence": "Compliance/Release/RELEASE-DECISIONS.json",
+          "owner": "project-owner",
+          "requiredAction": "Approve the release notice covering PocketRoot and referenced third-party source dependencies."
+        },
+        {
+          "id": "source-release-authorized",
+          "title": "PocketRoot source release is explicitly authorized",
+          "titleZh": "PocketRoot 源码发布已明确授权",
+          "satisfied": false,
+          "evidence": "Compliance/Release/RELEASE-DECISIONS.json",
+          "owner": "project-owner",
+          "requiredAction": "Record the approving owner and date after every source-release gate is satisfied."
+        }
+      ]
+    },
+    "runtimeDistribution": {
+      "scope": "Any App, binary SDK, TestFlight/App Store build, RootFS asset, or redistributed runtime artifact.",
+      "status": "blocked",
+      "gates": [
+        {
+          "id": "rootfs-external-input-boundary",
+          "title": "RootFS remains a caller-provided local input",
+          "titleZh": "RootFS 保持为调用方提供的本地输入",
+          "satisfied": true,
+          "evidence": "COMPOSITION.json and Compliance/Release/RELEASE-DECISIONS.json",
+          "owner": "engineering",
+          "requiredAction": "Do not attach the RootFS to GitHub Releases, SwiftPM, TestFlight, or an App bundle without reopening review."
+        },
+        {
+          "id": "release-artifact-built-and-scanned",
+          "title": "Final signed and exported artifact is built and scanned",
+          "titleZh": "最终签名导出制品已构建并扫描",
+          "satisfied": false,
+          "evidence": "COMPOSITION.json coverage",
+          "owner": "engineering",
+          "requiredAction": "Build the final signed/exported artifact and generate its complete file inventory, binary scan, entitlements, and SBOM."
+        },
+        {
+          "id": "complete-license-notice-bundle-approved",
+          "title": "Complete LICENSE and NOTICE bundle is approved",
+          "titleZh": "完整 LICENSE 与 NOTICE 交付包已批准",
+          "satisfied": false,
+          "evidence": "COMPOSITION.json, RootFS review evidence, and release decisions",
+          "owner": "legal-compliance",
+          "requiredAction": "Complete and approve the distribution LICENSE/NOTICE set, including the remaining alpine-keys material decision."
+        },
+        {
+          "id": "corresponding-source-delivery-approved",
+          "title": "Corresponding-source delivery is approved",
+          "titleZh": "对应源码交付已批准",
+          "satisfied": false,
+          "evidence": "COMPOSITION.json, RootFS source evidence, and release decisions",
+          "owner": "legal-compliance",
+          "requiredAction": "Materialize, verify, and approve the corresponding-source delivery and source-offer mechanism."
+        },
+        {
+          "id": "app-store-policy-approved",
+          "title": "App Store executable-code policy is approved",
+          "titleZh": "App Store 可执行代码策略已批准",
+          "satisfied": false,
+          "evidence": "COMPOSITION.json and release decisions",
+          "owner": "product-legal",
+          "requiredAction": "Approve the written policy for shell, network, apk, downloaded code, and App Review disclosure."
+        },
+        {
+          "id": "privacy-review-approved",
+          "title": "Runtime privacy and data-lifecycle review is approved",
+          "titleZh": "Runtime 隐私与数据生命周期评审已批准",
+          "satisfied": false,
+          "evidence": "Compliance/Release/RELEASE-DECISIONS.json",
+          "owner": "product-privacy",
+          "requiredAction": "Approve storage, backup exclusion, logs, network, secrets, deletion, and privacy-manifest behavior."
+        },
+        {
+          "id": "runtime-legal-review-approved",
+          "title": "Complete runtime distribution legal review is approved",
+          "titleZh": "完整 Runtime 分发法律评审已批准",
+          "satisfied": false,
+          "evidence": "COMPOSITION.json and release decisions",
+          "owner": "legal-compliance",
+          "requiredAction": "Approve the combined PocketRoot, IshEmbed/iSH, SwiftTerm, RootFS, and final-artifact distribution composition."
+        },
+        {
+          "id": "runtime-distribution-authorized",
+          "title": "Runtime binary/App distribution is explicitly authorized",
+          "titleZh": "Runtime 二进制/App 分发已明确授权",
+          "satisfied": false,
+          "evidence": "COMPOSITION.json and release decisions",
+          "owner": "project-owner",
+          "requiredAction": "Record the approving owner and date only after every runtime distribution gate is satisfied."
+        }
+      ]
+    }
+  },
+  "blockedGateIds": [
+    "top-level-license-finalized",
+    "contributor-policy-approved",
+    "release-notice-approved",
+    "source-release-authorized",
+    "release-artifact-built-and-scanned",
+    "complete-license-notice-bundle-approved",
+    "corresponding-source-delivery-approved",
+    "app-store-policy-approved",
+    "privacy-review-approved",
+    "runtime-legal-review-approved",
+    "runtime-distribution-authorized"
+  ],
+  "nextRequiredDecision": {
+    "id": "select-top-level-license",
+    "owner": "project-owner",
+    "reason": "Select an SPDX license and replace the current no-permission placeholder with its complete terms."
+  },
+  "warning": "Engineering validation is not distribution authorization. A ready source track would not authorize runtime, RootFS, App, or binary distribution."
+}
