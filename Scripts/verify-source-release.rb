@@ -240,12 +240,23 @@ module PocketRootSourceRelease
     relative
   end
 
-  def pax_metadata_entry?(entry)
+  def global_pax_metadata_entry?(entry)
     path = entry.full_name.delete_suffix("/")
-    return true if path == "pax_global_header" && entry.header.typeflag == "g"
+    path == "pax_global_header" && entry.header.typeflag == "g"
+  end
 
+  def local_pax_helper_entry?(entry)
+    path = entry.full_name.delete_suffix("/")
     path.match?(/\A[0-9a-f]{40,64}\.(?:paxheader|data)\z/) &&
       ["x", "0", "5"].include?(entry.header.typeflag)
+  end
+
+  def reject_local_pax_helper!(entry)
+    return unless local_pax_helper_entry?(entry)
+
+    raise VerificationError,
+      "local PAX extended paths are not allowed in a source release: " \
+      "#{entry.full_name}"
   end
 
   def rootfs_payload_path?(relative)
@@ -273,10 +284,11 @@ module PocketRootSourceRelease
       Gem::Package::TarReader.new(archive) do |tar|
         tar.each do |entry|
           path = entry.full_name
-          # git archive emits global commit metadata and local PAX helper
-          # entries for paths that do not fit the legacy tar header. TarReader
-          # also yields the final logical entry, which is audited below.
-          next if pax_metadata_entry?(entry)
+          # Git's global commit metadata is inert. Local PAX helpers are
+          # rejected because older TarReader versions can expose only their
+          # hash-named storage entries and hide the logical long-path file.
+          next if global_pax_metadata_entry?(entry)
+          reject_local_pax_helper!(entry)
           relative = relative_entry_path(
             path,
             prefix,
@@ -367,7 +379,8 @@ module PocketRootSourceRelease
       Gem::Package::TarReader.new(archive) do |tar|
         tar.each do |entry|
           path = entry.full_name
-          next if pax_metadata_entry?(entry)
+          next if global_pax_metadata_entry?(entry)
+          reject_local_pax_helper!(entry)
           relative = relative_entry_path(
             path,
             prefix,

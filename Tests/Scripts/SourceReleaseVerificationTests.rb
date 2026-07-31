@@ -126,18 +126,21 @@ class SourceReleaseVerificationTests < Minitest::Test
     assert_includes error.message, "unsupported MIME type \"application/pdf\""
   end
 
-  def test_accepts_git_archive_local_pax_metadata_for_long_paths
-    long_directory = "a" * 120
+  def test_rejects_git_archive_local_pax_metadata_for_long_rootfs_path
+    long_directory = "a" * 160
     archive = source_archive(
-      "#{long_directory}/source.txt" => "source\n"
+      "#{long_directory}/RootFS/etc/passwd" =>
+        "root:x:0:0:root:/root:/bin/sh\n"
     )
 
-    result = PocketRootSourceRelease.audit_archive(
-      archive,
-      "PocketRoot-0.1.0/"
-    )
+    error = assert_raises(PocketRootSourceRelease::VerificationError) do
+      PocketRootSourceRelease.audit_archive(
+        archive,
+        "PocketRoot-0.1.0/"
+      )
+    end
 
-    assert_operator result.fetch("regularFileCount"), :>, 8
+    assert_includes error.message, "local PAX extended paths are not allowed"
   end
 
   def test_compliance_uses_the_explicit_trusted_tooling_checkout
