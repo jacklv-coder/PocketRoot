@@ -401,6 +401,8 @@ if ! grep -Fq -- 'pocketroot-system-file-ui-fixture.txt' "$HOST_APP_SOURCE" \
   || grep -Fq -- 'waitForHittable(imported)' "$HOST_UI_TESTS" \
   || ! grep -Fq -- '.matching(identifier: "ActivityListView")' "$HOST_UI_TESTS" \
   || grep -Fq -- 'app.otherElements["ActivityListView"]' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'tapOutsideSharePopover(in: app)' "$HOST_UI_TESTS" \
+  || grep -Fq -- 'tapOutsideCurrentFrame' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'LSSupportsOpeningDocumentsInPlace: true' "$HOST_PROJECT_SPEC" \
   || ! grep -Fq -- 'UIFileSharingEnabled: true' "$HOST_PROJECT_SPEC"; then
     echo "Host App UI smoke is missing the system file transfer closure." >&2

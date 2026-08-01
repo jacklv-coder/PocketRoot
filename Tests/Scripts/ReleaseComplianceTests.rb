@@ -1113,6 +1113,8 @@ class ReleaseComplianceTests < Minitest::Test
     assert_includes ui_test, "PocketRootFiles.preview"
     assert_includes ui_test, '.matching(identifier: "ActivityListView")'
     refute_includes ui_test, 'app.otherElements["ActivityListView"]'
+    assert_includes ui_test, "tapOutsideSharePopover(in: app)"
+    refute_includes ui_test, "tapOutsideCurrentFrame"
     assert_includes(
       ui_test,
       '"FullDocumentManagerViewControllerNavigationBar"'

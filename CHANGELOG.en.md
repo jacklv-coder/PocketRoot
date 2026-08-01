@@ -8,6 +8,11 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 
 ### Changed
 
+- The Host App iPad system-file round-trip UI smoke no longer reads
+  `ActivityListView.frame` after the share sheet may have disappeared. It now
+  dismisses the popover through a stable app-corner coordinate, eliminating
+  the XCTest race caused by a system accessibility node vanishing between
+  queries while preserving the relaunch recovery path.
 - Split the Host App Files/Workspace and PTY lifecycle UI smoke phases across
   independent Simulators and `xcodebuild` invocations, retaining phase
   checkpoints, `.xcresult`, test output, and PocketRoot Simulator logs on
