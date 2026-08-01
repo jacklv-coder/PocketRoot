@@ -12,6 +12,14 @@ require "yaml"
 
 errors = []
 
+def nonempty_string?(value)
+  value.is_a?(String) && !value.strip.empty?
+end
+
+def boolean_or_nil?(value)
+  value.nil? || value.instance_of?(TrueClass) || value.instance_of?(FalseClass)
+end
+
 def github_heading_anchors(text)
   anchors = Set.new
   occurrences = Hash.new(0)
@@ -77,9 +85,10 @@ issue_form_paths.each do |path|
 
   begin
     form = YAML.safe_load(Pathname(path).read, permitted_classes: [], aliases: false)
-    unless form.is_a?(Hash) && form["name"].is_a?(String) &&
-      form["description"].is_a?(String) && form["body"].is_a?(Array) &&
-      !form["body"].empty?
+    unless form.is_a?(Hash) && nonempty_string?(form["name"]) &&
+      nonempty_string?(form["description"]) &&
+      (form["title"].nil? || form["title"].is_a?(String)) &&
+      form["body"].is_a?(Array) && !form["body"].empty?
       errors << "Invalid GitHub Issue form structure: #{path}"
       next
     end
@@ -92,15 +101,61 @@ issue_form_paths.each do |path|
         errors << "Invalid GitHub Issue form item: #{path}:#{index + 1}"
         next
       end
-      next if item["type"] == "markdown"
+      type = item["type"]
+      attributes = item["attributes"]
+      if type == "markdown"
+        unless nonempty_string?(attributes["value"])
+          errors << "Invalid GitHub Issue form markdown value: #{path}:#{index + 1}"
+        end
+        next
+      end
 
       id = item["id"]
-      label = item.dig("attributes", "label")
-      if !id.is_a?(String) || id.empty? || ids.include?(id) ||
-        !label.is_a?(String) || label.empty?
+      label = attributes["label"]
+      if !id.is_a?(String) || !id.match?(/\A[a-zA-Z0-9_-]+\z/) ||
+        ids.include?(id) || !nonempty_string?(label)
         errors << "Invalid or duplicate GitHub Issue form id/label: #{path}:#{index + 1}"
       end
       ids << id if id.is_a?(String)
+
+      validations = item["validations"]
+      if !validations.nil? &&
+        (!validations.is_a?(Hash) ||
+          !boolean_or_nil?(validations["required"]))
+        errors << "Invalid GitHub Issue form validations: #{path}:#{index + 1}"
+      end
+
+      if %w[input textarea].include?(type)
+        %w[description placeholder].each do |key|
+          value = attributes[key]
+          unless value.nil? || nonempty_string?(value)
+            errors << "Invalid GitHub Issue form #{key}: #{path}:#{index + 1}"
+          end
+        end
+        render = attributes["render"]
+        unless type == "textarea" || render.nil?
+          errors << "Invalid GitHub Issue form render: #{path}:#{index + 1}"
+        end
+        unless render.nil? || nonempty_string?(render)
+          errors << "Invalid GitHub Issue form render: #{path}:#{index + 1}"
+        end
+      elsif type == "dropdown"
+        options = attributes["options"]
+        unless options.is_a?(Array) && !options.empty? &&
+          options.all? { |option| nonempty_string?(option) } &&
+          options.uniq.length == options.length &&
+          boolean_or_nil?(attributes["multiple"])
+          errors << "Invalid GitHub Issue form dropdown options: #{path}:#{index + 1}"
+        end
+      elsif type == "checkboxes"
+        options = attributes["options"]
+        unless options.is_a?(Array) && !options.empty? && options.all? do |option|
+          option.is_a?(Hash) && nonempty_string?(option["label"]) &&
+            boolean_or_nil?(option["required"])
+        end
+          errors << "Invalid GitHub Issue form checkbox options: #{path}:#{index + 1}"
+        end
+      end
     end
   rescue Psych::Exception => error
     errors << "Invalid GitHub Issue form YAML: #{path}: #{error.message}"
