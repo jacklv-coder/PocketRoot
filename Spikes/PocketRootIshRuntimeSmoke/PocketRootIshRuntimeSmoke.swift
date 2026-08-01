@@ -235,6 +235,9 @@ private enum PocketRootRuntimeSmokeRunner {
     static let sustainedOutputByteCount = 8 * 1_024 * 1_024
     static let maximumStandardErrorBytes = 64
     static let maximumPeakResidentBytes: UInt64 = 256 * 1_024 * 1_024
+    static let longWorkloadIterationCount = 90
+    static let longWorkloadInterval = Duration.seconds(2)
+    static let longWorkloadGuestPath = "/root/pocketroot-smoke-long-workload.txt"
 
     static func run(
         environment: PocketRootSmokeEnvironment,
@@ -242,6 +245,7 @@ private enum PocketRootRuntimeSmokeRunner {
         uiLifecycleMode: Bool = false,
         storageFailureMode: Bool = false,
         memoryWarningMode: Bool = false,
+        longWorkloadMode: Bool = false,
         relaunchPersistencePhase: PocketRootSmokeRelaunchPersistencePhase = .disabled
     ) async -> PocketRootSmokeReport {
         let startedAt = Date()
@@ -678,6 +682,12 @@ private enum PocketRootRuntimeSmokeRunner {
                 )
             )
 
+            if longWorkloadMode {
+                checks.append(
+                    try await runLongWorkloadCheck(system: prepared.system)
+                )
+            }
+
             if memoryWarningMode {
                 checks.append(
                     try await runMemoryWarningRecoveryCheck(
@@ -875,6 +885,89 @@ private enum PocketRootRuntimeSmokeRunner {
         let eventURL = documentsURL.appendingPathComponent(memoryWarningFileName)
         try? Data("received\n".utf8).write(to: eventURL, options: .atomic)
         writeProgress("memory-warning-received")
+    }
+
+    private static func runLongWorkloadCheck(
+        system: PocketRootSystem
+    ) async throws -> PocketRootSmokeCheck {
+        writeProgress("running-long-workload-check")
+        let clock = ContinuousClock()
+        let startedAt = clock.now
+
+        let reset = try await system.execute(
+            PocketRootCommandRequest(
+                command: "rm -f \(longWorkloadGuestPath)",
+                workingDirectory: "/"
+            )
+        )
+        try require(reset.exitCode == 0, "Unable to reset the long-workload marker.")
+
+        for iteration in 1...longWorkloadIterationCount {
+            let cycle = try await system.execute(
+                PocketRootCommandRequest(
+                    command: "printf '%s\\n' '\(iteration)' >> \(longWorkloadGuestPath) "
+                        + "&& tail -n 1 \(longWorkloadGuestPath)",
+                    workingDirectory: "/",
+                    timeout: .seconds(10)
+                )
+            )
+            try require(
+                cycle.exitCode == 0 && trimmed(cycle.stdout) == String(iteration),
+                "Long-workload cycle \(iteration) did not persist and read its marker."
+            )
+
+            if iteration.isMultiple(of: 10) {
+                let output = try await system.execute(
+                    PocketRootCommandRequest(
+                        command: "/bin/dd if=/dev/zero bs=65536 count=1 2>/dev/null",
+                        workingDirectory: "/",
+                        timeout: .seconds(10)
+                    )
+                )
+                try require(
+                    output.exitCode == 0
+                        && output.standardOutput.count == 65_536
+                        && output.standardOutput.allSatisfy { $0 == 0 },
+                    "Long-workload bounded output was corrupted at cycle \(iteration)."
+                )
+            }
+
+            if iteration < longWorkloadIterationCount {
+                try await Task.sleep(for: longWorkloadInterval)
+            }
+        }
+
+        let elapsed = startedAt.duration(to: clock.now)
+        let minimumDuration = longWorkloadInterval * (longWorkloadIterationCount - 1)
+        try require(
+            elapsed >= minimumDuration,
+            "Long-workload duration was shorter than its bounded schedule: \(elapsed)."
+        )
+        try require(
+            await system.state == .ready,
+            "Runtime was not ready after the long workload."
+        )
+
+        let browser = PocketRootFileBrowser(executor: system)
+        let preview = try await browser.previewFile(at: longWorkloadGuestPath)
+        guard let previewText = preview.text else {
+            throw PocketRootSmokeFailure(
+                message: "Files API did not decode the long-workload marker as text."
+            )
+        }
+        let expectedPreview = (1...longWorkloadIterationCount)
+            .map(String.init)
+            .joined(separator: "\n") + "\n"
+        try require(
+            !preview.isTruncated
+                && previewText == expectedPreview,
+            "Files API did not recover the complete long-workload marker."
+        )
+
+        return PocketRootSmokeCheck(
+            name: "long-workload",
+            detail: "90 command/file cycles across 3 minutes, bounded output, Files preview"
+        )
     }
 
     private static func runMemoryWarningRecoveryCheck(
@@ -1171,6 +1264,8 @@ final class PocketRootIshRuntimeSmokeApp: UIResponder, UIApplicationDelegate {
                 ProcessInfo.processInfo.environment["POCKETROOT_SMOKE_STORAGE_FAILURE"] == "1"
             let memoryWarningMode =
                 ProcessInfo.processInfo.environment["POCKETROOT_SMOKE_MEMORY_WARNING"] == "1"
+            let longWorkloadMode =
+                ProcessInfo.processInfo.environment["POCKETROOT_SMOKE_LONG_WORKLOAD"] == "1"
             let relaunchPersistencePhase: PocketRootSmokeRelaunchPersistencePhase
             switch ProcessInfo.processInfo.environment[
                 "POCKETROOT_SMOKE_RELAUNCH_PERSISTENCE"
@@ -1188,6 +1283,7 @@ final class PocketRootIshRuntimeSmokeApp: UIResponder, UIApplicationDelegate {
                 uiLifecycleMode: uiLifecycleMode,
                 storageFailureMode: storageFailureMode,
                 memoryWarningMode: memoryWarningMode,
+                longWorkloadMode: longWorkloadMode,
                 relaunchPersistencePhase: relaunchPersistencePhase
             )
             do {

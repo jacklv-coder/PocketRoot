@@ -104,11 +104,11 @@
 | 默认 post-boot identity gate | 已通过 | `aarch64`、Alpine identity、可选 version 与 command context 通过后才 ready；保持失败占用槽位回归 |
 | Demo 与外部宿主 runtime 接入 | 已通过 | Demo 和独立 Host App 共用公开 controller；Debug 只注入精确校验的仓库外 RootFS，Release 保持不注入 |
 | 进程安全 soft shutdown | 已通过 | v0.4.0-abi.6 soft-halt/join 返回 Swift；同进程仍只允许一次 lifecycle |
-| 签名 iPhone | 已通过 | v0.4.0-abi.6 完成 17 项 one-shot/soft-shutdown/peak-memory smoke；runtime 变更后继续重跑 |
+| 签名 iPhone | 已通过 | 标准 17 项及 3 分钟持续负载 20 项 one-shot/PTY/Files/soft-shutdown/peak-memory smoke 已完成；runtime 变更后继续重跑 |
 | iPad Simulator Host UI | 已通过 | iOS 18 上覆盖 RootFS boot、PTY、Files、Workspace、旋转、系统文件导入/分享保存 round-trip 与 shutdown |
 | 签名 iPad | 阻塞 | physical boot 与 command smoke |
 | 最低 Xcode 16 原生兼容 | 已通过 | Xcode 16.0 / iOS 18.0 SDK 完成 RootFS install、Simulator/device final-link 和 17 项 native smoke |
-| App lifecycle 与内存 | 进行中 | Simulator 与 Jack iPhone 均有 256 MiB `ru_maxrss` 门禁；真机 process suspend/resume、UIKit foreground/background、强制终止后数据恢复和有界 App delegate memory-warning 回调恢复已通过；补真实 memory pressure/jetsam |
+| App lifecycle 与内存 | 进行中 | Simulator 与 Jack iPhone 均有 256 MiB `ru_maxrss` 门禁；真机 process suspend/resume、UIKit foreground/background、强制终止后数据恢复、有界 App delegate memory-warning 回调恢复和 3 分钟持续负载已通过；补真实 memory pressure/jetsam |
 | RootFS ENOSPC/掉电 | 进行中 | 峰值空间预检、全 ENOSPC、七点持久化屏障、确定性掉电切点和 Jack iPhone 受限容量/ENOSPC 清理恢复已覆盖；补真实 storage pressure/强制断电 |
 | 最大实验工程组合 inventory/SBOM | 已通过 | 保持 SwiftPM/Xcode target、ABI.9 dependency/source、外部 RootFS 15 包与 checksum 可复现；不得把它表述为最终发行 archive 扫描或发行授权 |
 | unsigned 工程 App 扫描 | 已通过 | CI 临时扫描完整文件树、Mach-O、签名/entitlement、私有 framework/JIT 信号并校验文件级 SPDX；不上传输出，所有最终发行门禁保持关闭 |
@@ -119,7 +119,7 @@
 ### 后续 runtime 执行顺序
 
 1. **故障与资源硬化**
-   保持 8 MiB sustained-output 和 256 MiB Simulator 峰值回归，继续真实 storage pressure/强制断电与 jetsam。
+   保持 8 MiB sustained-output、3 分钟真机持续负载和 256 MiB 峰值回归，继续真实 storage pressure/强制断电与 jetsam。
 
 2. **暂停的 App 组合**
    原生 Agent Loop/App 组合恢复后，再把 prepared system 接入 UI；不把 RootFS 放进默认 target。

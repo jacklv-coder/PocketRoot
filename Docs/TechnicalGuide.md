@@ -34,7 +34,8 @@ PocketRoot 是一个最低支持 iOS 18 的 Swift 模块化工程：它在 iOS �
 8 MiB 二进制 stdout smoke 会跨越 backlog 并逐字节验证持续消费路径；完整 Simulator
 smoke 在 shutdown 后读取 `ru_maxrss`，要求生命周期峰值不超过 256 MiB。
 deadline 到期后的 terminate 与权威 `EXITED` 确认使用独立的固定有界清理窗口，因此
-timeout 不是“调用必须在同一时刻返回”的承诺；真机持续负载和 jetsam 仍需验证。
+timeout 不是“调用必须在同一时刻返回”的承诺；真机 3 分钟有界持续负载已通过，
+更长周期、真实内存压力和 jetsam 仍需验证。
 
 ## 2. 三个仓库和一个外部资产
 

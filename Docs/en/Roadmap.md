@@ -102,11 +102,11 @@ This establishes the current Simulator, minimum-Xcode 16, and single-iPhone one-
 | Default post-boot identity gate | Passed | Require aarch64, Alpine identity, optional version, and command context before ready; retain failed-slot regression coverage |
 | Demo and external-host runtime integration | Passed | The Demo and standalone Host App share the public controller; Debug injects only the exact verified external RootFS and Release remains payload-free |
 | Host-safe soft shutdown | Passed | v0.4.0-abi.6 soft-halts, joins, and returns to Swift; the process remains single-lifecycle |
-| Signed iPhone | Passed | v0.4.0-abi.6 completed the 17-check one-shot/soft-shutdown/peak-memory smoke; keep rerunning after runtime changes |
+| Signed iPhone | Passed | The standard 17-check and three-minute 20-check sustained one-shot/PTY/Files/soft-shutdown/peak-memory paths passed; keep rerunning after runtime changes |
 | iPad Simulator Host UI | Passed | iOS 18 covers RootFS boot, PTY, Files, Workspace, rotation, system document import/share-save round trips, and shutdown |
 | Signed iPad | Blocked | Physical boot and command smoke |
 | Minimum Xcode 16 native | Passed | Xcode 16.0 / iOS 18.0 SDK completed RootFS install, Simulator/device final links, and the 17-check native smoke |
-| App lifecycle and memory | In progress | Simulator and Jack iPhone have 256 MiB `ru_maxrss` gates; physical process suspend/resume, UIKit foreground/background, post-termination data recovery, and bounded App-delegate memory-warning recovery passed; add real memory-pressure/jetsam evidence |
+| App lifecycle and memory | In progress | Simulator and Jack iPhone have 256 MiB `ru_maxrss` gates; physical process suspend/resume, UIKit foreground/background, post-termination data recovery, bounded App-delegate memory-warning recovery, and a three-minute sustained workload passed; add real memory-pressure/jetsam evidence |
 | RootFS ENOSPC/power faults | In progress | Peak-space preflight, full ENOSPC, seven persistence barriers, deterministic power-loss cuts, and bounded capacity/ENOSPC cleanup recovery on Jack iPhone are covered; add real storage-pressure/power-cut evidence |
 | Maximal Experimental engineering composition inventory/SBOM | Passed | Keep SwiftPM/Xcode targets, ABI.9 dependency/source, the external RootFS's 15 packages, and checksums reproducible; never describe it as a final release-archive scan or distribution authorization |
 | Unsigned engineering App scan | Passed | CI ephemerally scans the full file tree, Mach-O, signature/entitlements, private-framework/JIT signals, and validates the file-level SPDX; upload no output and keep every final-release gate closed |
@@ -116,7 +116,8 @@ This establishes the current Simulator, minimum-Xcode 16, and single-iPhone one-
 
 ### Next runtime sequence
 
-1. Keep the 8 MiB sustained-output and 256 MiB Simulator peak regressions, and
+1. Keep the 8 MiB sustained-output, three-minute physical sustained-workload,
+   and 256 MiB peak regressions, and
    continue real storage-pressure/power-cut and jetsam coverage.
 2. When Native Agent Loop/App composition resumes, connect a prepared system
    to UI without bundling a RootFS.

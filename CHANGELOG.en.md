@@ -15,6 +15,12 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 
 ### Changed
 
+- Added a mutually exclusive three-minute signed physical-device workload
+  smoke: 90 command/file write-read cycles, a 64 KiB binary-output check every
+  tenth cycle, complete marker verification through the Files API, shutdown,
+  and the 256 MiB peak-memory gate. Jack iPhone passed at an 84.3 MiB peak.
+  This bounded baseline is not real storage-pressure, jetsam, power-cut, or
+  sustained-background-execution evidence.
 - The Host App iPad system-file round-trip UI smoke no longer reads
   `ActivityListView.frame` after the share sheet may have disappeared. It now
   takes one fallible snapshot and dismisses only through an app-corner point

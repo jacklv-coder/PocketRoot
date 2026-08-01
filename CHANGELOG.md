@@ -13,6 +13,10 @@ PocketRoot 的重要变化记录在这里，并从首个公开版本开始遵循
 
 ### Changed
 
+- 新增互斥的签名真机 3 分钟持续负载 smoke：执行 90 轮命令与文件写读、每 10 轮验证
+  64 KiB 二进制输出、通过 Files API 核对完整 marker，并继续执行 shutdown 与
+  256 MiB 峰值内存门禁；Jack iPhone 已通过，峰值 84.3 MiB。该有界基线不代表
+  真实 storage pressure、jetsam、断电或持续后台执行证据。
 - Host App 的 iPad 系统文件 round-trip UI smoke 不再在分享弹窗可能已经消失后读取
   `ActivityListView.frame`；改用可捕获失败的单次 snapshot，并且只从经 snapshot frame
   校验确实在 popover 外的 App 边角坐标执行关闭，消除系统 UI accessibility 节点在

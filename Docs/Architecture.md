@@ -288,7 +288,8 @@ IshEmbed 暴露同步、进程级 API。adapter 使用：
 smoke 跨越 backlog 并逐字节验证，证明持续消费路径；完整 Simulator smoke 还在
 shutdown 后读取 `ru_maxrss`，要求生命周期峰值不超过 256 MiB。该门禁不证明真机 jetsam。
 deadline 到期后的 terminate 与权威 `EXITED` 确认使用独立的固定有界清理窗口；
-真机持续负载与 jetsam 仍是开放门禁。一次性命令的 Swift Task 取消已终止并确认
+真机 3 分钟有界持续负载已通过；更长周期、真实 memory pressure 与 jetsam 仍是
+开放门禁。一次性命令的 Swift Task 取消已终止并确认
 guest 退出。交互 session 以 100 ms read poll、16 KiB 分块和最多 4 MiB 的
 256-event Swift backlog 控制内存；`bufferingNewest` 为 `.failed/.exited` 保留可观察
 终态。六秒终止确认窗口与 finite native admission 让 terminate 不会退回同步无界控制路径。
