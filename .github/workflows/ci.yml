@@ -388,6 +388,9 @@ jobs:
         run: ./Scripts/run-quick-start-ui-smoke.sh
 
       - name: Run Host App PTY and Files UI smoke with Xcode 16.0
+        env:
+          POCKETROOT_HOST_UI_FAILURE_ARTIFACTS_DIR: >-
+            ${{ runner.temp }}/pocketroot-ui-artifacts/host-iphone
         run: ./Scripts/run-host-app-ui-smoke.sh
 
       - name: Run Host App iPad UI smoke with Xcode 16.0
@@ -395,4 +398,15 @@ jobs:
           POCKETROOT_HOST_UI_DEVICE_TYPE: >-
             com.apple.CoreSimulator.SimDeviceType.iPad-10th-generation
           POCKETROOT_HOST_UI_DEVICE_NAME: PocketRoot-Host-iPad-UI-Smoke
+          POCKETROOT_HOST_UI_FAILURE_ARTIFACTS_DIR: >-
+            ${{ runner.temp }}/pocketroot-ui-artifacts/host-ipad
         run: ./Scripts/run-host-app-ui-smoke.sh
+
+      - name: Upload Host App UI failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pocketroot-host-ui-failure-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/pocketroot-ui-artifacts
+          if-no-files-found: warn
+          retention-days: 7

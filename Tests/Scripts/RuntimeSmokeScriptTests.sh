@@ -62,6 +62,9 @@ bash -n "$EXTERNAL_CONSUMER_UI_RUNNER"
 if ! grep -Fq -- 'POCKETROOT_HOST_UI_SMOKE_DEVICE' "$HOST_UI_RUNNER" \
   || ! grep -Fq -- 'POCKETROOT_HOST_UI_DEVICE_TYPE' "$HOST_UI_RUNNER" \
   || ! grep -Fq -- 'PocketRootHostAppUITests' "$HOST_UI_RUNNER" \
+  || ! grep -Fq -- 'files-workspace' "$HOST_UI_RUNNER" \
+  || ! grep -Fq -- 'pty-lifecycle' "$HOST_UI_RUNNER" \
+  || ! grep -Fq -- 'testPTYLifecycleAndShutdown' "$HOST_UI_RUNNER" \
   || ! grep -Fq -- 'POCKETROOT_HOST_UI_DEFAULT_TEST_EXECUTION_TIME_ALLOWANCE:-600' "$HOST_UI_RUNNER" \
   || ! grep -Fq -- 'run-ios-example-ui-smoke.sh' "$HOST_UI_RUNNER" \
   || ! grep -Fq -- 'POCKETROOT_QUICK_START_UI_SMOKE_DEVICE' "$QUICK_START_UI_RUNNER" \
@@ -78,12 +81,59 @@ if ! grep -Fq -- 'POCKETROOT_HOST_UI_SMOKE_DEVICE' "$HOST_UI_RUNNER" \
 fi
 
 if ! grep -Fq -- 'POCKETROOT_KEEP_UI_RESULT' "$GENERIC_UI_RUNNER" \
+  || ! grep -Fq -- 'POCKETROOT_UI_SKIP_TESTING' "$GENERIC_UI_RUNNER" \
+  || ! grep -Fq -- 'POCKETROOT_UI_FAILURE_ARTIFACTS_DIR' "$GENERIC_UI_RUNNER" \
+  || ! grep -Fq -- 'xcodebuild-test.log' "$GENERIC_UI_RUNNER" \
+  || ! grep -Fq -- 'simulator.log' "$GENERIC_UI_RUNNER" \
   || ! grep -Fq -- 'POCKETROOT_DEVELOPMENT_ROOTFS_ARCHIVE="$ARCHIVE_PATH"' "$GENERIC_UI_RUNNER" \
   || ! grep -Fq -- '-test-timeouts-enabled YES' "$GENERIC_UI_RUNNER" \
   || ! grep -Fq -- '-default-test-execution-time-allowance "$DEFAULT_TEST_ALLOWANCE"' "$GENERIC_UI_RUNNER" \
   || ! grep -Fq -- '-maximum-test-execution-time-allowance "$MAXIMUM_TEST_ALLOWANCE"' "$GENERIC_UI_RUNNER" \
   || ! grep -Fq -- 'xcrun simctl delete "$DEVICE_UDID"' "$GENERIC_UI_RUNNER"; then
     echo "Shared example UI runner is missing bounded execution or cleanup." >&2
+    exit 1
+fi
+
+WRAPPER_TEST_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/PocketRootHostUIWrapperTests.XXXXXX")"
+trap 'rm -rf "$WRAPPER_TEST_ROOT"' EXIT
+WRAPPER_CALLS="$WRAPPER_TEST_ROOT/calls.txt"
+WRAPPER_MOCK="$WRAPPER_TEST_ROOT/mock-generic-runner.sh"
+cat > "$WRAPPER_MOCK" <<'MOCK'
+#!/usr/bin/env bash
+set -euo pipefail
+printf '%s|%s|%s|%s\n' \
+  "$POCKETROOT_UI_PHASE_LABEL" \
+  "$POCKETROOT_UI_ONLY_TESTING" \
+  "${POCKETROOT_UI_SKIP_TESTING:-}" \
+  "${POCKETROOT_UI_FAILURE_ARTIFACTS_DIR:-}" \
+  >> "$POCKETROOT_WRAPPER_CALLS"
+MOCK
+chmod +x "$WRAPPER_MOCK"
+
+POCKETROOT_UI_GENERIC_RUNNER="$WRAPPER_MOCK" \
+POCKETROOT_WRAPPER_CALLS="$WRAPPER_CALLS" \
+POCKETROOT_HOST_UI_FAILURE_ARTIFACTS_DIR="$WRAPPER_TEST_ROOT/artifacts" \
+  "$HOST_UI_RUNNER" "$WRAPPER_TEST_ROOT/rootfs.tar.gz"
+
+EXPECTED_SPLIT_CALLS="$(cat <<EOF
+files-workspace|PocketRootHostAppUITests/PocketRootHostAppUITests|PocketRootHostAppUITests/PocketRootHostAppUITests/testPTYLifecycleAndShutdown|$WRAPPER_TEST_ROOT/artifacts/files-workspace
+pty-lifecycle|PocketRootHostAppUITests/PocketRootHostAppUITests/testPTYLifecycleAndShutdown||$WRAPPER_TEST_ROOT/artifacts/pty-lifecycle
+EOF
+)"
+if [[ "$(cat "$WRAPPER_CALLS")" != "$EXPECTED_SPLIT_CALLS" ]]; then
+    echo "Host App UI wrapper did not isolate the PTY lifecycle phase." >&2
+    exit 1
+fi
+
+: > "$WRAPPER_CALLS"
+POCKETROOT_UI_GENERIC_RUNNER="$WRAPPER_MOCK" \
+POCKETROOT_WRAPPER_CALLS="$WRAPPER_CALLS" \
+POCKETROOT_HOST_UI_ONLY_TESTING="PocketRootHostAppUITests/PocketRootHostAppUITests/testFilesCreateAndDelete" \
+  "$HOST_UI_RUNNER" "$WRAPPER_TEST_ROOT/rootfs.tar.gz"
+if [[ "$(wc -l < "$WRAPPER_CALLS" | tr -d ' ')" != "1" ]] \
+  || [[ "$(cat "$WRAPPER_CALLS")" != \
+    requested-test\|PocketRootHostAppUITests/PocketRootHostAppUITests/testFilesCreateAndDelete\|\| ]]; then
+    echo "Host App UI wrapper did not preserve an explicitly requested test." >&2
     exit 1
 fi
 
