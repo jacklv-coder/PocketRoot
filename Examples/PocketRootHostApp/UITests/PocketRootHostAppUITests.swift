@@ -798,9 +798,13 @@ final class PocketRootHostAppUITests: XCTestCase {
                 tapCurrentFrame(of: close, in: app)
             } else {
                 // iPad presents the activity view as a popover without a
-                // Close button. Tap outside its current frame to dismiss it.
-                let tappedOutside = tapOutsideCurrentFrame(
-                    of: activityView,
+                // Close button. Snapshot its frame once so disappearance is a
+                // recoverable query error, then tap a verified outside point.
+                guard let activitySnapshot = try? activityView.snapshot() else {
+                    continue
+                }
+                let tappedOutside = tapOutsideSnapshotFrame(
+                    activitySnapshot.frame,
                     in: app
                 )
                 if !tappedOutside {
@@ -855,12 +859,11 @@ final class PocketRootHostAppUITests: XCTestCase {
             .press(forDuration: 1)
     }
 
-    private func tapOutsideCurrentFrame(
-        of element: XCUIElement,
+    private func tapOutsideSnapshotFrame(
+        _ elementFrame: CGRect,
         in app: XCUIApplication
     ) -> Bool {
         let appFrame = app.frame
-        let elementFrame = element.frame
         guard appFrame.width > 2, appFrame.height > 2 else {
             return false
         }
