@@ -6,6 +6,11 @@ PocketRoot 的重要变化记录在这里，并从首个公开版本开始遵循
 
 ## Unreleased
 
+### Added
+
+- 加入双语安全策略与社区行为准则、支持入口、结构化 Bug/接入/功能请求表单和
+  PR 检查表；文档校验现在要求这些开源协作文件存在，并保持根级中英文镜像完整。
+
 ### Changed
 
 - Host App 的 iPad 系统文件 round-trip UI smoke 不再在分享弹窗可能已经消失后读取

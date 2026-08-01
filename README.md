@@ -324,6 +324,15 @@ UDID。它们验证 RootFS 准备、启动、guest 身份、命令上下文、�
 | 如何参与开发 | [贡献指南](CONTRIBUTING.md) |
 | 已发生的变更 | [变更日志](CHANGELOG.md) |
 
+## 支持与贡献
+
+- 接入问题先查看[应用接入指南](Docs/IntegrationGuide.md)和[故障排查](Docs/Troubleshooting.md)。
+- 非敏感错误、接入问题和功能建议使用结构化
+  [Issue 表单](https://github.com/jacklv-coder/PocketRoot/issues/new/choose)。
+- 未修复漏洞不要公开提交，按[安全策略](SECURITY.md)私下报告。
+- 提交代码前阅读[贡献指南](CONTRIBUTING.md)、[社区行为准则](CODE_OF_CONDUCT.md)
+  和自动显示的 PR 检查表。
+
 完整阅读路线见[文档中心](Docs/README.md)。
 
 ## 许可证与发行状态

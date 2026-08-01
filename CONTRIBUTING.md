@@ -4,6 +4,10 @@
 
 感谢参与 PocketRoot。项目当前处于实验性 runtime 阶段，普通代码质量、原生生命周期、供应链和中英文文档必须在同一个变更中保持一致。
 
+提交前请同时遵守[社区行为准则](CODE_OF_CONDUCT.md)。一般错误、接入问题和功能建议
+使用仓库的结构化 [Issue 表单](https://github.com/jacklv-coder/PocketRoot/issues/new/choose)；
+未修复漏洞必须按[安全策略](SECURITY.md)私下报告。
+
 ## 许可证与贡献
 
 PocketRoot 贡献者拥有版权的原创源码依据根目录 `LICENSE` 中的 MIT License
