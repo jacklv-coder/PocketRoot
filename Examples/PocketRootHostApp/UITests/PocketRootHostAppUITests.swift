@@ -798,8 +798,15 @@ final class PocketRootHostAppUITests: XCTestCase {
                 tapCurrentFrame(of: close, in: app)
             } else {
                 // iPad presents the activity view as a popover without a
-                // Close button. Tap a stable outside coordinate to dismiss it.
-                let tappedOutside = tapOutsideSharePopover(in: app)
+                // Close button. Snapshot its frame once so disappearance is a
+                // recoverable query error, then tap a verified outside point.
+                guard let activitySnapshot = try? activityView.snapshot() else {
+                    continue
+                }
+                let tappedOutside = tapOutsideSnapshotFrame(
+                    activitySnapshot.frame,
+                    in: app
+                )
                 if !tappedOutside {
                     // A stale or full-screen activity view has no safe gesture
                     // target. Let the caller use the relaunch recovery path.
@@ -852,21 +859,30 @@ final class PocketRootHostAppUITests: XCTestCase {
             .press(forDuration: 1)
     }
 
-    private func tapOutsideSharePopover(
+    private func tapOutsideSnapshotFrame(
+        _ elementFrame: CGRect,
         in app: XCUIApplication
     ) -> Bool {
         let appFrame = app.frame
         guard appFrame.width > 2, appFrame.height > 2 else {
             return false
         }
-
-        // ActivityListView is system-owned and can disappear between an
-        // existence check and a frame query. A stable corner coordinate is
-        // outside the centered iPad share popover without resolving that
-        // transient accessibility node a second time.
-        app.coordinate(
-            withNormalizedOffset: CGVector(dx: 0.02, dy: 0.12)
-        ).tap()
+        let candidatePoints = [
+            CGPoint(x: appFrame.minX + 1, y: appFrame.minY + 1),
+            CGPoint(x: appFrame.maxX - 1, y: appFrame.minY + 1),
+            CGPoint(x: appFrame.minX + 1, y: appFrame.maxY - 1),
+            CGPoint(x: appFrame.maxX - 1, y: appFrame.maxY - 1),
+        ]
+        guard let point = candidatePoints.first(
+            where: { !elementFrame.contains($0) }
+        ) else {
+            return false
+        }
+        let offset = CGVector(
+            dx: (point.x - appFrame.minX) / appFrame.width,
+            dy: (point.y - appFrame.minY) / appFrame.height
+        )
+        app.coordinate(withNormalizedOffset: offset).tap()
         return true
     }
 

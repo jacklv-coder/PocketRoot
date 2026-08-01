@@ -9,8 +9,9 @@ PocketRoot 的重要变化记录在这里，并从首个公开版本开始遵循
 ### Changed
 
 - Host App 的 iPad 系统文件 round-trip UI smoke 不再在分享弹窗可能已经消失后读取
-  `ActivityListView.frame`；改用稳定的 App 边角坐标关闭 popover，消除系统 UI
-  accessibility 节点在两次查询之间移除导致的 XCTest 竞态，同时保留重启恢复路径。
+  `ActivityListView.frame`；改用可捕获失败的单次 snapshot，并且只从经 snapshot frame
+  校验确实在 popover 外的 App 边角坐标执行关闭，消除系统 UI accessibility 节点在
+  两次查询之间移除导致的 XCTest 竞态，同时保留无安全坐标时的重启恢复路径。
 - 将 Host App 的 Files/Workspace 与 PTY lifecycle UI smoke 拆分到独立模拟器和
   `xcodebuild` 调用；失败时记录阶段检查点，并保留 `.xcresult`、测试输出和
   PocketRoot 模拟器日志供 CI 下载分析，同时维持每项测试 10 分钟硬上限；
