@@ -229,6 +229,15 @@ while one guest command is active, then requires fresh callback evidence, the
 active command, a later command, and `.ready` to survive. It does not create
 real memory pressure and is not jetsam evidence.
 
+Use the mutually exclusive `POCKETROOT_SMOKE_LONG_WORKLOAD=1` mode for a
+bounded sustained-execution baseline, and set
+`POCKETROOT_SMOKE_TIMEOUT_SECONDS` to at least `600`. It runs 90 command/file
+write-read cycles at two-second intervals, validates 64 KiB of binary output
+every tenth cycle, previews the complete marker through the Files API, then
+enforces shutdown and the 256 MiB peak-memory gate. This is an approximately
+three-minute baseline; it does not create real memory pressure or prove
+sustained background execution or jetsam behavior.
+
 ## 8. Command reference
 
 | Goal | Command |
@@ -247,6 +256,7 @@ real memory pressure and is not jetsam evidence.
 | Signed forced-relaunch persistence smoke | Add `POCKETROOT_SMOKE_RELAUNCH_PERSISTENCE=1` to the signed physical smoke command |
 | Signed bounded storage-failure smoke | Add `POCKETROOT_SMOKE_STORAGE_FAILURE=1` to the signed physical smoke command |
 | Signed bounded memory-warning smoke | Add `POCKETROOT_SMOKE_MEMORY_WARNING=1` to the signed physical smoke command |
+| Signed sustained-workload smoke | Add `POCKETROOT_SMOKE_LONG_WORKLOAD=1 POCKETROOT_SMOKE_TIMEOUT_SECONDS=600` to the signed physical smoke command |
 | Documentation checks | `./Scripts/check-docs.sh` |
 
 ## 9. Do not commit

@@ -40,7 +40,7 @@ an existing iOS App. Start with the
 [integration guide](Docs/en/IntegrationGuide.md).
 
 > [!WARNING]
-> Native iSH integration is **Experimental**. Pinned `v0.4.0-abi.9` has a soft shutdown that returns to Swift, atomic no-replace rename, and bounded stdin writes, but each host process still permits only one valid boot/shutdown lifecycle. Physical iPad, sustained-load, and distribution gates remain open. This version is not approved for production, TestFlight, or public binary distribution.
+> Native iSH integration is **Experimental**. Pinned `v0.4.0-abi.9` has a soft shutdown that returns to Swift, atomic no-replace rename, and bounded stdin writes, but each host process still permits only one valid boot/shutdown lifecycle. Physical Host App UI, physical iPad, real-pressure, and distribution gates remain open. This version is not approved for production, TestFlight, or public binary distribution.
 
 ## Capability status
 
@@ -53,7 +53,7 @@ an existing iOS App. Start with the
 | Terminal and file browser | Embeddable / Experimental | UIKit/SwiftUI inject a booted system; persistent SwiftTerm PTY plus inline tree expansion, navigation, bounded previews, safe mutations, and 1 MiB-capped document import/share export |
 | Lightweight agent loop | Core, OpenAI transport, and approval-gated command tool available | Agent and Runtime Tools are explicit opt-ins; no Codex CLI install or automatic shell approval |
 | Interactive PTY and SwiftTerm | Implemented; broader device validation pending | Public sessions, bounded reads, input, resize, signal/EOF, registry, and close-before-shutdown are connected; iPhone/iPad Simulators pass PTY, lifecycle, Files/Workspace, system document import/share-save round trips, and ordered shutdown |
-| Physical devices and distribution | Partially passed / blocked | One-shot iPhone gates and unsigned engineering App scanning passed; the new PTY still needs device lifecycle coverage, plus storage pressure, physical iPad, jetsam/power-cut, final artifact, and compliance gates |
+| Physical devices and distribution | Partially passed / blocked | Jack iPhone passed commands, PTY/Files, lifecycle, failure recovery, and the three-minute sustained-workload gate (84.3 MiB peak); the Host UI runner is ready, but device iOS 26.6 beta is newer than this Mac's Xcode 26.1.1 device support. Compatible-toolchain UI execution, real storage pressure, physical iPad, jetsam/power-cut, final artifact, and compliance gates remain open |
 
 The default `PocketRoot` product includes neither the agent loop nor native
 iSH and never bundles or downloads a RootFS. Agent applications explicitly
@@ -146,9 +146,10 @@ Design principles:
   Swift stdout/stderr budgets remain independent. The native transport adds a
   4 MiB/4096-frame output backlog per session, a 4 MiB/256-frame total control
   budget, and lifecycle reserve. An 8 MiB binary-stdout smoke crosses the native
-  backlog and verifies every byte; the complete Simulator smoke lifecycle also
-  requires process `ru_maxrss` at or below 256 MiB. That gate is not
-  physical-device jetsam evidence. Supervisor and transport failures are typed;
+  backlog and verifies every byte; the complete Simulator smoke lifecycle and
+  optional three-minute physical-device workload both require process
+  `ru_maxrss` at or below 256 MiB. That gate is not physical-device jetsam
+  evidence. Supervisor and transport failures are typed;
   normal guest exit 17 remains valid, and unconfirmed cleanup still fails closed.
 
 See [Architecture](Docs/en/Architecture.md), [Implementation](Docs/en/Implementation.md), and [RootFS Security](Docs/en/RootFS.md).

@@ -20,6 +20,7 @@ UI_LIFECYCLE_MODE="${POCKETROOT_SMOKE_UI_LIFECYCLE:-0}"
 RELAUNCH_PERSISTENCE_MODE="${POCKETROOT_SMOKE_RELAUNCH_PERSISTENCE:-0}"
 STORAGE_FAILURE_MODE="${POCKETROOT_SMOKE_STORAGE_FAILURE:-0}"
 MEMORY_WARNING_MODE="${POCKETROOT_SMOKE_MEMORY_WARNING:-0}"
+LONG_WORKLOAD_MODE="${POCKETROOT_SMOKE_LONG_WORKLOAD:-0}"
 RUN_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/PocketRootDeviceSmoke.XXXXXX")"
 DERIVED_DATA_ROOT="$RUN_ROOT/DerivedData"
 CLONED_SOURCE_PACKAGES_DIR="${POCKETROOT_CLONED_SOURCE_PACKAGES_DIR:-${TMPDIR:-/tmp}/PocketRootSharedSourcePackages}"
@@ -135,6 +136,7 @@ Usage:
   [POCKETROOT_SMOKE_RELAUNCH_PERSISTENCE=1] \\
   [POCKETROOT_SMOKE_STORAGE_FAILURE=1] \\
   [POCKETROOT_SMOKE_MEMORY_WARNING=1] \\
+  [POCKETROOT_SMOKE_LONG_WORKLOAD=1] \\
   $0
 
 For a local unapproved double-build candidate, replace
@@ -188,6 +190,10 @@ if [[ "$MEMORY_WARNING_MODE" != "0" && "$MEMORY_WARNING_MODE" != "1" ]]; then
     echo "POCKETROOT_SMOKE_MEMORY_WARNING must be 0 or 1." >&2
     exit 2
 fi
+if [[ "$LONG_WORKLOAD_MODE" != "0" && "$LONG_WORKLOAD_MODE" != "1" ]]; then
+    echo "POCKETROOT_SMOKE_LONG_WORKLOAD must be 0 or 1." >&2
+    exit 2
+fi
 HOST_CONTROL_MODE_COUNT=$((LIFECYCLE_MODE + UI_LIFECYCLE_MODE + RELAUNCH_PERSISTENCE_MODE))
 if [[ "$HOST_CONTROL_MODE_COUNT" -gt 1 ]]; then
     echo "Select only one physical host-control smoke mode per run." >&2
@@ -200,6 +206,11 @@ fi
 if [[ "$MEMORY_WARNING_MODE" == "1" \
   && $((HOST_CONTROL_MODE_COUNT + STORAGE_FAILURE_MODE)) -gt 0 ]]; then
     echo "Memory-warning smoke cannot be combined with another optional mode." >&2
+    exit 2
+fi
+if [[ "$LONG_WORKLOAD_MODE" == "1" \
+  && $((HOST_CONTROL_MODE_COUNT + STORAGE_FAILURE_MODE + MEMORY_WARNING_MODE)) -gt 0 ]]; then
+    echo "Long-workload smoke cannot be combined with another optional mode." >&2
     exit 2
 fi
 SMOKE_MANIFEST_ARGS=(
@@ -745,6 +756,17 @@ elif [[ "$MEMORY_WARNING_MODE" == "1" ]]; then
       --terminate-existing \
       --environment-variables \
         '{"POCKETROOT_SMOKE_MEMORY_WARNING":"1"}' \
+      --console \
+      --timeout "$SMOKE_TIMEOUT_SECONDS" \
+      "$BUNDLE_ID" \
+      >"$CONSOLE_LOG" 2>&1 &
+    LAUNCH_CLIENT_PID=$!
+elif [[ "$LONG_WORKLOAD_MODE" == "1" ]]; then
+    xcrun devicectl device process launch \
+      --device "$DEVICE_ID" \
+      --terminate-existing \
+      --environment-variables \
+        '{"POCKETROOT_SMOKE_LONG_WORKLOAD":"1"}' \
       --console \
       --timeout "$SMOKE_TIMEOUT_SECONDS" \
       "$BUNDLE_ID" \

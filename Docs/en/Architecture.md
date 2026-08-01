@@ -193,7 +193,8 @@ and process gate closed. Native shutdown is admitted only after every registered
 session has produced an authoritative exit and unregistered. An 8 MiB byte-exact binary-stdout smoke crosses the
 native backlog and proves continuous consumption. After shutdown, the complete
 Simulator smoke reads `ru_maxrss` and requires a lifecycle peak at or below
-256 MiB. Physical sustained-load and jetsam behavior remain open.
+256 MiB. A three-minute bounded physical sustained-load baseline has passed;
+longer runs, real memory pressure, and jetsam behavior remain open.
 
 ## Lifecycle
 

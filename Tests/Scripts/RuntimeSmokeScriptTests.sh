@@ -632,6 +632,17 @@ if ! grep -Fq -- 'POCKETROOT_SMOKE_MEMORY_WARNING must be 0 or 1.' "$DEVICE_RUNN
     exit 1
 fi
 
+if ! grep -Fq -- 'POCKETROOT_SMOKE_LONG_WORKLOAD must be 0 or 1.' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- 'Long-workload smoke cannot be combined with another optional mode.' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- '"POCKETROOT_SMOKE_LONG_WORKLOAD":"1"' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- 'longWorkloadIterationCount = 90' "$SMOKE_APP" \
+  || ! grep -Fq -- 'running-long-workload-check' "$SMOKE_APP" \
+  || ! grep -Fq -- 'name: "long-workload"' "$SMOKE_APP" \
+  || ! grep -Fq -- 'PocketRootFileBrowser(executor: system)' "$SMOKE_APP"; then
+    echo "Physical-device smoke does not gate the bounded long workload." >&2
+    exit 1
+fi
+
 if ! grep -Fq -- 'simctl terminate "$DEVICE_UDID" "$BUNDLE_ID" >/dev/null 2>&1 || true' "$SIMULATOR_RUNNER"; then
     echo "Simulator runner cleanup is not best-effort after durable success." >&2
     exit 1

@@ -18,7 +18,7 @@ PocketRoot separates host logic, real RootFS, iOS build, native final-link, and 
 | Quick Start UI smoke | `./Scripts/run-quick-start-ui-smoke.sh` | Cold Files and Terminal entries in the minimal consumer App auto-boot; a real PTY-created file is previewed through Files | Physical devices, full Host lifecycle, distribution |
 | Host App UI smoke | `./Scripts/run-host-app-ui-smoke.sh` | Public-host boot, SwiftTerm PTY, lifecycle, Workspace persistence, Files mutations/previews, system document-picker import, share-sheet save and re-import round trip, and ordered shutdown on iPhone/iPad iOS 18 Simulators | Physical-device system file interaction, physical keyboards, physical iPad, distribution |
 | Physical Host App UI smoke | `./Scripts/run-host-app-device-ui-smoke.sh` | The same lifecycle UI test on a development-signed iPhone/iPad, including signature and development entitlements | iPad, real pressure, distribution |
-| Physical native smoke | `./Scripts/run-runtime-device-smoke.sh` | Same 17 checks with optional process suspend/resume, UIKit lifecycle, forced-relaunch persistence, bounded storage-failure recovery, or bounded memory-warning recovery; development entitlements and returning soft shutdown | Real storage/memory pressure, power cut, jetsam, iPad, distribution |
+| Physical native smoke | `./Scripts/run-runtime-device-smoke.sh` | Same 17 checks with optional process suspend/resume, UIKit lifecycle, forced-relaunch persistence, bounded storage-failure recovery, bounded memory-warning recovery, or a three-minute sustained workload; development entitlements and returning soft shutdown | Real storage/memory pressure, power cut, jetsam, iPad, distribution |
 | Source-release audit | `ruby Scripts/verify-source-release.rb --version 0.1.0` | Source track Ready, complete version documents, and a `git archive` without RootFS, App, IPA, XCFramework mirror, compressed payload, or native binary content | Runtime/App/RootFS distribution authorization |
 | Documentation | `./Scripts/check-docs.sh` | Pairs, Chinese coverage, relative links | Implementation correctness |
 
@@ -315,6 +315,18 @@ POCKETROOT_SMOKE_MEMORY_WARNING=1 \
   ./Scripts/run-runtime-device-smoke.sh
 ```
 
+Use a separate mode for an approximately three-minute sustained command,
+file-I/O, and bounded-output baseline:
+
+```bash
+POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
+POCKETROOT_SMOKE_DEVICE=<physical-device-reference> \
+POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
+POCKETROOT_SMOKE_LONG_WORKLOAD=1 \
+POCKETROOT_SMOKE_TIMEOUT_SECONDS=600 \
+  ./Scripts/run-runtime-device-smoke.sh
+```
+
 The reference may be any CoreDevice UUID, hardware UDID, or device name
 accepted by `devicectl`. The runner validates a physical iOS device through
 the supported JSON output and resolves its hardware UDID before `xcodebuild`
@@ -322,7 +334,7 @@ and later `devicectl` operations. The paired device must have Developer Mode
 enabled and support development provisioning. The runner verifies the
 application identifier and `get-task-allow`, installs the App, copies the
 pinned archive into its data container, and retrieves the JSON report. Standard,
-bounded storage-failure, and bounded memory-warning modes use an attached
+bounded storage-failure, bounded memory-warning, and sustained-workload modes use an attached
 launch. The mutually
 exclusive host-control modes use the launch-JSON PID for suspend/resume, open
 Settings and reactivate the same PID for UIKit callbacks, or terminate a seed
@@ -409,6 +421,15 @@ gate all passed at a 90.8 MiB peak; the same default 17-check regression also
 passed at 89.9 MiB. This proves runtime continuity under the repository
 callback injection, not real memory pressure, system low-memory delivery, or
 jetsam.
+
+On 2026-08-02, the same Jack iPhone (iPhone 14 Pro / iOS 26.6) passed the
+20-check sustained-workload path. After the standard command and PTY/Files
+gates, the runtime completed 90 spaced command/file write-read cycles across
+approximately three minutes and verified 64 KiB of binary output every tenth
+cycle. The Files API recovered all 90 marker lines, soft shutdown returned,
+and lifecycle peak memory was 84.3 MiB against the 256 MiB gate. This proves a
+bounded foreground sustained-execution baseline, not sustained background
+execution, real memory pressure, or jetsam.
 
 The same Jack iPhone also passed the candidate-aware standard path for the
 unapproved `9375e0e` RootFS above. The device report bound the exact candidate

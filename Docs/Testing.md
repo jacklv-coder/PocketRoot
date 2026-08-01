@@ -18,7 +18,7 @@ PocketRoot 把验证分成宿主逻辑、真实 RootFS、iOS 构建、完整原�
 | Quick Start UI smoke | `./Scripts/run-quick-start-ui-smoke.sh` | Apple Silicon + iOS 18 Simulator + archive | 最小业务 App 的 Files/Terminal 两个入口可从冷启动自动 boot，真实 PTY 创建的文件可由 Files 预览 | 真机、完整 Host 生命周期或发行可用 |
 | Host App UI smoke | `./Scripts/run-host-app-ui-smoke.sh` | Apple Silicon + iOS 18 Simulator + archive | iPhone/iPad Simulator 上的公开宿主 Boot、SwiftTerm PTY、生命周期、Workspace 会话持续性、Files 增删改/预览、系统 document picker 导入、share sheet 保存与再次导入 round-trip，以及有序 shutdown | 真机系统文件交互、真机键盘、iPad 真机或发行可用 |
 | Host App 真机 UI smoke | `./Scripts/run-host-app-device-ui-smoke.sh` | 支持设备 OS 的 Xcode + development-signed iPhone/iPad + archive | 同一 Host App 生命周期 UI 测试的真机执行、签名与 development entitlement | iPad、真实压力或发行可用 |
-| 物理设备原生 smoke | `./Scripts/run-runtime-device-smoke.sh` | 签名 iOS 18+ iPhone/iPad + archive | 同一 17 项检查、可选进程暂停/恢复、UIKit 前后台、强制重启持久化、受限存储故障或有界内存警告恢复，development entitlement 与 shutdown 返回 | 真实 storage/memory pressure、断电、jetsam、iPad 或发行可用 |
+| 物理设备原生 smoke | `./Scripts/run-runtime-device-smoke.sh` | 签名 iOS 18+ iPhone/iPad + archive | 同一 17 项检查、可选进程暂停/恢复、UIKit 前后台、强制重启持久化、受限存储故障、有界内存警告恢复或 3 分钟持续负载，development entitlement 与 shutdown 返回 | 真实 storage/memory pressure、断电、jetsam、iPad 或发行可用 |
 | 源码发布审计 | `ruby Scripts/verify-source-release.rb --version 0.1.0` | Git commit/tag | 源码轨道 Ready、版本文档齐全，`git archive` 不含 RootFS、App、IPA、XCFramework 镜像、压缩载荷或原生二进制 | Runtime/App/RootFS 分发授权 |
 | 文档检查 | `./Scripts/check-docs.sh` | macOS/Linux shell | 中英文成对、中文覆盖和相对链接 | 技术实现正确 |
 
@@ -412,12 +412,23 @@ POCKETROOT_SMOKE_MEMORY_WARNING=1 \
   ./Scripts/run-runtime-device-smoke.sh
 ```
 
+验证约 3 分钟的持续执行、文件写读和有界输出时使用独立模式：
+
+```bash
+POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
+POCKETROOT_SMOKE_DEVICE=<physical-device-reference> \
+POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
+POCKETROOT_SMOKE_LONG_WORKLOAD=1 \
+POCKETROOT_SMOKE_TIMEOUT_SECONDS=600 \
+  ./Scripts/run-runtime-device-smoke.sh
+```
+
 runner 接受 `devicectl` 可识别的 CoreDevice UUID、硬件 UDID 或设备名，先通过官方
 JSON 输出验证 physical iOS 属性并解析硬件 UDID，再用于 `xcodebuild` 与后续
 `devicectl` 操作。设备必须已配对、启用 Developer Mode 且能用 development profile
 签名。runner 生成并签名 `PocketRootIshRuntimeSmoke`，验证 application identifier
 与 `get-task-allow`，安装 App、把固定 archive 复制到 App data container 并取回
-JSON report。标准、受限存储故障和有界内存警告模式使用 attached launch；三种互斥的
+JSON report。标准、受限存储故障、有界内存警告和持续负载模式使用 attached launch；三种互斥的
 host-control 模式使用 launch
 JSON 返回的 PID。进程模式驱动 suspend/resume；UIKit 模式打开 Settings 后重新激活
 同一 PID；强制重启持久化模式终止 seed PID 并要求 verify PID 不同。默认结束后终止
@@ -484,6 +495,12 @@ staging 前拒绝，gzip 在输出 1 字节后返回 ENOSPC；两次失败后 `r
 `.ready`、soft shutdown 和 256 MiB 峰值门禁全部通过，峰值 90.8 MiB；同次默认
 17 项回归也以 89.9 MiB 通过。该结果只证明 repository 回调注入下的 runtime
 连续性，不证明真实 memory pressure、系统低内存通知或 jetsam。
+
+2026-08-02，同一 Jack iPhone（iPhone 14 Pro / iOS 26.6）通过持续负载 20 项路径。
+标准命令、PTY/Files 门禁后，runtime 在约 3 分钟内完成 90 次间隔命令/文件写读循环，
+每 10 次校验一次 64 KiB 二进制输出；Files API 读回完整 90 行标记，随后 soft shutdown
+返回，生命周期峰值 84.3 MiB，低于 256 MiB 上限。这证明前台有界持续执行基线，不证明
+长期后台执行、真实 memory pressure 或 jetsam。
 
 同一 Jack iPhone 还通过上述未授权 `9375e0e` RootFS 的候选感知标准路径。设备报告
 绑定精确候选 SHA-256，观察到 aarch64 与 Alpine 3.19.1，完成
