@@ -1113,7 +1113,25 @@ class ReleaseComplianceTests < Minitest::Test
     assert_includes ui_test, "PocketRootFiles.preview"
     assert_includes ui_test, '.matching(identifier: "ActivityListView")'
     refute_includes ui_test, 'app.otherElements["ActivityListView"]'
+    assert_includes(
+      ui_test,
+      '"FullDocumentManagerViewControllerNavigationBar"'
+    )
+    assert_includes ui_test, "pickerLanding.waitForExistence(timeout: 30)"
+    assert_includes ui_test, "hostDestination.waitForExistence(timeout: 30)"
+    assert_includes ui_test, '"PocketRoot Host, Actions Menu"'
+    refute_includes ui_test, "currentHostDocuments.waitForExistence(timeout: 3)"
+    refute_includes(
+      ui_test,
+      'NSPredicate(format: "label BEGINSWITH %@", "PocketRoot Host")'
+    )
+    assert_operator(
+      ui_test.index("pickerLanding.waitForExistence(timeout: 30)"),
+      :<,
+      ui_test.index("localLocation.tap()")
+    )
     assert_includes ui_test, "testPTYLifecycleAndShutdown"
+    assert_includes ui_test, "PocketRoot Host UI checkpoint"
     assert_includes ui_test, "testWorkspaceKeepsPTYAliveAcrossFilesTab"
     assert_includes(
       ui_test,
@@ -1123,11 +1141,16 @@ class ReleaseComplianceTests < Minitest::Test
     assert_includes host_source, "workspaceHost.makeViewController()"
     assert_includes ui_test, "PocketRootHost.shutdown"
     assert_includes runner, "run-ios-example-ui-smoke.sh"
+    assert_includes runner, "files-workspace"
+    assert_includes runner, "pty-lifecycle"
     assert_includes generic_runner, "-test-timeouts-enabled YES"
+    assert_includes generic_runner, "POCKETROOT_UI_SKIP_TESTING"
+    assert_includes generic_runner, "POCKETROOT_UI_FAILURE_ARTIFACTS_DIR"
     assert_includes device_runner, "build-for-testing"
     assert_includes device_runner, "test-without-building"
     assert_includes device_runner, "result.deviceProperties.osVersionNumber"
     assert_includes workflow, "./Scripts/run-host-app-ui-smoke.sh"
+    assert_includes workflow, "actions/upload-artifact@043fb46d"
   end
 
   def test_rejects_demo_rootfs_injection_script_drift

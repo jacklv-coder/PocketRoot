@@ -6,7 +6,13 @@ PocketRoot 的重要变化记录在这里，并从首个公开版本开始遵循
 
 ## Unreleased
 
-当前暂无未发布变更。
+### Changed
+
+- 将 Host App 的 Files/Workspace 与 PTY lifecycle UI smoke 拆分到独立模拟器和
+  `xcodebuild` 调用；失败时记录阶段检查点，并保留 `.xcresult`、测试输出和
+  PocketRoot 模拟器日志供 CI 下载分析，同时维持每项测试 10 分钟硬上限；
+  系统文件 round-trip 测试也会在同一个 30 秒窗口内等待本机位置或已恢复的
+  Host 目录，兼容文件选择器保存上次目录及慢速模拟器的合法状态。
 
 ## 0.1.0 - 2026-07-31
 

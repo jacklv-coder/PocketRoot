@@ -9,6 +9,14 @@ final class PocketRootHostAppUITests: XCTestCase {
     private static let systemFixtureContents =
         "PocketRoot system file transfer UI fixture\n"
 
+    private func recordCheckpoint(_ name: String) {
+        print("PocketRoot Host UI checkpoint: \(name)")
+        let attachment = XCTAttachment(string: name)
+        attachment.name = "PocketRoot Host UI checkpoint"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+
     func testFilesCreateAndDelete() {
         let app = launchAndBoot()
         app.buttons["PocketRootHost.files"].tap()
@@ -311,6 +319,7 @@ final class PocketRootHostAppUITests: XCTestCase {
         }
 
         let app = launchAndBoot()
+        recordCheckpoint("runtime-booted")
         let terminalButton = app.buttons["PocketRootHost.terminal"]
         terminalButton.tap()
 
@@ -329,6 +338,7 @@ final class PocketRootHostAppUITests: XCTestCase {
         XCTAssertTrue(app.wait(for: .runningBackground, timeout: 15))
         app.activate()
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30))
+        recordCheckpoint("foreground-restored")
 
         terminal = terminalElement(in: app)
         XCTAssertTrue(terminal.waitForExistence(timeout: 30))
@@ -346,6 +356,7 @@ final class PocketRootHostAppUITests: XCTestCase {
             evaluatedWith: terminal,
             timeout: 30
         )
+        recordCheckpoint("sustained-output-observed")
 
         let portraitSize = queryTerminalSize(
             terminal,
@@ -361,6 +372,7 @@ final class PocketRootHostAppUITests: XCTestCase {
             marker: "__LANDSCAPE_SIZE__"
         )
         XCTAssertGreaterThan(landscapeSize.columns, portraitSize.columns)
+        recordCheckpoint("landscape-resize-verified")
 
         XCUIDevice.shared.orientation = .portrait
         allowTerminalToDrain()
@@ -375,6 +387,7 @@ final class PocketRootHostAppUITests: XCTestCase {
             returnedPortraitSize.columns,
             landscapeSize.columns
         )
+        recordCheckpoint("portrait-resize-verified")
 
         tapBackButton(in: app)
         XCTAssertTrue(terminalButton.waitForExistence(timeout: 30))
@@ -386,6 +399,7 @@ final class PocketRootHostAppUITests: XCTestCase {
             evaluatedWith: terminalButton,
             timeout: 30
         )
+        recordCheckpoint("first-session-closed")
 
         terminalButton.tap()
         terminal = terminalElement(in: app)
@@ -398,6 +412,7 @@ final class PocketRootHostAppUITests: XCTestCase {
 
         let exitedNavigationBar = app.navigationBars["Terminal Exited (0)"]
         XCTAssertTrue(exitedNavigationBar.waitForExistence(timeout: 30))
+        recordCheckpoint("reopened-session-exited")
         exitedNavigationBar.buttons.element(boundBy: 0).tap()
 
         let filesButton = app.buttons["PocketRootHost.files"]
@@ -422,12 +437,14 @@ final class PocketRootHostAppUITests: XCTestCase {
             preview.label,
             "before-background\nafter-foreground\nafter-reopen\n"
         )
+        recordCheckpoint("guest-file-preview-verified")
 
         shutdownRuntime(in: app)
         let shutdownButton = app.buttons["PocketRootHost.shutdown"]
         XCTAssertFalse(terminalButton.isEnabled)
         XCTAssertFalse(filesButton.isEnabled)
         XCTAssertFalse(shutdownButton.isEnabled)
+        recordCheckpoint("runtime-shutdown-verified")
     }
 
     func testWorkspaceKeepsPTYAliveAcrossFilesTab() {
@@ -665,18 +682,48 @@ final class PocketRootHostAppUITests: XCTestCase {
             browse.tap()
         }
 
+        // The iOS document picker preserves its last visited directory. On a
+        // later import or export in this test it can reopen directly inside
+        // the host container instead of showing either the local location or
+        // the container cell again.
+        let pickerNavigationBar = app.navigationBars[
+            "FullDocumentManagerViewControllerNavigationBar"
+        ]
+        let hostDocumentLabels = [
+            "PocketRoot Host, Actions Menu",
+            "PocketRoot Host, 操作菜单",
+            "PocketRoot Host，操作菜单",
+        ]
+        let currentHostDocuments = pickerNavigationBar.buttons.matching(
+            NSPredicate(
+                format: "label IN %@",
+                hostDocumentLabels
+            )
+        ).firstMatch
+        let localLocationLabels = [
+            "On My iPhone",
+            "On My iPad",
+            "我的 iPhone",
+            "我的 iPad",
+        ]
         let localLocation = app.descendants(matching: .any).matching(
             NSPredicate(
                 format: "label IN %@",
-                [
-                    "On My iPhone",
-                    "On My iPad",
-                    "我的 iPhone",
-                    "我的 iPad",
-                ]
+                localLocationLabels
             )
         ).firstMatch
-        XCTAssertTrue(localLocation.waitForExistence(timeout: 30))
+        let pickerLanding = app.descendants(matching: .any).matching(
+            NSPredicate(
+                format: "label IN %@",
+                hostDocumentLabels + localLocationLabels
+            )
+        ).firstMatch
+        XCTAssertTrue(pickerLanding.waitForExistence(timeout: 30))
+        if currentHostDocuments.exists {
+            return
+        }
+
+        XCTAssertTrue(localLocation.exists)
         localLocation.tap()
 
         let hostDocuments = app.cells.matching(
@@ -686,7 +733,20 @@ final class PocketRootHostAppUITests: XCTestCase {
                 "PocketRoot Host,"
             )
         ).firstMatch
-        XCTAssertTrue(hostDocuments.waitForExistence(timeout: 30))
+        let hostDestination = app.descendants(matching: .any).matching(
+            NSPredicate(
+                format: "identifier == %@ OR label IN %@ OR label BEGINSWITH %@",
+                "PocketRoot Host, Container",
+                hostDocumentLabels,
+                "PocketRoot Host,"
+            )
+        ).firstMatch
+        XCTAssertTrue(hostDestination.waitForExistence(timeout: 30))
+        if currentHostDocuments.exists {
+            return
+        }
+
+        XCTAssertTrue(hostDocuments.exists)
         hostDocuments.tap()
     }
 
