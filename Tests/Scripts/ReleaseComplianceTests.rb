@@ -1146,6 +1146,12 @@ class ReleaseComplianceTests < Minitest::Test
     assert_includes generic_runner, "-test-timeouts-enabled YES"
     assert_includes generic_runner, "POCKETROOT_UI_SKIP_TESTING"
     assert_includes generic_runner, "POCKETROOT_UI_FAILURE_ARTIFACTS_DIR"
+    assert_includes generic_runner, "POCKETROOT_UI_INFRASTRUCTURE_RETRY_LIMIT"
+    assert_includes generic_runner, "is_retryable_simulator_launch_failure"
+    assert_includes generic_runner, "is unknown to FrontBoard"
+    assert_includes generic_runner, '"$CREATED_DEVICE" == "true"'
+    assert_includes generic_runner, "xcodebuild-test-attempt-1.log"
+    assert_includes generic_runner, "-attempt-1.xcresult"
     assert_includes device_runner, "build-for-testing"
     assert_includes device_runner, "test-without-building"
     assert_includes device_runner, "result.deviceProperties.osVersionNumber"
