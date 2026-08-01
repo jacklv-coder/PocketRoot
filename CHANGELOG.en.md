@@ -8,12 +8,17 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 
 ### Changed
 
-- Split Host App Files/Workspace and PTY lifecycle UI smoke into independent
-  Simulator and `xcodebuild` invocations. Failures now retain phase checkpoints,
-  the `.xcresult`, test output, and PocketRoot Simulator logs for CI diagnosis
-  while preserving the ten-minute hard limit for each test. System file
-  round-trip coverage now waits for either the local location or a restored host
-  folder in one 30-second window, covering saved picker state on slow Simulators.
+- Split the Host App Files/Workspace and PTY lifecycle UI smoke phases across
+  independent Simulators and `xcodebuild` invocations, retaining phase
+  checkpoints, `.xcresult`, test output, and PocketRoot Simulator logs on
+  failure while keeping a ten-minute hard limit per test. The system-file
+  round trip now waits within one 30-second window for either the local device
+  location or a restored Host folder. The shared UI runner restarts and retries
+  exactly once only when its own temporary Simulator test runner was not
+  registered with FrontBoard; caller-supplied shared Simulators are not
+  restarted, and assertion, timeout, and other build failures still fail
+  immediately. If retry or restart fails, both attempt logs and available
+  `.xcresult` bundles are retained.
 
 ## 0.1.0 - 2026-07-31
 

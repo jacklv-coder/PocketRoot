@@ -83,6 +83,12 @@ fi
 if ! grep -Fq -- 'POCKETROOT_KEEP_UI_RESULT' "$GENERIC_UI_RUNNER" \
   || ! grep -Fq -- 'POCKETROOT_UI_SKIP_TESTING' "$GENERIC_UI_RUNNER" \
   || ! grep -Fq -- 'POCKETROOT_UI_FAILURE_ARTIFACTS_DIR' "$GENERIC_UI_RUNNER" \
+  || ! grep -Fq -- 'POCKETROOT_UI_INFRASTRUCTURE_RETRY_LIMIT' "$GENERIC_UI_RUNNER" \
+  || ! grep -Fq -- 'is_retryable_simulator_launch_failure' "$GENERIC_UI_RUNNER" \
+  || ! grep -Fq -- "is unknown to FrontBoard" "$GENERIC_UI_RUNNER" \
+  || ! grep -Fq -- 'retrying once' "$GENERIC_UI_RUNNER" \
+  || ! grep -Fq -- 'xcodebuild-test-attempt-1.log' "$GENERIC_UI_RUNNER" \
+  || ! grep -Fq -- '-attempt-1.xcresult' "$GENERIC_UI_RUNNER" \
   || ! grep -Fq -- 'xcodebuild-test.log' "$GENERIC_UI_RUNNER" \
   || ! grep -Fq -- 'simulator.log' "$GENERIC_UI_RUNNER" \
   || ! grep -Fq -- 'POCKETROOT_DEVELOPMENT_ROOTFS_ARCHIVE="$ARCHIVE_PATH"' "$GENERIC_UI_RUNNER" \
@@ -93,6 +99,255 @@ if ! grep -Fq -- 'POCKETROOT_KEEP_UI_RESULT' "$GENERIC_UI_RUNNER" \
     echo "Shared example UI runner is missing bounded execution or cleanup." >&2
     exit 1
 fi
+
+GENERIC_RUNNER_TEST_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/PocketRootGenericUIRunnerTests.XXXXXX")"
+GENERIC_RUNNER_MOCK_BIN="$GENERIC_RUNNER_TEST_ROOT/bin"
+GENERIC_RUNNER_APP="$GENERIC_RUNNER_TEST_ROOT/app"
+GENERIC_RUNNER_ARCHIVE="$GENERIC_RUNNER_TEST_ROOT/rootfs.tar.gz"
+GENERIC_RUNNER_XCODEBUILD_CALLS="$GENERIC_RUNNER_TEST_ROOT/xcodebuild-calls.txt"
+GENERIC_RUNNER_XCRUN_CALLS="$GENERIC_RUNNER_TEST_ROOT/xcrun-calls.txt"
+GENERIC_RUNNER_BOOTSTATUS_CALLS="$GENERIC_RUNNER_TEST_ROOT/bootstatus-calls.txt"
+GENERIC_RUNNER_BOOT_CALLS="$GENERIC_RUNNER_TEST_ROOT/boot-calls.txt"
+mkdir -p "$GENERIC_RUNNER_MOCK_BIN" "$GENERIC_RUNNER_APP"
+: > "$GENERIC_RUNNER_ARCHIVE"
+: > "$GENERIC_RUNNER_APP/project.yml"
+
+cat > "$GENERIC_RUNNER_MOCK_BIN/uname" <<'MOCK'
+#!/usr/bin/env bash
+printf 'arm64\n'
+MOCK
+cat > "$GENERIC_RUNNER_MOCK_BIN/xcodegen" <<'MOCK'
+#!/usr/bin/env bash
+exit 0
+MOCK
+cat > "$GENERIC_RUNNER_MOCK_BIN/xcrun" <<'MOCK'
+#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\n' "$*" >> "$POCKETROOT_MOCK_XCRUN_CALLS"
+if [[ "$*" == "simctl list runtimes available" ]]; then
+    printf 'iOS 18.0 - com.apple.CoreSimulator.SimRuntime.iOS-18-0\n'
+fi
+if [[ "$*" == "simctl shutdown MOCK-UDID" &&
+      "${POCKETROOT_MOCK_XCRUN_MODE:-success}" == "already-shutdown" ]]; then
+    exit 44
+fi
+if [[ "$*" == "simctl boot MOCK-UDID" ]]; then
+    calls=0
+    if [[ -f "$POCKETROOT_MOCK_BOOT_CALLS" ]]; then
+        calls="$(cat "$POCKETROOT_MOCK_BOOT_CALLS")"
+    fi
+    calls="$((calls + 1))"
+    printf '%s\n' "$calls" > "$POCKETROOT_MOCK_BOOT_CALLS"
+    if [[ "${POCKETROOT_MOCK_XCRUN_MODE:-success}" == "boot-failure" &&
+          "$calls" -eq 2 ]]; then
+        exit 43
+    fi
+fi
+if [[ "$1" == "simctl" && "$2" == "create" ]]; then
+    printf 'MOCK-UDID\n'
+fi
+if [[ "$*" == "simctl bootstatus MOCK-UDID -b" ]]; then
+    calls=0
+    if [[ -f "$POCKETROOT_MOCK_BOOTSTATUS_CALLS" ]]; then
+        calls="$(cat "$POCKETROOT_MOCK_BOOTSTATUS_CALLS")"
+    fi
+    calls="$((calls + 1))"
+    printf '%s\n' "$calls" > "$POCKETROOT_MOCK_BOOTSTATUS_CALLS"
+    if [[ "${POCKETROOT_MOCK_XCRUN_MODE:-success}" == "restart-failure" &&
+          "$calls" -eq 2 ]]; then
+        exit 42
+    fi
+fi
+exit 0
+MOCK
+cat > "$GENERIC_RUNNER_MOCK_BIN/xcodebuild" <<'MOCK'
+#!/usr/bin/env bash
+set -euo pipefail
+calls=0
+if [[ -f "$POCKETROOT_MOCK_XCODEBUILD_CALLS" ]]; then
+    calls="$(cat "$POCKETROOT_MOCK_XCODEBUILD_CALLS")"
+fi
+calls="$((calls + 1))"
+printf '%s\n' "$calls" > "$POCKETROOT_MOCK_XCODEBUILD_CALLS"
+result_bundle_path=""
+while [[ "$#" -gt 0 ]]; do
+    if [[ "$1" == "-resultBundlePath" && "$#" -gt 1 ]]; then
+        result_bundle_path="$2"
+        break
+    fi
+    shift
+done
+if [[ -n "$result_bundle_path" ]]; then
+    mkdir -p "$result_bundle_path"
+fi
+if [[ "${POCKETROOT_MOCK_XCODEBUILD_MODE:-retry}" == "retry" && "$calls" -eq 1 ]]; then
+    echo "Simulator device failed to launch com.example.UITests.xctrunner."
+    echo 'Application "com.example.UITests.xctrunner" is unknown to FrontBoard.'
+    exit 65
+fi
+if [[ "${POCKETROOT_MOCK_XCODEBUILD_MODE:-retry}" == "assertion" ]]; then
+    echo "Testing failed: expected value did not match"
+    exit 65
+fi
+exit 0
+MOCK
+chmod +x "$GENERIC_RUNNER_MOCK_BIN"/*
+
+GENERIC_RUNNER_OUTPUT="$GENERIC_RUNNER_TEST_ROOT/retry-output.txt"
+PATH="$GENERIC_RUNNER_MOCK_BIN:$PATH" \
+POCKETROOT_UI_APP_DIR="$GENERIC_RUNNER_APP" \
+POCKETROOT_UI_PROJECT_NAME="MockApp" \
+POCKETROOT_UI_SCHEME="MockApp" \
+POCKETROOT_UI_TEST_BUNDLE="MockAppUITests" \
+POCKETROOT_CLONED_SOURCE_PACKAGES_DIR="$GENERIC_RUNNER_TEST_ROOT/packages" \
+POCKETROOT_MOCK_XCODEBUILD_CALLS="$GENERIC_RUNNER_XCODEBUILD_CALLS" \
+POCKETROOT_MOCK_XCRUN_CALLS="$GENERIC_RUNNER_XCRUN_CALLS" \
+POCKETROOT_MOCK_BOOTSTATUS_CALLS="$GENERIC_RUNNER_BOOTSTATUS_CALLS" \
+POCKETROOT_MOCK_BOOT_CALLS="$GENERIC_RUNNER_BOOT_CALLS" \
+  "$GENERIC_UI_RUNNER" "$GENERIC_RUNNER_ARCHIVE" \
+  > "$GENERIC_RUNNER_OUTPUT" 2>&1
+
+if [[ "$(cat "$GENERIC_RUNNER_XCODEBUILD_CALLS")" != "2" ]] \
+  || ! grep -Fq -- 'retrying once' "$GENERIC_RUNNER_OUTPUT" \
+  || ! grep -Fq -- 'simctl shutdown MOCK-UDID' "$GENERIC_RUNNER_XCRUN_CALLS"; then
+    echo "Shared example UI runner did not bound and recover the FrontBoard launch retry." >&2
+    exit 1
+fi
+
+printf '0\n' > "$GENERIC_RUNNER_XCODEBUILD_CALLS"
+: > "$GENERIC_RUNNER_XCRUN_CALLS"
+: > "$GENERIC_RUNNER_BOOT_CALLS"
+if ! PATH="$GENERIC_RUNNER_MOCK_BIN:$PATH" \
+  POCKETROOT_UI_APP_DIR="$GENERIC_RUNNER_APP" \
+  POCKETROOT_UI_PROJECT_NAME="MockApp" \
+  POCKETROOT_UI_SCHEME="MockApp" \
+  POCKETROOT_UI_TEST_BUNDLE="MockAppUITests" \
+  POCKETROOT_CLONED_SOURCE_PACKAGES_DIR="$GENERIC_RUNNER_TEST_ROOT/packages" \
+  POCKETROOT_MOCK_XCODEBUILD_CALLS="$GENERIC_RUNNER_XCODEBUILD_CALLS" \
+  POCKETROOT_MOCK_XCRUN_CALLS="$GENERIC_RUNNER_XCRUN_CALLS" \
+  POCKETROOT_MOCK_BOOTSTATUS_CALLS="$GENERIC_RUNNER_BOOTSTATUS_CALLS" \
+  POCKETROOT_MOCK_BOOT_CALLS="$GENERIC_RUNNER_BOOT_CALLS" \
+  POCKETROOT_MOCK_XCRUN_MODE="already-shutdown" \
+    "$GENERIC_UI_RUNNER" "$GENERIC_RUNNER_ARCHIVE" \
+    > "$GENERIC_RUNNER_TEST_ROOT/already-shutdown-output.txt" 2>&1; then
+    echo "Shared example UI runner did not recover an already-shutdown temporary Simulator." >&2
+    exit 1
+fi
+if [[ "$(cat "$GENERIC_RUNNER_XCODEBUILD_CALLS")" != "2" ]] \
+  || [[ "$(cat "$GENERIC_RUNNER_BOOT_CALLS")" != "2" ]]; then
+    echo "Shared example UI runner treated an already-shutdown Simulator as a restart failure." >&2
+    exit 1
+fi
+
+printf '0\n' > "$GENERIC_RUNNER_XCODEBUILD_CALLS"
+: > "$GENERIC_RUNNER_XCRUN_CALLS"
+if PATH="$GENERIC_RUNNER_MOCK_BIN:$PATH" \
+  POCKETROOT_UI_APP_DIR="$GENERIC_RUNNER_APP" \
+  POCKETROOT_UI_PROJECT_NAME="MockApp" \
+  POCKETROOT_UI_SCHEME="MockApp" \
+  POCKETROOT_UI_TEST_BUNDLE="MockAppUITests" \
+  POCKETROOT_UI_SMOKE_DEVICE="MOCK-UDID" \
+  POCKETROOT_CLONED_SOURCE_PACKAGES_DIR="$GENERIC_RUNNER_TEST_ROOT/packages" \
+  POCKETROOT_MOCK_XCODEBUILD_CALLS="$GENERIC_RUNNER_XCODEBUILD_CALLS" \
+  POCKETROOT_MOCK_XCRUN_CALLS="$GENERIC_RUNNER_XCRUN_CALLS" \
+  POCKETROOT_MOCK_BOOTSTATUS_CALLS="$GENERIC_RUNNER_BOOTSTATUS_CALLS" \
+  POCKETROOT_MOCK_BOOT_CALLS="$GENERIC_RUNNER_BOOT_CALLS" \
+    "$GENERIC_UI_RUNNER" "$GENERIC_RUNNER_ARCHIVE" \
+    > "$GENERIC_RUNNER_TEST_ROOT/caller-device-output.txt" 2>&1; then
+    echo "Shared example UI runner accepted a FrontBoard failure on a caller-owned Simulator." >&2
+    exit 1
+fi
+if [[ "$(cat "$GENERIC_RUNNER_XCODEBUILD_CALLS")" != "1" ]] \
+  || grep -Fq -- 'simctl shutdown MOCK-UDID' "$GENERIC_RUNNER_XCRUN_CALLS"; then
+    echo "Shared example UI runner restarted a caller-owned Simulator." >&2
+    exit 1
+fi
+
+printf '0\n' > "$GENERIC_RUNNER_XCODEBUILD_CALLS"
+: > "$GENERIC_RUNNER_XCRUN_CALLS"
+if PATH="$GENERIC_RUNNER_MOCK_BIN:$PATH" \
+  POCKETROOT_UI_APP_DIR="$GENERIC_RUNNER_APP" \
+  POCKETROOT_UI_PROJECT_NAME="MockApp" \
+  POCKETROOT_UI_SCHEME="MockApp" \
+  POCKETROOT_UI_TEST_BUNDLE="MockAppUITests" \
+  POCKETROOT_CLONED_SOURCE_PACKAGES_DIR="$GENERIC_RUNNER_TEST_ROOT/packages" \
+  POCKETROOT_MOCK_XCODEBUILD_CALLS="$GENERIC_RUNNER_XCODEBUILD_CALLS" \
+  POCKETROOT_MOCK_XCRUN_CALLS="$GENERIC_RUNNER_XCRUN_CALLS" \
+  POCKETROOT_MOCK_BOOTSTATUS_CALLS="$GENERIC_RUNNER_BOOTSTATUS_CALLS" \
+  POCKETROOT_MOCK_BOOT_CALLS="$GENERIC_RUNNER_BOOT_CALLS" \
+  POCKETROOT_MOCK_XCODEBUILD_MODE="assertion" \
+    "$GENERIC_UI_RUNNER" "$GENERIC_RUNNER_ARCHIVE" \
+    > "$GENERIC_RUNNER_TEST_ROOT/assertion-output.txt" 2>&1; then
+    echo "Shared example UI runner retried or accepted a test assertion failure." >&2
+    exit 1
+fi
+if [[ "$(cat "$GENERIC_RUNNER_XCODEBUILD_CALLS")" != "1" ]]; then
+    echo "Shared example UI runner retried a non-infrastructure failure." >&2
+    exit 1
+fi
+
+printf '0\n' > "$GENERIC_RUNNER_XCODEBUILD_CALLS"
+: > "$GENERIC_RUNNER_XCRUN_CALLS"
+: > "$GENERIC_RUNNER_BOOTSTATUS_CALLS"
+GENERIC_RUNNER_FAILURE_ARTIFACTS="$GENERIC_RUNNER_TEST_ROOT/failure-artifacts"
+if PATH="$GENERIC_RUNNER_MOCK_BIN:$PATH" \
+  POCKETROOT_UI_APP_DIR="$GENERIC_RUNNER_APP" \
+  POCKETROOT_UI_PROJECT_NAME="MockApp" \
+  POCKETROOT_UI_SCHEME="MockApp" \
+  POCKETROOT_UI_TEST_BUNDLE="MockAppUITests" \
+  POCKETROOT_UI_FAILURE_ARTIFACTS_DIR="$GENERIC_RUNNER_FAILURE_ARTIFACTS" \
+  POCKETROOT_CLONED_SOURCE_PACKAGES_DIR="$GENERIC_RUNNER_TEST_ROOT/packages" \
+  POCKETROOT_MOCK_XCODEBUILD_CALLS="$GENERIC_RUNNER_XCODEBUILD_CALLS" \
+  POCKETROOT_MOCK_XCRUN_CALLS="$GENERIC_RUNNER_XCRUN_CALLS" \
+  POCKETROOT_MOCK_BOOTSTATUS_CALLS="$GENERIC_RUNNER_BOOTSTATUS_CALLS" \
+  POCKETROOT_MOCK_BOOT_CALLS="$GENERIC_RUNNER_BOOT_CALLS" \
+  POCKETROOT_MOCK_XCRUN_MODE="restart-failure" \
+    "$GENERIC_UI_RUNNER" "$GENERIC_RUNNER_ARCHIVE" \
+    > "$GENERIC_RUNNER_TEST_ROOT/restart-failure-output.txt" 2>&1; then
+    echo "Shared example UI runner accepted a failed retry restart." >&2
+    exit 1
+fi
+if [[ "$(cat "$GENERIC_RUNNER_XCODEBUILD_CALLS")" != "1" ]] \
+  || [[ ! -f "$GENERIC_RUNNER_FAILURE_ARTIFACTS/xcodebuild-test-attempt-1.log" ]] \
+  || [[ ! -d "$GENERIC_RUNNER_FAILURE_ARTIFACTS/MockAppUITests-attempt-1.xcresult" ]] \
+  || ! grep -Fq -- 'Simulator restart failed during bootstatus with exit code 42' \
+    "$GENERIC_RUNNER_FAILURE_ARTIFACTS/xcodebuild-test.log"; then
+    echo "Shared example UI runner did not preserve diagnostics after a failed retry restart." >&2
+    exit 1
+fi
+
+printf '0\n' > "$GENERIC_RUNNER_XCODEBUILD_CALLS"
+: > "$GENERIC_RUNNER_XCRUN_CALLS"
+: > "$GENERIC_RUNNER_BOOTSTATUS_CALLS"
+: > "$GENERIC_RUNNER_BOOT_CALLS"
+GENERIC_RUNNER_BOOT_FAILURE_ARTIFACTS="$GENERIC_RUNNER_TEST_ROOT/boot-failure-artifacts"
+if PATH="$GENERIC_RUNNER_MOCK_BIN:$PATH" \
+  POCKETROOT_UI_APP_DIR="$GENERIC_RUNNER_APP" \
+  POCKETROOT_UI_PROJECT_NAME="MockApp" \
+  POCKETROOT_UI_SCHEME="MockApp" \
+  POCKETROOT_UI_TEST_BUNDLE="MockAppUITests" \
+  POCKETROOT_UI_FAILURE_ARTIFACTS_DIR="$GENERIC_RUNNER_BOOT_FAILURE_ARTIFACTS" \
+  POCKETROOT_CLONED_SOURCE_PACKAGES_DIR="$GENERIC_RUNNER_TEST_ROOT/packages" \
+  POCKETROOT_MOCK_XCODEBUILD_CALLS="$GENERIC_RUNNER_XCODEBUILD_CALLS" \
+  POCKETROOT_MOCK_XCRUN_CALLS="$GENERIC_RUNNER_XCRUN_CALLS" \
+  POCKETROOT_MOCK_BOOTSTATUS_CALLS="$GENERIC_RUNNER_BOOTSTATUS_CALLS" \
+  POCKETROOT_MOCK_BOOT_CALLS="$GENERIC_RUNNER_BOOT_CALLS" \
+  POCKETROOT_MOCK_XCRUN_MODE="boot-failure" \
+    "$GENERIC_UI_RUNNER" "$GENERIC_RUNNER_ARCHIVE" \
+    > "$GENERIC_RUNNER_TEST_ROOT/boot-failure-output.txt" 2>&1; then
+    echo "Shared example UI runner accepted a failed retry boot." >&2
+    exit 1
+fi
+if [[ "$(cat "$GENERIC_RUNNER_XCODEBUILD_CALLS")" != "1" ]] \
+  || ! grep -Fq -- 'Simulator restart failed during boot with exit code 43' \
+    "$GENERIC_RUNNER_BOOT_FAILURE_ARTIFACTS/xcodebuild-test.log" \
+  || ! grep -Fq -- 'retry_restart_failure_stage=boot' \
+    "$GENERIC_RUNNER_BOOT_FAILURE_ARTIFACTS/phase.txt" \
+  || [[ ! -d "$GENERIC_RUNNER_BOOT_FAILURE_ARTIFACTS/MockAppUITests-attempt-1.xcresult" ]]; then
+    echo "Shared example UI runner ignored a failed retry boot." >&2
+    exit 1
+fi
+rm -rf "$GENERIC_RUNNER_TEST_ROOT"
 
 WRAPPER_TEST_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/PocketRootHostUIWrapperTests.XXXXXX")"
 trap 'rm -rf "$WRAPPER_TEST_ROOT"' EXIT
