@@ -1,0 +1,59 @@
+name: Feature request / 功能建议
+description: Propose a focused PocketRoot capability or developer-experience improvement. / 提议范围明确的能力或开发体验改进。
+title: "[Feature]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        PocketRoot keeps the native runtime Experimental, RootFS caller-owned, and Agent products explicitly opt-in. Proposals must preserve those boundaries unless the required product, legal, and distribution decisions are also identified.
+
+        PocketRoot 保持原生 runtime 为 Experimental、RootFS 由调用方提供、Agent 产品显式 opt-in。建议如要改变这些边界，必须同时指出所需的产品、法律和分发决定。
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Surface / 范围
+      options:
+        - Terminal or PTY / 终端或 PTY
+        - Files or Workspace / 文件或 Workspace
+        - RootFS lifecycle / RootFS 生命周期
+        - Runtime or Swift API / Runtime 或 Swift API
+        - UIKit or SwiftUI integration / UIKit 或 SwiftUI 接入
+        - Optional Agent component / 可选 Agent 组件
+        - Testing, tooling, or documentation / 测试、工具或文档
+        - Other / 其他
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / 问题
+      description: Describe the user or integrator problem without prescribing an implementation. / 描述用户或接入方问题，先不要限定实现方式。
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome / 期望结果
+      description: Explain the smallest observable behavior that would solve the problem. / 说明解决问题所需的最小可观察行为。
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered / 已考虑方案
+  - type: textarea
+    id: boundaries
+    attributes:
+      label: Security, compatibility, and release impact / 安全、兼容与发行影响
+      description: Note API compatibility, RootFS, upstream binary, App Store, privacy, physical-device, or distribution implications. / 说明 API 兼容、RootFS、上游二进制、App Store、隐私、真机或分发影响。
+    validations:
+      required: true
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Confirmations / 确认
+      options:
+        - label: I searched existing Issues and the roadmap. / 我已搜索现有 Issue 和路线图。
+          required: true
+        - label: The request does not assume PocketRoot bundles or distributes a RootFS. / 本建议不假设 PocketRoot 打包或分发 RootFS。
+          required: true

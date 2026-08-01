@@ -4,6 +4,12 @@
 
 PocketRoot is in an Experimental runtime phase. Code quality, native lifecycle, supply-chain records, and both documentation languages must move together.
 
+Contributors must also follow the
+[Community Code of Conduct](CODE_OF_CONDUCT.en.md). Use the structured
+[Issue forms](https://github.com/jacklv-coder/PocketRoot/issues/new/choose)
+for general bugs, integration help, and feature requests. Report unpatched
+vulnerabilities privately under the [Security Policy](SECURITY.en.md).
+
 ## License and contributions
 
 Original source code copyrighted by PocketRoot contributors is provided under

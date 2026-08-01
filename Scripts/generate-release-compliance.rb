@@ -253,9 +253,9 @@ module PocketRootReleaseCompliance
     "NOTICE.md" =>
       "572b60c39125dae2f7e7c2ae83c6c5b79dc2fedd863bf658f3c0e100825cdd2e",
     "CONTRIBUTING.md" =>
-      "02785a360b7cd854b4cebf9577099a6e960179c762d71e7f1665bba84cead5ff",
+      "0beaceb8d56f1c43fa458d0b121d3d005c4a9cedb12b32029b35e74aff7b3d0b",
     "CONTRIBUTING.en.md" =>
-      "d1c2bfa841ea09a319c82d0a2ee465a6db62f51649b283a74cd3af7e71727041",
+      "0f619a667ea5ae4749f77f9afe5a9583447fcdab8a0985c11dcc4c935dead94a",
     "Compliance/SPDX/LICENSE-LIST-3.28.0.json" =>
       "7376db20698ff21511fe802aded9b5d7145520a86133b74f68b0c1568dd6dd1c",
     "Compliance/Release/RELEASE-DECISIONS.json" =>

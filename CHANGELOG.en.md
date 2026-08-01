@@ -6,6 +6,13 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 
 ## Unreleased
 
+### Added
+
+- Bilingual security and community-conduct policies, support routing,
+  structured bug/integration/feature Issue forms, and a pull request checklist.
+  Documentation validation now requires these open-source collaboration files
+  and complete root-level Chinese/English mirrors.
+
 ### Changed
 
 - The Host App iPad system-file round-trip UI smoke no longer reads

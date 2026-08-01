@@ -353,6 +353,21 @@ timeout/output-limit recovery, and soft shutdown that returns to Swift. See
 | Development workflow | [Contributing](CONTRIBUTING.en.md) |
 | Changes | [Changelog](CHANGELOG.en.md) |
 
+## Support and contributing
+
+- Start integration questions with the
+  [Integration Guide](Docs/en/IntegrationGuide.md) and
+  [Troubleshooting](Docs/en/Troubleshooting.md).
+- Use the structured
+  [Issue forms](https://github.com/jacklv-coder/PocketRoot/issues/new/choose)
+  for non-sensitive bugs, integration help, and feature requests.
+- Do not disclose unpatched vulnerabilities publicly; follow the
+  [Security Policy](SECURITY.en.md).
+- Before contributing code, read the
+  [Contributing Guide](CONTRIBUTING.en.md),
+  [Community Code of Conduct](CODE_OF_CONDUCT.en.md), and the pull request
+  checklist shown automatically by GitHub.
+
 See the [Documentation Hub](Docs/en/README.md).
 
 ## License and release

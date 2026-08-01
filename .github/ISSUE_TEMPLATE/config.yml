@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security report / 安全报告
+    url: https://github.com/jacklv-coder/PocketRoot/blob/main/SECURITY.md
+    about: Report unpatched vulnerabilities privately; do not open a public issue. / 未修复漏洞请私下报告，不要创建公开 Issue。
+  - name: Documentation / 文档中心
+    url: https://github.com/jacklv-coder/PocketRoot/tree/main/Docs
+    about: Read integration, testing, troubleshooting, and release-boundary documentation. / 查看接入、测试、排障和发行边界文档。

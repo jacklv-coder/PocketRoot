@@ -1,0 +1,67 @@
+name: Integration help / 接入帮助
+description: Ask a reproducible question about embedding Terminal, Files, or Workspace. / 询问可复现的 Terminal、Files 或 Workspace 接入问题。
+title: "[Integration]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Start with the Integration Guide and Troubleshooting documents. Do not post secrets, signing material, private device data, RootFS archives, or binary artifacts.
+
+        请先阅读接入指南和故障排查文档。不要发布密钥、签名材料、私有设备数据、RootFS 或二进制制品。
+  - type: input
+    id: version
+    attributes:
+      label: PocketRoot version or full commit / PocketRoot 版本或完整 commit
+    validations:
+      required: true
+  - type: dropdown
+    id: entry
+    attributes:
+      label: Integration entry / 接入入口
+      options:
+        - PocketRootIshWorkspaceHost Terminal
+        - PocketRootIshWorkspaceHost Files
+        - PocketRootIshWorkspaceHost combined Workspace
+        - Already-booted PocketRootSystem UI
+        - Command or session Swift API
+        - Package/build setup
+        - Other / 其他
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment / 环境
+      description: Xcode, iOS, device or Simulator, architecture, and UIKit or SwiftUI. / Xcode、iOS、设备或 Simulator、架构，以及 UIKit 或 SwiftUI。
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: Integration goal / 接入目标
+    validations:
+      required: true
+  - type: textarea
+    id: code
+    attributes:
+      label: Minimal integration code / 最小接入代码
+      render: swift
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Current result and sanitized diagnostics / 当前结果与已脱敏诊断
+    validations:
+      required: true
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Confirmations / 确认
+      options:
+        - label: I checked the Integration Guide and Troubleshooting documents. / 我已检查接入指南和故障排查文档。
+          required: true
+        - label: I retain PocketRootIshWorkspaceHost outside transient SwiftUI body evaluation when using the integrated host. / 使用一体化 host 时，我把 PocketRootIshWorkspaceHost 保存在 SwiftUI body 临时求值之外。
+          required: true
+        - label: This post contains no secrets, private data, RootFS, or unauthorized binaries. / 本帖不含密钥、私有数据、RootFS 或未经授权的二进制。
+          required: true
