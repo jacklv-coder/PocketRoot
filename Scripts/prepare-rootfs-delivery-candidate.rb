@@ -525,11 +525,7 @@ module RootFSDeliveryCandidate
       next unless output.bytesize > maximum_bytes
 
       exceeded = true
-      begin
-        Process.kill("KILL", -wait_thread.pid)
-      rescue Errno::ESRCH
-        # The command exited between the bounded read and termination request.
-      end
+      terminate_command_group(wait_thread)
       break
     end
     [output, exceeded]
@@ -537,6 +533,30 @@ module RootFSDeliveryCandidate
     [output, exceeded]
   ensure
     stream.close unless stream.closed?
+  end
+
+  def terminate_command_group(wait_thread, signaler: Process)
+    signaler.kill("KILL", -wait_thread.pid)
+  rescue Errno::ESRCH
+    # The command exited between the bounded read and termination request.
+    nil
+  rescue Errno::EPERM => permission_error
+    # macOS can report EPERM for this exit race, but it also represents a real
+    # process-group permission failure. Ignore it only after Open3 confirms the
+    # direct child exited and a signal-zero probe confirms the whole group is
+    # gone; a surviving or unsignalable descendant must still fail closed.
+    child_exited = wait_thread.join(0.1)
+    process_group_gone = false
+    begin
+      signaler.kill(0, -wait_thread.pid)
+    rescue Errno::ESRCH
+      process_group_gone = true
+    rescue Errno::EPERM
+      process_group_gone = false
+    end
+    raise permission_error unless child_exited && process_group_gone
+
+    nil
   end
 
   def command_output(

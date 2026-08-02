@@ -678,8 +678,18 @@ final class PocketRootHostAppUITests: XCTestCase {
         let browse = app.buttons.matching(
             NSPredicate(format: "label IN %@", ["Browse", "浏览"])
         ).firstMatch
-        if browse.waitForExistence(timeout: 10) {
-            browse.tap()
+        if browse.waitForExistence(timeout: 10),
+           let frames = waitForInteractionFrames(
+               of: browse,
+               in: app,
+               timeout: 3
+           )
+        {
+            tapFrame(
+                frames.elementFrame,
+                in: frames.appFrame,
+                using: app
+            )
         }
 
         // The iOS document picker preserves its last visited directory. On a
@@ -758,44 +768,35 @@ final class PocketRootHostAppUITests: XCTestCase {
             .matching(identifier: "ActivityListView")
             .firstMatch
         let hostActions = app.buttons["PocketRootFiles.actions"]
-        let hostIsHittable = NSPredicate(format: "hittable == true")
+        if !activityView.waitForExistence(timeout: 3) {
+            // Without observing the system sheet, underlying host geometry is
+            // not proof that the host owns input. Use the caller's clean
+            // relaunch recovery path instead.
+            return false
+        }
 
-        for attempt in 0..<3 {
-            if waitWithoutAssertion(
-                for: hostIsHittable,
-                evaluatedWith: hostActions,
-                timeout: attempt == 0 ? 3 : 2
-            ) {
-                return true
-            }
-            if attempt == 0, !activityView.exists {
-                _ = activityView.waitForExistence(timeout: 3)
-            }
+        for _ in 0..<3 {
             guard activityView.exists else {
-                continue
+                return waitForInteractionFrames(
+                    of: hostActions,
+                    in: app,
+                    timeout: 3
+                ) != nil
             }
 
             let close = app.buttons.matching(
                 NSPredicate(format: "label IN %@", ["Close", "关闭"])
             ).firstMatch
-            let shareDismissedOrCloseHittable = NSPredicate { _, _ in
-                hostActions.isHittable || !activityView.exists
-                    || close.isHittable
-            }
-            _ = waitWithoutAssertion(
-                for: shareDismissedOrCloseHittable,
-                evaluatedWith: app,
-                timeout: 5
-            )
-            if hostActions.isHittable {
-                return true
-            }
-            guard activityView.exists else {
-                continue
-            }
-
-            if close.isHittable {
-                tapCurrentFrame(of: close, in: app)
+            if let frames = waitForInteractionFrames(
+                of: close,
+                in: app,
+                timeout: 3
+            ) {
+                tapFrame(
+                    frames.elementFrame,
+                    in: frames.appFrame,
+                    using: app
+                )
             } else {
                 // iPad presents the activity view as a popover without a
                 // Close button. Snapshot its frame once so disappearance is a
@@ -813,18 +814,31 @@ final class PocketRootHostAppUITests: XCTestCase {
                     continue
                 }
             }
+
+            let activityDismissed = NSPredicate(format: "exists == false")
+            if waitWithoutAssertion(
+                for: activityDismissed,
+                evaluatedWith: activityView,
+                timeout: 5
+            ) {
+                return waitForInteractionFrames(
+                    of: hostActions,
+                    in: app,
+                    timeout: 3
+                ) != nil
+            }
         }
 
         // System UI can leave a stale ActivityListView accessibility node
-        // behind. The host action button becoming hittable is the reliable
-        // signal that the share sheet no longer blocks input. If iOS keeps the
-        // remote view attached, the caller relaunches the host and continues
-        // validating the persisted Linux and exported files.
-        return waitWithoutAssertion(
-            for: hostIsHittable,
-            evaluatedWith: hostActions,
-            timeout: 5
-        )
+        // behind. Avoid asking another host element for hittability while the
+        // accessibility tree is transitional; the caller relaunches the host
+        // and continues validating the persisted Linux and exported files.
+        return !activityView.exists
+            && waitForInteractionFrames(
+                of: hostActions,
+                in: app,
+                timeout: 3
+            ) != nil
     }
 
     private func tapCurrentFrame(
@@ -833,6 +847,14 @@ final class PocketRootHostAppUITests: XCTestCase {
     ) {
         let appFrame = app.frame
         let elementFrame = element.frame
+        tapFrame(elementFrame, in: appFrame, using: app)
+    }
+
+    private func tapFrame(
+        _ elementFrame: CGRect,
+        in appFrame: CGRect,
+        using app: XCUIApplication
+    ) {
         app.coordinate(withNormalizedOffset: .zero)
             .withOffset(
                 CGVector(
@@ -841,6 +863,32 @@ final class PocketRootHostAppUITests: XCTestCase {
                 )
             )
             .tap()
+    }
+
+    private func waitForInteractionFrames(
+        of element: XCUIElement,
+        in app: XCUIApplication,
+        timeout: TimeInterval
+    ) -> (appFrame: CGRect, elementFrame: CGRect)? {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if element.exists, element.isEnabled {
+                let appFrame = app.frame
+                let elementFrame = element.frame
+                let elementCenter = CGPoint(
+                    x: elementFrame.midX,
+                    y: elementFrame.midY
+                )
+                if hasUsableFrame(appFrame),
+                   hasUsableFrame(elementFrame),
+                   appFrame.contains(elementCenter)
+                {
+                    return (appFrame, elementFrame)
+                }
+            }
+            RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+        }
+        return nil
     }
 
     private func pressCurrentFrame(
@@ -864,7 +912,9 @@ final class PocketRootHostAppUITests: XCTestCase {
         in app: XCUIApplication
     ) -> Bool {
         let appFrame = app.frame
-        guard appFrame.width > 2, appFrame.height > 2 else {
+        guard hasUsableFrame(appFrame),
+              hasUsableFrame(elementFrame)
+        else {
             return false
         }
         let candidatePoints = [
@@ -1095,20 +1145,65 @@ final class PocketRootHostAppUITests: XCTestCase {
     private func openFileActionsMenu(
         in app: XCUIApplication
     ) -> Bool {
-        // System document and share controllers can finish dismissing after
-        // the host Files screen is visible. Re-query the button and wait for
-        // a valid activation point before tapping, especially on iPad.
-        let actions = app.buttons["PocketRootFiles.actions"]
-        guard actions.waitForExistence(timeout: 30) else {
-            XCTFail("file actions button to exist")
-            return false
+        // XCTest can briefly expose the SwiftUI navigation bar with infinite,
+        // zero-sized frames while system document or share controllers finish
+        // dismissing. Asking isHittable in that state records an XCTest
+        // failure before a predicate waiter can retry. Re-query the button,
+        // validate the captured frames, and tap the verified center through
+        // an application coordinate instead.
+        var lastAppFrame = CGRect.null
+        var lastActionsFrame = CGRect.null
+
+        for attempt in 0..<2 {
+            let deadline = Date().addingTimeInterval(30)
+            while Date() < deadline {
+                let actions = app.buttons["PocketRootFiles.actions"]
+                let importFile = app.buttons["Import File"]
+                if actions.exists, actions.isEnabled {
+                    let appFrame = app.frame
+                    let actionsFrame = actions.frame
+                    lastAppFrame = appFrame
+                    lastActionsFrame = actionsFrame
+                    let actionsCenter = CGPoint(
+                        x: actionsFrame.midX,
+                        y: actionsFrame.midY
+                    )
+
+                    if hasUsableFrame(appFrame),
+                       hasUsableFrame(actionsFrame),
+                       appFrame.contains(actionsCenter)
+                    {
+                        tapFrame(actionsFrame, in: appFrame, using: app)
+                        if importFile.waitForExistence(timeout: 10) {
+                            return true
+                        }
+                        // The captured frame can become stale before the tap.
+                        // Do not tap again on a possibly open menu. A relaunch
+                        // removes all transitional system UI before one clean
+                        // retry, while preserving the installed RootFS/files.
+                        break
+                    }
+                }
+
+                RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+            }
+
+            if attempt == 0 {
+                relaunchAndBoot(app)
+                let filesButton = app.buttons["PocketRootHost.files"]
+                guard filesButton.waitForExistence(timeout: 10) else {
+                    XCTFail("Files entry to exist after menu retry relaunch")
+                    return false
+                }
+                filesButton.tap()
+            }
         }
-        waitForEnabled(actions)
-        guard waitForHittable(actions) else {
-            return false
-        }
-        actions.tap()
-        return true
+
+        XCTFail(
+            "file actions menu to open after a clean retry; "
+                + "app=\(lastAppFrame), actions=\(lastActionsFrame)"
+        )
+        return false
     }
 
     @discardableResult

@@ -822,6 +822,67 @@ class RootFSDeliveryCandidateTests < Minitest::Test
     assert_includes error.message, "output exceeded the safety limit"
   end
 
+  def test_command_group_termination_tolerates_macos_exit_race
+    signaler = Object.new
+    signaler.define_singleton_method(:kill) do |signal, _process_group|
+      raise Errno::EPERM if signal == "KILL"
+
+      raise Errno::ESRCH
+    end
+    wait_thread = Struct.new(:pid) do
+      def join(_timeout)
+        self
+      end
+    end.new(12_345)
+
+    assert_nil(
+      RootFSDeliveryCandidate.terminate_command_group(
+        wait_thread,
+        signaler: signaler
+      )
+    )
+  end
+
+  def test_command_group_termination_preserves_real_permission_failure
+    signaler = Object.new
+    signaler.define_singleton_method(:kill) do |signal, _process_group|
+      raise Errno::EPERM if signal == "KILL"
+
+      1
+    end
+    wait_thread = Struct.new(:pid) do
+      def join(_timeout)
+        nil
+      end
+    end.new(12_345)
+
+    assert_raises(Errno::EPERM) do
+      RootFSDeliveryCandidate.terminate_command_group(
+        wait_thread,
+        signaler: signaler
+      )
+    end
+  end
+
+  def test_command_group_termination_preserves_unsignalable_descendant
+    signaler = Object.new
+    signaler.define_singleton_method(:kill) do |_signal, _process_group|
+      raise Errno::EPERM
+    end
+    wait_thread = Struct.new(:pid) do
+      def join(_timeout)
+        self
+      end
+    end.new(12_345)
+
+    assert_raises(Errno::EPERM) do
+      RootFSDeliveryCandidate.terminate_command_group(
+        wait_thread,
+        signaler: signaler
+      )
+    end
+  end
+
   def test_builder_identity_fields_must_match_inventory
     source = {
       "repository" => "owner/repository",
