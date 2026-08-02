@@ -15,6 +15,11 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 
 ### Changed
 
+- RootFS delivery-candidate output bounding now tolerates macOS `EPERM` from a
+  process-group exit race only after Open3 confirms the child has exited and a
+  signal-zero probe confirms the whole group is gone. Surviving or unsignalable
+  descendants still fail closed, while CI can reliably reap an already-exited
+  command instead of leaking a platform exception.
 - The Host App system-file import/share UI smoke no longer queries the SwiftUI
   toolbar Actions button's `hittable` state directly. Xcode 16 iPhone/iPad
   Simulators can briefly report infinite-origin, zero-sized App and button

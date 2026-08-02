@@ -13,6 +13,9 @@ PocketRoot 的重要变化记录在这里，并从首个公开版本开始遵循
 
 ### Changed
 
+- RootFS delivery candidate 的命令输出上限处理只会在 Open3 确认子进程已退出、且 signal
+  0 探测确认整个进程组已消失后，容忍 macOS 在退出竞态中返回的 `EPERM`；残留或不可发送
+  信号的后代仍然 fail-closed，同时 CI 可以正常回收已退出命令，不再泄漏平台异常。
 - Host App 的系统文件导入/分享 UI smoke 不再直接查询 SwiftUI toolbar Actions 按钮的
   `hittable`。Xcode 16 的 iPhone/iPad Simulator 在 system controller 关闭期间可能
   暂时返回无限原点、零尺寸的 App 与按钮 accessibility frame；测试现在重新查询元素，
