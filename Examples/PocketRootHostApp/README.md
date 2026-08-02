@@ -68,8 +68,9 @@ POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
   ./Scripts/run-host-app-device-ui-smoke.sh
 ```
 
-设备必须已配对、启用 Developer Mode，且其系统版本在已安装 Xcode 的 device-support
-范围内。Team ID 使用开发证书 subject 的 `OU`。
+设备必须已配对并启用 Developer Mode。runner 不比较设备 OS 与 SDK 次版本，而由带
+精确设备 destination 的 `xcodebuild` 判断构建、安装和测试兼容性。Team ID 使用
+开发证书 subject 的 `OU`。
 
 ## English
 
@@ -99,5 +100,6 @@ created only under the explicit `-PocketRootUITesting` launch argument. Set
 `POCKETROOT_HOST_UI_SMOKE_DEVICE` to
 reuse an existing Simulator. Use `run-host-app-device-ui-smoke.sh` with
 `POCKETROOT_HOST_DEVICE_UI_SMOKE_DEVICE` and the development certificate
-subject's `OU` team ID for the signed-device form; the device OS must be within
-the installed Xcode device-support range.
+subject's `OU` team ID for the signed-device form. The runner does not compare
+device-OS and SDK minor versions; `xcodebuild` with the exact device destination
+determines build, install, and test compatibility.

@@ -13,6 +13,10 @@ PocketRoot 的重要变化记录在这里，并从首个公开版本开始遵循
 
 ### Changed
 
+- Host App 真机 UI runner 不再把设备 OS 与 iOS SDK 的次版本比较当作 Xcode 真机
+  支持范围；精确 destination 的 `xcodebuild` 现在负责权威兼容性判断。Xcode 26.1.1
+  已在 Jack iPhone / iOS 26.6 上完成编译、development 签名、安装和启动；两次
+  XCTest 仍超时于 automation mode 握手，因此真机 UI 生命周期尚未计为通过。
 - 新增互斥的签名真机 3 分钟持续负载 smoke：执行 90 轮命令与文件写读、每 10 轮验证
   64 KiB 二进制输出、通过 Files API 核对完整 marker，并继续执行 shutdown 与
   256 MiB 峰值内存门禁；Jack iPhone 已通过，峰值 84.3 MiB。该有界基线不代表
@@ -112,8 +116,8 @@ PocketRoot 的重要变化记录在这里，并从首个公开版本开始遵循
   跨 size class 稳定的 alert。独立 Host App 示例的 Documents 通过系统 Files
   可见，测试仅在显式 UI-test 启动参数下生成固定文件，并自动验证 document picker
   导入、share sheet 保存、guest 删除、再次导入和内容一致的完整 round-trip。
-- 加入 development-signed Host App 真机 UI runner：验证 physical iOS、设备/Xcode
-  支持范围、签名与 entitlement，再复用同一生命周期测试；默认清理 App 和诊断制品。
+- 加入 development-signed Host App 真机 UI runner：验证 physical iOS、精确 Xcode
+  destination、签名与 entitlement，再复用同一生命周期测试；默认清理 App 和诊断制品。
 - 加入 process-wide ownership、serial native execution、lifecycle reentrancy protection。
 - 加入一次性命令的 cwd、environment、stderr merge、exit、signal、timeout 和 stream mapping。
 - 加入默认 post-boot identity gate；使用固定命令和 NUL framing，在 `ready` 前验证 guest 架构、Alpine 身份、可选版本与工作目录。

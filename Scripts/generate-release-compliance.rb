@@ -277,7 +277,7 @@ module PocketRootReleaseCompliance
     "Scripts/scan-release-artifact.rb" =>
       "48f27ab280491864228393e1675fe3a2889cbd616f79e3cb16bae7efedf647c0",
     "Scripts/run-host-app-device-ui-smoke.sh" =>
-      "f9528bd72aa40e6615633d1bc56ea8a31965b41f6570a0dc9f5fa390c5082490",
+      "2f934265cb46145b27bb26e0d7e84acebc14290602e23cd1ab8f222aef68ed1f",
     "Scripts/run-host-app-ui-smoke.sh" =>
       "c8b11b1bf3a467fd10ed2c4124a72396b0a803e98f155d1d709fab46b59eede1",
     "Scripts/run-ios-example-ui-smoke.sh" =>

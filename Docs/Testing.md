@@ -17,7 +17,7 @@ PocketRoot 把验证分成宿主逻辑、真实 RootFS、iOS 构建、完整原�
 | Simulator 原生 smoke | `./Scripts/run-runtime-smoke.sh` | Apple Silicon + iOS 18 Simulator + archive | prepare、boot、命令边界和 soft shutdown 返回 | 其他工具链、真机或发行可用 |
 | Quick Start UI smoke | `./Scripts/run-quick-start-ui-smoke.sh` | Apple Silicon + iOS 18 Simulator + archive | 最小业务 App 的 Files/Terminal 两个入口可从冷启动自动 boot，真实 PTY 创建的文件可由 Files 预览 | 真机、完整 Host 生命周期或发行可用 |
 | Host App UI smoke | `./Scripts/run-host-app-ui-smoke.sh` | Apple Silicon + iOS 18 Simulator + archive | iPhone/iPad Simulator 上的公开宿主 Boot、SwiftTerm PTY、生命周期、Workspace 会话持续性、Files 增删改/预览、系统 document picker 导入、share sheet 保存与再次导入 round-trip，以及有序 shutdown | 真机系统文件交互、真机键盘、iPad 真机或发行可用 |
-| Host App 真机 UI smoke | `./Scripts/run-host-app-device-ui-smoke.sh` | 支持设备 OS 的 Xcode + development-signed iPhone/iPad + archive | 同一 Host App 生命周期 UI 测试的真机执行、签名与 development entitlement | iPad、真实压力或发行可用 |
+| Host App 真机 UI smoke | `./Scripts/run-host-app-device-ui-smoke.sh` | Xcode 可解析的 development-signed iPhone/iPad + archive | 同一 Host App 生命周期 UI 测试的真机执行、签名与 development entitlement | iPad、真实压力或发行可用 |
 | 物理设备原生 smoke | `./Scripts/run-runtime-device-smoke.sh` | 签名 iOS 18+ iPhone/iPad + archive | 同一 17 项检查、可选进程暂停/恢复、UIKit 前后台、强制重启持久化、受限存储故障、有界内存警告恢复或 3 分钟持续负载，development entitlement 与 shutdown 返回 | 真实 storage/memory pressure、断电、jetsam、iPad 或发行可用 |
 | 源码发布审计 | `ruby Scripts/verify-source-release.rb --version 0.1.0` | Git commit/tag | 源码轨道 Ready、版本文档齐全，`git archive` 不含 RootFS、App、IPA、XCFramework 镜像、压缩载荷或原生二进制 | Runtime/App/RootFS 分发授权 |
 | 文档检查 | `./Scripts/check-docs.sh` | macOS/Linux shell | 中英文成对、中文覆盖和相对链接 | 技术实现正确 |
@@ -446,7 +446,7 @@ POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
   ./Scripts/run-host-app-device-ui-smoke.sh
 ```
 
-runner 先验证 physical iOS、设备 OS 不高于已安装 iOS SDK、开发签名 team、
+runner 先验证 physical iOS、开发签名 team、
 application identifier 和 `get-task-allow`，再运行 Boot、PTY 持续输入/输出、
 前后台、旋转 resize、关闭/重开终端、Files 持久化预览和有序 shutdown。默认卸载
 Host App 和 UI test runner 并清理临时 DerivedData；
@@ -454,8 +454,15 @@ Host App 和 UI test runner 并清理临时 DerivedData；
 `POCKETROOT_KEEP_SMOKE_ARTIFACTS=1` 只保留本机诊断目录。
 
 Team ID 应使用开发证书 subject 的 `OU`，不是证书显示名称括号中的个人标识。
-若设备系统比 Xcode 的 device-support 范围新，runner 会在构建前失败并要求换用兼容
-Xcode；不能把能够签名/安装误报成 XCTest 生命周期已通过。
+runner 不比较设备 OS 与 SDK 的次版本：SDK 版本不是 Xcode 真机支持范围。是否可以
+构建、安装和执行测试由带精确设备 destination 的 `xcodebuild` 权威判断；不能把
+能够签名/安装误报成 XCTest 生命周期已通过。
+
+2026-08-02，Xcode 26.1.1 对 Jack iPhone / iOS 26.6 两次完成 Host App 与 UI test
+runner 的编译、development 签名和 entitlement 校验，Host App 也已安装并启动。
+两次 XCTest 都在执行测试体前超时于 `enabling automation mode`，因此真机 Host App
+UI 生命周期仍不计为通过；这也证明此前按 iOS 26.6 与 SDK 26.1 次版本比较的预检是
+错误阻塞，而不是工具链的权威兼容性结论。
 
 2026-07-24 使用 Xcode 26.1.1、签名 iPhone 17 Pro / iOS 26.1、development
 provisioning 和 v0.4.0-abi.6 runtime pin 完成重跑。设备生成的 `success: true`
