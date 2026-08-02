@@ -356,7 +356,7 @@ POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
 
 The runner validates a physical iOS destination, checks the development-signing
 team, application identifier, and `get-task-allow`, then executes boot, sustained PTY
-input/output, background/foreground, rotation resize, terminal close/reopen,
+input/output, BusyBox `top` plus Ctrl-C, background/foreground, rotation resize, terminal close/reopen,
 persistent Files preview, and ordered shutdown. It uninstalls the Host App and
 UI test runner and removes temporary DerivedData by default.
 `POCKETROOT_KEEP_DEVICE_APP=1` retains only the Host App;
@@ -370,13 +370,15 @@ Xcode's physical-device support range. `xcodebuild` with the exact device
 destination is authoritative for build, install, and test compatibility. A
 successful signature or install is not reported as a passed XCTest lifecycle.
 
-On 2026-08-02, Xcode 26.1.1 twice built, development-signed, and entitlement-
-checked the Host App and UI test runner for Jack iPhone on iOS 26.6. The Host
-App also installed and launched. Both XCTest attempts timed out while enabling
-automation mode before entering the test body, so the physical Host App UI
-lifecycle is still not counted as passed. This proves that the former iOS 26.6
-versus SDK 26.1 minor-version preflight was a false blocker, not an authoritative
-toolchain compatibility result.
+On 2026-08-03, Xcode 26.6 development-signed and entitlement-checked the Host
+App plus UI test runner and passed one complete lifecycle XCTest on Jack iPhone
+(iPhone 14 Pro / iOS 26.6; 109.8 seconds in the test body). The test launched
+BusyBox `top`, observed live `Mem:` output, sent Ctrl-C from the default special-
+key row to recover the shell, then completed background/foreground, portrait/
+landscape resize, PTY close/reopen, persistent Files preview, and ordered
+shutdown. Two earlier Xcode 26.1.1 attempts timed out while enabling automation
+mode before entering the test body; that older toolchain result no longer
+describes the physical Host App UI gate.
 
 The 2026-07-24 rerun used Xcode 26.1.1, a development-provisioned iPhone 17 Pro
 on iOS 26.1, and the v0.4.0-abi.6 runtime pin. The device-produced

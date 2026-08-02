@@ -30,6 +30,7 @@ public final class PocketRootTerminalViewController: UIViewController {
 
     private let placeholderView = TerminalPlaceholderView()
     private let accessoryView = TerminalAccessoryView()
+    private let specialKeysView = TerminalSpecialKeysView()
     private let commandBridge: TerminalBridge
     private let ptyBridge: PTYTerminalBridge?
     private var ptyTerminalView: TerminalView?
@@ -190,18 +191,53 @@ public final class PocketRootTerminalViewController: UIViewController {
             terminal.accessibilityHint = "Read-only terminal"
         }
         view.addSubview(terminal)
-        NSLayoutConstraint.activate([
+        let constraints = [
             terminal.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             terminal.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             terminal.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            terminal.bottomAnchor.constraint(equalTo: view.keyboardLayoutGuide.topAnchor)
-        ])
+            terminal.bottomAnchor.constraint(
+                equalTo: view.keyboardLayoutGuide.topAnchor
+            )
+        ]
+        // SwiftTerm installs its own accessory during initialization. Clear it
+        // and invalidate UIKit's cached input views before installing the
+        // PocketRoot row so iPad never retains both accessories at once.
+        terminal.inputAccessoryView = nil
+        terminal.reloadInputViews()
+        if configuration.showsAccessoryView {
+            specialKeysView.setInputEnabled(configuration.allowsInput)
+            specialKeysView.onKeyPress = { [weak terminal, weak bridge] key in
+                guard let terminal else {
+                    return
+                }
+                _ = terminal.becomeFirstResponder()
+                bridge?.sendInput(
+                    key.input(
+                        applicationCursorMode:
+                            terminal.getTerminal().applicationCursor
+                    )
+                )
+            }
+            specialKeysView.onDismissKeyboard = { [weak terminal] in
+                _ = terminal?.resignFirstResponder()
+            }
+            terminal.inputAccessoryView = specialKeysView
+        }
+        terminal.reloadInputViews()
+        NSLayoutConstraint.activate(constraints)
         ptyTerminalView = terminal
         bridge.titleHandler = { [weak self] title in
             self?.title = title.isEmpty ? "Terminal" : title
         }
         bridge.sessionEndHandler = { [weak self] reason in
-            self?.onSessionEnded?(reason)
+            guard let self else {
+                return
+            }
+            self.specialKeysView.setInputEnabled(false)
+            // Keep the delegate attached while the exited terminal remains
+            // visible so selection, links, and other display interactions keep
+            // working. The bridge rejects all further input after termination.
+            self.onSessionEnded?(reason)
         }
         bridge.attach(to: terminal)
     }

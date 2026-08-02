@@ -578,6 +578,9 @@ navigationController?.pushViewController(
 省略 `sessionConfiguration` 时，PTY 使用
 `configuration.initialWorkingDirectory`；如需自定义 shell、环境或终端尺寸，可以显式
 传入 `sessionConfiguration`，此时该完整会话配置优先。
+交互式配置默认在软键盘上方显示 Esc、Tab、Ctrl-C、Ctrl-D、上/下历史键与收起键盘按钮，弥补
+iPhone/iPad 软键盘缺少终端控制键的问题；不需要该栏时传入
+`showsAccessoryView: false`。
 `cursorBlinkEnabled` 默认为 `true`；无动画截图或 UI 自动化可将它设为 `false`，不影响
 PTY 输入、输出和会话生命周期。
 

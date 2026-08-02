@@ -8,6 +8,9 @@ PocketRoot 的重要变化记录在这里，并从首个公开版本开始遵循
 
 ### Added
 
+- 为交互式 SwiftTerm PTY 默认加入适配 iPhone 软键盘的 Esc、Tab、Ctrl-C、Ctrl-D、
+  上/下历史键与收起键盘按钮；宿主可通过 `showsAccessoryView: false` 隐藏。单元测试固定发送字节，
+  Host App lifecycle smoke 真实启动 BusyBox `top`、观察动态输出并用 Ctrl-C 回到 shell。
 - 加入双语安全策略与社区行为准则、支持入口、结构化 Bug/接入/功能请求表单和
   PR 检查表；文档校验现在要求这些开源协作文件存在，并保持根级中英文镜像完整。
 
@@ -23,9 +26,10 @@ PocketRoot 的重要变化记录在这里，并从首个公开版本开始遵循
   菜单出现；点击未生效时只在 App 干净重启后重试一次，未观察到分享面板时也走同一
   fail-closed 恢复，不再用底层宿主 frame 推断 system UI 已关闭。
 - Host App 真机 UI runner 不再把设备 OS 与 iOS SDK 的次版本比较当作 Xcode 真机
-  支持范围；精确 destination 的 `xcodebuild` 现在负责权威兼容性判断。Xcode 26.1.1
-  已在 Jack iPhone / iOS 26.6 上完成编译、development 签名、安装和启动；两次
-  XCTest 仍超时于 automation mode 握手，因此真机 UI 生命周期尚未计为通过。
+  支持范围；精确 destination 的 `xcodebuild` 现在负责权威兼容性判断。早期 Xcode
+  26.1.1 尝试在 automation mode 握手超时；Xcode 26.6 随后在 Jack iPhone / iOS
+  26.6 上完成 development 签名并通过完整 lifecycle XCTest，包括 BusyBox `top`、
+  Ctrl-C、前后台、旋转 resize、PTY 重开、Files 持久化预览和有序 shutdown。
 - 新增互斥的签名真机 3 分钟持续负载 smoke：执行 90 轮命令与文件写读、每 10 轮验证
   64 KiB 二进制输出、通过 Files API 核对完整 marker，并继续执行 shutdown 与
   256 MiB 峰值内存门禁；Jack iPhone 已通过，峰值 84.3 MiB。该有界基线不代表

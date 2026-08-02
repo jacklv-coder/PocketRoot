@@ -40,7 +40,7 @@ an existing iOS App. Start with the
 [integration guide](Docs/en/IntegrationGuide.md).
 
 > [!WARNING]
-> Native iSH integration is **Experimental**. Pinned `v0.4.0-abi.9` has a soft shutdown that returns to Swift, atomic no-replace rename, and bounded stdin writes, but each host process still permits only one valid boot/shutdown lifecycle. Physical Host App UI automation, physical iPad, real-pressure, and distribution gates remain open. This version is not approved for production, TestFlight, or public binary distribution.
+> Native iSH integration is **Experimental**. Pinned `v0.4.0-abi.9` has a soft shutdown that returns to Swift, atomic no-replace rename, and bounded stdin writes, but each host process still permits only one valid boot/shutdown lifecycle. Physical iPad, real-pressure, and distribution gates remain open. This version is not approved for production, TestFlight, or public binary distribution.
 
 ## Capability status
 
@@ -50,10 +50,10 @@ an existing iOS App. Start with the
 | UIKit Demo shell | Available | System, Terminal, Files, Commands, and Diagnostics entry points |
 | RootFS verification and safe install | Available | Fixed digest, secure extraction, journal-protected same-volume promotion, reuse, recovery |
 | iSH boot and one-shot commands | Experimental | `iOS + arm64`; one-shot cancellation confirms guest exit |
-| Terminal and file browser | Embeddable / Experimental | UIKit/SwiftUI inject a booted system; persistent SwiftTerm PTY plus inline tree expansion, navigation, bounded previews, safe mutations, and 1 MiB-capped document import/share export |
+| Terminal and file browser | Embeddable / Experimental | UIKit/SwiftUI inject a booted system; the persistent SwiftTerm PTY includes Esc, Tab, Ctrl-C, Ctrl-D, history keys, and keyboard dismissal, plus inline tree expansion, navigation, bounded previews, safe mutations, and 1 MiB-capped document import/share export |
 | Lightweight agent loop | Core, OpenAI transport, and approval-gated command tool available | Agent and Runtime Tools are explicit opt-ins; no Codex CLI install or automatic shell approval |
-| Interactive PTY and SwiftTerm | Implemented; broader device validation pending | Public sessions, bounded reads, input, resize, signal/EOF, registry, and close-before-shutdown are connected; iPhone/iPad Simulators pass PTY, lifecycle, Files/Workspace, system document import/share-save round trips, and ordered shutdown |
-| Physical devices and distribution | Partially passed / blocked | Jack iPhone passed commands, PTY/Files, lifecycle, failure recovery, and the three-minute sustained-workload gate (84.3 MiB peak). Xcode 26.1.1 built, signed, installed, and launched the Host App; physical XCTest remains blocked at the automation-mode handshake. Real storage pressure, physical iPad, jetsam/power-cut, final artifact, and compliance gates remain open |
+| Interactive PTY and SwiftTerm | Implemented; physical iPad pending | Public sessions, bounded reads, input, resize, signal/EOF, registry, and close-before-shutdown are connected. Simulators and Jack iPhone pass the PTY lifecycle; the physical run also verified live `top` output and Ctrl-C shell recovery |
+| Physical devices and distribution | Partially passed / blocked | Jack iPhone passed commands, PTY/Files, the Host App UI lifecycle, interactive `top`, failure recovery, and the three-minute sustained-workload gate (84.3 MiB peak). Real storage pressure, physical iPad, jetsam/power-cut, final artifact, and compliance gates remain open |
 
 The default `PocketRoot` product includes neither the agent loop nor native
 iSH and never bundles or downloads a RootFS. Agent applications explicitly

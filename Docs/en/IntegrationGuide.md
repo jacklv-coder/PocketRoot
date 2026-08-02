@@ -479,6 +479,10 @@ When `sessionConfiguration` is omitted, the PTY uses
 `configuration.initialWorkingDirectory`. Pass an explicit session configuration
 to customize the shell, environment, or terminal size; that complete session
 configuration takes precedence.
+Interactive configurations show an Esc, Tab, Ctrl-C, Ctrl-D, history up/down,
+and keyboard-dismiss input-accessory row above the software keyboard by default to supply
+terminal controls missing from iPhone and iPad keyboards. Pass
+`showsAccessoryView: false` to hide it.
 `cursorBlinkEnabled` defaults to `true`. Deterministic screenshots or UI
 automation may set it to `false` without changing PTY input, output, or
 lifecycle behavior.
@@ -552,7 +556,8 @@ struct LinuxTerminalScreen: View {
 ```
 
 SwiftTerm handles ANSI/VT rendering, keyboard input, selection, scrolling, and
-accessibility semantics. The bridge preserves input order, forwards character
+accessibility semantics. PocketRoot's default special-key row sends the exact
+PTY bytes for Esc, Tab, Ctrl-C, Ctrl-D, and shell-history navigation. The bridge preserves input order, forwards character
 size changes, and streams guest output. Guest OSC 52 clipboard access is denied
 by default. The Files page uses NUL-framed listings and bounded previews of up
 to 512 KiB, plus basic guest file management. Only explicit import/export

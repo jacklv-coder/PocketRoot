@@ -84,7 +84,9 @@ Status: **Experimental, in progress**.
 - The same device passed the 18-check real UIKit background/foreground/active
   gate with its original PID, a post-activation guest command, and an 89.4 MiB peak.
 
-This establishes the current Simulator, minimum-Xcode 16, and single-iPhone one-shot paths, not iPad, complete physical-device lifecycle, PTY, or distribution readiness.
+Together with the later Host App UI smoke, this establishes the current
+Simulator, minimum-Xcode 16, and single-iPhone one-shot, PTY, and App-lifecycle
+paths, not iPad, real pressure, or distribution readiness.
 
 ### Gates
 
@@ -102,7 +104,7 @@ This establishes the current Simulator, minimum-Xcode 16, and single-iPhone one-
 | Default post-boot identity gate | Passed | Require aarch64, Alpine identity, optional version, and command context before ready; retain failed-slot regression coverage |
 | Demo and external-host runtime integration | Passed | The Demo and standalone Host App share the public controller; Debug injects only the exact verified external RootFS and Release remains payload-free |
 | Host-safe soft shutdown | Passed | v0.4.0-abi.6 soft-halts, joins, and returns to Swift; the process remains single-lifecycle |
-| Signed iPhone | Passed | The standard 17-check and three-minute 20-check sustained one-shot/PTY/Files/soft-shutdown/peak-memory paths passed; keep rerunning after runtime changes |
+| Signed iPhone | Passed | The standard 17-check, three-minute 20-check sustained, and Host App lifecycle/interactive-`top` UI paths passed; keep rerunning after runtime changes |
 | iPad Simulator Host UI | Passed | iOS 18 covers RootFS boot, PTY, Files, Workspace, rotation, system document import/share-save round trips, and shutdown |
 | Signed iPad | Blocked | Physical boot and command smoke |
 | Minimum Xcode 16 native | Passed | Xcode 16.0 / iOS 18.0 SDK completed RootFS install, Simulator/device final links, and the 17-check native smoke |
@@ -161,7 +163,7 @@ orchestration into `PocketRootCore` and does not install Codex CLI in the RootFS
 
 ## Milestone 4: Interactive terminal
 
-Status: **First PTY/files closure implemented; device and iPad gates remain**.
+Status: **First PTY/files closure and physical iPhone UI gate implemented; iPad gate remains**.
 
 A low-cost precursor now works without the Agent Loop, PTY, or SwiftTerm:
 
@@ -212,14 +214,14 @@ Completed in this closure:
     the guest, save it back through the share sheet, delete the guest copy,
     re-import it, and verify content. The fixture exists only under the
     explicit UI-test launch argument.
+13. Interactive PTYs now provide Esc, Tab, Ctrl-C, Ctrl-D, and history up/down
+    keys by default. Xcode 26.6 passed the complete Host App lifecycle XCTest on
+    Jack iPhone (iPhone 14 Pro / iOS 26.6), including live BusyBox `top` output,
+    Ctrl-C shell recovery, background/foreground, rotation resize, PTY reopen,
+    persistent Files preview, and ordered shutdown.
 
-The remaining iPhone Host App gate is a successful physical XCTest lifecycle.
-Xcode 26.1.1 built, development-signed, installed, and launched the Host App on
-Jack iPhone running iOS 26.6, but two XCTest attempts timed out while enabling
-automation mode before entering the test body and are not counted as passed.
-Physical interactive-program, real memory-pressure, and
-long-duration output evidence remain, plus iPad keyboard, rotation, layout, and
-VoiceOver verification. The implementation retains direct low-level
+Real memory-pressure and longer-duration output evidence remain, plus iPad
+keyboard, rotation, layout, and VoiceOver verification. The implementation retains direct low-level
 `IshSession` ownership and does not use the upstream high-level terminal wrapper.
 
 Acceptance requires predictable session lifecycle, ownership across app transitions, no use-after-free or unbounded reads, shutdown behind all sessions, usable device keyboards/resize/VoiceOver, and recoverable errors.

@@ -448,7 +448,7 @@ POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
 
 runner 先验证 physical iOS、开发签名 team、
 application identifier 和 `get-task-allow`，再运行 Boot、PTY 持续输入/输出、
-前后台、旋转 resize、关闭/重开终端、Files 持久化预览和有序 shutdown。默认卸载
+BusyBox `top` 与 Ctrl-C、前后台、旋转 resize、关闭/重开终端、Files 持久化预览和有序 shutdown。默认卸载
 Host App 和 UI test runner 并清理临时 DerivedData；
 `POCKETROOT_KEEP_DEVICE_APP=1` 只保留 Host App，
 `POCKETROOT_KEEP_SMOKE_ARTIFACTS=1` 只保留本机诊断目录。
@@ -458,11 +458,12 @@ runner 不比较设备 OS 与 SDK 的次版本：SDK 版本不是 Xcode 真机�
 构建、安装和执行测试由带精确设备 destination 的 `xcodebuild` 权威判断；不能把
 能够签名/安装误报成 XCTest 生命周期已通过。
 
-2026-08-02，Xcode 26.1.1 对 Jack iPhone / iOS 26.6 两次完成 Host App 与 UI test
-runner 的编译、development 签名和 entitlement 校验，Host App 也已安装并启动。
-两次 XCTest 都在执行测试体前超时于 `enabling automation mode`，因此真机 Host App
-UI 生命周期仍不计为通过；这也证明此前按 iOS 26.6 与 SDK 26.1 次版本比较的预检是
-错误阻塞，而不是工具链的权威兼容性结论。
+2026-08-03，Xcode 26.6 在 Jack iPhone（iPhone 14 Pro / iOS 26.6）完成 Host App
+和 UI test runner 的 development 签名与 entitlement 校验，并通过 1 个完整 lifecycle
+XCTest（测试体 109.8 秒）。测试启动 BusyBox `top`、观察动态 `Mem:` 输出并从默认
+控制键栏发送 Ctrl-C 回到 shell，随后完成前后台、横竖屏 resize、关闭/重开 PTY、
+Files 持久化预览和有序 shutdown。此前 Xcode 26.1.1 的两次尝试在进入测试体前超时于
+`enabling automation mode`；该旧工具链结果不再是当前真机 UI 门禁状态。
 
 2026-07-24 使用 Xcode 26.1.1、签名 iPhone 17 Pro / iOS 26.1、development
 provisioning 和 v0.4.0-abi.6 runtime pin 完成重跑。设备生成的 `success: true`

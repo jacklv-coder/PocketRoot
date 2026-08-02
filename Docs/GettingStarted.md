@@ -94,7 +94,7 @@ Demo 使用 AppDelegate、SceneDelegate、UIWindow、纯 UIKit 和 Auto Layout�
 | 页面 | 当前用途 |
 | --- | --- |
 | System | 校验、安装固定 RootFS，启动/检查/关闭实验 runtime |
-| Terminal | 使用 SwiftTerm 打开持续 PTY；右上角也保留 Files 快捷入口 |
+| Terminal | 使用 SwiftTerm 打开持续 PTY，默认提供 Esc/Tab/Ctrl-C/Ctrl-D/历史键；右上角也保留 Files 快捷入口 |
 | Files | 浏览 `/root`；原地展开或进入目录，并创建、删除文件与目录 |
 | Commands | 对同一个已启动 system 执行有界一次性命令 |
 | Diagnostics | 动态显示 RootFS、iSH Runtime 与 SwiftTerm 状态 |

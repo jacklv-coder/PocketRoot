@@ -377,6 +377,9 @@ jobs:
         run: ./Scripts/run-external-consumer-ui-smoke.sh
 
       - name: Run Quick Start two-entry UI smoke with Xcode 16.0
+        env:
+          POCKETROOT_UI_FAILURE_ARTIFACTS_DIR: >-
+            ${{ runner.temp }}/pocketroot-ui-artifacts/quick-start-iphone
         run: ./Scripts/run-quick-start-ui-smoke.sh
 
       - name: Run Quick Start iPad UI smoke with Xcode 16.0
@@ -385,6 +388,8 @@ jobs:
             com.apple.CoreSimulator.SimDeviceType.iPad-10th-generation
           POCKETROOT_QUICK_START_UI_DEVICE_NAME: >-
             PocketRoot-Quick-Start-iPad-UI-Smoke
+          POCKETROOT_UI_FAILURE_ARTIFACTS_DIR: >-
+            ${{ runner.temp }}/pocketroot-ui-artifacts/quick-start-ipad
         run: ./Scripts/run-quick-start-ui-smoke.sh
 
       - name: Run Host App PTY and Files UI smoke with Xcode 16.0
@@ -402,11 +407,11 @@ jobs:
             ${{ runner.temp }}/pocketroot-ui-artifacts/host-ipad
         run: ./Scripts/run-host-app-ui-smoke.sh
 
-      - name: Upload Host App UI failure diagnostics
+      - name: Upload UI failure diagnostics
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: pocketroot-host-ui-failure-${{ github.run_id }}-${{ github.run_attempt }}
+          name: pocketroot-ui-failure-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/pocketroot-ui-artifacts
           if-no-files-found: warn
           retention-days: 7
