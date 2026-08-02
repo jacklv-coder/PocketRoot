@@ -779,7 +779,33 @@ final class PocketRootHostAppUITests: XCTestCase {
                 return true
             }
         }
-        return false
+
+        // SpringBoard does not inherit the Host App's test language. For an
+        // otherwise-localized wireless-data prompt, require the alert to name
+        // this app and to expose the three expected choices before selecting
+        // the final (deny) action by position. This avoids dismissing an
+        // unrelated system alert or choosing an affirmative two-button action.
+        let alert = springboard.alerts.firstMatch
+        guard alert.exists else {
+            return false
+        }
+        let hostAppReference = alert.staticTexts.matching(
+            NSPredicate(format: "label CONTAINS %@", "PocketRoot Host")
+        ).firstMatch
+        let buttons = alert.buttons
+        guard hostAppReference.exists, buttons.count == 3 else {
+            return false
+        }
+        let denialButton = buttons.element(boundBy: 2)
+        guard denialButton.exists, denialButton.isHittable else {
+            return false
+        }
+        denialButton.tap()
+        guard alert.waitForNonExistence(timeout: 5) else {
+            return false
+        }
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
+        return true
     }
 
     private func confirmDeletion(
