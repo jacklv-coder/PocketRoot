@@ -311,8 +311,9 @@ final class PocketRootHostAppUITests: XCTestCase {
     }
 
     func testPTYLifecycleAndShutdown() {
+        let device = XCUIDevice.shared
+        device.orientation = .portrait
         addTeardownBlock {
-            let device = XCUIDevice.shared
             if device.orientation != .portrait {
                 device.orientation = .portrait
             }
@@ -325,6 +326,7 @@ final class PocketRootHostAppUITests: XCTestCase {
 
         var terminal = terminalElement(in: app)
         XCTAssertTrue(terminal.waitForExistence(timeout: 30))
+        dismissWirelessDataPermissionIfPresent(blocking: terminal)
         terminal.tap()
         let setupMarker = "__PTY_LIFECYCLE_SETUP_READY__"
         let setupCommand =
@@ -332,7 +334,8 @@ final class PocketRootHostAppUITests: XCTestCase {
                 + "mkdir -p /root/pocketroot-device-ui-smoke; "
                 + "printf 'before-background\\n' "
                 + "> /root/pocketroot-device-ui-smoke/lifecycle.txt; "
-                + "printf '\(setupMarker)\\n'\n"
+                + "printf '__PTY_LIFECYCLE_SETUP_'; "
+                + "printf 'READY__\\n'\n"
         terminal.typeText(setupCommand)
         if !waitWithoutAssertion(
             for: NSPredicate(
@@ -356,18 +359,32 @@ final class PocketRootHostAppUITests: XCTestCase {
             return
         }
 
-        XCUIDevice.shared.press(.home)
-        if waitForBackgroundState(of: app, timeout: 15) {
-            recordCheckpoint("background-transition-observed")
-        } else {
-            recordCheckpoint("background-transition-unavailable")
+        device.press(.home)
+        let springboard = XCUIApplication(
+            bundleIdentifier: "com.apple.springboard"
+        )
+        guard springboard.wait(for: .runningForeground, timeout: 15) else {
+            XCTFail("The system UI did not replace the Host App foreground.")
+            return
         }
+        recordCheckpoint("background-transition-observed")
         app.activate()
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30))
-        recordCheckpoint("foreground-restored")
 
         terminal = terminalElement(in: app)
         XCTAssertTrue(terminal.waitForExistence(timeout: 30))
+        recordCheckpoint("foreground-restored")
+        guard wait(
+            for: NSPredicate(
+                format: "value CONTAINS %@",
+                setupMarker
+            ),
+            evaluatedWith: terminal,
+            timeout: 30
+        ) else {
+            return
+        }
+        recordCheckpoint("pty-session-preserved-after-foreground")
         terminal.tap()
         terminal.typeText(
             "seq 1 128; printf '__PTY_OUTPUT_128__\\n'; "
@@ -391,7 +408,7 @@ final class PocketRootHostAppUITests: XCTestCase {
             marker: "__PORTRAIT_SIZE__"
         )
         let portraitWindowFrame = app.windows.firstMatch.frame
-        XCUIDevice.shared.orientation = .landscapeLeft
+        device.orientation = .landscapeLeft
         allowTerminalToDrain()
         terminal = terminalElement(in: app)
         XCTAssertTrue(terminal.exists)
@@ -401,43 +418,43 @@ final class PocketRootHostAppUITests: XCTestCase {
             direction: .increasing,
             timeout: 15
         )
-        if windowDidRotate {
-            terminal.tap()
-            let landscapeSize = queryTerminalSize(
-                terminal,
-                marker: "__LANDSCAPE_SIZE__"
-            )
-            XCTAssertGreaterThan(landscapeSize.columns, portraitSize.columns)
-            recordCheckpoint("landscape-resize-verified")
-
-            let landscapeWindowFrame = app.windows.firstMatch.frame
-            XCUIDevice.shared.orientation = .portrait
-            XCTAssertTrue(
-                waitForWindowWidthChange(
-                    in: app,
-                    from: landscapeWindowFrame.width,
-                    direction: .decreasing,
-                    timeout: 15
-                ),
-                "The Host App window did not return to portrait geometry."
-            )
-            allowTerminalToDrain()
-            terminal = terminalElement(in: app)
-            XCTAssertTrue(terminal.exists)
-            terminal.tap()
-            let returnedPortraitSize = queryTerminalSize(
-                terminal,
-                marker: "__RETURNED_PORTRAIT_SIZE__"
-            )
-            XCTAssertLessThan(
-                returnedPortraitSize.columns,
-                landscapeSize.columns
-            )
-            recordCheckpoint("portrait-resize-verified")
-        } else {
-            XCUIDevice.shared.orientation = .portrait
-            recordCheckpoint("orientation-resize-unavailable")
+        guard windowDidRotate else {
+            device.orientation = .portrait
+            XCTFail("The Host App window did not rotate to landscape geometry.")
+            return
         }
+        terminal.tap()
+        let landscapeSize = queryTerminalSize(
+            terminal,
+            marker: "__LANDSCAPE_SIZE__"
+        )
+        XCTAssertGreaterThan(landscapeSize.columns, portraitSize.columns)
+        recordCheckpoint("landscape-resize-verified")
+
+        let landscapeWindowFrame = app.windows.firstMatch.frame
+        device.orientation = .portrait
+        XCTAssertTrue(
+            waitForWindowWidthChange(
+                in: app,
+                from: landscapeWindowFrame.width,
+                direction: .decreasing,
+                timeout: 15
+            ),
+            "The Host App window did not return to portrait geometry."
+        )
+        allowTerminalToDrain()
+        terminal = terminalElement(in: app)
+        XCTAssertTrue(terminal.exists)
+        terminal.tap()
+        let returnedPortraitSize = queryTerminalSize(
+            terminal,
+            marker: "__RETURNED_PORTRAIT_SIZE__"
+        )
+        XCTAssertLessThan(
+            returnedPortraitSize.columns,
+            landscapeSize.columns
+        )
+        recordCheckpoint("portrait-resize-verified")
 
         tapBackButton(in: app)
         XCTAssertTrue(terminalButton.waitForExistence(timeout: 30))
@@ -715,6 +732,54 @@ final class PocketRootHostAppUITests: XCTestCase {
 
     private func terminalElement(in app: XCUIApplication) -> XCUIElement {
         app.descendants(matching: .any)["PocketRootTerminal.pty"]
+    }
+
+    private func dismissWirelessDataPermissionIfPresent(
+        blocking terminal: XCUIElement
+    ) {
+        let springboard = XCUIApplication(
+            bundleIdentifier: "com.apple.springboard"
+        )
+        if tapWirelessDataDenyButton(in: springboard) {
+            recordCheckpoint("wireless-data-permission-denied")
+            return
+        }
+
+        let environment = ProcessInfo.processInfo.environment
+        guard environment["SIMULATOR_UDID"] == nil else {
+            return
+        }
+        let alertDeadline = Date().addingTimeInterval(5)
+        while Date() < alertDeadline {
+            if tapWirelessDataDenyButton(in: springboard) {
+                recordCheckpoint("wireless-data-permission-denied")
+                return
+            }
+            RunLoop.current.run(
+                until: Date().addingTimeInterval(0.2)
+            )
+        }
+        guard terminal.isHittable else {
+            XCTFail("An unexpected system alert blocked terminal input.")
+            return
+        }
+    }
+
+    private func tapWirelessDataDenyButton(
+        in springboard: XCUIApplication
+    ) -> Bool {
+        for label in ["Don’t Allow", "Don't Allow", "不允许"] {
+            let button = springboard.buttons[label]
+            if button.exists {
+                button.tap()
+                _ = button.waitForNonExistence(timeout: 5)
+                RunLoop.current.run(
+                    until: Date().addingTimeInterval(0.5)
+                )
+                return true
+            }
+        }
+        return false
     }
 
     private func confirmDeletion(
@@ -1098,23 +1163,6 @@ final class PocketRootHostAppUITests: XCTestCase {
         }
         wait(for: predicate, evaluatedWith: terminal, timeout: 30)
         return result ?? (0, 0)
-    }
-
-    private func waitForBackgroundState(
-        of app: XCUIApplication,
-        timeout: TimeInterval
-    ) -> Bool {
-        waitWithoutAssertion(
-            for: NSPredicate { object, _ in
-                guard let application = object as? XCUIApplication else {
-                    return false
-                }
-                return application.state == .runningBackground
-                    || application.state == .runningBackgroundSuspended
-            },
-            evaluatedWith: app,
-            timeout: timeout
-        )
     }
 
     private enum WidthChangeDirection {
