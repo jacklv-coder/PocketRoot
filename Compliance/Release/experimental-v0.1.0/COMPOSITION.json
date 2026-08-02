@@ -27,7 +27,7 @@
     "Scripts/run-ios-example-ui-smoke.sh": "071fa3336479f1849eb3be3f1f6b6516025197a0cf30640e64cd902282d9ed4d",
     "Scripts/run-quick-start-ui-smoke.sh": "acf26d68fc37250e24911c2d23791a0d12ff06a624dedcefee0ed7905bc31af2",
     "Scripts/run-external-consumer-ui-smoke.sh": "d9544ede3ecbad8d42a114015fa77071d31aa84aafc1cbe0f0f001453b1a4d0d",
-    "Scripts/run-host-app-device-ui-smoke.sh": "f9528bd72aa40e6615633d1bc56ea8a31965b41f6570a0dc9f5fa390c5082490",
+    "Scripts/run-host-app-device-ui-smoke.sh": "2f934265cb46145b27bb26e0d7e84acebc14290602e23cd1ab8f222aef68ed1f",
     "ThirdPartyNotices/SwiftTerm-LICENSE.txt": "1c34c11581e20feb2b7ea122146a6690261dae94b2c8444e8cff902e567df6ae",
     "Sources/CPocketRootArchiveSupport/CPocketRootArchiveSupport.c": "0abfdca5894c5e888de4ba48a73880dbbe2a593785c509684b52bfa412249751",
     "Sources/CPocketRootArchiveSupport/include/CPocketRootArchiveSupport.h": "064a56d06ca4a40fc754a8b4a62273efc5c691abb008ae44c54fb792dd39edfc",

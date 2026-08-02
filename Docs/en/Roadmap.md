@@ -192,7 +192,7 @@ Completed in this closure:
    reruns it.
 8. A repository-owned physical Host App runner that validates physical iOS,
    development signing and entitlements, reuses the same lifecycle UI test,
-   and fails closed when the device OS exceeds Xcode's support range.
+   and delegates exact-destination compatibility to `xcodebuild`.
 9. Public UIKit/SwiftUI Workspace surfaces that keep one PTY alive while
    switching between Terminal and Files, close it on removal, and are covered
    by the Host App Simulator file-creation, preview, and session-persistence
@@ -213,11 +213,11 @@ Completed in this closure:
     re-import it, and verify content. The fixture exists only under the
     explicit UI-test launch argument.
 
-The remaining iPhone gate is execution under an Xcode whose device-support
-range includes the selected signed device. Jack iPhone currently runs iOS 26.6
-beta while the installed Xcode 26.1.1 officially supports devices through iOS
-26.1; its signed build was verified, but the incompatible XCTest session is not
-counted as passed. Physical interactive-program, real memory-pressure, and
+The remaining iPhone Host App gate is a successful physical XCTest lifecycle.
+Xcode 26.1.1 built, development-signed, installed, and launched the Host App on
+Jack iPhone running iOS 26.6, but two XCTest attempts timed out while enabling
+automation mode before entering the test body and are not counted as passed.
+Physical interactive-program, real memory-pressure, and
 long-duration output evidence remain, plus iPad keyboard, rotation, layout, and
 VoiceOver verification. The implementation retains direct low-level
 `IshSession` ownership and does not use the upstream high-level terminal wrapper.

@@ -17,7 +17,7 @@ PocketRoot separates host logic, real RootFS, iOS build, native final-link, and 
 | Simulator native smoke | `./Scripts/run-runtime-smoke.sh` | Prepare, boot, command bounds, returning soft shutdown | Other toolchains, physical devices, distribution |
 | Quick Start UI smoke | `./Scripts/run-quick-start-ui-smoke.sh` | Cold Files and Terminal entries in the minimal consumer App auto-boot; a real PTY-created file is previewed through Files | Physical devices, full Host lifecycle, distribution |
 | Host App UI smoke | `./Scripts/run-host-app-ui-smoke.sh` | Public-host boot, SwiftTerm PTY, lifecycle, Workspace persistence, Files mutations/previews, system document-picker import, share-sheet save and re-import round trip, and ordered shutdown on iPhone/iPad iOS 18 Simulators | Physical-device system file interaction, physical keyboards, physical iPad, distribution |
-| Physical Host App UI smoke | `./Scripts/run-host-app-device-ui-smoke.sh` | The same lifecycle UI test on a development-signed iPhone/iPad, including signature and development entitlements | iPad, real pressure, distribution |
+| Physical Host App UI smoke | `./Scripts/run-host-app-device-ui-smoke.sh` | The same lifecycle UI test on an Xcode-resolved, development-signed iPhone/iPad, including signature and development entitlements | iPad, real pressure, distribution |
 | Physical native smoke | `./Scripts/run-runtime-device-smoke.sh` | Same 17 checks with optional process suspend/resume, UIKit lifecycle, forced-relaunch persistence, bounded storage-failure recovery, bounded memory-warning recovery, or a three-minute sustained workload; development entitlements and returning soft shutdown | Real storage/memory pressure, power cut, jetsam, iPad, distribution |
 | Source-release audit | `ruby Scripts/verify-source-release.rb --version 0.1.0` | Source track Ready, complete version documents, and a `git archive` without RootFS, App, IPA, XCFramework mirror, compressed payload, or native binary content | Runtime/App/RootFS distribution authorization |
 | Documentation | `./Scripts/check-docs.sh` | Pairs, Chinese coverage, relative links | Implementation correctness |
@@ -354,9 +354,8 @@ POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
   ./Scripts/run-host-app-device-ui-smoke.sh
 ```
 
-The runner validates a physical iOS destination, requires the device OS not to
-exceed the installed iOS SDK, checks the development-signing team, application
-identifier, and `get-task-allow`, then executes boot, sustained PTY
+The runner validates a physical iOS destination, checks the development-signing
+team, application identifier, and `get-task-allow`, then executes boot, sustained PTY
 input/output, background/foreground, rotation resize, terminal close/reopen,
 persistent Files preview, and ordered shutdown. It uninstalls the Host App and
 UI test runner and removes temporary DerivedData by default.
@@ -365,9 +364,19 @@ UI test runner and removes temporary DerivedData by default.
 diagnostic directory.
 
 Use the development certificate subject's `OU` as the team ID, not the
-personal identifier shown in parentheses in the certificate display name. A
-newer device OS than Xcode's device-support range fails before build; a
+personal identifier shown in parentheses in the certificate display name. The
+runner does not compare device-OS and SDK minor versions: an SDK version is not
+Xcode's physical-device support range. `xcodebuild` with the exact device
+destination is authoritative for build, install, and test compatibility. A
 successful signature or install is not reported as a passed XCTest lifecycle.
+
+On 2026-08-02, Xcode 26.1.1 twice built, development-signed, and entitlement-
+checked the Host App and UI test runner for Jack iPhone on iOS 26.6. The Host
+App also installed and launched. Both XCTest attempts timed out while enabling
+automation mode before entering the test body, so the physical Host App UI
+lifecycle is still not counted as passed. This proves that the former iOS 26.6
+versus SDK 26.1 minor-version preflight was a false blocker, not an authoritative
+toolchain compatibility result.
 
 The 2026-07-24 rerun used Xcode 26.1.1, a development-provisioned iPhone 17 Pro
 on iOS 26.1, and the v0.4.0-abi.6 runtime pin. The device-produced

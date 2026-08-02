@@ -1157,7 +1157,10 @@ class ReleaseComplianceTests < Minitest::Test
     assert_includes generic_runner, "-attempt-1.xcresult"
     assert_includes device_runner, "build-for-testing"
     assert_includes device_runner, "test-without-building"
-    assert_includes device_runner, "result.deviceProperties.osVersionNumber"
+    assert_includes device_runner, '-destination "id=$DEVICE_ID"'
+    assert_includes device_runner, "The SDK version is not Xcode"
+    refute_includes device_runner, "result.deviceProperties.osVersionNumber"
+    refute_includes device_runner, "xcrun --sdk iphoneos --show-sdk-version"
     assert_includes workflow, "./Scripts/run-host-app-ui-smoke.sh"
     assert_includes workflow, "actions/upload-artifact@043fb46d"
   end

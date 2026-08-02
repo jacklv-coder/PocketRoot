@@ -34,7 +34,7 @@ PocketRoot 的定位不是另一个终端 App，也不是新的操作系统：�
 > 真实 iSH 集成目前仍是 **实验性（Experimental）** 能力。固定的
 > `v0.4.0-abi.9` 已支持返回 Swift 的 soft shutdown、原子无覆盖重命名与有界 stdin
 > 写入，但每个宿主进程仍只允许一次有效
-> boot/shutdown；Host App 真机 UI、iPad 真机、真实压力与发行合规门禁尚未闭环。当前版本不得用于
+> boot/shutdown；Host App 真机 UI 自动化、iPad 真机、真实压力与发行合规门禁尚未闭环。当前版本不得用于
 > 生产、TestFlight 或公开二进制分发。
 
 ## 当前能做什么
@@ -48,7 +48,7 @@ PocketRoot 的定位不是另一个终端 App，也不是新的操作系统：�
 | 终端与文件浏览 | 可接入 / 实验性 | UIKit/SwiftUI 注入已 boot system；SwiftTerm 持续 PTY 支持输入、resize、signal/EOF，文件页支持树形展开、导航、有界预览、安全增删改，以及 1 MiB 上限的系统文件导入/分享导出 |
 | 轻量 agent loop | 核心、OpenAI transport 与审批命令工具可用 | Agent 与 Runtime Tools 均显式 opt-in；不安装 Codex CLI，不自动批准 shell |
 | 交互式 PTY 与 SwiftTerm | 已实现，待扩大真机验证 | public session、bounded read、输入、resize、signal/EOF、registry 与 close-before-shutdown 已接通；iPhone/iPad Simulator 已通过 PTY、生命周期、Files/Workspace、系统文件导入/分享保存 round-trip 与有序 shutdown |
-| 真机与公开发行 | 部分通过 / 阻塞 | Jack iPhone 已通过命令、PTY/Files、生命周期、故障恢复和 3 分钟持续负载门禁（峰值 84.3 MiB）；Host UI runner 已就绪，但设备 iOS 26.6 beta 超出本机 Xcode 26.1.1 支持范围，另需兼容工具链实跑、真实 storage pressure、iPad 真机、jetsam/断电、最终制品与合规门禁 |
+| 真机与公开发行 | 部分通过 / 阻塞 | Jack iPhone 已通过命令、PTY/Files、生命周期、故障恢复和 3 分钟持续负载门禁（峰值 84.3 MiB）；Xcode 26.1.1 已完成 Host App 编译、签名、安装和启动，真机 XCTest 仍阻塞在 automation mode 握手，另需真实 storage pressure、iPad 真机、jetsam/断电、最终制品与合规门禁 |
 
 默认 `PocketRoot` 产品不会带入 agent loop 或真实 iSH 运行时，也不会打包或下载 RootFS。
 需要 agent 的应用显式依赖 `PocketRootAgent`；只有需要审批命令 adapter 时才额外依赖

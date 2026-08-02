@@ -99,36 +99,8 @@ DEVICE_REALITY="$(
   plutil -extract result.hardwareProperties.reality raw \
     -o - "$DEVICE_DETAILS_PATH" 2>/dev/null || true
 )"
-DEVICE_OS_VERSION="$(
-  plutil -extract result.deviceProperties.osVersionNumber raw \
-    -o - "$DEVICE_DETAILS_PATH" 2>/dev/null || true
-)"
 if [[ -z "$DEVICE_ID" || "$DEVICE_PLATFORM" != "iOS" || "$DEVICE_REALITY" != "physical" ]]; then
     echo "POCKETROOT_HOST_DEVICE_UI_SMOKE_DEVICE did not resolve to a physical iOS device." >&2
-    exit 2
-fi
-SDK_VERSION="$(xcrun --sdk iphoneos --show-sdk-version)"
-if [[ ! "$DEVICE_OS_VERSION" =~ ^[0-9]+(\.[0-9]+)+$ ]] \
-  || [[ ! "$SDK_VERSION" =~ ^[0-9]+(\.[0-9]+)+$ ]]; then
-    echo "Could not compare the selected device OS and installed iOS SDK versions." >&2
-    exit 2
-fi
-if ! awk -v device="$DEVICE_OS_VERSION" -v sdk="$SDK_VERSION" '
-  BEGIN {
-    split(device, device_parts, ".")
-    split(sdk, sdk_parts, ".")
-    if (device_parts[1] < sdk_parts[1]) {
-      exit 0
-    }
-    if (device_parts[1] == sdk_parts[1] &&
-        device_parts[2] <= sdk_parts[2]) {
-      exit 0
-    }
-    exit 1
-  }
-'; then
-    echo "The selected device runs iOS $DEVICE_OS_VERSION, newer than the installed iOS $SDK_VERSION SDK." >&2
-    echo "Install an Xcode release whose device-support range includes iOS $DEVICE_OS_VERSION." >&2
     exit 2
 fi
 echo "Resolved physical device reference '$DEVICE_REFERENCE' to hardware UDID '$DEVICE_ID'."
@@ -159,6 +131,9 @@ COMMON_XCODEBUILD_ARGUMENTS=(
   DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM"
 )
 
+# The SDK version is not Xcode's physical-device support range. Let
+# xcodebuild's destination resolution provide the authoritative compatibility
+# result instead of rejecting a valid device by comparing OS/SDK minor values.
 POCKETROOT_DEVELOPMENT_ROOTFS_ARCHIVE="$ARCHIVE_PATH" \
 xcodebuild "${COMMON_XCODEBUILD_ARGUMENTS[@]}" build-for-testing
 

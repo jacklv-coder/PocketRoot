@@ -191,8 +191,8 @@
     并覆盖持续输出、前后台、旋转 resize、关闭/重开、Files 预览与有序 shutdown；
     Xcode 16 CI 持续执行。
 11. repository-owned Host App 真机 runner：解析并验证 physical iOS、开发签名和
-    entitlement，复用同一生命周期 UI 测试，并在设备 OS 超出 Xcode 支持范围时
-    fail closed。
+    entitlement，复用同一生命周期 UI 测试，并把精确 destination 的兼容性判断交给
+    `xcodebuild`。
 12. 公开 UIKit/SwiftUI Workspace：宿主以一个入口打开 Terminal 与 Files，切换页面
     不重建 PTY；UIKit 支持顶部与底部切换，退出时关闭 session，Host App Simulator
     UI smoke 验证文件创建、预览和同一 PTY 持续性。
@@ -208,9 +208,9 @@
 
 未完成门禁：
 
-- 在 device-support 兼容的 Xcode 上完成 signed iPhone Host App UI runner；当前
-  Jack iPhone 为 iOS 26.6 beta，本机 Xcode 26.1.1 的官方设备支持上限为 iOS 26.1，
-  signed build 已验证但 XCTest 因工具链不兼容未计为通过；
+- 完成 signed iPhone Host App UI runner；Xcode 26.1.1 已在 Jack iPhone / iOS 26.6
+  上完成编译、development 签名、安装和启动，但两次 XCTest 在进入测试体前超时于
+  automation mode 握手，因此尚未计为通过；
 - 真机交互程序、真实内存压力和长时间输出；
 - iPad 键盘、旋转、layout 和 VoiceOver 实机验证。
 

@@ -15,6 +15,12 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 
 ### Changed
 
+- The physical Host App UI runner no longer treats a device-OS versus iOS-SDK
+  minor-version comparison as Xcode's device-support range. `xcodebuild` with
+  the exact destination now provides the authoritative compatibility result.
+  Xcode 26.1.1 built, development-signed, installed, and launched the Host App
+  on Jack iPhone running iOS 26.6; two XCTest attempts still timed out while
+  enabling automation mode, so the physical UI lifecycle is not yet passed.
 - Added a mutually exclusive three-minute signed physical-device workload
   smoke: 90 command/file write-read cycles, a 64 KiB binary-output check every
   tenth cycle, complete marker verification through the Files API, shutdown,
@@ -146,7 +152,7 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   explicit UI-test launch argument, and verifies the document-picker import,
   share-sheet save, guest deletion, re-import, and content round trip.
 - A development-signed physical Host App UI runner that validates physical
-  iOS, the device/Xcode support range, signing, and entitlements before reusing
+  iOS, the exact Xcode destination, signing, and entitlements before reusing
   the same lifecycle test, with App and diagnostic cleanup by default.
 - Process ownership, serial native execution, and lifecycle reentrancy protection.
 - One-shot cwd, environment, stderr merge, exit, signal, timeout, and stream mapping.

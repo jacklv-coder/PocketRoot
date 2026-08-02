@@ -447,8 +447,10 @@ fi
 if ! grep -Fq -- 'POCKETROOT_HOST_DEVICE_UI_SMOKE_DEVICE' "$HOST_DEVICE_UI_RUNNER" \
   || ! grep -Fq -- 'result.hardwareProperties.udid' "$HOST_DEVICE_UI_RUNNER" \
   || ! grep -Fq -- '"$DEVICE_REALITY" != "physical"' "$HOST_DEVICE_UI_RUNNER" \
-  || ! grep -Fq -- 'result.deviceProperties.osVersionNumber' "$HOST_DEVICE_UI_RUNNER" \
-  || ! grep -Fq -- 'xcrun --sdk iphoneos --show-sdk-version' "$HOST_DEVICE_UI_RUNNER" \
+  || grep -Fq -- 'xcrun --sdk iphoneos --show-sdk-version' "$HOST_DEVICE_UI_RUNNER" \
+  || grep -Fq -- 'newer than the installed iOS' "$HOST_DEVICE_UI_RUNNER" \
+  || ! grep -Fq -- 'The SDK version is not Xcode' "$HOST_DEVICE_UI_RUNNER" \
+  || ! grep -Fq -- '-destination "id=$DEVICE_ID"' "$HOST_DEVICE_UI_RUNNER" \
   || ! grep -Fq -- 'build-for-testing' "$HOST_DEVICE_UI_RUNNER" \
   || ! grep -Fq -- 'test-without-building' "$HOST_DEVICE_UI_RUNNER" \
   || ! grep -Fq -- '"$SIGNED_TEAM_IDENTIFIER" != "$DEVELOPMENT_TEAM"' "$HOST_DEVICE_UI_RUNNER" \
