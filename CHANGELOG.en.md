@@ -15,6 +15,15 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 
 ### Changed
 
+- The Host App system-file import/share UI smoke no longer queries the SwiftUI
+  toolbar Actions button's `hittable` state directly. Xcode 16 iPhone/iPad
+  Simulators can briefly report infinite-origin, zero-sized App and button
+  accessibility frames while a system controller dismisses. The test now
+  re-queries the element, waits for finite App/button frames whose button center
+  is inside the App, taps through the captured App coordinate, and confirms the
+  menu opened. A missed tap receives one clean App relaunch retry, and an
+  unobserved share sheet uses the same fail-closed recovery instead of trusting
+  underlying host geometry.
 - The physical Host App UI runner no longer treats a device-OS versus iOS-SDK
   minor-version comparison as Xcode's device-support range. `xcodebuild` with
   the exact destination now provides the authoritative compatibility result.

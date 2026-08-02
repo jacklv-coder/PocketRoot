@@ -398,6 +398,17 @@ if ! grep -Fq -- 'pocketroot-system-file-ui-fixture.txt' "$HOST_APP_SOURCE" \
   || ! grep -Fq -- 'revealFileEntry' "$HOST_UI_TESTS" \
   || ! grep -Fq -- '"PocketRootFiles.list"' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'if element.isEnabled' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'hasUsableFrame(appFrame)' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'hasUsableFrame(actionsFrame)' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'tapFrame(actionsFrame, in: appFrame, using: app)' "$HOST_UI_TESTS" \
+  || grep -Fq -- 'waitForHittable(actions)' "$HOST_UI_TESTS" \
+  || grep -Fq -- 'hostActions.isHittable' "$HOST_UI_TESTS" \
+  || grep -Fq -- 'hostIsHittable' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'waitForInteractionFrames(' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'underlying host geometry' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'for attempt in 0..<2' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'relaunchAndBoot(app)' "$HOST_UI_TESTS" \
+  || grep -Fq -- 'browse.tap()' "$HOST_UI_TESTS" \
   || grep -Fq -- 'waitForHittable(imported)' "$HOST_UI_TESTS" \
   || ! grep -Fq -- '.matching(identifier: "ActivityListView")' "$HOST_UI_TESTS" \
   || grep -Fq -- 'app.otherElements["ActivityListView"]' "$HOST_UI_TESTS" \

@@ -13,6 +13,12 @@ PocketRoot 的重要变化记录在这里，并从首个公开版本开始遵循
 
 ### Changed
 
+- Host App 的系统文件导入/分享 UI smoke 不再直接查询 SwiftUI toolbar Actions 按钮的
+  `hittable`。Xcode 16 的 iPhone/iPad Simulator 在 system controller 关闭期间可能
+  暂时返回无限原点、零尺寸的 App 与按钮 accessibility frame；测试现在重新查询元素，
+  等待 App/按钮 frame 有限且按钮中心位于 App 内，再通过已捕获的 App 坐标点击并确认
+  菜单出现；点击未生效时只在 App 干净重启后重试一次，未观察到分享面板时也走同一
+  fail-closed 恢复，不再用底层宿主 frame 推断 system UI 已关闭。
 - Host App 真机 UI runner 不再把设备 OS 与 iOS SDK 的次版本比较当作 Xcode 真机
   支持范围；精确 destination 的 `xcodebuild` 现在负责权威兼容性判断。Xcode 26.1.1
   已在 Jack iPhone / iOS 26.6 上完成编译、development 签名、安装和启动；两次
