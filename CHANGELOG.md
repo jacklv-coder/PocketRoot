@@ -61,10 +61,11 @@ PocketRoot 的重要变化记录在这里，并从首个公开版本开始遵循
 - 将 Host App 的 Files/Workspace 与 PTY lifecycle UI smoke 拆分到独立模拟器和
   `xcodebuild` 调用；失败时记录阶段检查点，并保留 `.xcresult`、测试输出和
   PocketRoot 模拟器日志供 CI 下载分析，同时维持每项测试 10 分钟硬上限；
-  系统文件 round-trip 测试也会在同一个 60 秒窗口内等待本机位置或已恢复的
-  Host 目录，兼容文件选择器保存上次目录、前序 share sheet/App 重启后近一分钟的
-  系统页面恢复及慢速模拟器的合法状态。等待失败会立即停止辅助流程，避免先记录
-  过早断言、随后又在同一 picker 中完成 round-trip。通用 UI runner
+  系统文件 round-trip 测试也会在一个 60 秒状态循环中等待 Host fixture、本机位置
+  或可交互的 `Browse/浏览`，而不会把提前出现的 picker 导航栏误判为就绪；
+  当 picker 停在 Recents 时，点击可能延迟进入 accessibility tree 的 Browse，
+  而已经位于 Host 目录时会等到 fixture 文件真正可见才返回。辅助函数返回
+  明确的成功状态，失败后立即停止当前用例，避免后续点击产生连锁误报。通用 UI runner
   只对 test runner 未注册到 FrontBoard 的模拟器基础设施错误重启自己创建的临时设备
   并重试一次，调用方指定的共享 Simulator 不会被重启；测试
   断言、超时和其他构建错误仍立即失败，重试或重启失败时同时保留首次与最终日志及

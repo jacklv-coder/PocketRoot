@@ -215,7 +215,9 @@ final class PocketRootHostAppUITests: XCTestCase {
         }
         importFile.tap()
 
-        openHostDocuments(in: app)
+        guard openHostDocuments(in: app) else {
+            return
+        }
         let fixture = app.cells[
             "\(Self.systemImportFixtureDisplayName), txt"
         ]
@@ -252,7 +254,9 @@ final class PocketRootHostAppUITests: XCTestCase {
             withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)
         ).tap()
 
-        openHostDocuments(in: app)
+        guard openHostDocuments(in: app) else {
+            return
+        }
         let save = app.buttons.matching(
             NSPredicate(format: "label IN %@", ["Save", "存储"])
         ).firstMatch
@@ -301,7 +305,9 @@ final class PocketRootHostAppUITests: XCTestCase {
             return
         }
         importFile.tap()
-        openHostDocuments(in: app)
+        guard openHostDocuments(in: app) else {
+            return
+        }
         let exported = app.cells[
             "\(Self.systemImportFixtureDisplayName), txt"
         ]
@@ -922,23 +928,10 @@ final class PocketRootHostAppUITests: XCTestCase {
         )
     }
 
-    private func openHostDocuments(in app: XCUIApplication) {
+    private func openHostDocuments(in app: XCUIApplication) -> Bool {
         let browse = app.buttons.matching(
             NSPredicate(format: "label IN %@", ["Browse", "浏览"])
         ).firstMatch
-        if browse.waitForExistence(timeout: 10),
-           let frames = waitForInteractionFrames(
-               of: browse,
-               in: app,
-               timeout: 3
-           )
-        {
-            tapFrame(
-                frames.elementFrame,
-                in: frames.appFrame,
-                using: app
-            )
-        }
 
         // The iOS document picker preserves its last visited directory. On a
         // later import or export in this test it can reopen directly inside
@@ -981,26 +974,60 @@ final class PocketRootHostAppUITests: XCTestCase {
                 localLocationLabels
             )
         ).firstMatch
-        let localLocation = sidebarLocalLocation.waitForExistence(timeout: 5)
-            ? sidebarLocalLocation
-            : fallbackLocalLocation
-        let pickerLanding = app.descendants(matching: .any).matching(
-            NSPredicate(
-                format: "label IN %@",
-                hostDocumentLabels + localLocationLabels
-            )
-        ).firstMatch
-        // On the minimum Xcode 16 runner, the third presentation can take
-        // almost a minute to restore the picker after the preceding share
-        // sheet and App relaunch. The picker did eventually expose the local
-        // location and the round trip completed, so keep one bounded wait
-        // instead of recording a premature failure and continuing to tap.
-        guard pickerLanding.waitForExistence(timeout: 60) else {
-            XCTFail("document picker to expose a local or host destination")
-            return
+        let hostFixture = app.cells[
+            "\(Self.systemImportFixtureDisplayName), txt"
+        ]
+        // The minimum Xcode 16 runner can present the document manager on
+        // Recents before its Browse tab enters the accessibility tree, while a
+        // restored Host location can also expose its navigation bar before its
+        // file list. Spend one deadline waiting for either the fixture itself,
+        // a local location, or a usable Browse transition.
+        let pickerDeadline = Date().addingTimeInterval(60)
+        var localLocation: XCUIElement?
+        var didTapBrowse = false
+        while Date() < pickerDeadline {
+            if currentHostDocuments.exists {
+                if hostFixture.exists {
+                    return true
+                }
+                // An iPad sidebar can keep the local location visible while
+                // the restored Host file list is still loading. Once the Host
+                // navigation state is present, stay there instead of letting
+                // the sidebar take us back out of the destination.
+                RunLoop.current.run(
+                    until: Date().addingTimeInterval(0.2)
+                )
+                continue
+            }
+            if sidebarLocalLocation.exists {
+                localLocation = sidebarLocalLocation
+                break
+            }
+            if fallbackLocalLocation.exists {
+                localLocation = fallbackLocalLocation
+                break
+            }
+            if !didTapBrowse, browse.exists {
+                guard let frames = waitForInteractionFrames(
+                    of: browse,
+                    in: app,
+                    timeout: 10
+                ) else {
+                    XCTFail("document picker Browse to become hittable")
+                    return false
+                }
+                tapFrame(
+                    frames.elementFrame,
+                    in: frames.appFrame,
+                    using: app
+                )
+                didTapBrowse = true
+            }
+            RunLoop.current.run(until: Date().addingTimeInterval(0.2))
         }
-        if currentHostDocuments.exists {
-            return
+        guard let localLocation else {
+            XCTFail("document picker to expose a usable Host or local destination")
+            return false
         }
 
         let hostDocuments = app.cells.matching(
@@ -1043,17 +1070,20 @@ final class PocketRootHostAppUITests: XCTestCase {
             "local document location to reveal the host container"
         )
         guard openedHostDestination else {
-            return
+            return false
         }
-        if currentHostDocuments.exists {
-            return
+        if !currentHostDocuments.exists {
+            XCTAssertTrue(hostDocuments.exists)
+            guard hostDocuments.exists else {
+                return false
+            }
+            hostDocuments.tap()
         }
-
-        XCTAssertTrue(hostDocuments.exists)
-        guard hostDocuments.exists else {
-            return
+        guard hostFixture.waitForExistence(timeout: 30) else {
+            XCTFail("Host Documents fixture to become visible")
+            return false
         }
-        hostDocuments.tap()
+        return true
     }
 
     private func dismissShareSheetIfNeeded(

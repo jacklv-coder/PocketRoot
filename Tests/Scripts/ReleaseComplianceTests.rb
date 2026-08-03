@@ -1182,11 +1182,20 @@ class ReleaseComplianceTests < Minitest::Test
       ui_test,
       '"FullDocumentManagerViewControllerNavigationBar"'
     )
-    assert_includes ui_test, "pickerLanding.waitForExistence(timeout: 60)"
+    assert_includes ui_test, "let pickerDeadline = Date().addingTimeInterval(60)"
     assert_includes(
       ui_test,
-      'XCTFail("document picker to expose a local or host destination")'
+      'XCTFail("document picker to expose a usable Host or local destination")'
     )
+    assert_includes ui_test, "while Date() < pickerDeadline"
+    assert_includes ui_test, "if currentHostDocuments.exists {"
+    assert_includes ui_test, "if hostFixture.exists {"
+    assert_includes ui_test, "continue"
+    assert_includes ui_test, "var didTapBrowse = false"
+    assert_includes ui_test, 'XCTFail("document picker Browse to become hittable")'
+    assert_includes ui_test, "hostFixture.waitForExistence(timeout: 30)"
+    assert_includes ui_test, 'XCTFail("Host Documents fixture to become visible")'
+    assert_equal 3, ui_test.scan("guard openHostDocuments(in: app) else").length
     assert_includes ui_test, "for _ in 0..<2"
     assert_includes ui_test, "hostDestination.waitForExistence(timeout: 10)"
     assert_includes ui_test, "openedHostDestination"
@@ -1198,9 +1207,14 @@ class ReleaseComplianceTests < Minitest::Test
       'NSPredicate(format: "label BEGINSWITH %@", "PocketRoot Host")'
     )
     assert_operator(
-      ui_test.index("pickerLanding.waitForExistence(timeout: 60)"),
+      ui_test.index("let pickerDeadline = Date().addingTimeInterval(60)"),
       :<,
-      ui_test.index("localLocation.waitForExistence(timeout: 30)")
+      ui_test.index("hostFixture.waitForExistence(timeout: 30)")
+    )
+    assert_operator(
+      ui_test.index("if currentHostDocuments.exists {"),
+      :<,
+      ui_test.index("if sidebarLocalLocation.exists {")
     )
     assert_includes ui_test, "testPTYLifecycleAndShutdown"
     assert_includes ui_test, "dismissKeyboardOnboardingIfPresent(in: app)"
