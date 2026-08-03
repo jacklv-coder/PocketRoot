@@ -33,6 +33,9 @@ PocketRoot 暴露八个产品：
 首个源码版本为 `v0.1.0`。公共 API 仍处于 Experimental 阶段，因此远程接入建议
 固定精确版本，避免自动接收后续可能包含破坏性 API 调整的 `0.x` 版本：
 
+`main` 上的 `v0.2.0` 仍是未授权、未打 tag 的候选；发布门禁完成前，远程业务 App
+继续固定公开 `0.1.0`，候选验证只使用完整 Git SHA。
+
 ```swift
 dependencies: [
     .package(

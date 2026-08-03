@@ -60,7 +60,7 @@ Completed:
 
 ## Milestone 2: ARM64 Linux one-shot commands
 
-Status: **Experimental, in progress**.
+Status: **Core user workflow passed; Experimental runtime resource and fault hardening remains in progress**.
 
 ### Completed feasibility foundation
 
@@ -83,6 +83,11 @@ Status: **Experimental, in progress**.
   after a three-second suspension, with 89.8 MiB and 89.7 MiB peaks.
 - The same device passed the 18-check real UIKit background/foreground/active
   gate with its original PID, a post-activation guest command, and an 89.4 MiB peak.
+- The same device passed the default 90×2-second 20-check stability gate on
+  Xcode 26.6 / iOS 26.6. One PTY remained open for 90 cycles, byte-exactly
+  validated 576 KiB of uniquely delimited zero-byte output, and recovered from
+  a stdout-limit failure. Post-warm-up `phys_footprint` growth was 0.0 MiB and
+  the lifecycle peak was 83.2 MiB.
 
 Together with the later Host App UI smoke, this establishes the current
 Simulator, minimum-Xcode 16, and single-iPhone one-shot, PTY, and App-lifecycle
@@ -104,7 +109,7 @@ paths, not iPad, real pressure, or distribution readiness.
 | Default post-boot identity gate | Passed | Require aarch64, Alpine identity, optional version, and command context before ready; retain failed-slot regression coverage |
 | Demo and external-host runtime integration | Passed | The Demo and standalone Host App share the public controller; Debug injects only the exact verified external RootFS and Release remains payload-free |
 | Host-safe soft shutdown | Passed | v0.4.0-abi.6 soft-halts, joins, and returns to Swift; the process remains single-lifecycle |
-| Signed iPhone | Passed | The standard 17-check, three-minute 20-check sustained, and Host App lifecycle/interactive-`top` UI paths passed; keep rerunning after runtime changes |
+| Signed iPhone | Passed | The standard 17-check, default 90×2-second 20-check stability, and Host App lifecycle/interactive-`top` UI paths passed. The stability gate covered a byte-exact 576 KiB PTY payload, 0.0 MiB post-warm-up growth, and an 83.2 MiB lifecycle peak; keep rerunning after runtime changes |
 | iPad Simulator Host UI | Passed | iOS 18 covers RootFS boot, PTY, Files, Workspace, rotation, system document import/share-save round trips, and shutdown |
 | Signed iPad | Blocked | Physical boot and command smoke |
 | Minimum Xcode 16 native | Passed | Xcode 16.0 / iOS 18.0 SDK completed RootFS install, Simulator/device final links, and the 17-check native smoke |

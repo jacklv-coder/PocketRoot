@@ -22,9 +22,9 @@ PocketRoot 的实验性 iSH runtime、XCFramework 和候选 RootFS 当前仅用�
 源码已经依据根目录 [`LICENSE`](../LICENSE) 中的 MIT License 获准发布；第三方
 组件仍适用各自许可证，范围说明见 [`NOTICE.md`](../NOTICE.md)。
 
-## v0.1.0 双轨发布闸门
+## v0.2.0 候选双轨发布闸门
 
-仓库把 `v0.1.0` 候选发布拆为两条互不替代的轨道：
+仓库把未打 tag 的 `v0.2.0` Developer Preview 候选拆为两条互不替代的轨道：
 
 1. **源码与 Swift Package 发布**：只包含 PocketRoot 源码和 Swift Package
    元数据，不包含 RootFS、App、IPA、XCFramework 镜像或二进制 SDK；
@@ -32,11 +32,12 @@ PocketRoot 的实验性 iSH runtime、XCFramework 和候选 RootFS 当前仅用�
    runtime 制品，但明确不包含任何 RootFS 资产；RootFS 仍只能由调用方在本地取得
    并自行确认授权。
 
-源码与 Swift Package 轨道当前为 **Ready**；Runtime 分发轨道仍为
-**Blocked**。机器可读状态见
-[`READINESS.json`](../Compliance/Release/experimental-v0.1.0/READINESS.json)，
+当前候选的源码与 Swift Package 轨道为 **Blocked**，因为尚未授予 `v0.2.0`
+源码发布授权；Runtime 分发轨道同样为 **Blocked**。已公开的 `v0.1.0` 历史状态
+仍保存在原版本快照中。当前机器可读状态见
+[`READINESS.json`](../Compliance/Release/experimental-v0.2.0/READINESS.json)，
 人工复核入口见
-[`RELEASE-CHECKLIST.md`](../Compliance/Release/experimental-v0.1.0/RELEASE-CHECKLIST.md)，
+[`RELEASE-CHECKLIST.md`](../Compliance/Release/experimental-v0.2.0/RELEASE-CHECKLIST.md)，
 代码评审后的决定源见
 [`RELEASE-DECISIONS.json`](../Compliance/Release/RELEASE-DECISIONS.json)。
 工程测试通过不会授予额外分发权限；源码轨道 Ready 不会允许 runtime 分发；
@@ -50,8 +51,8 @@ ruby Scripts/generate-release-compliance.rb --require-source-ready
 ruby Scripts/generate-release-compliance.rb --require-runtime-ready
 ```
 
-后两个命令分别反映各自轨道：`--require-source-ready` 当前返回成功，
-`--require-runtime-ready` 仍返回非零。下一项 Runtime 工程门禁是扫描精确的最终
+后两个命令分别反映各自轨道；在候选 PR 中二者都返回非零。源码轨道必须经过明确
+授权并再次评审后才能打 tag。下一项 Runtime 工程门禁是扫描精确的最终
 制品、记录人工复核的 SHA-256，并以内容级证据确认制品不包含 RootFS。
 
 `RELEASE-DECISIONS.json` 是受代码评审的授权输入，不是自动授权开关。任何非空许可
@@ -81,7 +82,7 @@ exception、`AND`、`OR`、`WITH` 与括号构成的表达式。生成器校验�
 合规评审必须覆盖整个组合，不能只检查根目录 `LICENSE`。
 
 仓库现已在
-[`Compliance/Release/experimental-v0.1.0`](../Compliance/Release/experimental-v0.1.0/README.md)
+[`Compliance/Release/experimental-v0.2.0`](../Compliance/Release/experimental-v0.2.0/README.md)
 提交可复现的最大实验工程组合清单和 SPDX 2.3 JSON SBOM。它区分默认 Demo、
 原生 runtime smoke 与全部 Swift products，并覆盖固定 ABI.9 IshEmbed/XCFramework、
 iSH gitlink、supervisor musl source、调用方提供的外部 RootFS 及其中 15 个 Alpine
@@ -103,7 +104,7 @@ smoke `.xcarchive`，验证 `get-task-allow`、签名和 clean 风险信号并�
 `distributionAuthorized=false`。
 
 当前扫描器不能解除 runtime 轨道。把它生成的 `ARTIFACT-INVENTORY.json` 和
-`SBOM.spdx.json` 放入 `Compliance/Release/FinalArtifact/v0.1.0/` 后，发布生成器
+`SBOM.spdx.json` 放入 `Compliance/Release/FinalArtifact/v0.2.0/` 后，发布生成器
 会重新验证并把摘要写入 `repositoryEvidence`，但状态固定为
 `engineering-evidence-only`，`releaseSignatureValid=false`、
 `rootFSExcluded=false`。原因是当前 `artifact.sha256` 是 App 内容树摘要，不覆盖

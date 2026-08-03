@@ -36,6 +36,10 @@ it. The first source release is `v0.1.0`. The API remains Experimental, so pin
 the exact version instead of automatically accepting a later, potentially
 breaking `0.x` release:
 
+The `v0.2.0` work on `main` remains an unauthorized, untagged candidate.
+Remote application integrations should keep pinning public `0.1.0` until the
+release gates close; candidate validation uses only a complete Git SHA.
+
 ```swift
 dependencies: [
     .package(

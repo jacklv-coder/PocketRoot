@@ -6,6 +6,10 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 
 ## Unreleased
 
+There are currently no changes outside the release candidate.
+
+## 0.2.0 - Unreleased
+
 ### Added
 
 - Interactive SwiftTerm PTYs now show an iPhone-friendly Esc, Tab, Ctrl-C,
@@ -52,6 +56,13 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   minimum-toolchain CI runs a 30×250-ms path; the old variable remains an alias.
   This bounded baseline is not real pressure, jetsam, power-cut, or sustained
   background-execution evidence.
+- Jack iPhone (iPhone 14 Pro / iOS 26.6) completed the default 90×2-second
+  physical stability gate with Xcode 26.6. All 20 checks passed while one PTY
+  remained active for 90 file cycles, 576 KiB of uniquely delimited zero-byte
+  output, stdout-limit recovery, and a Files preview. Post-warm-up
+  `phys_footprint` growth was 0.0 MiB and the lifecycle peak was 83.2 MiB.
+  This evidence is still not real storage pressure, forced power loss, jetsam,
+  or background-longevity coverage.
 - The Host App iPad system-file round-trip UI smoke no longer reads
   `ActivityListView.frame` after the share sheet may have disappeared. It now
   takes one fallible snapshot and dismisses only through an app-corner point

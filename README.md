@@ -191,6 +191,9 @@ App Bundle，首次点击 Boot 时再由 installer 校验并安装。未配置�
 `v0.1.0`；由于公共 API 仍处于 Experimental 阶段，建议固定精确版本，避免自动接收
 后续可能包含破坏性 API 调整的 `0.x` 版本：
 
+`main` 正在准备未授权、未打 tag 的 `v0.2.0` Developer Preview 候选；在正式发布
+门禁完成前，外部 App 仍应使用下面的公开 `0.1.0`。
+
 ```swift
 dependencies: [
     .package(
@@ -348,9 +351,11 @@ PocketRoot 贡献者拥有版权的原创源码依据 [MIT License](LICENSE) 发
 候选 RootFS 包含多种 copyleft 与 permissive 许可证；PocketRoot 的 MIT License
 不会重新许可这些材料。
 
-`v0.1.0` 的[机器可读发布状态](Compliance/Release/experimental-v0.1.0/READINESS.json)
-把源码/Swift Package 与不含 RootFS 资产的 Runtime/App 分为两个独立轨道：源码与
-Swift Package 轨道当前为 **Ready**，Runtime 分发轨道仍为 **Blocked**。RootFS
+未打 tag 的 `v0.2.0` Developer Preview
+[机器可读候选状态](Compliance/Release/experimental-v0.2.0/READINESS.json)
+把源码/Swift Package 与不含 RootFS 资产的 Runtime/App 分为两个独立轨道；二者当前
+均为 **Blocked**，其中源码轨道等待明确发布授权。已公开的 `v0.1.0` 状态保留在
+[历史快照](Compliance/Release/experimental-v0.1.0/READINESS.json)。RootFS
 包级、最大实验工程组合和 unsigned 工程 App 文件级 SPDX SBOM 已生成，但生产、
 TestFlight 和公开二进制分发仍需完成 Runtime LICENSE/NOTICE、对应源码、最终签名/
 导出制品扫描后的完整 SBOM、App Store Review Guideline 2.5.2、隐私与法律复核。

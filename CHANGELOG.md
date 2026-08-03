@@ -6,6 +6,10 @@ PocketRoot 的重要变化记录在这里，并从首个公开版本开始遵循
 
 ## Unreleased
 
+当前暂无未归入候选版本的变更。
+
+## 0.2.0 - Unreleased
+
 ### Added
 
 - 为交互式 SwiftTerm PTY 默认加入适配 iPhone 软键盘的 Esc、Tab、Ctrl-C、Ctrl-D、
@@ -37,6 +41,11 @@ PocketRoot 的重要变化记录在这里，并从首个公开版本开始遵循
   `phys_footprint` 增长限 64 MiB，采样值和生命周期峰值限 256 MiB；最低工具链 CI
   固定运行 30×250 ms 路径，旧变量保留兼容。该有界基线不代表真实 pressure、
   jetsam、断电或持续后台执行证据。
+- Jack iPhone（iPhone 14 Pro / iOS 26.6）使用 Xcode 26.6 完成默认 90×2 秒
+  真机稳定性门禁：20 项全部通过，持续同一 PTY 完成 90 轮文件循环、576 KiB
+  带唯一边界的零字节流、stdout 上限故障恢复和 Files 预览；热身后
+  `phys_footprint` 增长 0.0 MiB，完整生命周期峰值 83.2 MiB。该证据仍不等价于
+  真实 storage pressure、强制断电、jetsam 或后台保活。
 - Host App 的 iPad 系统文件 round-trip UI smoke 不再在分享弹窗可能已经消失后读取
   `ActivityListView.frame`；改用可捕获失败的单次 snapshot，并且只从经 snapshot frame
   校验确实在 popover 外的 App 边角坐标执行关闭，消除系统 UI accessibility 节点在

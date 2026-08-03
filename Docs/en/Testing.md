@@ -19,7 +19,7 @@ PocketRoot separates host logic, real RootFS, iOS build, native final-link, and 
 | Host App UI smoke | `./Scripts/run-host-app-ui-smoke.sh` | Public-host boot, SwiftTerm PTY, lifecycle, Workspace persistence, Files mutations/previews, system document-picker import, share-sheet save and re-import round trip, and ordered shutdown on iPhone/iPad iOS 18 Simulators | Physical-device system file interaction, physical keyboards, physical iPad, distribution |
 | Physical Host App UI smoke | `./Scripts/run-host-app-device-ui-smoke.sh` | The same lifecycle UI test on an Xcode-resolved, development-signed iPhone/iPad, including signature and development entitlements | iPad, real pressure, distribution |
 | Physical native smoke | `./Scripts/run-runtime-device-smoke.sh` | Same 17 checks with optional process suspend/resume, UIKit lifecycle, forced-relaunch persistence, bounded storage-failure recovery, bounded memory-warning recovery, or persistent-PTY stability; development entitlements and returning soft shutdown | Real storage/memory pressure, power cut, jetsam, iPad, distribution |
-| Source-release audit | `ruby Scripts/verify-source-release.rb --version 0.1.0` | Source track Ready, complete version documents, and a `git archive` without RootFS, App, IPA, XCFramework mirror, compressed payload, or native binary content | Runtime/App/RootFS distribution authorization |
+| Source-release audit | `ruby Scripts/verify-source-release.rb --version 0.2.0 --allow-source-blocked` | Complete candidate documents and a `git archive` without RootFS, App, IPA, XCFramework mirror, compressed payload, or native binary content | Granted source-release authorization or Runtime/App/RootFS distribution authorization |
 | Documentation | `./Scripts/check-docs.sh` | Pairs, Chinese coverage, relative links | Implementation correctness |
 
 ## Package tests
@@ -207,6 +207,15 @@ run is about three minutes; CI continuously exercises the same path with a
 bounded 30×250-ms configuration. The old
 `POCKETROOT_SMOKE_LONG_WORKLOAD=1` maps to this mode for compatibility. This is
 not real pressure, background-longevity, system low-memory, or jetsam evidence.
+
+The 2026-08-03 signed-device baseline passed all 20 checks on Jack iPhone
+(iPhone 14 Pro / iOS 26.6) with Xcode 26.6 and the default 90×2-second
+configuration. One PTY completed 90 cycles with byte-exact validation of
+576 KiB of uniquely delimited zero-byte output, one-shot command and Files
+cross-checks, stdout-limit recovery, and shutdown. Post-warm-up
+`phys_footprint` growth was 0.0 MiB and the lifecycle peak was 83.2 MiB. The
+runner then uninstalled the smoke App. This is bounded foreground engineering
+evidence, not pressure, jetsam, power-loss, or background-longevity evidence.
 
 The sustained-output check proves that Swift can continuously consume binary
 output without truncation or corruption merely because it exceeds the 4 MiB
@@ -517,14 +526,15 @@ the retry or restart also fails, the failure artifact retains the first and
 final logs plus both available `.xcresult` bundles. This Simulator evidence
 does not prove signed-device or distribution readiness.
 
-After pushing the annotated `v0.1.0` tag, dispatch
-`.github/workflows/source-release.yml` manually from the protected `main`
-branch with `v0.1.0` as input. The current verifier and compliance snapshot are
-explicitly bound to `0.1.0`; a later release must update both first. The workflow
+This candidate PR audits only an untagged `v0.2.0` commit with
+`--allow-source-blocked`; `--require-source-ready` and the tag workflow remain
+fail closed. Only after explicit source-release authorization and another
+review may an annotated `v0.2.0` tag be pushed and
+`.github/workflows/source-release.yml` dispatched from protected `main`. The workflow
 uses trusted verifier tooling from the `main` checkout against a separate tag
 checkout, requires the annotated tag commit to belong to that trusted `main`
 history, regenerates and audits the `git archive`, then resolves the public
-package externally with `exact: "0.1.0"` and verifies both the resolved version
+package externally with `exact: "0.2.0"` and verifies both the resolved version
 and peeled commit. It does not create or upload a RootFS, App, IPA,
 XCFramework, or binary SDK.
 

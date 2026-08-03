@@ -13,7 +13,7 @@ require "tempfile"
 module PocketRootSourceRelease
   class VerificationError < StandardError; end
 
-  RELEASE_VERSION = "0.1.0"
+  RELEASE_VERSION = "0.2.0"
   MAX_ENTRIES = 20_000
   MAX_FILE_BYTES = 64 * 1024 * 1024
   MAX_ARCHIVE_CONTENT_BYTES = 256 * 1024 * 1024
@@ -118,10 +118,12 @@ module PocketRootSourceRelease
       "git #{arguments.join(' ')} failed: #{error.strip}"
   end
 
-  def verify_release_documents(root, version)
+  def verify_release_documents(root, version, require_released: true)
+    changelog_suffix =
+      require_released ? "\\d{4}-\\d{2}-\\d{2}" : "(?:Unreleased|\\d{4}-\\d{2}-\\d{2})"
     expected_headings = {
-      "CHANGELOG.md" => /\A## #{Regexp.escape(version)} - \d{4}-\d{2}-\d{2}\s*\z/,
-      "CHANGELOG.en.md" => /\A## #{Regexp.escape(version)} - \d{4}-\d{2}-\d{2}\s*\z/,
+      "CHANGELOG.md" => /\A## #{Regexp.escape(version)} - #{changelog_suffix}\s*\z/,
+      "CHANGELOG.en.md" => /\A## #{Regexp.escape(version)} - #{changelog_suffix}\s*\z/,
       "Docs/Releases/#{version}.md" => /\A# PocketRoot #{Regexp.escape(version)}\s*\z/,
       "Docs/en/Releases/#{version}.md" => /\A# PocketRoot #{Regexp.escape(version)}\s*\z/
     }
@@ -157,25 +159,41 @@ module PocketRootSourceRelease
     raise VerificationError, "#{label} is invalid: #{error.message}"
   end
 
-  def verify_source_readiness(root, version, tooling_root: root)
+  def verify_source_readiness(
+    root,
+    version,
+    tooling_root: root,
+    require_ready: true
+  )
     run_compliance(root, "--check", tooling_root: tooling_root)
-    run_compliance(root, "--require-source-ready", tooling_root: tooling_root)
+    if require_ready
+      run_compliance(root, "--require-source-ready", tooling_root: tooling_root)
+    end
 
     readiness_path =
       root.join("Compliance/Release/experimental-v#{version}/READINESS.json")
     decisions_path = root.join("Compliance/Release/RELEASE-DECISIONS.json")
     readiness = load_json(readiness_path, "release readiness")
     decisions = load_json(decisions_path, "release decisions")
+    source_status = readiness.dig("tracks", "sourcePackageRelease", "status")
     unless readiness["releaseVersion"] == version &&
-      readiness.dig("tracks", "sourcePackageRelease", "status") == "ready" &&
       decisions["releaseVersion"] == version &&
-      %w[
-        source-release-authorized
-        source-and-runtime-distribution-authorized
-      ].include?(decisions["status"])
+      %w[blocked ready].include?(source_status)
+      raise VerificationError,
+        "source readiness is not bound to release #{version}"
+    end
+    if require_ready &&
+      (
+        source_status != "ready" ||
+        !%w[
+          source-release-authorized
+          source-and-runtime-distribution-authorized
+        ].include?(decisions["status"])
+      )
       raise VerificationError,
         "source authorization is not bound to release #{version}"
     end
+    source_status
   end
 
   def verify_annotated_tag(root, ref, tag)
@@ -407,10 +425,15 @@ module PocketRootSourceRelease
     version:,
     required_tag: nil,
     output: nil,
-    tooling_root: root
+    tooling_root: root,
+    require_source_ready: true
   )
     validate_version(version)
     if required_tag
+      unless require_source_ready
+        raise VerificationError,
+          "tag verification cannot allow a blocked source track"
+      end
       expected_tag = "v#{version}"
       unless required_tag == expected_tag
         raise VerificationError,
@@ -438,24 +461,30 @@ module PocketRootSourceRelease
       prefix,
       required_paths: REQUIRED_PATHS + release_paths
     )
+    source_status = nil
     Dir.mktmpdir("pocketroot-source-release-snapshot-") do |directory|
       release_root = materialize_archive(
         archive,
         prefix,
         Pathname(directory)
       )
-      verify_release_documents(release_root, version)
-      verify_source_readiness(
+      verify_release_documents(
         release_root,
         version,
-        tooling_root: Pathname(tooling_root).realpath
+        require_released: require_source_ready
+      )
+      source_status = verify_source_readiness(
+        release_root,
+        version,
+        tooling_root: Pathname(tooling_root).realpath,
+        require_ready: require_source_ready
       )
     end
     result = result.merge(
       "releaseVersion" => version,
       "ref" => ref,
       "commit" => run_git(root, "rev-parse", "#{ref}^{commit}"),
-      "sourceTrack" => "ready"
+      "sourceTrack" => source_status
     )
     result["archivePath"] = archive.to_s if output
     result
@@ -468,7 +497,8 @@ if $PROGRAM_NAME == __FILE__
   begin
     options = {
       ref: "HEAD",
-      root: PocketRootSourceRelease.repository_root
+      root: PocketRootSourceRelease.repository_root,
+      require_source_ready: true
     }
     parser = OptionParser.new do |cli|
       cli.banner = "Usage: verify-source-release.rb --version VERSION [options]"
@@ -487,6 +517,12 @@ if $PROGRAM_NAME == __FILE__
       cli.on("--require-tag TAG", "Require an annotated tag at REF") do |value|
         options[:required_tag] = value
       end
+      cli.on(
+        "--allow-source-blocked",
+        "Audit an untagged release candidate without granting source-release authorization"
+      ) do
+        options[:require_source_ready] = false
+      end
       cli.on("--output PATH", "Keep the verified tar at PATH") do |value|
         options[:output] = value
       end
@@ -500,7 +536,8 @@ if $PROGRAM_NAME == __FILE__
       version: options[:version],
       required_tag: options[:required_tag],
       output: options[:output],
-      tooling_root: options.fetch(:tooling_root, options[:root])
+      tooling_root: options.fetch(:tooling_root, options[:root]),
+      require_source_ready: options[:require_source_ready]
     )
     puts JSON.pretty_generate(result)
   rescue OptionParser::ParseError,

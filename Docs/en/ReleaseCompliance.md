@@ -18,9 +18,9 @@ release under the MIT License in the repository-root
 [`LICENSE`](../../LICENSE). Third-party components retain their respective
 licenses; see [`NOTICE.md`](../../NOTICE.md) for the scope boundary.
 
-## v0.1.0 two-track release gates
+## v0.2.0 candidate two-track release gates
 
-The `v0.1.0` candidate is split into two independent tracks:
+The untagged `v0.2.0` Developer Preview candidate is split into two independent tracks:
 
 1. **Source and Swift Package release** includes only PocketRoot source and
    Swift Package metadata, with no RootFS, App, IPA, mirrored XCFramework, or
@@ -30,11 +30,13 @@ The `v0.1.0` candidate is split into two independent tracks:
    RootFS asset. The RootFS remains a caller-obtained, caller-authorized local
    input.
 
-The source and Swift Package track is currently **Ready**. The Runtime
-distribution track remains **Blocked**. The machine-readable state is
-[`READINESS.json`](../../Compliance/Release/experimental-v0.1.0/READINESS.json),
+The candidate source and Swift Package track is currently **Blocked** because
+`v0.2.0` source-release authorization has not been granted. The Runtime
+distribution track is also **Blocked**. The historical state of the published
+`v0.1.0` remains in its versioned snapshot. The current machine-readable state is
+[`READINESS.json`](../../Compliance/Release/experimental-v0.2.0/READINESS.json),
 the review entry is
-[`RELEASE-CHECKLIST.md`](../../Compliance/Release/experimental-v0.1.0/RELEASE-CHECKLIST.md),
+[`RELEASE-CHECKLIST.md`](../../Compliance/Release/experimental-v0.2.0/RELEASE-CHECKLIST.md),
 and the code-reviewed authorization source is
 [`RELEASE-DECISIONS.json`](../../Compliance/Release/RELEASE-DECISIONS.json).
 Passing engineering tests does not grant additional distribution permission.
@@ -50,9 +52,9 @@ ruby Scripts/generate-release-compliance.rb --require-source-ready
 ruby Scripts/generate-release-compliance.rb --require-runtime-ready
 ```
 
-The last two commands report their tracks independently:
-`--require-source-ready` currently succeeds, while
-`--require-runtime-ready` remains nonzero. The next Runtime engineering gate is
+The last two commands report their tracks independently; both remain nonzero
+in this candidate PR. The source track requires explicit authorization and a
+fresh review before tagging. The next Runtime engineering gate is
 to scan the exact final artifact, record its reviewed SHA-256, and provide
 content-based evidence that it contains no RootFS.
 
@@ -81,7 +83,7 @@ the whole combination.
 
 The repository now commits a reproducible maximal Experimental engineering
 composition inventory and SPDX 2.3 JSON SBOM under
-[`Compliance/Release/experimental-v0.1.0`](../../Compliance/Release/experimental-v0.1.0/README.md).
+[`Compliance/Release/experimental-v0.2.0`](../../Compliance/Release/experimental-v0.2.0/README.md).
 It distinguishes the default Demo, native-runtime smoke, and all Swift products,
 and covers pinned ABI.9 IshEmbed/XCFramework, the iSH gitlink, supervisor musl
 source, the caller-provided external RootFS, and its 15 Alpine packages. The
@@ -110,7 +112,7 @@ capability; the output keeps `signedReleaseArtifact=false`,
 
 The current scanner cannot unblock the runtime track. If its
 `ARTIFACT-INVENTORY.json` and `SBOM.spdx.json` are placed under
-`Compliance/Release/FinalArtifact/v0.1.0/`, the release generator revalidates
+`Compliance/Release/FinalArtifact/v0.2.0/`, the release generator revalidates
 and records their digests in `repositoryEvidence`, but the status remains
 `engineering-evidence-only`, with `releaseSignatureValid=false` and
 `rootFSExcluded=false`. The current `artifact.sha256` is an App content-tree

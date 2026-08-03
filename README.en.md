@@ -205,6 +205,10 @@ Select `PocketRootIshRuntimeIntegration` explicitly. The first source release is
 instead of automatically accepting a later `0.x` release that may contain
 breaking API changes:
 
+`main` is preparing an unauthorized, untagged `v0.2.0` Developer Preview
+candidate. External Apps should continue to use the public `0.1.0` below until
+the release gates are complete.
+
 ```swift
 dependencies: [
     .package(
@@ -384,11 +388,13 @@ third-party boundaries. The Experimental runtime links GPL-identified upstream
 code, and the candidate RootFS contains multiple copyleft and permissive
 licenses; PocketRoot's MIT License does not relicense those materials.
 
-The `v0.1.0`
-[machine-readable release status](Compliance/Release/experimental-v0.1.0/READINESS.json)
+The untagged `v0.2.0` Developer Preview
+[machine-readable candidate status](Compliance/Release/experimental-v0.2.0/READINESS.json)
 separates source/Swift Package release from Runtime/App distribution that
-excludes every RootFS asset. The source and Swift Package track is currently
-**Ready**; the Runtime distribution track remains **Blocked**. Package-level,
+excludes every RootFS asset. Both tracks are currently **Blocked**, with the
+source track awaiting explicit release authorization. The published `v0.1.0`
+state remains available as a [historical snapshot](Compliance/Release/experimental-v0.1.0/READINESS.json).
+Package-level,
 maximal Experimental engineering-composition, and unsigned engineering-App
 file-level SPDX SBOMs are generated, but production, TestFlight, and public
 binary distribution still require the Runtime LICENSE/NOTICE set,
