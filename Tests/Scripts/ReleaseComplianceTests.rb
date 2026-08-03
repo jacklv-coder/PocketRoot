@@ -1229,8 +1229,10 @@ class ReleaseComplianceTests < Minitest::Test
     assert_includes generic_runner, "POCKETROOT_UI_SKIP_TESTING"
     assert_includes generic_runner, "POCKETROOT_UI_FAILURE_ARTIFACTS_DIR"
     assert_includes generic_runner, "POCKETROOT_UI_INFRASTRUCTURE_RETRY_LIMIT"
-    assert_includes generic_runner, "is_retryable_simulator_launch_failure"
+    assert_includes generic_runner, "retryable_simulator_failure_kind"
     assert_includes generic_runner, "is unknown to FrontBoard"
+    assert_includes generic_runner, "no available devices matched the request"
+    assert_includes generic_runner, "replacement_device"
     assert_includes generic_runner, '"$CREATED_DEVICE" == "true"'
     assert_includes generic_runner, "xcodebuild-test-attempt-1.log"
     assert_includes generic_runner, "-attempt-1.xcresult"

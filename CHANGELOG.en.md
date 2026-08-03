@@ -13,9 +13,11 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   Quick Start iPhone/iPad, and Host App iPhone/iPad. Every isolated runner
   re-verifies the RootFS, XcodeGen, Xcode 16, and iOS 18 runtime through one
   repository-owned composite action without transferring an unreviewed App or
-  DerivedData; each lane has a collision-free failure artifact. Coverage is
-  unchanged while PR wall-clock time no longer accumulates every UI smoke
-  serially.
+  DerivedData; each lane has a collision-free failure artifact. A runner-owned
+  Simulator that explicitly disappears from Xcode destinations is recreated
+  with the same runtime/device type for one bounded retry; caller-owned devices
+  and assertion failures are never retried. Coverage is unchanged while PR
+  wall-clock time no longer accumulates every UI smoke serially.
 
 ## 0.2.0 - Unreleased
 

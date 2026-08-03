@@ -578,9 +578,10 @@ Workspace、系统 document picker 导入、share sheet 保存、guest 删除后
 `POCKETROOT_KEEP_UI_RESULT=1` 可保留临时 DerivedData 与 `.xcresult`。两个 wrapper
 复用 `run-ios-example-ui-smoke.sh` 的相同 RootFS、超时、xcresult 和安全清理边界。
 当 Xcode 明确报告 Simulator test runner 未注册到 FrontBoard 时，通用 runner 会重启
-同一个由 runner 创建的临时 Simulator 并且只重试一次；调用方通过
-`POCKETROOT_UI_SMOKE_DEVICE` 提供的共享 Simulator 不会被自动关闭或重启。断言失败、
-测试超时和其他构建错误不会重试。
+同一个由 runner 创建的临时 Simulator；当 Xcode 明确报告目标设备已从可用 destination
+消失时，会以相同 runtime 与 device type 重建该临时 Simulator。两种基础设施恢复合计
+最多重试一次；调用方通过 `POCKETROOT_UI_SMOKE_DEVICE` 提供的共享 Simulator 不会被
+自动关闭、重启或重建。断言失败、测试超时和其他构建错误不会重试。
 可设置 `POCKETROOT_UI_INFRASTRUCTURE_RETRY_LIMIT=0` 关闭该恢复路径。若第二次仍失败，
 失败 artifact 会同时包含首次/最终测试日志与可用的两次 `.xcresult`；即使重启本身
 失败，也保留首次 `xcodebuild` 的诊断结果。

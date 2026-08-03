@@ -12,8 +12,9 @@ PocketRoot 的重要变化记录在这里，并从首个公开版本开始遵循
   matrix，分别并行验证公开 SHA 外部消费者、Quick Start iPhone/iPad 与 Host App
   iPhone/iPad。全部 job 复用仓库内 composite action，但各自在隔离 runner 上重新
   校验 RootFS、XcodeGen、Xcode 16 与 iOS 18 runtime，不传递未审计 App 或 DerivedData；
-  每路失败诊断使用独立 artifact 名称。测试覆盖不减少，PR 墙钟时间不再由全部 UI
-  smoke 串行累加。
+  每路失败诊断使用独立 artifact 名称。runner 自建 Simulator 明确从 Xcode destination
+  消失时可按相同 runtime/device type 重建并有界重试一次；调用方设备和断言失败不重试。
+  测试覆盖不减少，PR 墙钟时间不再由全部 UI smoke 串行累加。
 
 ## 0.2.0 - Unreleased
 

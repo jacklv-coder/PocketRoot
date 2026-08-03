@@ -24,7 +24,7 @@
     "Scripts/inject-demo-rootfs.sh": "3982b5382b0d1e13e0c8e8a5bb5404c5bad1dfc4d6e9cd23a39e3395a83087bb",
     "Scripts/scan-release-artifact.rb": "48f27ab280491864228393e1675fe3a2889cbd616f79e3cb16bae7efedf647c0",
     "Scripts/run-host-app-ui-smoke.sh": "c8b11b1bf3a467fd10ed2c4124a72396b0a803e98f155d1d709fab46b59eede1",
-    "Scripts/run-ios-example-ui-smoke.sh": "071fa3336479f1849eb3be3f1f6b6516025197a0cf30640e64cd902282d9ed4d",
+    "Scripts/run-ios-example-ui-smoke.sh": "47f2b34bec554a819c3b580ca045f4d31bdae2c7379470f5495f21dde58994dd",
     "Scripts/run-quick-start-ui-smoke.sh": "acf26d68fc37250e24911c2d23791a0d12ff06a624dedcefee0ed7905bc31af2",
     "Scripts/run-external-consumer-ui-smoke.sh": "d9544ede3ecbad8d42a114015fa77071d31aa84aafc1cbe0f0f001453b1a4d0d",
     "Scripts/run-host-app-device-ui-smoke.sh": "2f934265cb46145b27bb26e0d7e84acebc14290602e23cd1ab8f222aef68ed1f",

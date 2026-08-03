@@ -281,7 +281,7 @@ module PocketRootReleaseCompliance
     "Scripts/run-host-app-ui-smoke.sh" =>
       "c8b11b1bf3a467fd10ed2c4124a72396b0a803e98f155d1d709fab46b59eede1",
     "Scripts/run-ios-example-ui-smoke.sh" =>
-      "071fa3336479f1849eb3be3f1f6b6516025197a0cf30640e64cd902282d9ed4d",
+      "47f2b34bec554a819c3b580ca045f4d31bdae2c7379470f5495f21dde58994dd",
     "Scripts/run-quick-start-ui-smoke.sh" =>
       "acf26d68fc37250e24911c2d23791a0d12ff06a624dedcefee0ed7905bc31af2",
     "Scripts/run-external-consumer-ui-smoke.sh" =>
