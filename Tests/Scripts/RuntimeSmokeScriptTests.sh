@@ -655,6 +655,10 @@ if ! grep -Fq -- 'POCKETROOT_SMOKE_STABILITY must be 0 or 1.' "$SIMULATOR_RUNNER
   || ! grep -Fq -- 'running-stability-workload-check' "$SMOKE_APP" \
   || ! grep -Fq -- 'name: "stability-workload"' "$SMOKE_APP" \
   || ! grep -Fq -- 'system.makeSession(' "$SMOKE_APP" \
+  || ! grep -Fq -- 'retainedOutput(sinceTotalByteCount byteCount: Int)' "$SMOKE_APP" \
+  || ! grep -Fq -- 'validateExactStabilityPayload(' "$SMOKE_APP" \
+  || ! grep -Fq -- 'payload.count == stabilityStreamByteCount' "$SMOKE_APP" \
+  || ! grep -Fq -- 'payload.allSatisfy { $0 == 0 }' "$SMOKE_APP" \
   || ! grep -Fq -- 'POCKETROOT_STABILITY_RECOVERED' "$SMOKE_APP" \
   || ! grep -Fq -- 'PocketRootFileBrowser(executor: system)' "$SMOKE_APP"; then
     echo "Native smoke does not gate the configurable persistent-PTY stability workload." >&2

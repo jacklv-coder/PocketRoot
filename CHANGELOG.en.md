@@ -44,7 +44,8 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   and ordered shutdown.
 - Upgraded the three-minute signed-device workload into a configurable
   Simulator/physical stability gate. One PTY stays open for 20...600 cycles,
-  streams 64 KiB every tenth cycle, and is cross-checked through one-shot
+  streams a uniquely delimited 64 KiB zero-byte payload every tenth cycle,
+  verifies its exact length and content, and is cross-checked through one-shot
   commands and Files. It must survive a midway stdout-limit failure. The
   collector retains only its latest 1 MiB, post-warm-up `phys_footprint` growth
   is capped at 64 MiB, and samples/lifecycle peak remain capped at 256 MiB. The

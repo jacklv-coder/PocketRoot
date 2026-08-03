@@ -301,7 +301,8 @@ guest 命令执行期间确定性调用公开
 memory pressure，也不能证明系统低内存通知、jetsam 或重启恢复。
 
 Simulator 或真机设置 `POCKETROOT_SMOKE_STABILITY=1` 时增加第 18 项。一个 PTY
-在全部循环中保持打开，每 10 轮流过 64 KiB，并与一次性命令和 Files API 读同一
+在全部循环中保持打开，每 10 轮流过带唯一边界的 64 KiB 零字节 payload，并逐字节
+校验长度与内容；同时与一次性命令和 Files API 读同一
 文件；中途一次性命令触发 8 MiB stdout 上限后，原 PTY 必须继续工作。collector 只
 保留最近 1 MiB transcript，但单独累计完整字节数，避免测试本身无限增长。第 10 轮
 热身后的 `phys_footprint` 到结束最多增长 64 MiB；全部采样和进程生命周期峰值仍受

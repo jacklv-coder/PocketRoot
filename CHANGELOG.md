@@ -31,7 +31,8 @@ PocketRoot 的重要变化记录在这里，并从首个公开版本开始遵循
   26.6 上完成 development 签名并通过完整 lifecycle XCTest，包括 BusyBox `top`、
   Ctrl-C、前后台、旋转 resize、PTY 重开、Files 持久化预览和有序 shutdown。
 - 将签名真机 3 分钟持续负载 smoke 升级为 Simulator/真机共用、可配置的稳定性门禁：
-  一个 PTY 保持 20...600 轮，每 10 轮流过 64 KiB，并交叉验证一次性命令与 Files；
+  一个 PTY 保持 20...600 轮，每 10 轮以唯一边界流过 64 KiB 零字节 payload 并逐字节
+  校验长度和内容，同时交叉验证一次性命令与 Files；
   中途触发 stdout 上限后原 PTY 必须继续。collector 仅保留最近 1 MiB，热身后
   `phys_footprint` 增长限 64 MiB，采样值和生命周期峰值限 256 MiB；最低工具链 CI
   固定运行 30×250 ms 路径，旧变量保留兼容。该有界基线不代表真实 pressure、

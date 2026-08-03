@@ -195,8 +195,9 @@ This repository-owned injection does not create real memory pressure and does
 not prove system low-memory delivery, jetsam, or relaunch recovery.
 
 With `POCKETROOT_SMOKE_STABILITY=1` on Simulator or a physical device, an
-eighteenth check keeps one PTY open for every cycle. It streams 64 KiB every
-tenth cycle, interleaves one-shot commands and Files API reads against the same
+eighteenth check keeps one PTY open for every cycle. Every tenth cycle it
+streams a uniquely delimited 64 KiB zero-byte payload and verifies its exact
+length and content, while interleaving one-shot commands and Files API reads against the same
 file, injects an 8 MiB stdout-limit failure midway, and requires the original
 PTY to continue. The collector retains only its latest 1 MiB transcript while
 accounting for all consumed bytes. `phys_footprint` may grow at most 64 MiB

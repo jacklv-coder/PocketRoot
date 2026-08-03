@@ -225,6 +225,24 @@ private actor PocketRootSmokePTYCollector {
         }
         return consumedByteCount
     }
+
+    func retainedOutput(sinceTotalByteCount byteCount: Int) throws -> Data {
+        if let failure {
+            throw PocketRootSmokeFailure(message: "PTY session failed: \(failure)")
+        }
+        guard byteCount >= 0, byteCount <= consumedByteCount else {
+            throw PocketRootSmokeFailure(
+                message: "PTY retained-output offset is outside the observed stream."
+            )
+        }
+        let firstRetainedByteCount = consumedByteCount - output.count
+        guard byteCount >= firstRetainedByteCount else {
+            throw PocketRootSmokeFailure(
+                message: "PTY output required for exact validation is no longer retained."
+            )
+        }
+        return Data(output.dropFirst(byteCount - firstRetainedByteCount))
+    }
 }
 
 private enum PocketRootSmokeRelaunchPersistencePhase: Sendable {
@@ -250,6 +268,7 @@ private enum PocketRootRuntimeSmokeRunner {
     static let maximumPeakResidentBytes: UInt64 = 256 * 1_024 * 1_024
     static let defaultStabilityIterationCount = 90
     static let defaultStabilityIntervalMilliseconds = 2_000
+    static let stabilityStreamByteCount = 65_536
     static let maximumStabilityFootprintGrowthBytes: UInt64 = 64 * 1_024 * 1_024
     static let stabilityGuestPath = "/root/pocketroot-smoke-stability.txt"
 
@@ -954,8 +973,15 @@ private enum PocketRootRuntimeSmokeRunner {
 
             for iteration in 1...iterationCount {
                 let bytesBeforeCycle = try await collector.totalByteCount()
+                let payloadStartMarker =
+                    "POCKETROOT_STABILITY_\(iteration)_PAYLOAD_BEGIN"
+                let payloadEndMarker =
+                    "POCKETROOT_STABILITY_\(iteration)_PAYLOAD_END"
                 let highOutputCommand = iteration.isMultiple(of: 10)
-                    ? "/bin/dd if=/dev/zero bs=65536 count=1 2>/dev/null; "
+                    ? "printf '%s' '\(payloadStartMarker)'; "
+                        + "/bin/dd if=/dev/zero bs=\(stabilityStreamByteCount) "
+                        + "count=1 2>/dev/null; "
+                        + "printf '%s' '\(payloadEndMarker)'; "
                     : ""
                 let marker = "POCKETROOT_STABILITY_\(iteration)_DONE"
                 try await terminal.write(
@@ -971,14 +997,16 @@ private enum PocketRootRuntimeSmokeRunner {
                 try await collector.waitFor(marker, timeout: .seconds(10))
 
                 if iteration.isMultiple(of: 10) {
-                    let bytesAfterCycle = try await collector.totalByteCount()
-                    let cycleByteCount = bytesAfterCycle - bytesBeforeCycle
-                    try require(
-                        cycleByteCount >= 65_536,
-                        "Stability PTY output was truncated at cycle \(iteration): "
-                            + "\(cycleByteCount) bytes."
+                    let cycleOutput = try await collector.retainedOutput(
+                        sinceTotalByteCount: bytesBeforeCycle
                     )
-                    highOutputByteCount += 65_536
+                    try validateExactStabilityPayload(
+                        in: cycleOutput,
+                        startMarker: payloadStartMarker,
+                        endMarker: payloadEndMarker,
+                        iteration: iteration
+                    )
+                    highOutputByteCount += stabilityStreamByteCount
 
                     let footprintBytes = try currentFootprintByteCount()
                     maximumSampledFootprintBytes = max(
@@ -1115,6 +1143,32 @@ private enum PocketRootRuntimeSmokeRunner {
             await reader.value
             throw error
         }
+    }
+
+    private static func validateExactStabilityPayload(
+        in cycleOutput: Data,
+        startMarker: String,
+        endMarker: String,
+        iteration: Int
+    ) throws {
+        let startMarkerData = Data(startMarker.utf8)
+        let endMarkerData = Data(endMarker.utf8)
+        guard let startRange = cycleOutput.range(of: startMarkerData),
+              let endRange = cycleOutput.range(
+                  of: endMarkerData,
+                  in: startRange.upperBound..<cycleOutput.endIndex
+              ) else {
+            throw PocketRootSmokeFailure(
+                message: "Stability PTY payload markers were missing at cycle \(iteration)."
+            )
+        }
+        let payload = cycleOutput[startRange.upperBound..<endRange.lowerBound]
+        try require(
+            payload.count == stabilityStreamByteCount
+                && payload.allSatisfy { $0 == 0 },
+            "Stability PTY payload was truncated or corrupted at cycle \(iteration): "
+                + "\(payload.count) bytes."
+        )
     }
 
     private static func runMemoryWarningRecoveryCheck(
