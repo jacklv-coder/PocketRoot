@@ -1,0 +1,664 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-03T00:00:00Z",
+  "release": {
+    "name": "PocketRoot",
+    "version": "0.2.0",
+    "buildNumber": 1,
+    "status": "experimental-engineering-composition-not-distribution-candidate",
+    "minimumIOSVersion": "18.0"
+  },
+  "repositoryEvidence": {
+    "LICENSE": "2716cea9e81c7dce0a87260c7643d46cf99b34d156186c1a1dbda388aafdd143",
+    "NOTICE.md": "572b60c39125dae2f7e7c2ae83c6c5b79dc2fedd863bf658f3c0e100825cdd2e",
+    "CONTRIBUTING.md": "0beaceb8d56f1c43fa458d0b121d3d005c4a9cedb12b32029b35e74aff7b3d0b",
+    "CONTRIBUTING.en.md": "0f619a667ea5ae4749f77f9afe5a9583447fcdab8a0985c11dcc4c935dead94a",
+    "Compliance/SPDX/LICENSE-LIST-3.28.0.json": "7376db20698ff21511fe802aded9b5d7145520a86133b74f68b0c1568dd6dd1c",
+    "Compliance/Release/RELEASE-DECISIONS.json": "93ef573069e44ea8d74f43c4fb380ec694dea700ddb2881e2b76e646020d86f2",
+    "Package.resolved": "a121fd0f287bcb42e22d1860f915203447dd552fddc82461e9d385b957fb3718",
+    "Package.swift": "9ec4f31f7a91c5c001b6e5826c5ab2824e98c06eb61444027485a70f1efccfff",
+    "Examples/PocketRootDemo/project.yml": "8547227f488ce384600e01202f3c74778e1be99b1cee8b952ead61e043e1f3e0",
+    "Examples/PocketRootHostApp/project.yml": "0e96e10441f281de362320bf1fe1549b768c30eab8a008ec91ce5402fade13ca",
+    "Examples/PocketRootQuickStartApp/project.yml": "92a53f73089019bffb9dedf9e40641f4b8812033a0e7b748a22e532a259e919e",
+    "Tests/Integration/ExternalConsumerApp/project.yml.template": "37a656732d25c4ffe411d7d3523a4185085de10df6dbd3fa977c13da4c149c16",
+    "Scripts/inject-demo-rootfs.sh": "3982b5382b0d1e13e0c8e8a5bb5404c5bad1dfc4d6e9cd23a39e3395a83087bb",
+    "Scripts/scan-release-artifact.rb": "48f27ab280491864228393e1675fe3a2889cbd616f79e3cb16bae7efedf647c0",
+    "Scripts/run-host-app-ui-smoke.sh": "c8b11b1bf3a467fd10ed2c4124a72396b0a803e98f155d1d709fab46b59eede1",
+    "Scripts/run-ios-example-ui-smoke.sh": "071fa3336479f1849eb3be3f1f6b6516025197a0cf30640e64cd902282d9ed4d",
+    "Scripts/run-quick-start-ui-smoke.sh": "acf26d68fc37250e24911c2d23791a0d12ff06a624dedcefee0ed7905bc31af2",
+    "Scripts/run-external-consumer-ui-smoke.sh": "d9544ede3ecbad8d42a114015fa77071d31aa84aafc1cbe0f0f001453b1a4d0d",
+    "Scripts/run-host-app-device-ui-smoke.sh": "2f934265cb46145b27bb26e0d7e84acebc14290602e23cd1ab8f222aef68ed1f",
+    "ThirdPartyNotices/SwiftTerm-LICENSE.txt": "1c34c11581e20feb2b7ea122146a6690261dae94b2c8444e8cff902e567df6ae",
+    "Sources/CPocketRootArchiveSupport/CPocketRootArchiveSupport.c": "0abfdca5894c5e888de4ba48a73880dbbe2a593785c509684b52bfa412249751",
+    "Sources/CPocketRootArchiveSupport/include/CPocketRootArchiveSupport.h": "064a56d06ca4a40fc754a8b4a62273efc5c691abb008ae44c54fb792dd39edfc",
+    "Sources/PocketRoot/PocketRoot.swift": "02c68f7d23f6a1653be86aedb456731453e77c47e4769414b585e687cbbd25d7",
+    "Sources/PocketRootAgent/OpenAI/PocketRootOpenAIBearerTokenProvider.swift": "7bfb891afc640b043fbafcc2bdcb222addb9068a1cdf3e3e1cf3749a175cc217",
+    "Sources/PocketRootAgent/OpenAI/PocketRootOpenAIHTTPClient.swift": "089ade9d22bc76b4fd315dc4543ecf68870e953dfff4e8e7be0470d67fa56b6f",
+    "Sources/PocketRootAgent/OpenAI/PocketRootOpenAIResponsesClient.swift": "c544ef6dfe2b80882aeb55134c6d1e7af34cd2d5395f91be7935497848a561f4",
+    "Sources/PocketRootAgent/OpenAI/PocketRootOpenAIResponsesConfiguration.swift": "c8fdb4ff384d0c7e8a2463e7b4d076b5c599cea25bfa2cb7801a9cf5c79d45ba",
+    "Sources/PocketRootAgent/OpenAI/PocketRootOpenAIResponsesError.swift": "b27f0f9ef02089c71cc9e6c21a3d39830644bd9f61a4c56ad073adec5daabb2c",
+    "Sources/PocketRootAgent/Public/PocketRootAgentConfiguration.swift": "21b7d05bf0118dd446721aa330a1ee22d18f9b077d1e6a3d0c2f0cd270f906c0",
+    "Sources/PocketRootAgent/Public/PocketRootAgentError.swift": "1ddc1c4296f429214c26aab72e5f95c5c0b4b807cef61cc5a277b87b82c0a441",
+    "Sources/PocketRootAgent/Public/PocketRootAgentModelClient.swift": "9995d07b0d2a95b7ede41d35cc80364e404d9392391d9a9135bd73fcb748d3d5",
+    "Sources/PocketRootAgent/Public/PocketRootAgentRunner.swift": "2a949fbd6d8ecb8eec6a60004df6117b0681d1d2fd358320073206543296fef3",
+    "Sources/PocketRootAgent/Public/PocketRootAgentTool.swift": "57a847b1b82d2792b679e6b0f033a10a9b4871b6fd3a72a34f16cdd4e4322748",
+    "Sources/PocketRootAgentRuntimeTools/Public/PocketRootCommandExecuting.swift": "aec6aa8a344d25771a6070b0e6ec6523bda8e71f65db6f17cbc65350c9a9bd7d",
+    "Sources/PocketRootAgentRuntimeTools/Public/PocketRootLinuxCommandAuthorization.swift": "4e786134ee1c165363c4a38d820b3020188481bdfc3875cd775c8db58d74de45",
+    "Sources/PocketRootAgentRuntimeTools/Public/PocketRootLinuxCommandTool.swift": "6386ea78cfd19a72583d1756527ae40184ef1804c4c96b019972ceda5f6d8359",
+    "Sources/PocketRootAgentRuntimeTools/Public/PocketRootLinuxCommandToolConfiguration.swift": "29f62780cece2d27220020f5ee050097d7d059a4ab842f01c432804a676e4c4c",
+    "Sources/PocketRootAgentRuntimeTools/Public/PocketRootLinuxCommandToolError.swift": "6e91b98c1c3a5559e2f35a6a5622e1cc1a05c5df5f6f7182505f312b115bf99a",
+    "Sources/PocketRootCore/Public/PocketRootCommandRequest.swift": "4fd9452563ccaff35f6035782ae9120342f02dfb644f2f1e9147298e08eea52c",
+    "Sources/PocketRootCore/Public/PocketRootCommandResult.swift": "458dadf43d8bf4839e53849d4905fc3fb25cf546ed7de7f732271de3ea350167",
+    "Sources/PocketRootCore/Public/PocketRootConfiguration.swift": "5d1fcda40d7bb2d218ced9910f4a71ff49a2ad2e0aee377bcb672075c9297f4c",
+    "Sources/PocketRootCore/Public/PocketRootError.swift": "66f5a548e21ea37aed812bd113f5d2bf002ce97228d3d83e4e424137174ea937",
+    "Sources/PocketRootCore/Public/PocketRootRuntimeState.swift": "8a586812dcdac87a39302b6503c5c2ab91c8f7a2cada86f2fce51451907060b6",
+    "Sources/PocketRootCore/Public/PocketRootSession.swift": "2958f4f4d76b7587998f6c312e1ae2023d83debc320ab92a6f460f1d6170c9db",
+    "Sources/PocketRootCore/Public/PocketRootSessionConfiguration.swift": "767857b79c10d89787f7ac160bfe6818f524b28fa05e0873a38077d5073b02f6",
+    "Sources/PocketRootCore/Public/PocketRootSessionEvent.swift": "3072c96b76b200a2e03abdd3be80e298398d5647e68006451a9e66404b734a65",
+    "Sources/PocketRootCore/Public/PocketRootSystem.swift": "6434d42ddd389cf43b14c16a629fb3277753315e874e3c0b4e537a5b7d2b22c0",
+    "Sources/PocketRootCore/RootFS/RootFSManager.swift": "4ebbd1e6205ba9b8615509bfaed8d81fd228aaeb55d57404607156055e912a0a",
+    "Sources/PocketRootCore/RootFS/RootFSMetadata.swift": "919fbd358c599d6b5ec4a74dcc16103653b1e266cdfab4f462b0bed84ed6cecc",
+    "Sources/PocketRootCore/RootFS/RootFSProvider.swift": "6a74f9f12b35a7f706e6e729ef6f4a1ef4fa5f9fb9480ca8cfb02e39363bcea8",
+    "Sources/PocketRootCore/Runtime/LinuxRuntime.swift": "d9e69fb5748e8ece82ca4da6b0fa8534862fb6bcabaaae20dacfea6a4432f3a8",
+    "Sources/PocketRootCore/Runtime/PlaceholderLinuxRuntime.swift": "8ff3dd2b638c809782020087975619ca2811637180ba9efda65e2b2ea5c0766a",
+    "Sources/PocketRootCore/Runtime/RuntimeCoordinator.swift": "d2116587085f23c38c75798da5c8df94252604cf343ec2a8b1ec2e4aba9128b8",
+    "Sources/PocketRootCore/Support/PocketRootDefaults.swift": "ab165c52625fea1a38b606c57557b4134d48aeb2bb730308cbcab515d3bde767",
+    "Sources/PocketRootCore/Support/PocketRootLogger.swift": "d9cb7a1981c64f910fc5f11f3cc901119278422bd67c0f8a4f1ecf9446127436",
+    "Sources/PocketRootIshRuntime/Concurrency/BlockingIshExecutor.swift": "847a7a58369ae84f15e58cb27250797c779fbee8aee49428c9a5ae4a7b2833a9",
+    "Sources/PocketRootIshRuntime/Concurrency/IshCommandCancellation.swift": "919c33dd338c3a6cbb0e0685d133e6a0ef20b9cf762d2daa0195e3b7d03465ae",
+    "Sources/PocketRootIshRuntime/Concurrency/IshProcessGate.swift": "60f06691d40e1e252984f1d773d83056e8c49dabaf13eca815999cd60c6ab80b",
+    "Sources/PocketRootIshRuntime/Native/IshEmbedDriver.swift": "17cd9261810a3655ce319971a1d034d4651ff18a83323b00a16a4208ce149264",
+    "Sources/PocketRootIshRuntime/Native/IshRuntimeDriver.swift": "791b73227ecd3087fb1362eb6da1c176a053fb42eae3d6cc6d5f5b8c16426cfd",
+    "Sources/PocketRootIshRuntime/Native/UnsupportedIshDriver.swift": "8d2c2dedf100fa2762436de9e30903456f20ffaf5b74208a86ddd36f561f2c9f",
+    "Sources/PocketRootIshRuntime/Public/PocketRootIshRuntimeConfiguration.swift": "c23eae8511f9c139c690627fa4c1135a35b21671795821152d4bca48dbe4b4bc",
+    "Sources/PocketRootIshRuntime/Public/PocketRootIshRuntimeFactory.swift": "a1d6976f7906e425d3d37e1f0feee59a3ae0ad3e56cf0304b26775d49d121e77",
+    "Sources/PocketRootIshRuntime/Runtime/IshLinuxRuntime.swift": "6d0a9549e42ef09f6d10c672cb522a1551398d0ddd09961fe5fb58029bd903fd",
+    "Sources/PocketRootIshRuntime/Runtime/IshPocketRootSession.swift": "14c32193691080ad4ea7bbe0a31fbf5b99d1cf2c0662a8d608cda38ae6792cc4",
+    "Sources/PocketRootIshRuntime/Runtime/IshRuntimeHealthCheck.swift": "341b50a113026e1bcc6e38e6c69ad3106ee3327483ae62dde699bf8fd59a556b",
+    "Sources/PocketRootIshRuntimeIntegration/PocketRootIshRuntimeController.swift": "8b6fee7ab14f07059c051540173eb6a607678a2735d259075de63a86b0e56eb8",
+    "Sources/PocketRootIshRuntimeIntegration/PocketRootIshSystemFactory.swift": "bd4a6177bd72e763b3141473cf599214d1cb208eeeca670431e9dcaadf55b48a",
+    "Sources/PocketRootIshRuntimeIntegration/PocketRootIshWorkspaceHost.swift": "aebd49030bf37bfd0c6f3957f49e8c03a592357dca5bb899536a88bb304e205d",
+    "Sources/PocketRootIshRuntimeIntegration/PocketRootIshWorkspaceView.swift": "d8b59020c96691f8cbf8cda4f123985f91ac7fe730cb687366b504b8c87d4aa1",
+    "Sources/PocketRootIshRuntimeIntegration/PocketRootIshWorkspaceViewController.swift": "5d01daf5ac4a9f90a16e6196ba808c047f8e947d75974f03dcb9130ec9a2be27",
+    "Sources/PocketRootResources/BundledRootFSProvider.swift": "8bac007da6251dd8dcaf25fbe791687a847ee93bbf5bf3b705bbe600b62e17bc",
+    "Sources/PocketRootResources/Resources/.gitkeep": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+    "Sources/PocketRootResources/Resources/README.txt": "41df51e7edc0774f807c1cb7e423e2cd04f2a1029ac2d6bbcd097f9bb679a5ea",
+    "Sources/PocketRootResources/RootFSArtifactManifest.swift": "cc16b779377e390627b72dccb73e8feed0344b570ad1833f39bc1f836e82ec59",
+    "Sources/PocketRootResources/RootFSGzipTarExtractor.swift": "f080050e344f22944099fd77842fde153080719bb804b4569b67d3c47a54c1ad",
+    "Sources/PocketRootResources/RootFSInstaller.swift": "e54d62f81244ac94c5f011f746e5636a404d3f2f56a3ad413ad92bbbb8281f95",
+    "Sources/PocketRootResources/RootFSValidator.swift": "305130169a2224e23231861d8d4d46d3341e8b1cdced5824f748f6c236ba1784",
+    "Sources/PocketRootTerminal/Bridge/PTYTerminalBridge.swift": "fa6a73e40f56bf6b62426217e424c7e2f8142f04ad4289763e5d7b242f002698",
+    "Sources/PocketRootTerminal/Bridge/TerminalBridge.swift": "b0850236d896a517258dc310c30f2f63dfaf4450cb7ff732a3ba3414c2da2002",
+    "Sources/PocketRootTerminal/Public/PocketRootCommandTerminalSession.swift": "5eaa24f24efb46de1482029b3c5f2ce33942a9e961249fbdaeb728eabe92257a",
+    "Sources/PocketRootTerminal/Public/PocketRootFileBrowser.swift": "2f74c5a311899995f8a941402ea5e3f7cad07a922fb341ff183e1b0795944801",
+    "Sources/PocketRootTerminal/Public/PocketRootFileBrowserView.swift": "dfc40223b22bae241d210430a23886e8410d3c39114e8cc655a848d6e1e86318",
+    "Sources/PocketRootTerminal/Public/PocketRootTerminalCommandExecutor.swift": "e9deacbb10e81adc412147a1a1b0a6f7896acfa2be4ef1b1a855e9cb01b09e61",
+    "Sources/PocketRootTerminal/Public/PocketRootTerminalConfiguration.swift": "2207a7c358517ddf2d8791019b39ce4f6b27203b0763046e40f825384ab08d14",
+    "Sources/PocketRootTerminal/Public/PocketRootTerminalTheme.swift": "a0f67e8d79b76465bb6b64d4ea3f48b886bc6a5d2d85a59669b82699e0e0649b",
+    "Sources/PocketRootTerminal/Public/PocketRootTerminalView.swift": "d059da6c0d574be40b558f50db5f9854640c08480940c66fb193313c1ca1038b",
+    "Sources/PocketRootTerminal/Public/PocketRootTerminalViewController.swift": "838619b8571ba59b4ccc72b57e54df1275f43416784181662ff42a25b68496ed",
+    "Sources/PocketRootTerminal/Public/PocketRootWorkspaceConfiguration.swift": "946294c8aedb10127f64e65b2f3ec5d782df895a08b69d40f6f1f2683d55eb93",
+    "Sources/PocketRootTerminal/Public/PocketRootWorkspaceView.swift": "6c24ba448c11b5c5f21c620f070531be9e4989ba120d7b74e4aa213cc3b52fde",
+    "Sources/PocketRootTerminal/Public/PocketRootWorkspaceViewController.swift": "e09909e78870d6491fe054328961adec34b9f6a88af03fd6915946caeccfd5d0",
+    "Sources/PocketRootTerminal/UI/PocketRootFileTreeState.swift": "0b3696504a5a0e001c227267743d0628bab30e8cd0485fce298a01bfa609ddec",
+    "Sources/PocketRootTerminal/UI/TerminalAccessoryView.swift": "bc9f2d56534e7b34cd3bcbf2e165daa7623cfb2e4d8956de1aea205a88697e0e",
+    "Sources/PocketRootTerminal/UI/TerminalPlaceholderView.swift": "2781166fb44b8a86e6c1dc9aa087e0b70fef683695096cbbb17b096ee5400b0d",
+    "Sources/PocketRootTerminal/UI/TerminalSpecialKey.swift": "ba04f494df0febeaeb112e09523610e5a22ab55666b1a0a1b979c730da31c9d6",
+    "Sources/PocketRootTerminal/UI/TerminalSpecialKeysView.swift": "ca355aa607f3674a23a73eddb330170a1f59d225f0fe0d104dfd5f30aa9360a1",
+    "Examples/PocketRootDemo/Sources/PocketRootDemo/Application/AppDelegate.swift": "3a94c7b05345b7b57d2bfdad01ea25bccf49bfd86c564b3f43e04581ab2f4d7b",
+    "Examples/PocketRootDemo/Sources/PocketRootDemo/Application/SceneDelegate.swift": "c9ac1d34b15f0976950c3e412d2ce1d65805ec374860b2818ff84bfcc27811b1",
+    "Examples/PocketRootDemo/Sources/PocketRootDemo/Features/Commands/CommandsViewController.swift": "cc677e400fd2dbe9a72cadb21013aaee572953226bc573f81e84772f36f648aa",
+    "Examples/PocketRootDemo/Sources/PocketRootDemo/Features/Diagnostics/DiagnosticsViewController.swift": "a4bc8dac9bd5a2a3020bb90da944a7db190a6c32f220caacdc978382ad794099",
+    "Examples/PocketRootDemo/Sources/PocketRootDemo/Features/Files/FilesDemoViewController.swift": "1c4bbf856af7ce6b0f3e2fa2a34ed93fe8c614b1611afad2ababe382e7c40029",
+    "Examples/PocketRootDemo/Sources/PocketRootDemo/Features/System/SystemViewController.swift": "c0c8008f98306936f3467c3538c8179afcd16232a03da567b88f69c77daa77ec",
+    "Examples/PocketRootDemo/Sources/PocketRootDemo/Features/Terminal/TerminalDemoViewController.swift": "4075c4b7d645eadfde040c6fe5695a866a92fa2896d2c6a8c4f26cc66a67d4c9",
+    "Examples/PocketRootDemo/Sources/PocketRootDemo/Info.plist": "3da706b932aa7563ba497984be8fd23ee1ed98691e153204f4ffdd50fab0e5fb",
+    "Examples/PocketRootDemo/Sources/PocketRootDemo/Navigation/PocketRootDemoTabBarController.swift": "7cdd8862a2cf7332bbe6c95fd2e01a7436d332356c007b368010410569fcb8e3",
+    "Examples/PocketRootDemo/Sources/PocketRootDemo/Resources/Assets.xcassets/Contents.json": "0fd49ba3c3585c709678e0046a821c3c60685ec7063720d30d3a3448be3a208b",
+    "Examples/PocketRootDemo/Sources/PocketRootDemo/Shared/Runtime/DemoRuntimeStore.swift": "a1c48ac00bda87dc5332daf5ddd75715b6d18e84d5eaae80e6c8da11f63db8da",
+    "Examples/PocketRootDemo/Sources/PocketRootDemo/Shared/Support/DemoConstants.swift": "9e47feedb5056ecb96f4d297324c29c2ff975031cce63abb46f112f324a4f610",
+    "Examples/PocketRootDemo/Sources/PocketRootDemo/Shared/UI/PlaceholderViewController.swift": "48e0f6462228a66face2aef51f9bd39ec02923c4d1c01b6b34f920948998f2b8",
+    "Examples/PocketRootHostApp/Sources/HostApp.swift": "0c36bd3104ddc5bebb9e23675a44a92e3ce4aec2c1461b3e182d86d1a75159c9",
+    "Examples/PocketRootHostApp/Sources/Info.plist": "711b38923f11fdb4ceb7d28cb90a51674afec0a64786a20f9bd68e3f406f8d26",
+    "Examples/PocketRootHostApp/UITests/PocketRootHostAppUITests.swift": "bc99a66278cd3476f7b4e854d85ec975d839362a386e8b5a455496f63e14c491",
+    "Examples/PocketRootQuickStartApp/Sources/Info.plist": "b3c0c96e89db99c72c9f020590b1c5cdc0c927fd3af4b6ae7865abfdc81049b8",
+    "Examples/PocketRootQuickStartApp/Sources/QuickStartApp.swift": "1c77c9229281d0d1f9fbe3678bcc9995fff8c7d2189f4c6152daaa2999683fb6",
+    "Examples/PocketRootQuickStartApp/UITests/PocketRootQuickStartAppUITests.swift": "828471c84386dc8ddba23ecadc3618ccd559d92084ab762f4ef0832c3e3d5f59",
+    "Tests/Integration/ExternalConsumerApp/Sources/ExternalConsumerApp.swift": "580fa504ff16695c53d1d40a41f1a8531da21f961906a394394a0649c40ce11b",
+    "Tests/Integration/ExternalConsumerApp/UITests/ExternalConsumerAppUITests.swift": "0fa46c32d482c20d5bc4cf0aae93c6364060cf7c6b7cdca5ab99fe8400da7ab7",
+    "Spikes/PocketRootIshRuntimeCompileSpike/PocketRootIshRuntimeCompileSpike.swift": "829a9ef79d67cb93aae5fbea32561c5c5497a7a017922bb1ebb344b4c0c32da8",
+    "Spikes/PocketRootIshRuntimeSmoke/PocketRootIshRuntimeSmoke.swift": "3ac8f55be0cb1cd2fa992feac1764e9a654684384accf7339d901cc13fa6f47d",
+    "Compliance/RootFS/v0.3.3/EVIDENCE.json": "98170847e01c3c738d600970ca479202e7f69bf9f3b2cef31138462d0bfc3deb",
+    "Compliance/RootFS/v0.3.3/SBOM.spdx.json": "8e021cb8c4160c934a0202609691d7a94526cd016f4394a47da6e7a5ab41d0ea"
+  },
+  "swiftPackage": {
+    "name": "PocketRoot",
+    "toolsVersion": "5.10",
+    "minimumIOSVersion": "18.0",
+    "products": [
+      {
+        "name": "PocketRootCore",
+        "targets": [
+          "PocketRootCore"
+        ]
+      },
+      {
+        "name": "PocketRootTerminal",
+        "targets": [
+          "PocketRootTerminal"
+        ]
+      },
+      {
+        "name": "PocketRootResources",
+        "targets": [
+          "PocketRootResources"
+        ]
+      },
+      {
+        "name": "PocketRootIshRuntime",
+        "targets": [
+          "PocketRootIshRuntime"
+        ]
+      },
+      {
+        "name": "PocketRootIshRuntimeIntegration",
+        "targets": [
+          "PocketRootIshRuntimeIntegration"
+        ]
+      },
+      {
+        "name": "PocketRootAgent",
+        "targets": [
+          "PocketRootAgent"
+        ]
+      },
+      {
+        "name": "PocketRootAgentRuntimeTools",
+        "targets": [
+          "PocketRootAgentRuntimeTools"
+        ]
+      },
+      {
+        "name": "PocketRoot",
+        "targets": [
+          "PocketRoot"
+        ]
+      }
+    ],
+    "targets": [
+      {
+        "name": "PocketRootCore",
+        "dependencies": [],
+        "resources": []
+      },
+      {
+        "name": "PocketRootTerminal",
+        "dependencies": [
+          "target:PocketRootCore",
+          "product:SwiftTerm@SwiftTerm[iOS]"
+        ],
+        "resources": []
+      },
+      {
+        "name": "CPocketRootArchiveSupport",
+        "dependencies": [],
+        "resources": []
+      },
+      {
+        "name": "PocketRootResources",
+        "dependencies": [
+          "target:CPocketRootArchiveSupport"
+        ],
+        "resources": [
+          "process:Resources"
+        ]
+      },
+      {
+        "name": "PocketRootIshRuntime",
+        "dependencies": [
+          "target:PocketRootCore",
+          "product:IshEmbed@ish-arm64-pkg[iOS]"
+        ],
+        "resources": []
+      },
+      {
+        "name": "PocketRootIshRuntimeIntegration",
+        "dependencies": [
+          "target:PocketRootCore",
+          "target:PocketRootResources",
+          "target:PocketRootIshRuntime",
+          "target:PocketRootTerminal"
+        ],
+        "resources": []
+      },
+      {
+        "name": "PocketRootAgent",
+        "dependencies": [],
+        "resources": []
+      },
+      {
+        "name": "PocketRootAgentRuntimeTools",
+        "dependencies": [
+          "target:PocketRootAgent",
+          "target:PocketRootCore"
+        ],
+        "resources": []
+      },
+      {
+        "name": "PocketRoot",
+        "dependencies": [
+          "target:PocketRootCore",
+          "target:PocketRootTerminal",
+          "target:PocketRootResources"
+        ],
+        "resources": []
+      }
+    ],
+    "testTargets": [
+      {
+        "name": "PocketRootCoreTests",
+        "dependencies": [
+          "target:PocketRootCore"
+        ],
+        "resources": []
+      },
+      {
+        "name": "PocketRootTerminalTests",
+        "dependencies": [
+          "target:PocketRootTerminal"
+        ],
+        "resources": []
+      },
+      {
+        "name": "PocketRootResourcesTests",
+        "dependencies": [
+          "target:PocketRootResources"
+        ],
+        "resources": []
+      },
+      {
+        "name": "PocketRootIshRuntimeTests",
+        "dependencies": [
+          "target:PocketRootCore",
+          "target:PocketRootIshRuntime"
+        ],
+        "resources": []
+      },
+      {
+        "name": "PocketRootIshRuntimeIntegrationTests",
+        "dependencies": [
+          "target:PocketRootCore",
+          "target:PocketRootResources",
+          "target:PocketRootIshRuntimeIntegration"
+        ],
+        "resources": []
+      },
+      {
+        "name": "PocketRootAgentTests",
+        "dependencies": [
+          "target:PocketRootAgent"
+        ],
+        "resources": []
+      },
+      {
+        "name": "PocketRootAgentRuntimeToolsTests",
+        "dependencies": [
+          "target:PocketRootAgent",
+          "target:PocketRootAgentRuntimeTools",
+          "target:PocketRootCore"
+        ],
+        "resources": []
+      }
+    ]
+  },
+  "application": {
+    "name": "PocketRootDemo",
+    "version": "0.2.0",
+    "buildNumber": 1,
+    "minimumIOSVersion": "18.0",
+    "targets": [
+      {
+        "type": "application",
+        "platform": "iOS",
+        "deploymentTarget": "18.0",
+        "settings": {
+          "base": {
+            "PRODUCT_BUNDLE_IDENTIFIER": "com.jacklv.PocketRootIshRuntimeCompileSpike",
+            "PRODUCT_NAME": "PocketRootIshRuntimeCompileSpike",
+            "ARCHS": "arm64",
+            "EXCLUDED_ARCHS[sdk=iphonesimulator*]": "x86_64",
+            "ONLY_ACTIVE_ARCH": true,
+            "SKIP_INSTALL": true,
+            "SUPPORTS_MACCATALYST": false,
+            "ENABLE_DEBUG_DYLIB": false,
+            "INFOPLIST_KEY_UILaunchScreen_Generation": true
+          }
+        },
+        "sources": [
+          {
+            "path": "../../Spikes/PocketRootIshRuntimeCompileSpike"
+          }
+        ],
+        "resources": [],
+        "dependencies": [
+          {
+            "package": "PocketRoot",
+            "product": "PocketRootIshRuntimeIntegration"
+          }
+        ],
+        "postBuildScripts": [],
+        "name": "PocketRootIshRuntimeCompileSpike"
+      },
+      {
+        "type": "application",
+        "platform": "iOS",
+        "deploymentTarget": "18.0",
+        "settings": {
+          "base": {
+            "PRODUCT_BUNDLE_IDENTIFIER": "com.jacklv.PocketRootIshRuntimeSmoke",
+            "PRODUCT_NAME": "PocketRootIshRuntimeSmoke",
+            "ARCHS": "arm64",
+            "EXCLUDED_ARCHS[sdk=iphonesimulator*]": "x86_64",
+            "ONLY_ACTIVE_ARCH": true,
+            "SKIP_INSTALL": false,
+            "SUPPORTS_MACCATALYST": false,
+            "ENABLE_DEBUG_DYLIB": false,
+            "INFOPLIST_KEY_UILaunchScreen_Generation": true
+          }
+        },
+        "sources": [
+          {
+            "path": "../../Spikes/PocketRootIshRuntimeSmoke"
+          }
+        ],
+        "resources": [],
+        "dependencies": [
+          {
+            "package": "PocketRoot",
+            "product": "PocketRootCore"
+          },
+          {
+            "package": "PocketRoot",
+            "product": "PocketRootIshRuntimeIntegration"
+          },
+          {
+            "package": "PocketRoot",
+            "product": "PocketRootResources"
+          },
+          {
+            "package": "PocketRoot",
+            "product": "PocketRootTerminal"
+          }
+        ],
+        "postBuildScripts": [],
+        "name": "PocketRootIshRuntimeSmoke"
+      },
+      {
+        "type": "application",
+        "platform": "iOS",
+        "deploymentTarget": "18.0",
+        "settings": {
+          "base": {
+            "PRODUCT_BUNDLE_IDENTIFIER": "com.jacklv.PocketRootDemo",
+            "PRODUCT_NAME": "PocketRootDemo",
+            "ARCHS": "arm64",
+            "EXCLUDED_ARCHS[sdk=iphonesimulator*]": "x86_64",
+            "ONLY_ACTIVE_ARCH": true,
+            "SUPPORTS_MACCATALYST": false,
+            "ENABLE_DEBUG_DYLIB": false,
+            "ENABLE_USER_SCRIPT_SANDBOXING": false,
+            "SWIFT_STRICT_CONCURRENCY": "complete",
+            "SWIFT_TREAT_WARNINGS_AS_ERRORS": true,
+            "INFOPLIST_KEY_UIApplicationSceneManifest_Generation": true,
+            "INFOPLIST_KEY_UILaunchScreen_Generation": true,
+            "INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents": true
+          }
+        },
+        "sources": [
+          {
+            "path": "Sources/PocketRootDemo",
+            "excludes": [
+              "Resources"
+            ]
+          }
+        ],
+        "resources": [
+          {
+            "path": "Sources/PocketRootDemo/Resources"
+          }
+        ],
+        "dependencies": [
+          {
+            "package": "PocketRoot",
+            "product": "PocketRoot"
+          },
+          {
+            "package": "PocketRoot",
+            "product": "PocketRootIshRuntime"
+          },
+          {
+            "package": "PocketRoot",
+            "product": "PocketRootIshRuntimeIntegration"
+          }
+        ],
+        "postBuildScripts": [
+          {
+            "name": "Inject reviewed development RootFS",
+            "script": "\"$SRCROOT/../../Scripts/inject-demo-rootfs.sh\"\n",
+            "basedOnDependencyAnalysis": false
+          }
+        ],
+        "name": "PocketRootDemo"
+      },
+      {
+        "type": "bundle.unit-test",
+        "platform": "iOS",
+        "deploymentTarget": "18.0",
+        "settings": {
+          "base": {
+            "ARCHS": "arm64",
+            "EXCLUDED_ARCHS[sdk=iphonesimulator*]": "x86_64",
+            "ONLY_ACTIVE_ARCH": true
+          }
+        },
+        "sources": [
+          {
+            "path": "Tests",
+            "optional": true
+          }
+        ],
+        "resources": [],
+        "dependencies": [
+          {
+            "target": "PocketRootDemo"
+          }
+        ],
+        "postBuildScripts": [],
+        "name": "PocketRootDemoTests"
+      }
+    ]
+  },
+  "finalArtifactEvidence": {
+    "status": "not-provided",
+    "evidenceDirectory": "Compliance/Release/FinalArtifact/v0.2.0",
+    "inventoryPath": "Compliance/Release/FinalArtifact/v0.2.0/ARTIFACT-INVENTORY.json",
+    "inventorySha256": null,
+    "sbomPath": "Compliance/Release/FinalArtifact/v0.2.0/SBOM.spdx.json",
+    "sbomSha256": null,
+    "artifactSha256": null,
+    "inputKind": null,
+    "releaseSignatureValid": false,
+    "rootFSExcluded": false,
+    "rootFSAssetPaths": []
+  },
+  "profiles": [
+    {
+      "id": "default-demo",
+      "rootTarget": "PocketRootDemo",
+      "swiftProducts": [
+        "PocketRoot",
+        "PocketRootIshRuntime",
+        "PocketRootIshRuntimeIntegration"
+      ],
+      "includesIshRuntime": true,
+      "requiresExternalRootFS": true,
+      "artifactBuiltAndScanned": false
+    },
+    {
+      "id": "native-runtime-smoke",
+      "rootTarget": "PocketRootIshRuntimeSmoke",
+      "swiftProducts": [
+        "PocketRootCore",
+        "PocketRootIshRuntimeIntegration",
+        "PocketRootResources"
+      ],
+      "includesIshRuntime": true,
+      "requiresExternalRootFS": true,
+      "artifactBuiltAndScanned": false
+    },
+    {
+      "id": "standalone-host-example",
+      "rootTarget": "PocketRootHostApp",
+      "swiftProducts": [
+        "PocketRoot",
+        "PocketRootIshRuntimeIntegration"
+      ],
+      "includesIshRuntime": true,
+      "requiresExternalRootFS": true,
+      "artifactBuiltAndScanned": false
+    },
+    {
+      "id": "two-entry-quick-start-example",
+      "rootTarget": "PocketRootQuickStartApp",
+      "swiftProducts": [
+        "PocketRoot",
+        "PocketRootIshRuntimeIntegration"
+      ],
+      "includesIshRuntime": true,
+      "requiresExternalRootFS": true,
+      "artifactBuiltAndScanned": false
+    },
+    {
+      "id": "external-consumer-acceptance",
+      "rootTarget": "PocketRootExternalConsumerApp",
+      "swiftProducts": [
+        "PocketRoot",
+        "PocketRootIshRuntimeIntegration"
+      ],
+      "includesIshRuntime": true,
+      "requiresExternalRootFS": true,
+      "artifactBuiltAndScanned": false
+    },
+    {
+      "id": "swift-package-all-products",
+      "rootTarget": null,
+      "swiftProducts": [
+        "PocketRootCore",
+        "PocketRootTerminal",
+        "PocketRootResources",
+        "PocketRootIshRuntime",
+        "PocketRootIshRuntimeIntegration",
+        "PocketRootAgent",
+        "PocketRootAgentRuntimeTools",
+        "PocketRoot"
+      ],
+      "includesIshRuntime": true,
+      "requiresExternalRootFS": false,
+      "artifactBuiltAndScanned": false
+    }
+  ],
+  "externalComponents": {
+    "ishEmbed": {
+      "repository": "https://github.com/jacklv-coder/ish-arm64-pkg.git",
+      "revision": "2419f736b271beb52a699b2f780027cf280472b8",
+      "packageVersion": "0.4.0-abi.9.1",
+      "release": "0.4.0-abi.9.1",
+      "assetRelease": "v0.4.0-abi.9",
+      "licenseDeclared": "GPL-3.0-or-later",
+      "xcframework": {
+        "filename": "libIshKernel.xcframework.zip",
+        "url": "https://github.com/jacklv-coder/ish-arm64-pkg/releases/download/v0.4.0-abi.9/libIshKernel.xcframework.zip",
+        "byteCount": 2460178,
+        "sha256": "c68f47587686000cf125105ac25eaf4d79de6dbd1715d39838bfb7d35abc72f8"
+      },
+      "correspondingSource": {
+        "filename": "IshEmbed-corresponding-source.tar.gz",
+        "url": "https://github.com/jacklv-coder/ish-arm64-pkg/releases/download/v0.4.0-abi.9/IshEmbed-corresponding-source.tar.gz",
+        "byteCount": 2391682,
+        "sha256": "8e5d3d56056ece402c09e5f1b3cbdaad75f2f8697ed0e41eaeecd7c403f26557"
+      },
+      "ish": {
+        "repository": "https://github.com/jacklv-coder/ish-arm64.git",
+        "path": "third_party/ish",
+        "revision": "3d0b4f6f55108f6d602ac6a2c86df555935b979d",
+        "licenseDeclared": "GPL-3.0-only OR GPL-2.0-only"
+      },
+      "supervisor": {
+        "toolchain": "Zig 0.16.0",
+        "target": "aarch64-linux-musl",
+        "zigSha256": "0bfa8cb6f5f64c6d645e1d5dfb5c6f62c2b79d7249c3f38a279e118cb49b02ae",
+        "muslSourceSha256": "fd6449aeff0aaec6bd9688618ab973cf68cbc36c60eacea6598ee407eda8a35b",
+        "muslLicenseDeclared": "MIT"
+      }
+    },
+    "swiftTerm": {
+      "repository": "https://github.com/jacklv-coder/SwiftTerm.git",
+      "revision": "dd2fb8ac5b861e7bf617c872895e338f38165648",
+      "packageVersion": "1.15.0-pocketroot.1",
+      "release": "1.15.0-pocketroot.1",
+      "licenseDeclared": "MIT",
+      "noticePath": "ThirdPartyNotices/SwiftTerm-LICENSE.txt",
+      "noticeSha256": "1c34c11581e20feb2b7ea122146a6690261dae94b2c8444e8cff902e567df6ae"
+    },
+    "swiftArgumentParser": {
+      "repository": "https://github.com/apple/swift-argument-parser",
+      "revision": "6a52f3251125d74daf04fcbd5e6f08a75d074382",
+      "release": "1.8.2",
+      "licenseDeclared": "Apache-2.0",
+      "resolvedOnly": true
+    },
+    "rootFS": {
+      "version": "v0.3.3",
+      "guestVersion": "3.19.1",
+      "architecture": "aarch64",
+      "filename": "fs.tar.gz",
+      "url": "https://github.com/Lolendor/ish-arm64-pkg/releases/download/v0.3.3/fs.tar.gz",
+      "byteCount": 6581376,
+      "sha256": "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4",
+      "evidenceSha256": "98170847e01c3c738d600970ca479202e7f69bf9f3b2cef31138462d0bfc3deb",
+      "sbomSha256": "8e021cb8c4160c934a0202609691d7a94526cd016f4394a47da6e7a5ab41d0ea",
+      "deliveryModel": "caller-provided-local-input",
+      "bundledByDefault": false,
+      "downloadedByLibrary": false,
+      "installedPackageCount": 15,
+      "packageSBOMPath": "Compliance/RootFS/v0.3.3/SBOM.spdx.json"
+    },
+    "appleSystemLibraries": [
+      {
+        "name": "libsqlite3",
+        "redistributedByPocketRoot": false
+      },
+      {
+        "name": "libz",
+        "redistributedByPocketRoot": false
+      }
+    ]
+  },
+  "coverage": {
+    "swiftProductInventoryComplete": true,
+    "applicationTargetInventoryComplete": true,
+    "externalDependencyPinsComplete": true,
+    "rootFSPackageSBOMEmbedded": true,
+    "releaseCompositionSBOMGenerated": true,
+    "releaseArtifactBuilt": false,
+    "releaseArtifactScanned": false,
+    "binaryFilesAnalyzed": false,
+    "completeReleaseArtifactSBOM": false,
+    "topLevelLicenseFinalized": true,
+    "completeLicenseAndNoticeBundle": false,
+    "correspondingSourceDeliveryApproved": false,
+    "appStorePolicyApproved": false,
+    "legalReviewApproved": false,
+    "distributionAuthorized": false
+  }
+}

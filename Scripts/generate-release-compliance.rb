@@ -12,9 +12,9 @@ require_relative "pocketroot-deterministic-json"
 require_relative "scan-release-artifact"
 
 module PocketRootReleaseCompliance
-  RELEASE_VERSION = "0.1.0"
-  GENERATED_AT = "2026-07-28T00:00:00Z"
-  OUTPUT_RELATIVE = "Compliance/Release/experimental-v0.1.0"
+  RELEASE_VERSION = "0.2.0"
+  GENERATED_AT = "2026-08-03T00:00:00Z"
+  OUTPUT_RELATIVE = "Compliance/Release/experimental-v0.2.0"
   MIT_LICENSE_TEXT = <<~LICENSE.freeze
     MIT License
 
@@ -110,7 +110,7 @@ module PocketRootReleaseCompliance
     "exceptionCount" => 83
   }.freeze
   FINAL_ARTIFACT_EVIDENCE_RELATIVE =
-    "Compliance/Release/FinalArtifact/v0.1.0"
+    "Compliance/Release/FinalArtifact/v0.2.0"
   FINAL_ARTIFACT_INVENTORY_RELATIVE =
     "#{FINAL_ARTIFACT_EVIDENCE_RELATIVE}/ARTIFACT-INVENTORY.json"
   FINAL_ARTIFACT_SBOM_RELATIVE =
@@ -259,19 +259,19 @@ module PocketRootReleaseCompliance
     "Compliance/SPDX/LICENSE-LIST-3.28.0.json" =>
       "7376db20698ff21511fe802aded9b5d7145520a86133b74f68b0c1568dd6dd1c",
     "Compliance/Release/RELEASE-DECISIONS.json" =>
-      "5dfed061b0def6cca5572becece0b4de1fc34af53c501c9c0e7b647f02e4cf7f",
+      "93ef573069e44ea8d74f43c4fb380ec694dea700ddb2881e2b76e646020d86f2",
     "Package.resolved" =>
       "a121fd0f287bcb42e22d1860f915203447dd552fddc82461e9d385b957fb3718",
     "Package.swift" =>
       "9ec4f31f7a91c5c001b6e5826c5ab2824e98c06eb61444027485a70f1efccfff",
     "Examples/PocketRootDemo/project.yml" =>
-      "749cfea0c9a9e7cc4919d3dbee1c01720aa85d8f1b5fe4fc887b61d3a2d0f3fa",
+      "8547227f488ce384600e01202f3c74778e1be99b1cee8b952ead61e043e1f3e0",
     "Examples/PocketRootHostApp/project.yml" =>
-      "5d2961cd344b85b5ca0102f3e7b80c3bba7ac8681b645e3d8efae0ec137d33e4",
+      "0e96e10441f281de362320bf1fe1549b768c30eab8a008ec91ce5402fade13ca",
     "Examples/PocketRootQuickStartApp/project.yml" =>
-      "11c6f86f3be0f419a9a6f10dc884b4df9cb157bcdccb5568fe903972a6084416",
+      "92a53f73089019bffb9dedf9e40641f4b8812033a0e7b748a22e532a259e919e",
     "Tests/Integration/ExternalConsumerApp/project.yml.template" =>
-      "95ca1929e779b1b91a304e68261c94ce42839b833a4e55a9768daa05b437cfb9",
+      "37a656732d25c4ffe411d7d3523a4185085de10df6dbd3fa977c13da4c149c16",
     "Scripts/inject-demo-rootfs.sh" =>
       "3982b5382b0d1e13e0c8e8a5bb5404c5bad1dfc4d6e9cd23a39e3395a83087bb",
     "Scripts/scan-release-artifact.rb" =>
@@ -2195,6 +2195,13 @@ module PocketRootReleaseCompliance
       source_track.fetch("status") == "ready" ? "Ready" : "Blocked"
     runtime_status_en =
       runtime_track.fetch("status") == "ready" ? "Ready" : "Blocked"
+    source_command_status_zh =
+      source_track.fetch("status") == "ready" ?
+        "源码轨道当前返回成功" : "源码轨道当前故意返回非零状态"
+    source_command_status_en =
+      source_track.fetch("status") == "ready" ?
+        "the source command currently succeeds" :
+        "the source command intentionally remains nonzero"
     <<~MARKDOWN
       # PocketRoot v#{RELEASE_VERSION} Release Candidate Checklist
 
@@ -2222,7 +2229,7 @@ module PocketRootReleaseCompliance
       只生成工程证据；即使扫描签名 `.xcarchive`，也固定保持
       `engineering-evidence-only`、`releaseSignatureValid=false` 和
       `rootFSExcluded=false`。它可以把
-      `Compliance/Release/FinalArtifact/v0.1.0/ARTIFACT-INVENTORY.json` 与
+      `Compliance/Release/FinalArtifact/v0.2.0/ARTIFACT-INVENTORY.json` 与
       `SBOM.spdx.json` 纳入 composition，但不能解除 runtime 门禁。后续专用最终
       发布验证 schema 必须把签名、entitlement 和风险元数据绑定到被复核的制品，
       并提供内容级 RootFS 排除证明；仅靠内容树摘要、路径、文件名或扩展名不足。
@@ -2236,7 +2243,7 @@ module PocketRootReleaseCompliance
       ruby Scripts/generate-release-compliance.rb --require-runtime-ready
       ```
 
-      两个 `--require-*-ready` 命令分别反映各自轨道；源码轨道当前返回成功，
+      两个 `--require-*-ready` 命令分别反映各自轨道；#{source_command_status_zh}，
       Runtime 轨道仍故意返回非零状态。
 
       ## English
@@ -2267,11 +2274,15 @@ module PocketRootReleaseCompliance
       engineering evidence only; even a signed `.xcarchive` remains
       `engineering-evidence-only`, with `releaseSignatureValid=false` and
       `rootFSExcluded=false`. Its inventory and SPDX SBOM may be included under
-      `Compliance/Release/FinalArtifact/v0.1.0`, but cannot open the runtime
+      `Compliance/Release/FinalArtifact/v0.2.0`, but cannot open the runtime
       gate. A future dedicated final-release schema must bind signature,
       entitlement, and risk metadata to the reviewed artifact and provide
       content-based RootFS absence evidence; a content-tree digest, path,
       filename, or extension check is not sufficient.
+
+      The two `--require-*-ready` commands report their tracks independently;
+      #{source_command_status_en}, and the Runtime command intentionally remains
+      nonzero.
     MARKDOWN
   end
 
@@ -2330,6 +2341,22 @@ module PocketRootReleaseCompliance
     supervisor = ISHEMBED.fetch("supervisor")
     binary = ISHEMBED.fetch("xcframework")
     corresponding_source = ISHEMBED.fetch("correspondingSource")
+    source_authorized =
+      inputs.dig(
+        :release_decisions,
+        "sourceRelease",
+        "sourceReleaseAuthorized"
+      ) == true
+    source_release_info =
+      if source_authorized
+        "Original PocketRoot source is licensed under MIT, and the " \
+          "#{RELEASE_VERSION} source release is explicitly authorized. " \
+          "No Runtime, RootFS, App, archive, IPA, or binary distribution is asserted."
+      else
+        "Original PocketRoot source is licensed under MIT, but the " \
+          "#{RELEASE_VERSION} source release is not explicitly authorized. " \
+          "No Runtime, RootFS, App, archive, IPA, or binary distribution is asserted."
+      end
     packages = [
       spdx_package(
         id: "SPDXRef-Package-PocketRoot",
@@ -2338,10 +2365,7 @@ module PocketRootReleaseCompliance
         download: "NOASSERTION",
         license_declared: "MIT",
         purpose: "LIBRARY",
-        source_info:
-          "Original PocketRoot source and Swift Package metadata are " \
-          "authorized for source release under MIT. No Runtime, RootFS, App, " \
-          "archive, IPA, or binary distribution is asserted.",
+        source_info: source_release_info,
         license_comments:
           "The top-level MIT license covers original PocketRoot source only. " \
           "Third-party components retain their respective upstream licenses."
@@ -2587,11 +2611,29 @@ module PocketRootReleaseCompliance
     }
   end
 
-  def readme(final_artifact_evidence)
+  def readme(final_artifact_evidence, readiness_document)
+    source_authorized =
+      readiness_document.dig(
+        "tracks",
+        "sourcePackageRelease",
+        "status"
+      ) == "ready"
+    source_release_status_zh =
+      if source_authorized
+        "PocketRoot 原创源码使用 MIT 许可证；#{RELEASE_VERSION} 源码发布已明确授权。"
+      else
+        "PocketRoot 原创源码使用 MIT 许可证；#{RELEASE_VERSION} 源码发布尚未获得明确授权。"
+      end
+    source_release_status_en =
+      if source_authorized
+        "Original PocketRoot source is licensed under MIT, and the #{RELEASE_VERSION} source release is explicitly authorized."
+      else
+        "Original PocketRoot source is licensed under MIT, but the #{RELEASE_VERSION} source release is not explicitly authorized."
+      end
     final_artifact_status_zh =
       if final_artifact_evidence.fetch("status") == "not-provided"
         <<~TEXT.chomp
-          PocketRoot 原创源码已依据 MIT 获准发布；Runtime 的完整 LICENSE/NOTICE、
+          #{source_release_status_zh} Runtime 的完整 LICENSE/NOTICE、
           对应源码交付、App Store 2.5.2、法律审查和发行授权仍未完成。由于没有最终
           archive，本目录明确保持
           `completeReleaseArtifactSBOM=false`、`distributionAuthorized=false`。
@@ -2600,7 +2642,7 @@ module PocketRootReleaseCompliance
         TEXT
       else
         <<~TEXT.chomp
-          PocketRoot 原创源码已依据 MIT 获准发布；Runtime 的完整 LICENSE/NOTICE、
+          #{source_release_status_zh} Runtime 的完整 LICENSE/NOTICE、
           对应源码交付、App Store 2.5.2、法律审查和发行授权仍未完成。当前已纳入
           最终制品目录中的工程扫描证据，但状态保持
           `engineering-evidence-only`、`releaseSignatureValid=false`、
@@ -2610,7 +2652,7 @@ module PocketRootReleaseCompliance
     final_artifact_status_en =
       if final_artifact_evidence.fetch("status") == "not-provided"
         <<~TEXT.chomp
-          original PocketRoot source is authorized for release under MIT. The Runtime's
+          #{source_release_status_en} The Runtime's
           complete LICENSE/NOTICE set, corresponding-source delivery, App Store 2.5.2
           disposition, legal review, and distribution authorization remain open.
           Because no final archive was scanned, this evidence keeps
@@ -2622,7 +2664,7 @@ module PocketRootReleaseCompliance
       else
         <<~TEXT.chomp
           current final-artifact directory contains engineering scan evidence,
-          while original PocketRoot source is authorized for release under MIT.
+          #{source_release_status_en}
           The Runtime's complete LICENSE/NOTICE set, corresponding-source delivery,
           App Store 2.5.2 disposition, legal review, and distribution authorization
           remain open. The imported evidence remains `engineering-evidence-only`, with
@@ -2899,7 +2941,10 @@ module PocketRootReleaseCompliance
       "COMPOSITION.json" => pretty_json(composition_document),
       "READINESS.json" => pretty_json(readiness_document),
       "README.md" =>
-        readme(composition_document.fetch("finalArtifactEvidence")),
+        readme(
+          composition_document.fetch("finalArtifactEvidence"),
+          readiness_document
+        ),
       "RELEASE-CHECKLIST.md" => release_checklist(readiness_document),
       "SBOM.spdx.json" => pretty_json(sbom_document)
     }

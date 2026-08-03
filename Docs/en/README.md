@@ -13,8 +13,9 @@ This is the English documentation hub for PocketRoot. The Chinese documents at t
 1. [Product plan](ProductPlan.md) for users, use cases, value, non-goals, and release definitions.
 2. [Roadmap](Roadmap.md) for current completion, gates, and priorities.
 3. [Release and compliance](ReleaseCompliance.md) for licensing, RootFS, SBOM, and App Store constraints.
-4. [v0.1.0 release notes](Releases/0.1.0.md) for the first source release, integration, and release boundary.
-5. [ADR-001](Decisions/ADR-001-IshEmbed-Feasibility.md) for the Experimental IshEmbed decision.
+4. [v0.2.0 candidate notes](Releases/0.2.0.md) for the core closure, physical evidence, authorization boundary, and remaining release gates.
+5. [v0.1.0 release notes](Releases/0.1.0.md) for the current public source release, integration, and release boundary.
+6. [ADR-001](Decisions/ADR-001-IshEmbed-Feasibility.md) for the Experimental IshEmbed decision.
 
 ### Application integrators
 
@@ -49,7 +50,8 @@ This is the English documentation hub for PocketRoot. The Chinese documents at t
 | [Testing](Testing.md) | Test commands, environments, scope, and evidence |
 | [Upstream dependencies](UpstreamDependencies.md) | Revisions, gitlinks, URLs, sizes, and hashes |
 | [Release and compliance](ReleaseCompliance.md) | License, NOTICE, source, SBOM, and store gates |
-| [Release notes](Releases/0.1.0.md) | Version capabilities, Swift Package integration, release boundary, and known limitations |
+| [v0.2.0 candidate notes](Releases/0.2.0.md) | Core capabilities, physical evidence, candidate boundary, and pre-release gates |
+| [v0.1.0 release notes](Releases/0.1.0.md) | Current public capabilities, Swift Package integration, release boundary, and known limitations |
 | [ADR](Decisions/ADR-001-IshEmbed-Feasibility.md) | Frozen decisions, rationale, and consequences |
 | [Changelog](../../CHANGELOG.en.md) | Versioned and unreleased changes |
 
@@ -70,10 +72,11 @@ Code, `Package.resolved`, committed manifests, and the designated source-of-trut
   distribution.
 - iOS 18.2 arm64 Simulator: repository native smoke passed.
 - Default boot identity gate: ready now requires matching `aarch64`, Alpine identity, optional version, and guest working directory.
-- Interactive PTY, SwiftTerm, and guest files are implemented and have unit
-  plus Simulator compile coverage. Signed iPhone one-shot, minimum-Xcode 16,
-  and soft-shutdown baselines passed; new PTY device lifecycle, iPad, and
-  public distribution remain open or blocked.
+- The Terminal, Files, and shared Workspace core loop passes the public-SHA
+  external consumer, Xcode 16, iPhone/iPad Simulator UI, and the Jack iPhone
+  90×2-second stability gate. v0.2.0 remains an unauthorized, untagged
+  candidate; physical iPad, real pressure/jetsam/power loss, and public runtime
+  distribution remain open.
 
 See the [roadmap](Roadmap.md) for the current status.
 

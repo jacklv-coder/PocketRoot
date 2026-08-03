@@ -61,7 +61,7 @@
 
 ## 里程碑 2：ARM64 Linux 一次性命令
 
-状态：**实验性，进行中**。
+状态：**核心用户闭环已通过；实验性 runtime 的资源与故障硬化进行中**。
 
 ### 已完成的可行性基础
 
@@ -85,6 +85,9 @@
   暂停 3 秒后 guest 命令恢复，峰值分别为 89.8 MiB 与 89.7 MiB。
 - 同一设备通过真实 UIKit background/foreground/active 18 项门禁；原 PID 保持，
   前台恢复后 guest 命令成功，峰值 89.4 MiB。
+- 同一设备使用 Xcode 26.6 / iOS 26.6 通过默认 90×2 秒稳定性 20 项门禁；
+  一个 PTY 保持 90 轮，逐字节验证 576 KiB 带唯一边界的零字节流并恢复 stdout
+  上限故障，热身后 `phys_footprint` 增长 0.0 MiB，生命周期峰值 83.2 MiB。
 
 这些证据与后续 Host App UI smoke 建立了当前 Simulator、最低 Xcode 16 与单一
 iPhone 的一次性命令、PTY 和 App 生命周期路径；不覆盖 iPad、真实压力或公开发行。
@@ -105,7 +108,7 @@ iPhone 的一次性命令、PTY 和 App 生命周期路径；不覆盖 iPad、�
 | 默认 post-boot identity gate | 已通过 | `aarch64`、Alpine identity、可选 version 与 command context 通过后才 ready；保持失败占用槽位回归 |
 | Demo 与外部宿主 runtime 接入 | 已通过 | Demo 和独立 Host App 共用公开 controller；Debug 只注入精确校验的仓库外 RootFS，Release 保持不注入 |
 | 进程安全 soft shutdown | 已通过 | v0.4.0-abi.6 soft-halt/join 返回 Swift；同进程仍只允许一次 lifecycle |
-| 签名 iPhone | 已通过 | 标准 17 项、3 分钟持续负载 20 项及 Host App lifecycle/交互式 `top` UI smoke 已完成；runtime 变更后继续重跑 |
+| 签名 iPhone | 已通过 | 标准 17 项、默认 90×2 秒稳定性 20 项及 Host App lifecycle/交互式 `top` UI smoke 已完成；稳定性门禁验证 576 KiB 精确 PTY payload、0.0 MiB 热身后增长和 83.2 MiB 生命周期峰值；runtime 变更后继续重跑 |
 | iPad Simulator Host UI | 已通过 | iOS 18 上覆盖 RootFS boot、PTY、Files、Workspace、旋转、系统文件导入/分享保存 round-trip 与 shutdown |
 | 签名 iPad | 阻塞 | physical boot 与 command smoke |
 | 最低 Xcode 16 原生兼容 | 已通过 | Xcode 16.0 / iOS 18.0 SDK 完成 RootFS install、Simulator/device final-link 和 17 项 native smoke |

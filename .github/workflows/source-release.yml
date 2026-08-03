@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Annotated v0.1.0 source-release tag
+        description: Annotated v0.2.0 source-release tag
         required: true
         type: string
 
@@ -46,7 +46,7 @@ jobs:
         env:
           RELEASE_TAG: ${{ inputs.tag }}
         run: |
-          test "$RELEASE_TAG" = "v0.1.0"
+          test "$RELEASE_TAG" = "v0.2.0"
           candidate_commit="$(git -C candidate rev-parse "$RELEASE_TAG^{commit}")"
           trusted_commit="$(git -C trusted rev-parse HEAD)"
           git -C trusted merge-base --is-ancestor \

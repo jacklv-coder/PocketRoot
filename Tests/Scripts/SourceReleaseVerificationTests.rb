@@ -20,24 +20,37 @@ class SourceReleaseVerificationTests < Minitest::Test
     FileUtils.remove_entry(@temporary_directory) if @temporary_directory.exist?
   end
 
-  def test_current_release_commit_passes_source_archive_audit
+  def test_current_release_candidate_passes_source_archive_audit_while_blocked
     result = PocketRootSourceRelease.verify(
       root: REPOSITORY_ROOT,
       ref: "HEAD",
-      version: "0.1.0"
+      version: "0.2.0",
+      require_source_ready: false
     )
 
-    assert_equal "ready", result.fetch("sourceTrack")
+    assert_equal "blocked", result.fetch("sourceTrack")
     refute result.fetch("rootFSIncluded")
     refute result.fetch("runtimeArtifactIncluded")
     assert_match(/\A[0-9a-f]{64}\z/, result.fetch("archiveSha256"))
     assert_operator result.fetch("regularFileCount"), :>, 100
   end
 
+  def test_current_release_candidate_fails_closed_without_source_authorization
+    error = assert_raises(PocketRootSourceRelease::VerificationError) do
+      PocketRootSourceRelease.verify(
+        root: REPOSITORY_ROOT,
+        ref: "HEAD",
+        version: "0.2.0"
+      )
+    end
+
+    assert_includes error.message, "does not declare release 0.2.0"
+  end
+
   def test_rejects_git_archive_export_filtering_in_candidate_ref
     repository = release_repository(
-      version: "0.1.0",
-      authorized_version: "0.1.0"
+      version: "0.2.0",
+      authorized_version: "0.2.0"
     )
     payload_path = repository.join("Payload/runtime.md")
     payload_path.dirname.mkpath
@@ -57,7 +70,7 @@ class SourceReleaseVerificationTests < Minitest::Test
       PocketRootSourceRelease.verify(
         root: repository,
         ref: "HEAD",
-        version: "0.1.0"
+        version: "0.2.0"
       )
     end
 
@@ -66,10 +79,10 @@ class SourceReleaseVerificationTests < Minitest::Test
 
   def test_rejects_release_versions_not_supported_by_compliance_generator
     error = assert_raises(PocketRootSourceRelease::VerificationError) do
-      PocketRootSourceRelease.validate_version("0.1.1")
+      PocketRootSourceRelease.validate_version("0.2.1")
     end
 
-    assert_includes error.message, "bound to source release 0.1.0"
+    assert_includes error.message, "bound to source release 0.2.0"
   end
 
   def test_rejects_compressed_payload_even_under_neutral_path
@@ -78,7 +91,7 @@ class SourceReleaseVerificationTests < Minitest::Test
     )
 
     error = assert_raises(PocketRootSourceRelease::VerificationError) do
-      PocketRootSourceRelease.audit_archive(archive, "PocketRoot-0.1.0/")
+      PocketRootSourceRelease.audit_archive(archive, "PocketRoot-0.2.0/")
     end
 
     assert_includes error.message, "forbidden gzip payload"
@@ -91,7 +104,7 @@ class SourceReleaseVerificationTests < Minitest::Test
     )
 
     error = assert_raises(PocketRootSourceRelease::VerificationError) do
-      PocketRootSourceRelease.audit_archive(archive, "PocketRoot-0.1.0/")
+      PocketRootSourceRelease.audit_archive(archive, "PocketRoot-0.2.0/")
     end
 
     assert_includes error.message, "forbidden source-release path"
@@ -107,7 +120,7 @@ class SourceReleaseVerificationTests < Minitest::Test
     archive = source_archive("Payload/input.bin" => buffer.string)
 
     error = assert_raises(PocketRootSourceRelease::VerificationError) do
-      PocketRootSourceRelease.audit_archive(archive, "PocketRoot-0.1.0/")
+      PocketRootSourceRelease.audit_archive(archive, "PocketRoot-0.2.0/")
     end
 
     assert_includes error.message, "forbidden tar payload"
@@ -120,7 +133,7 @@ class SourceReleaseVerificationTests < Minitest::Test
     )
 
     error = assert_raises(PocketRootSourceRelease::VerificationError) do
-      PocketRootSourceRelease.audit_archive(archive, "PocketRoot-0.1.0/")
+      PocketRootSourceRelease.audit_archive(archive, "PocketRoot-0.2.0/")
     end
 
     assert_includes error.message, "unsupported MIME type \"application/pdf\""
@@ -136,7 +149,7 @@ class SourceReleaseVerificationTests < Minitest::Test
     error = assert_raises(PocketRootSourceRelease::VerificationError) do
       PocketRootSourceRelease.audit_archive(
         archive,
-        "PocketRoot-0.1.0/"
+        "PocketRoot-0.2.0/"
       )
     end
 
@@ -168,7 +181,7 @@ class SourceReleaseVerificationTests < Minitest::Test
     )
 
     error = assert_raises(PocketRootSourceRelease::VerificationError) do
-      PocketRootSourceRelease.audit_archive(archive, "PocketRoot-0.1.0/")
+      PocketRootSourceRelease.audit_archive(archive, "PocketRoot-0.2.0/")
     end
 
     assert_includes error.message, "forbidden RootFS payload path"
@@ -181,7 +194,7 @@ class SourceReleaseVerificationTests < Minitest::Test
     )
 
     error = assert_raises(PocketRootSourceRelease::VerificationError) do
-      PocketRootSourceRelease.audit_archive(archive, "PocketRoot-0.1.0/")
+      PocketRootSourceRelease.audit_archive(archive, "PocketRoot-0.2.0/")
     end
 
     assert_includes error.message, "forbidden RootFS payload path"
@@ -190,10 +203,10 @@ class SourceReleaseVerificationTests < Minitest::Test
   def test_release_document_markers_must_be_actual_markdown_headings
     root = @temporary_directory.join("malformed-documents")
     documents = {
-      "CHANGELOG.md" => "This prose mentions ## 0.1.0 - 2026-07-31 only.\n",
-      "CHANGELOG.en.md" => "This prose mentions ## 0.1.0 - 2026-07-31 only.\n",
-      "Docs/Releases/0.1.0.md" => "This prose mentions # PocketRoot 0.1.0 only.\n",
-      "Docs/en/Releases/0.1.0.md" => "This prose mentions # PocketRoot 0.1.0 only.\n"
+      "CHANGELOG.md" => "This prose mentions ## 0.2.0 - 2026-07-31 only.\n",
+      "CHANGELOG.en.md" => "This prose mentions ## 0.2.0 - 2026-07-31 only.\n",
+      "Docs/Releases/0.2.0.md" => "This prose mentions # PocketRoot 0.2.0 only.\n",
+      "Docs/en/Releases/0.2.0.md" => "This prose mentions # PocketRoot 0.2.0 only.\n"
     }
     documents.each do |relative_path, contents|
       path = root.join(relative_path)
@@ -202,16 +215,16 @@ class SourceReleaseVerificationTests < Minitest::Test
     end
 
     error = assert_raises(PocketRootSourceRelease::VerificationError) do
-      PocketRootSourceRelease.verify_release_documents(root, "0.1.0")
+      PocketRootSourceRelease.verify_release_documents(root, "0.2.0")
     end
 
-    assert_includes error.message, "does not declare release 0.1.0"
+    assert_includes error.message, "does not declare release 0.2.0"
   end
 
   def test_validates_authorization_from_the_archived_ref
     repository = release_repository(
-      version: "0.1.0",
-      authorized_version: "0.1.0",
+      version: "0.2.0",
+      authorized_version: "0.2.0",
       authorization_status: "blocked"
     )
     blocked_ref = git(repository, "rev-parse", "HEAD")
@@ -232,11 +245,11 @@ class SourceReleaseVerificationTests < Minitest::Test
       PocketRootSourceRelease.verify(
         root: repository,
         ref: blocked_ref,
-        version: "0.1.0"
+        version: "0.2.0"
       )
     end
 
-    assert_includes error.message, "not bound to release 0.1.0"
+    assert_includes error.message, "not bound to release 0.2.0"
   end
 
   def test_rejects_non_annotated_release_tag
@@ -251,13 +264,13 @@ class SourceReleaseVerificationTests < Minitest::Test
       "-c", "user.email=tests@pocketroot.invalid",
       "commit", "-q", "-m", "fixture"
     ) or raise "git commit failed"
-    system("git", "-C", repository.to_s, "tag", "v0.1.0") or raise "git tag failed"
+    system("git", "-C", repository.to_s, "tag", "v0.2.0") or raise "git tag failed"
 
     error = assert_raises(PocketRootSourceRelease::VerificationError) do
       PocketRootSourceRelease.verify_annotated_tag(
         repository,
         "HEAD",
-        "v0.1.0"
+        "v0.2.0"
       )
     end
 
@@ -354,7 +367,7 @@ class SourceReleaseVerificationTests < Minitest::Test
     archive = @temporary_directory.join("fixture-#{extra_entries.hash}.tar")
     system(
       "git", "-C", repository.to_s,
-      "archive", "--format=tar", "--prefix=PocketRoot-0.1.0/",
+      "archive", "--format=tar", "--prefix=PocketRoot-0.2.0/",
       "--output=#{archive}", "HEAD"
     ) or raise "git archive failed"
     archive
