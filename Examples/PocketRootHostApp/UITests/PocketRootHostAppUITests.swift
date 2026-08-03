@@ -104,7 +104,10 @@ final class PocketRootHostAppUITests: XCTestCase {
         XCTAssertTrue(disclosure.waitForExistence(timeout: 10))
         waitForEnabled(disclosure)
         disclosure.tap()
-        waitForEnabled(folder)
+        guard revealFileEntry(folder, in: app) else {
+            shutdownRuntime(in: app)
+            return
+        }
         folder.tap()
 
         waitForEnabled(actions)
@@ -115,8 +118,14 @@ final class PocketRootHostAppUITests: XCTestCase {
         app.buttons["Create"].tap()
         waitForEnabled(actions)
         let childNavigationBar = app.navigationBars[folderName]
-        XCTAssertTrue(childNavigationBar.waitForExistence(timeout: 10))
-        childNavigationBar.buttons.element(boundBy: 0).tap()
+        guard childNavigationBar.waitForExistence(timeout: 30) else {
+            XCTFail("child folder navigation bar to exist")
+            shutdownRuntime(in: app)
+            return
+        }
+        let backButton = childNavigationBar.buttons.element(boundBy: 0)
+        XCTAssertTrue(waitForHittable(backButton))
+        backButton.tap()
 
         let nestedFile = app.descendants(matching: .any)[
             "PocketRootFiles.entry./root/\(folderName)/\(nestedFileName)"
@@ -206,17 +215,16 @@ final class PocketRootHostAppUITests: XCTestCase {
         }
         importFile.tap()
 
-        openHostDocuments(in: app)
-        let fixture = app.cells[
-            "\(Self.systemImportFixtureDisplayName), txt"
-        ]
-        XCTAssertTrue(fixture.waitForExistence(timeout: 30))
-        fixture.tap()
+        guard openHostDocuments(in: app) else {
+            return
+        }
+        guard importHostFixture(in: app) else {
+            return
+        }
 
         let imported = app.descendants(matching: .any)[
             "PocketRootFiles.entry./root/\(Self.systemImportFixtureName)"
         ]
-        XCTAssertTrue(imported.waitForExistence(timeout: 30))
         guard revealFileEntry(imported, in: app) else {
             return
         }
@@ -243,7 +251,9 @@ final class PocketRootHostAppUITests: XCTestCase {
             withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)
         ).tap()
 
-        openHostDocuments(in: app)
+        guard openHostDocuments(in: app) else {
+            return
+        }
         let save = app.buttons.matching(
             NSPredicate(format: "label IN %@", ["Save", "存储"])
         ).firstMatch
@@ -292,17 +302,16 @@ final class PocketRootHostAppUITests: XCTestCase {
             return
         }
         importFile.tap()
-        openHostDocuments(in: app)
-        let exported = app.cells[
-            "\(Self.systemImportFixtureDisplayName), txt"
-        ]
-        XCTAssertTrue(exported.waitForExistence(timeout: 30))
-        exported.tap()
+        guard openHostDocuments(in: app) else {
+            return
+        }
+        guard importHostFixture(in: app) else {
+            return
+        }
 
         let reimported = app.descendants(matching: .any)[
             "PocketRootFiles.entry./root/\(Self.systemImportFixtureName)"
         ]
-        XCTAssertTrue(reimported.waitForExistence(timeout: 30))
         guard revealFileEntry(reimported, in: app) else {
             return
         }
@@ -913,23 +922,10 @@ final class PocketRootHostAppUITests: XCTestCase {
         )
     }
 
-    private func openHostDocuments(in app: XCUIApplication) {
+    private func openHostDocuments(in app: XCUIApplication) -> Bool {
         let browse = app.buttons.matching(
             NSPredicate(format: "label IN %@", ["Browse", "浏览"])
         ).firstMatch
-        if browse.waitForExistence(timeout: 10),
-           let frames = waitForInteractionFrames(
-               of: browse,
-               in: app,
-               timeout: 3
-           )
-        {
-            tapFrame(
-                frames.elementFrame,
-                in: frames.appFrame,
-                using: app
-            )
-        }
 
         // The iOS document picker preserves its last visited directory. On a
         // later import or export in this test it can reopen directly inside
@@ -972,18 +968,60 @@ final class PocketRootHostAppUITests: XCTestCase {
                 localLocationLabels
             )
         ).firstMatch
-        let localLocation = sidebarLocalLocation.waitForExistence(timeout: 5)
-            ? sidebarLocalLocation
-            : fallbackLocalLocation
-        let pickerLanding = app.descendants(matching: .any).matching(
-            NSPredicate(
-                format: "label IN %@",
-                hostDocumentLabels + localLocationLabels
-            )
-        ).firstMatch
-        XCTAssertTrue(pickerLanding.waitForExistence(timeout: 30))
-        if currentHostDocuments.exists {
-            return
+        let hostFixture = app.cells[
+            "\(Self.systemImportFixtureDisplayName), txt"
+        ]
+        // The minimum Xcode 16 runner can present the document manager on
+        // Recents before its Browse tab enters the accessibility tree, while a
+        // restored Host location can also expose its navigation bar before its
+        // file list. Spend one deadline waiting for either the fixture itself,
+        // a local location, or a usable Browse transition.
+        let pickerDeadline = Date().addingTimeInterval(60)
+        var localLocation: XCUIElement?
+        var didTapBrowse = false
+        while Date() < pickerDeadline {
+            if currentHostDocuments.exists {
+                if hostFixture.exists {
+                    return true
+                }
+                // An iPad sidebar can keep the local location visible while
+                // the restored Host file list is still loading. Once the Host
+                // navigation state is present, stay there instead of letting
+                // the sidebar take us back out of the destination.
+                RunLoop.current.run(
+                    until: Date().addingTimeInterval(0.2)
+                )
+                continue
+            }
+            if sidebarLocalLocation.exists {
+                localLocation = sidebarLocalLocation
+                break
+            }
+            if fallbackLocalLocation.exists {
+                localLocation = fallbackLocalLocation
+                break
+            }
+            if !didTapBrowse, browse.exists {
+                guard let frames = waitForInteractionFrames(
+                    of: browse,
+                    in: app,
+                    timeout: 10
+                ) else {
+                    XCTFail("document picker Browse to become hittable")
+                    return false
+                }
+                tapFrame(
+                    frames.elementFrame,
+                    in: frames.appFrame,
+                    using: app
+                )
+                didTapBrowse = true
+            }
+            RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+        }
+        guard let localLocation else {
+            XCTFail("document picker to expose a usable Host or local destination")
+            return false
         }
 
         let hostDocuments = app.cells.matching(
@@ -1026,17 +1064,55 @@ final class PocketRootHostAppUITests: XCTestCase {
             "local document location to reveal the host container"
         )
         guard openedHostDestination else {
-            return
+            return false
         }
-        if currentHostDocuments.exists {
-            return
+        if !currentHostDocuments.exists {
+            XCTAssertTrue(hostDocuments.exists)
+            guard hostDocuments.exists else {
+                return false
+            }
+            hostDocuments.tap()
+        }
+        guard hostFixture.waitForExistence(timeout: 30) else {
+            XCTFail("Host Documents fixture to become visible")
+            return false
+        }
+        return true
+    }
+
+    private func importHostFixture(in app: XCUIApplication) -> Bool {
+        let fixture = app.cells[
+            "\(Self.systemImportFixtureDisplayName), txt"
+        ]
+        let imported = app.descendants(matching: .any)[
+            "PocketRootFiles.entry./root/\(Self.systemImportFixtureName)"
+        ]
+
+        // Xcode 16 can synthesize a successful tap while the iOS 18.0
+        // document picker keeps the file cell open and never completes the
+        // selection. Re-query the current frame and retry once only while the
+        // guest file is still absent.
+        for _ in 0..<2 {
+            guard let frames = waitForInteractionFrames(
+                of: fixture,
+                in: app,
+                timeout: 10
+            ) else {
+                XCTFail("Host Documents fixture to expose an interaction frame")
+                return false
+            }
+            tapFrame(
+                frames.elementFrame,
+                in: frames.appFrame,
+                using: app
+            )
+            if imported.waitForExistence(timeout: 15) {
+                return true
+            }
         }
 
-        XCTAssertTrue(hostDocuments.exists)
-        guard hostDocuments.exists else {
-            return
-        }
-        hostDocuments.tap()
+        XCTFail("Host Documents fixture selection to import the guest file")
+        return false
     }
 
     private func dismissShareSheetIfNeeded(
@@ -1293,8 +1369,7 @@ final class PocketRootHostAppUITests: XCTestCase {
         _ terminal: XCUIElement,
         marker: String
     ) -> (rows: Int, columns: Int) {
-        terminal.typeText("printf '\(marker)'; stty size\n")
-
+        let command = "printf '\(marker)'; stty size\n"
         var result: (rows: Int, columns: Int)?
         let expression = try! NSRegularExpression(
             pattern: NSRegularExpression.escapedPattern(for: marker)
@@ -1321,7 +1396,22 @@ final class PocketRootHostAppUITests: XCTestCase {
             result = (rows, columns)
             return true
         }
-        wait(for: predicate, evaluatedWith: terminal, timeout: 30)
+        terminal.typeText(command)
+        if !waitWithoutAssertion(
+            for: predicate,
+            evaluatedWith: terminal,
+            timeout: 15
+        ) {
+            terminal.tap()
+            terminal.typeText(command)
+        }
+        guard wait(
+            for: predicate,
+            evaluatedWith: terminal,
+            timeout: 30
+        ) else {
+            return (0, 0)
+        }
         return result ?? (0, 0)
     }
 

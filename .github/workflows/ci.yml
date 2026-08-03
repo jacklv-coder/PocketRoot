@@ -291,65 +291,24 @@ jobs:
             "$POCKETROOT_SPDX_SCHEMA" \
             "$evidence/SBOM.spdx.json"
 
-  minimum-xcode-16:
-    name: Minimum Xcode 16.0
+  minimum-xcode-16-runtime:
+    name: Minimum Xcode 16.0 / Native runtime
     runs-on: macos-15
-    timeout-minutes: 90
+    timeout-minutes: 35
 
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Configure public package submodule checkout
-        run: |
-          git config --global \
-            url."https://github.com/".insteadOf \
-            "ssh://git@ssh.github.com:443/"
-
-      - name: Verify minimum Apple toolchain
-        run: |
-          test "$(uname -m)" = "arm64"
-          test -d /Applications/Xcode_16.0.app/Contents/Developer
-          sudo xcode-select \
-            --switch /Applications/Xcode_16.0.app/Contents/Developer
-          test "$(xcodebuild -version | sed -n '1p')" = "Xcode 16.0"
-          test "$(xcrun --sdk iphoneos --show-sdk-version)" = "18.0"
-          test "$(xcrun --sdk iphonesimulator --show-sdk-version)" = "18.0"
-          xcodebuild -version
-          swift --version
-
-      - name: Download and verify pinned RootFS release archive
-        env:
-          ROOTFS_SHA256: "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"
-          ROOTFS_BYTE_COUNT: "6581376"
-          ROOTFS_URL: "https://github.com/Lolendor/ish-arm64-pkg/releases/download/v0.3.3/fs.tar.gz"
-        run: |
-          archive="$RUNNER_TEMP/pocketroot-fs-v0.3.3.tar.gz"
-          curl --fail --location --retry 3 \
-            --output "$archive" \
-            "$ROOTFS_URL"
-          test "$(stat -f '%z' "$archive")" = "$ROOTFS_BYTE_COUNT"
-          echo "$ROOTFS_SHA256  $archive" | shasum -a 256 --check
-          echo "POCKETROOT_ROOTFS_ARCHIVE=$archive" >> "$GITHUB_ENV"
+      - name: Set up minimum Xcode 16 environment
+        uses: ./.github/actions/setup-minimum-xcode-16
+        with:
+          install-simulator-runtime: "false"
 
       - name: Validate real RootFS install with Xcode 16.0
         run: |
           swift test \
             --filter testPinnedReleaseArchiveWhenProvidedByEnvironment
-
-      - name: Install XcodeGen
-        env:
-          XCODEGEN_VERSION: "2.46.0"
-          XCODEGEN_SHA256: "4d9e34b62172d645eed6457cac13fc222569974098ef4ee9c3368bedf0196806"
-        run: |
-          archive="$RUNNER_TEMP/xcodegen.zip"
-          install_root="$RUNNER_TEMP/xcodegen-install"
-          curl --fail --location --retry 3 \
-            --output "$archive" \
-            "https://github.com/yonaskolb/XcodeGen/releases/download/$XCODEGEN_VERSION/xcodegen.zip"
-          echo "$XCODEGEN_SHA256  $archive" | shasum -a 256 --check
-          unzip -q "$archive" -d "$install_root"
-          echo "$install_root/xcodegen/bin" >> "$GITHUB_PATH"
 
       - name: Install iOS 18.0 Simulator runtime
         run: |
@@ -370,52 +329,80 @@ jobs:
           POCKETROOT_SMOKE_STABILITY_INTERVAL_MILLISECONDS: "250"
         run: ./Scripts/run-runtime-smoke.sh
 
-      - name: Run public-SHA External Consumer UI acceptance
+  minimum-xcode-16-ui:
+    name: Minimum Xcode 16.0 / UI (${{ matrix.label }})
+    runs-on: macos-15
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - suite: external-consumer
+            label: External consumer
+          - suite: quick-start-iphone
+            label: Quick Start iPhone
+          - suite: quick-start-ipad
+            label: Quick Start iPad
+          - suite: host-iphone
+            label: Host App iPhone
+          - suite: host-ipad
+            label: Host App iPad
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up minimum Xcode 16 environment
+        uses: ./.github/actions/setup-minimum-xcode-16
+
+      - name: Run ${{ matrix.label }} UI smoke with Xcode 16.0
         env:
+          POCKETROOT_UI_SUITE: ${{ matrix.suite }}
+          POCKETROOT_UI_FAILURE_ROOT: >-
+            ${{ runner.temp }}/pocketroot-ui-artifacts/${{ matrix.suite }}
           POCKETROOT_EXTERNAL_CONSUMER_REPOSITORY_URL: >-
             ${{ github.event.pull_request.head.repo.clone_url ||
                 format('{0}/{1}.git', github.server_url, github.repository) }}
           POCKETROOT_EXTERNAL_CONSUMER_REVISION: >-
             ${{ github.event.pull_request.head.sha || github.sha }}
           POCKETROOT_EXTERNAL_CONSUMER_REQUIRE_REMOTE: "1"
-        run: ./Scripts/run-external-consumer-ui-smoke.sh
-
-      - name: Run Quick Start two-entry UI smoke with Xcode 16.0
-        env:
-          POCKETROOT_UI_FAILURE_ARTIFACTS_DIR: >-
-            ${{ runner.temp }}/pocketroot-ui-artifacts/quick-start-iphone
-        run: ./Scripts/run-quick-start-ui-smoke.sh
-
-      - name: Run Quick Start iPad UI smoke with Xcode 16.0
-        env:
-          POCKETROOT_QUICK_START_UI_DEVICE_TYPE: >-
-            com.apple.CoreSimulator.SimDeviceType.iPad-10th-generation
-          POCKETROOT_QUICK_START_UI_DEVICE_NAME: >-
-            PocketRoot-Quick-Start-iPad-UI-Smoke
-          POCKETROOT_UI_FAILURE_ARTIFACTS_DIR: >-
-            ${{ runner.temp }}/pocketroot-ui-artifacts/quick-start-ipad
-        run: ./Scripts/run-quick-start-ui-smoke.sh
-
-      - name: Run Host App PTY and Files UI smoke with Xcode 16.0
-        env:
-          POCKETROOT_HOST_UI_FAILURE_ARTIFACTS_DIR: >-
-            ${{ runner.temp }}/pocketroot-ui-artifacts/host-iphone
-        run: ./Scripts/run-host-app-ui-smoke.sh
-
-      - name: Run Host App iPad UI smoke with Xcode 16.0
-        env:
-          POCKETROOT_HOST_UI_DEVICE_TYPE: >-
-            com.apple.CoreSimulator.SimDeviceType.iPad-10th-generation
-          POCKETROOT_HOST_UI_DEVICE_NAME: PocketRoot-Host-iPad-UI-Smoke
-          POCKETROOT_HOST_UI_FAILURE_ARTIFACTS_DIR: >-
-            ${{ runner.temp }}/pocketroot-ui-artifacts/host-ipad
-        run: ./Scripts/run-host-app-ui-smoke.sh
+        run: |
+          case "$POCKETROOT_UI_SUITE" in
+            external-consumer)
+              export POCKETROOT_UI_FAILURE_ARTIFACTS_DIR="$POCKETROOT_UI_FAILURE_ROOT"
+              ./Scripts/run-external-consumer-ui-smoke.sh
+              ;;
+            quick-start-iphone)
+              export POCKETROOT_UI_FAILURE_ARTIFACTS_DIR="$POCKETROOT_UI_FAILURE_ROOT"
+              ./Scripts/run-quick-start-ui-smoke.sh
+              ;;
+            quick-start-ipad)
+              export POCKETROOT_QUICK_START_UI_DEVICE_TYPE="com.apple.CoreSimulator.SimDeviceType.iPad-10th-generation"
+              export POCKETROOT_QUICK_START_UI_DEVICE_NAME="PocketRoot-Quick-Start-iPad-UI-Smoke"
+              export POCKETROOT_UI_FAILURE_ARTIFACTS_DIR="$POCKETROOT_UI_FAILURE_ROOT"
+              ./Scripts/run-quick-start-ui-smoke.sh
+              ;;
+            host-iphone)
+              export POCKETROOT_HOST_UI_FAILURE_ARTIFACTS_DIR="$POCKETROOT_UI_FAILURE_ROOT"
+              ./Scripts/run-host-app-ui-smoke.sh
+              ;;
+            host-ipad)
+              export POCKETROOT_HOST_UI_DEVICE_TYPE="com.apple.CoreSimulator.SimDeviceType.iPad-10th-generation"
+              export POCKETROOT_HOST_UI_DEVICE_NAME="PocketRoot-Host-iPad-UI-Smoke"
+              export POCKETROOT_HOST_UI_FAILURE_ARTIFACTS_DIR="$POCKETROOT_UI_FAILURE_ROOT"
+              ./Scripts/run-host-app-ui-smoke.sh
+              ;;
+            *)
+              echo "Unknown minimum-Xcode UI suite: $POCKETROOT_UI_SUITE" >&2
+              exit 2
+              ;;
+          esac
 
       - name: Upload UI failure diagnostics
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: pocketroot-ui-failure-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/pocketroot-ui-artifacts
+          name: pocketroot-ui-failure-${{ matrix.suite }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/pocketroot-ui-artifacts/${{ matrix.suite }}
           if-no-files-found: warn
           retention-days: 7

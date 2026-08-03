@@ -6,7 +6,18 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 
 ## Unreleased
 
-There are currently no changes outside the release candidate.
+### Changed
+
+- Split the minimum-Xcode 16 gate into an independent native-runtime job and a
+  five-way `fail-fast: false` UI matrix for the public-SHA external consumer,
+  Quick Start iPhone/iPad, and Host App iPhone/iPad. Every isolated runner
+  re-verifies the RootFS, XcodeGen, Xcode 16, and iOS 18 runtime through one
+  repository-owned composite action without transferring an unreviewed App or
+  DerivedData; each lane has a collision-free failure artifact. A runner-owned
+  Simulator that explicitly disappears from Xcode destinations is recreated
+  with the same runtime/device type for one bounded retry; caller-owned devices
+  and assertion failures are never retried. Coverage is unchanged while PR
+  wall-clock time no longer accumulates every UI smoke serially.
 
 ## 0.2.0 - Unreleased
 
@@ -73,13 +84,28 @@ There are currently no changes outside the release candidate.
   independent Simulators and `xcodebuild` invocations, retaining phase
   checkpoints, `.xcresult`, test output, and PocketRoot Simulator logs on
   failure while keeping a ten-minute hard limit per test. The system-file
-  round trip now waits within one 30-second window for either the local device
-  location or a restored Host folder. The shared UI runner restarts and retries
+  round trip now uses one 60-second state loop for the Host fixture, a local
+  location, or an interactive `Browse` transition instead of mistaking an early
+  navigation bar for readiness. If the picker is still on Recents, it taps the
+  `Browse` tab, which can enter the Xcode 16 accessibility tree late; a picker
+  already in the Host folder does not return until the fixture file is actually
+  visible. Fixture selection uses a verified current frame and retries once if
+  iOS 18.0 leaves the picker open after reporting a synthesized tap. The helper
+  returns an explicit success state so a failed navigation or selection ends
+  the test case without cascading taps and secondary failures. The PTY size
+  probe likewise refocuses and resends only once when the first synthesized
+  command's unique marker remains absent for 15 seconds; the final 30-second
+  assertion still exposes a real terminal-input or resize synchronization
+  failure. The shared
+  UI runner restarts and retries
   exactly once only when its own temporary Simulator test runner was not
   registered with FrontBoard; caller-supplied shared Simulators are not
   restarted, and assertion, timeout, and other build failures still fail
   immediately. If retry or restart fails, both attempt logs and available
   `.xcresult` bundles are retained.
+- The native Xcode 16 lane validates the real RootFS install before downloading
+  the multi-gigabyte Simulator runtime, preserving the disk headroom enforced
+  by the installer while UI lanes retain the shared one-step setup.
 
 ## 0.1.0 - 2026-07-31
 

@@ -1023,8 +1023,77 @@ class ReleaseComplianceTests < Minitest::Test
     assert_includes runner, "POCKETROOT_EXTERNAL_CONSUMER_REVISION"
     assert_includes runner,
       "POCKETROOT_EXTERNAL_CONSUMER_REPOSITORY_URL"
-    assert_includes workflow,
-      "Run public-SHA External Consumer UI acceptance"
+    assert_includes workflow, "suite: external-consumer"
+    assert_includes workflow, "./Scripts/run-external-consumer-ui-smoke.sh"
+  end
+
+  def test_minimum_xcode_ci_parallelizes_native_and_ui_coverage
+    workflow = REPOSITORY_ROOT.join(".github/workflows/ci.yml").binread
+    setup_action =
+      REPOSITORY_ROOT
+        .join(".github/actions/setup-minimum-xcode-16/action.yml")
+        .binread
+
+    assert_match(/^  minimum-xcode-16-runtime:$/, workflow)
+    assert_match(/^  minimum-xcode-16-ui:$/, workflow)
+    refute_match(/^  minimum-xcode-16:$/, workflow)
+    ui_job_header =
+      workflow.split(/^  minimum-xcode-16-ui:\n/, 2).fetch(1).lines.first(5).join
+    runtime_job =
+      workflow
+        .split(/^  minimum-xcode-16-runtime:\n/, 2)
+        .fetch(1)
+        .split(/^  minimum-xcode-16-ui:\n/, 2)
+        .first
+    assert_includes ui_job_header, "timeout-minutes: 60"
+    assert_includes workflow, "fail-fast: false"
+    assert_equal(
+      2,
+      workflow.scan("uses: ./.github/actions/setup-minimum-xcode-16").length
+    )
+    %w[
+      external-consumer
+      quick-start-iphone
+      quick-start-ipad
+      host-iphone
+      host-ipad
+    ].each do |suite|
+      assert_includes workflow, "suite: #{suite}"
+    end
+    assert_includes workflow, "./Scripts/run-runtime-smoke.sh"
+    assert_includes workflow, "./Scripts/run-external-consumer-ui-smoke.sh"
+    assert_includes workflow, "./Scripts/run-quick-start-ui-smoke.sh"
+    assert_includes workflow, "./Scripts/run-host-app-ui-smoke.sh"
+    assert_includes(
+      workflow,
+      "pocketroot-ui-failure-${{ matrix.suite }}-${{ github.run_id }}"
+    )
+
+    assert_includes setup_action, "/Applications/Xcode_16.0.app"
+    assert_includes setup_action, 'ROOTFS_BYTE_COUNT: "6581376"'
+    assert_includes(
+      setup_action,
+      'ROOTFS_SHA256: "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"'
+    )
+    assert_includes setup_action, 'XCODEGEN_VERSION: "2.46.0"'
+    assert_includes setup_action, "install-simulator-runtime:"
+    assert_includes(
+      setup_action,
+      "if: ${{ inputs.install-simulator-runtime == 'true' }}"
+    )
+    assert_includes setup_action, "xcodebuild -downloadPlatform iOS"
+    assert_includes setup_action, 'grep -F "iOS 18.0"'
+    assert_includes runtime_job, 'install-simulator-runtime: "false"'
+    assert_operator(
+      runtime_job.index("Validate real RootFS install with Xcode 16.0"),
+      :<,
+      runtime_job.index("Install iOS 18.0 Simulator runtime")
+    )
+    assert_operator(
+      runtime_job.index("Install iOS 18.0 Simulator runtime"),
+      :<,
+      runtime_job.index("Final-link runtime with Xcode 16.0")
+    )
   end
 
   def test_standalone_host_retains_runtime_across_scene_recreation
@@ -1135,7 +1204,30 @@ class ReleaseComplianceTests < Minitest::Test
       ui_test,
       '"FullDocumentManagerViewControllerNavigationBar"'
     )
-    assert_includes ui_test, "pickerLanding.waitForExistence(timeout: 30)"
+    assert_includes ui_test, "let pickerDeadline = Date().addingTimeInterval(60)"
+    assert_includes(
+      ui_test,
+      'XCTFail("document picker to expose a usable Host or local destination")'
+    )
+    assert_includes ui_test, "while Date() < pickerDeadline"
+    assert_includes ui_test, "if currentHostDocuments.exists {"
+    assert_includes ui_test, "if hostFixture.exists {"
+    assert_includes ui_test, "continue"
+    assert_includes ui_test, "var didTapBrowse = false"
+    assert_includes ui_test, 'XCTFail("document picker Browse to become hittable")'
+    assert_includes ui_test, "hostFixture.waitForExistence(timeout: 30)"
+    assert_includes ui_test, 'XCTFail("Host Documents fixture to become visible")'
+    assert_equal 3, ui_test.scan("guard openHostDocuments(in: app) else").length
+    assert_equal 2, ui_test.scan("guard importHostFixture(in: app) else").length
+    assert_includes ui_test, "private func importHostFixture("
+    assert_includes ui_test, "for _ in 0..<2"
+    assert_includes ui_test, "if imported.waitForExistence(timeout: 15)"
+    assert_includes(
+      ui_test,
+      'XCTFail("Host Documents fixture selection to import the guest file")'
+    )
+    refute_includes ui_test, "fixture.tap()"
+    refute_includes ui_test, "exported.tap()"
     assert_includes ui_test, "for _ in 0..<2"
     assert_includes ui_test, "hostDestination.waitForExistence(timeout: 10)"
     assert_includes ui_test, "openedHostDestination"
@@ -1147,11 +1239,29 @@ class ReleaseComplianceTests < Minitest::Test
       'NSPredicate(format: "label BEGINSWITH %@", "PocketRoot Host")'
     )
     assert_operator(
-      ui_test.index("pickerLanding.waitForExistence(timeout: 30)"),
+      ui_test.index("let pickerDeadline = Date().addingTimeInterval(60)"),
       :<,
-      ui_test.index("localLocation.waitForExistence(timeout: 30)")
+      ui_test.index("hostFixture.waitForExistence(timeout: 30)")
+    )
+    assert_operator(
+      ui_test.index("if currentHostDocuments.exists {"),
+      :<,
+      ui_test.index("if sidebarLocalLocation.exists {")
     )
     assert_includes ui_test, "testPTYLifecycleAndShutdown"
+    query_terminal_size = ui_test[
+      /private func queryTerminalSize\(.*?\n    \}\n\n    private enum WidthChangeDirection/m
+    ]
+    refute_nil query_terminal_size
+    assert_includes(
+      query_terminal_size,
+      %q{let command = "printf '\(marker)'; stty size\n"}
+    )
+    assert_includes query_terminal_size, "if !waitWithoutAssertion("
+    assert_includes query_terminal_size, "timeout: 15"
+    assert_includes query_terminal_size, "terminal.tap()"
+    assert_equal 2, query_terminal_size.scan("terminal.typeText(command)").length
+    assert_includes query_terminal_size, "guard wait("
     assert_includes ui_test, "dismissKeyboardOnboardingIfPresent(in: app)"
     assert_includes ui_test, "let interruptFrames = waitForInteractionFrames("
     assert_includes ui_test, "interruptFrames.elementFrame"
@@ -1182,8 +1292,10 @@ class ReleaseComplianceTests < Minitest::Test
     assert_includes generic_runner, "POCKETROOT_UI_SKIP_TESTING"
     assert_includes generic_runner, "POCKETROOT_UI_FAILURE_ARTIFACTS_DIR"
     assert_includes generic_runner, "POCKETROOT_UI_INFRASTRUCTURE_RETRY_LIMIT"
-    assert_includes generic_runner, "is_retryable_simulator_launch_failure"
+    assert_includes generic_runner, "retryable_simulator_failure_kind"
     assert_includes generic_runner, "is unknown to FrontBoard"
+    assert_includes generic_runner, "no available devices matched the request"
+    assert_includes generic_runner, "replacement_device"
     assert_includes generic_runner, '"$CREATED_DEVICE" == "true"'
     assert_includes generic_runner, "xcodebuild-test-attempt-1.log"
     assert_includes generic_runner, "-attempt-1.xcresult"

@@ -84,8 +84,9 @@ if ! grep -Fq -- 'POCKETROOT_KEEP_UI_RESULT' "$GENERIC_UI_RUNNER" \
   || ! grep -Fq -- 'POCKETROOT_UI_SKIP_TESTING' "$GENERIC_UI_RUNNER" \
   || ! grep -Fq -- 'POCKETROOT_UI_FAILURE_ARTIFACTS_DIR' "$GENERIC_UI_RUNNER" \
   || ! grep -Fq -- 'POCKETROOT_UI_INFRASTRUCTURE_RETRY_LIMIT' "$GENERIC_UI_RUNNER" \
-  || ! grep -Fq -- 'is_retryable_simulator_launch_failure' "$GENERIC_UI_RUNNER" \
+  || ! grep -Fq -- 'retryable_simulator_failure_kind' "$GENERIC_UI_RUNNER" \
   || ! grep -Fq -- "is unknown to FrontBoard" "$GENERIC_UI_RUNNER" \
+  || ! grep -Fq -- 'no available devices matched the request' "$GENERIC_UI_RUNNER" \
   || ! grep -Fq -- 'retrying once' "$GENERIC_UI_RUNNER" \
   || ! grep -Fq -- 'xcodebuild-test-attempt-1.log' "$GENERIC_UI_RUNNER" \
   || ! grep -Fq -- '-attempt-1.xcresult' "$GENERIC_UI_RUNNER" \
@@ -185,6 +186,11 @@ if [[ "${POCKETROOT_MOCK_XCODEBUILD_MODE:-retry}" == "retry" && "$calls" -eq 1 ]
     echo 'Application "com.example.UITests.xctrunner" is unknown to FrontBoard.'
     exit 65
 fi
+if [[ "${POCKETROOT_MOCK_XCODEBUILD_MODE:-retry}" == "missing-destination" && "$calls" -eq 1 ]]; then
+    echo "Unable to find a destination matching the provided destination specifier:"
+    echo "The requested device could not be found because no available devices matched the request."
+    exit 70
+fi
 if [[ "${POCKETROOT_MOCK_XCODEBUILD_MODE:-retry}" == "assertion" ]]; then
     echo "Testing failed: expected value did not match"
     exit 65
@@ -211,6 +217,32 @@ if [[ "$(cat "$GENERIC_RUNNER_XCODEBUILD_CALLS")" != "2" ]] \
   || ! grep -Fq -- 'retrying once' "$GENERIC_RUNNER_OUTPUT" \
   || ! grep -Fq -- 'simctl shutdown MOCK-UDID' "$GENERIC_RUNNER_XCRUN_CALLS"; then
     echo "Shared example UI runner did not bound and recover the FrontBoard launch retry." >&2
+    exit 1
+fi
+
+printf '0\n' > "$GENERIC_RUNNER_XCODEBUILD_CALLS"
+: > "$GENERIC_RUNNER_XCRUN_CALLS"
+: > "$GENERIC_RUNNER_BOOTSTATUS_CALLS"
+: > "$GENERIC_RUNNER_BOOT_CALLS"
+MISSING_DESTINATION_OUTPUT="$GENERIC_RUNNER_TEST_ROOT/missing-destination-output.txt"
+PATH="$GENERIC_RUNNER_MOCK_BIN:$PATH" \
+POCKETROOT_UI_APP_DIR="$GENERIC_RUNNER_APP" \
+POCKETROOT_UI_PROJECT_NAME="MockApp" \
+POCKETROOT_UI_SCHEME="MockApp" \
+POCKETROOT_UI_TEST_BUNDLE="MockAppUITests" \
+POCKETROOT_CLONED_SOURCE_PACKAGES_DIR="$GENERIC_RUNNER_TEST_ROOT/packages" \
+POCKETROOT_MOCK_XCODEBUILD_CALLS="$GENERIC_RUNNER_XCODEBUILD_CALLS" \
+POCKETROOT_MOCK_XCRUN_CALLS="$GENERIC_RUNNER_XCRUN_CALLS" \
+POCKETROOT_MOCK_BOOTSTATUS_CALLS="$GENERIC_RUNNER_BOOTSTATUS_CALLS" \
+POCKETROOT_MOCK_BOOT_CALLS="$GENERIC_RUNNER_BOOT_CALLS" \
+POCKETROOT_MOCK_XCODEBUILD_MODE="missing-destination" \
+  "$GENERIC_UI_RUNNER" "$GENERIC_RUNNER_ARCHIVE" \
+  > "$MISSING_DESTINATION_OUTPUT" 2>&1
+
+if [[ "$(cat "$GENERIC_RUNNER_XCODEBUILD_CALLS")" != "2" ]] \
+  || [[ "$(grep -Fc -- 'simctl create' "$GENERIC_RUNNER_XCRUN_CALLS")" != "2" ]] \
+  || ! grep -Fq -- 'destination disappeared' "$MISSING_DESTINATION_OUTPUT"; then
+    echo "Shared example UI runner did not recreate a disappeared temporary Simulator." >&2
     exit 1
 fi
 

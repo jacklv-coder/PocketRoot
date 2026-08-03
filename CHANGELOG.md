@@ -6,7 +6,15 @@ PocketRoot 的重要变化记录在这里，并从首个公开版本开始遵循
 
 ## Unreleased
 
-当前暂无未归入候选版本的变更。
+### Changed
+
+- 将最低 Xcode 16 门禁拆为独立 native runtime job 和五路 `fail-fast: false` UI
+  matrix，分别并行验证公开 SHA 外部消费者、Quick Start iPhone/iPad 与 Host App
+  iPhone/iPad。全部 job 复用仓库内 composite action，但各自在隔离 runner 上重新
+  校验 RootFS、XcodeGen、Xcode 16 与 iOS 18 runtime，不传递未审计 App 或 DerivedData；
+  每路失败诊断使用独立 artifact 名称。runner 自建 Simulator 明确从 Xcode destination
+  消失时可按相同 runtime/device type 重建并有界重试一次；调用方设备和断言失败不重试。
+  测试覆盖不减少，PR 墙钟时间不再由全部 UI smoke 串行累加。
 
 ## 0.2.0 - Unreleased
 
@@ -53,12 +61,21 @@ PocketRoot 的重要变化记录在这里，并从首个公开版本开始遵循
 - 将 Host App 的 Files/Workspace 与 PTY lifecycle UI smoke 拆分到独立模拟器和
   `xcodebuild` 调用；失败时记录阶段检查点，并保留 `.xcresult`、测试输出和
   PocketRoot 模拟器日志供 CI 下载分析，同时维持每项测试 10 分钟硬上限；
-  系统文件 round-trip 测试也会在同一个 30 秒窗口内等待本机位置或已恢复的
-  Host 目录，兼容文件选择器保存上次目录及慢速模拟器的合法状态。通用 UI runner
+  系统文件 round-trip 测试也会在一个 60 秒状态循环中等待 Host fixture、本机位置
+  或可交互的 `Browse/浏览`，而不会把提前出现的 picker 导航栏误判为就绪；
+  当 picker 停在 Recents 时，点击可能延迟进入 accessibility tree 的 Browse，
+  而已经位于 Host 目录时会等到 fixture 文件真正可见才返回。fixture 选择使用当前
+  已验证 frame；若 iOS 18.0 在报告合成 tap 后仍保留 picker，则有界重试一次。辅助函数
+  返回明确的成功状态，导航或选择失败后立即停止当前用例，避免后续点击产生连锁误报。
+  PTY 尺寸探针同样只在首条合成输入的唯一标记 15 秒内未出现时重新聚焦并补发一次，
+  最终 30 秒断言仍会暴露真实的终端输入或尺寸同步故障。
+  通用 UI runner
   只对 test runner 未注册到 FrontBoard 的模拟器基础设施错误重启自己创建的临时设备
   并重试一次，调用方指定的共享 Simulator 不会被重启；测试
   断言、超时和其他构建错误仍立即失败，重试或重启失败时同时保留首次与最终日志及
   可用的两次 `.xcresult`。
+- Xcode 16 native lane 会先验证真实 RootFS 安装，再下载数 GB 的 Simulator runtime，
+  为安装器的磁盘余量门禁保留空间；UI lanes 继续使用统一的一步 setup。
 
 ## 0.1.0 - 2026-07-31
 

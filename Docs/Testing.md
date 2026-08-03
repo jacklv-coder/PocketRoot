@@ -560,9 +560,15 @@ RootFS。这只是兼容性证据，不授权 RootFS 分发，也不改变正式
     SPDX 2.3 SBOM，要求无 private framework、private entitlement、JIT entitlement、
     `MAP_JIT` 或无效签名信号，再用同一固定 schema 校验；App 和证据均不上传。
 
-最低工具链 job 另外固定选择 Xcode 16.0 / iOS 18.0 SDK，验证真实 RootFS install、
-安装 iOS 18.0 Simulator runtime、完成 Simulator/device final-link，执行 17 项原生
-smoke，并分别在 iPhone 16 与 iPad（第 10 代）Simulator 运行最小 Quick Start 的
+最低工具链门禁拆为一个 native runtime job 和五路并行 UI matrix job。每个 job 都通过
+仓库内固定的 composite action 独立选择 Xcode 16.0 / iOS 18.0 SDK、校验并取得同一
+RootFS、安装同一 XcodeGen，并取得同一 iOS 18.0 Simulator runtime；job 之间不传递
+未审计的 App、RootFS 或 DerivedData。Native job 在下载数 GB 的 Simulator runtime
+之前验证真实 RootFS install，为安装器的磁盘余量门禁保留空间，然后完成
+Simulator/device final-link 并执行 17 项原生 smoke。UI matrix 设置
+`fail-fast: false`，分别运行公开 SHA 外部消费者、iPhone/iPad Quick Start 和
+iPhone/iPad Host App，因此单路失败不会取消其他证据；每路使用不冲突的失败制品名。
+这些 UI job 在 iPhone 16 与 iPad（第 10 代）Simulator 运行最小 Quick Start 的
 Files/Terminal 冷启动与 PTY-to-Files 文件闭环，以及 Host App 的 PTY、Files、
 Workspace、系统 document picker 导入、share sheet 保存、guest 删除后再次导入并
 复验内容的完整 UI 闭环。测试 fixture 只在显式 `-PocketRootUITesting`
@@ -573,9 +579,10 @@ Workspace、系统 document picker 导入、share sheet 保存、guest 删除后
 `POCKETROOT_KEEP_UI_RESULT=1` 可保留临时 DerivedData 与 `.xcresult`。两个 wrapper
 复用 `run-ios-example-ui-smoke.sh` 的相同 RootFS、超时、xcresult 和安全清理边界。
 当 Xcode 明确报告 Simulator test runner 未注册到 FrontBoard 时，通用 runner 会重启
-同一个由 runner 创建的临时 Simulator 并且只重试一次；调用方通过
-`POCKETROOT_UI_SMOKE_DEVICE` 提供的共享 Simulator 不会被自动关闭或重启。断言失败、
-测试超时和其他构建错误不会重试。
+同一个由 runner 创建的临时 Simulator；当 Xcode 明确报告目标设备已从可用 destination
+消失时，会以相同 runtime 与 device type 重建该临时 Simulator。两种基础设施恢复合计
+最多重试一次；调用方通过 `POCKETROOT_UI_SMOKE_DEVICE` 提供的共享 Simulator 不会被
+自动关闭、重启或重建。断言失败、测试超时和其他构建错误不会重试。
 可设置 `POCKETROOT_UI_INFRASTRUCTURE_RETRY_LIMIT=0` 关闭该恢复路径。若第二次仍失败，
 失败 artifact 会同时包含首次/最终测试日志与可用的两次 `.xcresult`；即使重启本身
 失败，也保留首次 `xcodebuild` 的诊断结果。

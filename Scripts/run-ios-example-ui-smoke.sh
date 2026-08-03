@@ -31,6 +31,8 @@ FIRST_ATTEMPT_RESULT_BUNDLE_PATH="$DERIVED_DATA_ROOT/$TEST_BUNDLE-attempt-1.xcre
 RETRY_SHUTDOWN_EXIT_CODE="<not-attempted>"
 RETRY_RESTART_EXIT_CODE="<not-attempted>"
 RETRY_RESTART_FAILURE_STAGE="<not-attempted>"
+RETRY_FAILURE_KIND="<none>"
+FIRST_ATTEMPT_DEVICE_UDID="<not-attempted>"
 
 cleanup() {
     if [[ "$CREATED_DEVICE" == "true" &&
@@ -130,28 +132,66 @@ run_ui_tests() {
     return "${PIPESTATUS[0]}"
 }
 
-is_retryable_simulator_launch_failure() {
-    grep -Fq 'Simulator device failed to launch' "$TEST_LOG_PATH" &&
-      grep -Fq 'is unknown to FrontBoard' "$TEST_LOG_PATH"
+retryable_simulator_failure_kind() {
+    if grep -Fq 'Simulator device failed to launch' "$TEST_LOG_PATH" &&
+       grep -Fq 'is unknown to FrontBoard' "$TEST_LOG_PATH"; then
+        printf 'frontboard-launch\n'
+        return 0
+    fi
+    if grep -Fq 'Unable to find a destination matching the provided destination specifier' \
+         "$TEST_LOG_PATH" &&
+       grep -Fq 'no available devices matched the request' "$TEST_LOG_PATH"; then
+        printf 'missing-destination\n'
+        return 0
+    fi
+    return 1
 }
 
 set +e
 run_ui_tests
 test_exit_code="$?"
 set -e
+if [[ "$test_exit_code" -ne 0 ]]; then
+    RETRY_FAILURE_KIND="$(retryable_simulator_failure_kind || true)"
+fi
 
 if [[ "$test_exit_code" -ne 0 &&
       "$INFRASTRUCTURE_RETRY_LIMIT" -eq 1 &&
-      "$CREATED_DEVICE" == "true" ]] &&
-   is_retryable_simulator_launch_failure; then
+      "$CREATED_DEVICE" == "true" &&
+      -n "$RETRY_FAILURE_KIND" ]]; then
+    FIRST_ATTEMPT_DEVICE_UDID="$DEVICE_UDID"
     mv "$TEST_LOG_PATH" "$FIRST_ATTEMPT_LOG_PATH"
     if [[ -d "$RESULT_BUNDLE_PATH" ]]; then
         mv "$RESULT_BUNDLE_PATH" "$FIRST_ATTEMPT_RESULT_BUNDLE_PATH"
     fi
-    echo "$ARTIFACT_LABEL UI test runner was not registered with FrontBoard; restarting the Simulator and retrying once." >&2
+    if [[ "$RETRY_FAILURE_KIND" == "missing-destination" ]]; then
+        echo "$ARTIFACT_LABEL Simulator destination disappeared; recreating the runner-owned Simulator and retrying once." >&2
+    else
+        echo "$ARTIFACT_LABEL UI test runner was not registered with FrontBoard; restarting the Simulator and retrying once." >&2
+    fi
     set +e
     xcrun simctl shutdown "$DEVICE_UDID" >/dev/null 2>&1
     RETRY_SHUTDOWN_EXIT_CODE="$?"
+    if [[ "$RETRY_FAILURE_KIND" == "missing-destination" ]]; then
+        xcrun simctl delete "$DEVICE_UDID" >/dev/null 2>&1
+        replacement_device="$(xcrun simctl create \
+          "$SIMULATOR_NAME" \
+          "$SIMULATOR_DEVICE_TYPE" \
+          "$RUNTIME_ID")"
+        RETRY_RESTART_EXIT_CODE="$?"
+        if [[ "$RETRY_RESTART_EXIT_CODE" -eq 0 &&
+              -n "$replacement_device" ]]; then
+            DEVICE_UDID="$replacement_device"
+        else
+            RETRY_RESTART_FAILURE_STAGE="create"
+            if [[ "$RETRY_RESTART_EXIT_CODE" -eq 0 ]]; then
+                RETRY_RESTART_EXIT_CODE=1
+            fi
+        fi
+    else
+        RETRY_RESTART_EXIT_CODE=0
+    fi
+    if [[ "$RETRY_RESTART_EXIT_CODE" -eq 0 ]]; then
     xcrun simctl boot "$DEVICE_UDID" >/dev/null 2>&1
     RETRY_RESTART_EXIT_CODE="$?"
     if [[ "$RETRY_RESTART_EXIT_CODE" -ne 0 ]]; then
@@ -162,6 +202,7 @@ if [[ "$test_exit_code" -ne 0 &&
         if [[ "$RETRY_RESTART_EXIT_CODE" -ne 0 ]]; then
             RETRY_RESTART_FAILURE_STAGE="bootstatus"
         fi
+    fi
     fi
     set -e
     if [[ "$RETRY_RESTART_EXIT_CODE" -eq 0 ]]; then
@@ -203,6 +244,8 @@ if [[ "$test_exit_code" -ne 0 ]]; then
             echo "default_allowance=$DEFAULT_TEST_ALLOWANCE"
             echo "maximum_allowance=$MAXIMUM_TEST_ALLOWANCE"
             echo "infrastructure_retry_limit=$INFRASTRUCTURE_RETRY_LIMIT"
+            echo "retry_failure_kind=${RETRY_FAILURE_KIND:-<none>}"
+            echo "first_attempt_device=$FIRST_ATTEMPT_DEVICE_UDID"
             echo "retry_shutdown_exit_code=$RETRY_SHUTDOWN_EXIT_CODE"
             echo "retry_restart_exit_code=$RETRY_RESTART_EXIT_CODE"
             echo "retry_restart_failure_stage=$RETRY_RESTART_FAILURE_STAGE"
