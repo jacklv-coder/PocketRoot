@@ -1037,6 +1037,9 @@ class ReleaseComplianceTests < Minitest::Test
     assert_match(/^  minimum-xcode-16-runtime:$/, workflow)
     assert_match(/^  minimum-xcode-16-ui:$/, workflow)
     refute_match(/^  minimum-xcode-16:$/, workflow)
+    ui_job_header =
+      workflow.split(/^  minimum-xcode-16-ui:\n/, 2).fetch(1).lines.first(5).join
+    assert_includes ui_job_header, "timeout-minutes: 60"
     assert_includes workflow, "fail-fast: false"
     assert_equal(
       2,

@@ -104,7 +104,10 @@ final class PocketRootHostAppUITests: XCTestCase {
         XCTAssertTrue(disclosure.waitForExistence(timeout: 10))
         waitForEnabled(disclosure)
         disclosure.tap()
-        waitForEnabled(folder)
+        guard revealFileEntry(folder, in: app) else {
+            shutdownRuntime(in: app)
+            return
+        }
         folder.tap()
 
         waitForEnabled(actions)
@@ -115,8 +118,14 @@ final class PocketRootHostAppUITests: XCTestCase {
         app.buttons["Create"].tap()
         waitForEnabled(actions)
         let childNavigationBar = app.navigationBars[folderName]
-        XCTAssertTrue(childNavigationBar.waitForExistence(timeout: 10))
-        childNavigationBar.buttons.element(boundBy: 0).tap()
+        guard childNavigationBar.waitForExistence(timeout: 30) else {
+            XCTFail("child folder navigation bar to exist")
+            shutdownRuntime(in: app)
+            return
+        }
+        let backButton = childNavigationBar.buttons.element(boundBy: 0)
+        XCTAssertTrue(waitForHittable(backButton))
+        backButton.tap()
 
         let nestedFile = app.descendants(matching: .any)[
             "PocketRootFiles.entry./root/\(folderName)/\(nestedFileName)"

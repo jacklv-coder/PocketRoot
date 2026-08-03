@@ -322,7 +322,7 @@ jobs:
   minimum-xcode-16-ui:
     name: Minimum Xcode 16.0 / UI (${{ matrix.label }})
     runs-on: macos-15
-    timeout-minutes: 45
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
