@@ -990,7 +990,15 @@ final class PocketRootHostAppUITests: XCTestCase {
                 hostDocumentLabels + localLocationLabels
             )
         ).firstMatch
-        XCTAssertTrue(pickerLanding.waitForExistence(timeout: 30))
+        // On the minimum Xcode 16 runner, the third presentation can take
+        // almost a minute to restore the picker after the preceding share
+        // sheet and App relaunch. The picker did eventually expose the local
+        // location and the round trip completed, so keep one bounded wait
+        // instead of recording a premature failure and continuing to tap.
+        guard pickerLanding.waitForExistence(timeout: 60) else {
+            XCTFail("document picker to expose a local or host destination")
+            return
+        }
         if currentHostDocuments.exists {
             return
         }

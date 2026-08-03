@@ -1182,7 +1182,11 @@ class ReleaseComplianceTests < Minitest::Test
       ui_test,
       '"FullDocumentManagerViewControllerNavigationBar"'
     )
-    assert_includes ui_test, "pickerLanding.waitForExistence(timeout: 30)"
+    assert_includes ui_test, "pickerLanding.waitForExistence(timeout: 60)"
+    assert_includes(
+      ui_test,
+      'XCTFail("document picker to expose a local or host destination")'
+    )
     assert_includes ui_test, "for _ in 0..<2"
     assert_includes ui_test, "hostDestination.waitForExistence(timeout: 10)"
     assert_includes ui_test, "openedHostDestination"
@@ -1194,7 +1198,7 @@ class ReleaseComplianceTests < Minitest::Test
       'NSPredicate(format: "label BEGINSWITH %@", "PocketRoot Host")'
     )
     assert_operator(
-      ui_test.index("pickerLanding.waitForExistence(timeout: 30)"),
+      ui_test.index("pickerLanding.waitForExistence(timeout: 60)"),
       :<,
       ui_test.index("localLocation.waitForExistence(timeout: 30)")
     )

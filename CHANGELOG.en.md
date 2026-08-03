@@ -84,8 +84,12 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   independent Simulators and `xcodebuild` invocations, retaining phase
   checkpoints, `.xcresult`, test output, and PocketRoot Simulator logs on
   failure while keeping a ten-minute hard limit per test. The system-file
-  round trip now waits within one 30-second window for either the local device
-  location or a restored Host folder. The shared UI runner restarts and retries
+  round trip now waits within one 60-second window for either the local device
+  location or a restored Host folder, covering the nearly minute-long system
+  picker recovery observed after a preceding share sheet and App relaunch. A
+  failed wait stops the helper immediately instead of recording a premature
+  assertion and then completing the round trip in that same picker. The shared
+  UI runner restarts and retries
   exactly once only when its own temporary Simulator test runner was not
   registered with FrontBoard; caller-supplied shared Simulators are not
   restarted, and assertion, timeout, and other build failures still fail
