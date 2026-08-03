@@ -218,16 +218,13 @@ final class PocketRootHostAppUITests: XCTestCase {
         guard openHostDocuments(in: app) else {
             return
         }
-        let fixture = app.cells[
-            "\(Self.systemImportFixtureDisplayName), txt"
-        ]
-        XCTAssertTrue(fixture.waitForExistence(timeout: 30))
-        fixture.tap()
+        guard importHostFixture(in: app) else {
+            return
+        }
 
         let imported = app.descendants(matching: .any)[
             "PocketRootFiles.entry./root/\(Self.systemImportFixtureName)"
         ]
-        XCTAssertTrue(imported.waitForExistence(timeout: 30))
         guard revealFileEntry(imported, in: app) else {
             return
         }
@@ -308,16 +305,13 @@ final class PocketRootHostAppUITests: XCTestCase {
         guard openHostDocuments(in: app) else {
             return
         }
-        let exported = app.cells[
-            "\(Self.systemImportFixtureDisplayName), txt"
-        ]
-        XCTAssertTrue(exported.waitForExistence(timeout: 30))
-        exported.tap()
+        guard importHostFixture(in: app) else {
+            return
+        }
 
         let reimported = app.descendants(matching: .any)[
             "PocketRootFiles.entry./root/\(Self.systemImportFixtureName)"
         ]
-        XCTAssertTrue(reimported.waitForExistence(timeout: 30))
         guard revealFileEntry(reimported, in: app) else {
             return
         }
@@ -1084,6 +1078,41 @@ final class PocketRootHostAppUITests: XCTestCase {
             return false
         }
         return true
+    }
+
+    private func importHostFixture(in app: XCUIApplication) -> Bool {
+        let fixture = app.cells[
+            "\(Self.systemImportFixtureDisplayName), txt"
+        ]
+        let imported = app.descendants(matching: .any)[
+            "PocketRootFiles.entry./root/\(Self.systemImportFixtureName)"
+        ]
+
+        // Xcode 16 can synthesize a successful tap while the iOS 18.0
+        // document picker keeps the file cell open and never completes the
+        // selection. Re-query the current frame and retry once only while the
+        // guest file is still absent.
+        for _ in 0..<2 {
+            guard let frames = waitForInteractionFrames(
+                of: fixture,
+                in: app,
+                timeout: 10
+            ) else {
+                XCTFail("Host Documents fixture to expose an interaction frame")
+                return false
+            }
+            tapFrame(
+                frames.elementFrame,
+                in: frames.appFrame,
+                using: app
+            )
+            if imported.waitForExistence(timeout: 15) {
+                return true
+            }
+        }
+
+        XCTFail("Host Documents fixture selection to import the guest file")
+        return false
     }
 
     private func dismissShareSheetIfNeeded(

@@ -562,8 +562,9 @@ RootFS。这只是兼容性证据，不授权 RootFS 分发，也不改变正式
 
 最低工具链门禁拆为一个 native runtime job 和五路并行 UI matrix job。每个 job 都通过
 仓库内固定的 composite action 独立选择 Xcode 16.0 / iOS 18.0 SDK、校验并取得同一
-RootFS、安装同一 XcodeGen 与 iOS 18.0 Simulator runtime；job 之间不传递未审计的
-App、RootFS 或 DerivedData。Native job 验证真实 RootFS install、完成
+RootFS、安装同一 XcodeGen，并取得同一 iOS 18.0 Simulator runtime；job 之间不传递
+未审计的 App、RootFS 或 DerivedData。Native job 在下载数 GB 的 Simulator runtime
+之前验证真实 RootFS install，为安装器的磁盘余量门禁保留空间，然后完成
 Simulator/device final-link 并执行 17 项原生 smoke。UI matrix 设置
 `fail-fast: false`，分别运行公开 SHA 外部消费者、iPhone/iPad Quick Start 和
 iPhone/iPad Host App，因此单路失败不会取消其他证据；每路使用不冲突的失败制品名。

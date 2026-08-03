@@ -138,7 +138,7 @@ retryable_simulator_failure_kind() {
         printf 'frontboard-launch\n'
         return 0
     fi
-    if grep -Fq 'Unable to find a device matching the provided destination specifier' \
+    if grep -Fq 'Unable to find a destination matching the provided destination specifier' \
          "$TEST_LOG_PATH" &&
        grep -Fq 'no available devices matched the request' "$TEST_LOG_PATH"; then
         printf 'missing-destination\n'

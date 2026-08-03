@@ -502,10 +502,12 @@ uploads neither the App nor scan evidence.
 The minimum-toolchain gate is split into one native-runtime job and a five-way
 parallel UI matrix. Every job independently uses the repository-owned
 composite action to select Xcode 16.0 / iOS 18.0 SDK, verify and obtain the
-same RootFS, and install the same XcodeGen and iOS 18.0 Simulator runtime. Jobs
-do not transfer an unreviewed App, RootFS, or DerivedData between runners. The
-native job validates real RootFS installation, final-links Simulator/device
-Apps, and runs the 17-check native smoke. The `fail-fast: false` UI matrix runs
+same RootFS, install the same XcodeGen, and obtain the same iOS 18.0 Simulator
+runtime. Jobs do not transfer an unreviewed App, RootFS, or DerivedData between
+runners. The native job validates real RootFS installation before downloading
+the multi-gigabyte Simulator runtime, preserving the installer's required disk
+headroom, then final-links Simulator/device Apps and runs the 17-check native
+smoke. The `fail-fast: false` UI matrix runs
 the public-SHA external consumer, iPhone/iPad Quick Start, and iPhone/iPad Host
 App independently, so one failure does not cancel the remaining evidence and
 each lane has a collision-free diagnostic artifact name. These lanes execute

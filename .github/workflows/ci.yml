@@ -302,11 +302,21 @@ jobs:
 
       - name: Set up minimum Xcode 16 environment
         uses: ./.github/actions/setup-minimum-xcode-16
+        with:
+          install-simulator-runtime: "false"
 
       - name: Validate real RootFS install with Xcode 16.0
         run: |
           swift test \
             --filter testPinnedReleaseArchiveWhenProvidedByEnvironment
+
+      - name: Install iOS 18.0 Simulator runtime
+        run: |
+          xcrun simctl list >/dev/null
+          xcodebuild -downloadPlatform iOS
+          xcrun simctl list runtimes available
+          xcrun simctl list runtimes available \
+            | grep -F "iOS 18.0"
 
       - name: Final-link runtime with Xcode 16.0
         run: ./Scripts/build-runtime-spike.sh

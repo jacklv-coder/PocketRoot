@@ -64,12 +64,15 @@ PocketRoot 的重要变化记录在这里，并从首个公开版本开始遵循
   系统文件 round-trip 测试也会在一个 60 秒状态循环中等待 Host fixture、本机位置
   或可交互的 `Browse/浏览`，而不会把提前出现的 picker 导航栏误判为就绪；
   当 picker 停在 Recents 时，点击可能延迟进入 accessibility tree 的 Browse，
-  而已经位于 Host 目录时会等到 fixture 文件真正可见才返回。辅助函数返回
-  明确的成功状态，失败后立即停止当前用例，避免后续点击产生连锁误报。通用 UI runner
+  而已经位于 Host 目录时会等到 fixture 文件真正可见才返回。fixture 选择使用当前
+  已验证 frame；若 iOS 18.0 在报告合成 tap 后仍保留 picker，则有界重试一次。辅助函数
+  返回明确的成功状态，导航或选择失败后立即停止当前用例，避免后续点击产生连锁误报。
+  通用 UI runner
   只对 test runner 未注册到 FrontBoard 的模拟器基础设施错误重启自己创建的临时设备
   并重试一次，调用方指定的共享 Simulator 不会被重启；测试
   断言、超时和其他构建错误仍立即失败，重试或重启失败时同时保留首次与最终日志及
-  可用的两次 `.xcresult`。
+- Xcode 16 native lane 会先验证真实 RootFS 安装，再下载数 GB 的 Simulator runtime，
+  为安装器的磁盘余量门禁保留空间；UI lanes 继续使用统一的一步 setup。
 
 ## 0.1.0 - 2026-07-31
 

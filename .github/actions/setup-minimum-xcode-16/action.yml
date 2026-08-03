@@ -1,6 +1,12 @@
 name: Set up minimum Xcode 16 environment
 description: Select Xcode 16.0 and install the pinned RootFS, XcodeGen, and iOS 18 Simulator runtime.
 
+inputs:
+  install-simulator-runtime:
+    description: Install and verify the iOS 18.0 Simulator runtime during setup.
+    required: false
+    default: "true"
+
 runs:
   using: composite
   steps:
@@ -55,6 +61,7 @@ runs:
         echo "$install_root/xcodegen/bin" >> "$GITHUB_PATH"
 
     - name: Install iOS 18.0 Simulator runtime
+      if: ${{ inputs.install-simulator-runtime == 'true' }}
       shell: bash
       run: |
         xcrun simctl list >/dev/null

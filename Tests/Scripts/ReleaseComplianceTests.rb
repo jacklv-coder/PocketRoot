@@ -1039,6 +1039,12 @@ class ReleaseComplianceTests < Minitest::Test
     refute_match(/^  minimum-xcode-16:$/, workflow)
     ui_job_header =
       workflow.split(/^  minimum-xcode-16-ui:\n/, 2).fetch(1).lines.first(5).join
+    runtime_job =
+      workflow
+        .split(/^  minimum-xcode-16-runtime:\n/, 2)
+        .fetch(1)
+        .split(/^  minimum-xcode-16-ui:\n/, 2)
+        .first
     assert_includes ui_job_header, "timeout-minutes: 60"
     assert_includes workflow, "fail-fast: false"
     assert_equal(
@@ -1070,8 +1076,24 @@ class ReleaseComplianceTests < Minitest::Test
       'ROOTFS_SHA256: "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"'
     )
     assert_includes setup_action, 'XCODEGEN_VERSION: "2.46.0"'
+    assert_includes setup_action, "install-simulator-runtime:"
+    assert_includes(
+      setup_action,
+      "if: ${{ inputs.install-simulator-runtime == 'true' }}"
+    )
     assert_includes setup_action, "xcodebuild -downloadPlatform iOS"
     assert_includes setup_action, 'grep -F "iOS 18.0"'
+    assert_includes runtime_job, 'install-simulator-runtime: "false"'
+    assert_operator(
+      runtime_job.index("Validate real RootFS install with Xcode 16.0"),
+      :<,
+      runtime_job.index("Install iOS 18.0 Simulator runtime")
+    )
+    assert_operator(
+      runtime_job.index("Install iOS 18.0 Simulator runtime"),
+      :<,
+      runtime_job.index("Final-link runtime with Xcode 16.0")
+    )
   end
 
   def test_standalone_host_retains_runtime_across_scene_recreation
@@ -1196,6 +1218,16 @@ class ReleaseComplianceTests < Minitest::Test
     assert_includes ui_test, "hostFixture.waitForExistence(timeout: 30)"
     assert_includes ui_test, 'XCTFail("Host Documents fixture to become visible")'
     assert_equal 3, ui_test.scan("guard openHostDocuments(in: app) else").length
+    assert_equal 2, ui_test.scan("guard importHostFixture(in: app) else").length
+    assert_includes ui_test, "private func importHostFixture("
+    assert_includes ui_test, "for _ in 0..<2"
+    assert_includes ui_test, "if imported.waitForExistence(timeout: 15)"
+    assert_includes(
+      ui_test,
+      'XCTFail("Host Documents fixture selection to import the guest file")'
+    )
+    refute_includes ui_test, "fixture.tap()"
+    refute_includes ui_test, "exported.tap()"
     assert_includes ui_test, "for _ in 0..<2"
     assert_includes ui_test, "hostDestination.waitForExistence(timeout: 10)"
     assert_includes ui_test, "openedHostDestination"

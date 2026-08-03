@@ -187,7 +187,7 @@ if [[ "${POCKETROOT_MOCK_XCODEBUILD_MODE:-retry}" == "retry" && "$calls" -eq 1 ]
     exit 65
 fi
 if [[ "${POCKETROOT_MOCK_XCODEBUILD_MODE:-retry}" == "missing-destination" && "$calls" -eq 1 ]]; then
-    echo "Unable to find a device matching the provided destination specifier:"
+    echo "Unable to find a destination matching the provided destination specifier:"
     echo "The requested device could not be found because no available devices matched the request."
     exit 70
 fi
