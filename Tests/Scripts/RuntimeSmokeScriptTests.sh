@@ -645,14 +645,23 @@ if ! grep -Fq -- 'POCKETROOT_SMOKE_MEMORY_WARNING must be 0 or 1.' "$DEVICE_RUNN
     exit 1
 fi
 
-if ! grep -Fq -- 'POCKETROOT_SMOKE_LONG_WORKLOAD must be 0 or 1.' "$DEVICE_RUNNER" \
-  || ! grep -Fq -- 'Long-workload smoke cannot be combined with another optional mode.' "$DEVICE_RUNNER" \
-  || ! grep -Fq -- '"POCKETROOT_SMOKE_LONG_WORKLOAD":"1"' "$DEVICE_RUNNER" \
-  || ! grep -Fq -- 'longWorkloadIterationCount = 90' "$SMOKE_APP" \
-  || ! grep -Fq -- 'running-long-workload-check' "$SMOKE_APP" \
-  || ! grep -Fq -- 'name: "long-workload"' "$SMOKE_APP" \
+if ! grep -Fq -- 'POCKETROOT_SMOKE_STABILITY must be 0 or 1.' "$SIMULATOR_RUNNER" \
+  || ! grep -Fq -- 'SIMCTL_CHILD_POCKETROOT_SMOKE_STABILITY=' "$SIMULATOR_RUNNER" \
+  || ! grep -Fq -- 'POCKETROOT_SMOKE_STABILITY must be 0 or 1.' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- 'Stability smoke cannot be combined with another optional mode.' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- 'STABILITY_LAUNCH_ENVIRONMENT=' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- 'POCKETROOT_SMOKE_LONG_WORKLOAD:-0' "$DEVICE_RUNNER" \
+  || ! grep -Fq -- 'defaultStabilityIterationCount = 90' "$SMOKE_APP" \
+  || ! grep -Fq -- 'running-stability-workload-check' "$SMOKE_APP" \
+  || ! grep -Fq -- 'name: "stability-workload"' "$SMOKE_APP" \
+  || ! grep -Fq -- 'system.makeSession(' "$SMOKE_APP" \
+  || ! grep -Fq -- 'retainedOutput(sinceTotalByteCount byteCount: Int)' "$SMOKE_APP" \
+  || ! grep -Fq -- 'validateExactStabilityPayload(' "$SMOKE_APP" \
+  || ! grep -Fq -- 'payload.count == stabilityStreamByteCount' "$SMOKE_APP" \
+  || ! grep -Fq -- 'payload.allSatisfy { $0 == 0 }' "$SMOKE_APP" \
+  || ! grep -Fq -- 'POCKETROOT_STABILITY_RECOVERED' "$SMOKE_APP" \
   || ! grep -Fq -- 'PocketRootFileBrowser(executor: system)' "$SMOKE_APP"; then
-    echo "Physical-device smoke does not gate the bounded long workload." >&2
+    echo "Native smoke does not gate the configurable persistent-PTY stability workload." >&2
     exit 1
 fi
 
@@ -681,7 +690,10 @@ fi
 
 if ! grep -Fq -- 'maximumPeakResidentBytes: UInt64 = 256 * 1_024 * 1_024' "$SMOKE_APP" \
   || ! grep -Fq -- 'getrusage(RUSAGE_SELF, &usage)' "$SMOKE_APP" \
-  || ! grep -Fq -- 'peakResidentBytes <= maximumPeakResidentBytes' "$SMOKE_APP"; then
+  || ! grep -Fq -- 'peakResidentBytes <= maximumPeakResidentBytes' "$SMOKE_APP" \
+  || ! grep -Fq -- 'task_flavor_t(TASK_VM_INFO)' "$SMOKE_APP" \
+  || ! grep -Fq -- 'maximumStabilityFootprintGrowthBytes' "$SMOKE_APP" \
+  || ! grep -Fq -- 'footprintGrowthBytes <= maximumStabilityFootprintGrowthBytes' "$SMOKE_APP"; then
     echo "Native smoke does not enforce the lifecycle peak-memory gate." >&2
     exit 1
 fi

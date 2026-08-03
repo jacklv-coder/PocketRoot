@@ -42,12 +42,16 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   Jack iPhone / iOS 26.6, including BusyBox `top`, Ctrl-C,
   background/foreground, rotation resize, PTY reopen, persistent Files preview,
   and ordered shutdown.
-- Added a mutually exclusive three-minute signed physical-device workload
-  smoke: 90 command/file write-read cycles, a 64 KiB binary-output check every
-  tenth cycle, complete marker verification through the Files API, shutdown,
-  and the 256 MiB peak-memory gate. Jack iPhone passed at an 84.3 MiB peak.
-  This bounded baseline is not real storage-pressure, jetsam, power-cut, or
-  sustained-background-execution evidence.
+- Upgraded the three-minute signed-device workload into a configurable
+  Simulator/physical stability gate. One PTY stays open for 20...600 cycles,
+  streams a uniquely delimited 64 KiB zero-byte payload every tenth cycle,
+  verifies its exact length and content, and is cross-checked through one-shot
+  commands and Files. It must survive a midway stdout-limit failure. The
+  collector retains only its latest 1 MiB, post-warm-up `phys_footprint` growth
+  is capped at 64 MiB, and samples/lifecycle peak remain capped at 256 MiB. The
+  minimum-toolchain CI runs a 30×250-ms path; the old variable remains an alias.
+  This bounded baseline is not real pressure, jetsam, power-cut, or sustained
+  background-execution evidence.
 - The Host App iPad system-file round-trip UI smoke no longer reads
   `ActivityListView.frame` after the share sheet may have disappeared. It now
   takes one fallible snapshot and dismisses only through an app-corner point

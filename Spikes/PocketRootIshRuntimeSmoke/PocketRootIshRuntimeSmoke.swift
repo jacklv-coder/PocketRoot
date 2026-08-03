@@ -166,9 +166,10 @@ private struct PocketRootSmokeFailure: LocalizedError {
 }
 
 private actor PocketRootSmokePTYCollector {
-    private static let maximumBytes = 1 * 1_024 * 1_024
+    private static let maximumRetainedBytes = 1 * 1_024 * 1_024
 
     private var output = Data()
+    private var consumedByteCount = 0
     private var failure: String?
 
     func consume(_ event: PocketRootSessionEvent) {
@@ -176,10 +177,15 @@ private actor PocketRootSmokePTYCollector {
         case .started, .exited:
             break
         case .standardOutput(let data), .standardError(let data):
-            let availableBytes = max(0, Self.maximumBytes - output.count)
-            output.append(data.prefix(availableBytes))
-            if data.count > availableBytes {
-                failure = "PTY smoke output exceeded one MiB."
+            consumedByteCount += data.count
+            if data.count >= Self.maximumRetainedBytes {
+                output = Data(data.suffix(Self.maximumRetainedBytes))
+            } else {
+                output.append(data)
+                let excessByteCount = output.count - Self.maximumRetainedBytes
+                if excessByteCount > 0 {
+                    output.removeFirst(excessByteCount)
+                }
             }
         case .failed(let message):
             failure = message
@@ -212,6 +218,31 @@ private actor PocketRootSmokePTYCollector {
         }
         return String(decoding: output, as: UTF8.self)
     }
+
+    func totalByteCount() throws -> Int {
+        if let failure {
+            throw PocketRootSmokeFailure(message: "PTY session failed: \(failure)")
+        }
+        return consumedByteCount
+    }
+
+    func retainedOutput(sinceTotalByteCount byteCount: Int) throws -> Data {
+        if let failure {
+            throw PocketRootSmokeFailure(message: "PTY session failed: \(failure)")
+        }
+        guard byteCount >= 0, byteCount <= consumedByteCount else {
+            throw PocketRootSmokeFailure(
+                message: "PTY retained-output offset is outside the observed stream."
+            )
+        }
+        let firstRetainedByteCount = consumedByteCount - output.count
+        guard byteCount >= firstRetainedByteCount else {
+            throw PocketRootSmokeFailure(
+                message: "PTY output required for exact validation is no longer retained."
+            )
+        }
+        return Data(output.dropFirst(byteCount - firstRetainedByteCount))
+    }
 }
 
 private enum PocketRootSmokeRelaunchPersistencePhase: Sendable {
@@ -235,9 +266,11 @@ private enum PocketRootRuntimeSmokeRunner {
     static let sustainedOutputByteCount = 8 * 1_024 * 1_024
     static let maximumStandardErrorBytes = 64
     static let maximumPeakResidentBytes: UInt64 = 256 * 1_024 * 1_024
-    static let longWorkloadIterationCount = 90
-    static let longWorkloadInterval = Duration.seconds(2)
-    static let longWorkloadGuestPath = "/root/pocketroot-smoke-long-workload.txt"
+    static let defaultStabilityIterationCount = 90
+    static let defaultStabilityIntervalMilliseconds = 2_000
+    static let stabilityStreamByteCount = 65_536
+    static let maximumStabilityFootprintGrowthBytes: UInt64 = 64 * 1_024 * 1_024
+    static let stabilityGuestPath = "/root/pocketroot-smoke-stability.txt"
 
     static func run(
         environment: PocketRootSmokeEnvironment,
@@ -245,7 +278,7 @@ private enum PocketRootRuntimeSmokeRunner {
         uiLifecycleMode: Bool = false,
         storageFailureMode: Bool = false,
         memoryWarningMode: Bool = false,
-        longWorkloadMode: Bool = false,
+        stabilityMode: Bool = false,
         relaunchPersistencePhase: PocketRootSmokeRelaunchPersistencePhase = .disabled
     ) async -> PocketRootSmokeReport {
         let startedAt = Date()
@@ -682,9 +715,9 @@ private enum PocketRootRuntimeSmokeRunner {
                 )
             )
 
-            if longWorkloadMode {
+            if stabilityMode {
                 checks.append(
-                    try await runLongWorkloadCheck(system: prepared.system)
+                    try await runStabilityWorkloadCheck(system: prepared.system)
                 )
             }
 
@@ -887,86 +920,254 @@ private enum PocketRootRuntimeSmokeRunner {
         writeProgress("memory-warning-received")
     }
 
-    private static func runLongWorkloadCheck(
+    private static func runStabilityWorkloadCheck(
         system: PocketRootSystem
     ) async throws -> PocketRootSmokeCheck {
-        writeProgress("running-long-workload-check")
+        let iterationCount = try boundedEnvironmentInteger(
+            named: "POCKETROOT_SMOKE_STABILITY_ITERATIONS",
+            defaultValue: defaultStabilityIterationCount,
+            range: 20...600
+        )
+        let intervalMilliseconds = try boundedEnvironmentInteger(
+            named: "POCKETROOT_SMOKE_STABILITY_INTERVAL_MILLISECONDS",
+            defaultValue: defaultStabilityIntervalMilliseconds,
+            range: 25...10_000
+        )
+        let interval = Duration.milliseconds(intervalMilliseconds)
+
+        writeProgress("running-stability-workload-check")
         let clock = ContinuousClock()
         let startedAt = clock.now
 
         let reset = try await system.execute(
             PocketRootCommandRequest(
-                command: "rm -f \(longWorkloadGuestPath)",
+                command: "rm -f \(stabilityGuestPath)",
                 workingDirectory: "/"
             )
         )
-        try require(reset.exitCode == 0, "Unable to reset the long-workload marker.")
+        try require(reset.exitCode == 0, "Unable to reset the stability marker.")
 
-        for iteration in 1...longWorkloadIterationCount {
-            let cycle = try await system.execute(
-                PocketRootCommandRequest(
-                    command: "printf '%s\\n' '\(iteration)' >> \(longWorkloadGuestPath) "
-                        + "&& tail -n 1 \(longWorkloadGuestPath)",
-                    workingDirectory: "/",
-                    timeout: .seconds(10)
-                )
+        let terminal = try await system.makeSession(
+            configuration: PocketRootSessionConfiguration(
+                workingDirectory: "/root",
+                initialTerminalSize: .init(rows: 24, columns: 80)
             )
-            try require(
-                cycle.exitCode == 0 && trimmed(cycle.stdout) == String(iteration),
-                "Long-workload cycle \(iteration) did not persist and read its marker."
-            )
+        )
+        let collector = PocketRootSmokePTYCollector()
+        let reader = Task {
+            for await event in terminal.events {
+                await collector.consume(event)
+            }
+        }
 
-            if iteration.isMultiple(of: 10) {
-                let output = try await system.execute(
-                    PocketRootCommandRequest(
-                        command: "/bin/dd if=/dev/zero bs=65536 count=1 2>/dev/null",
-                        workingDirectory: "/",
-                        timeout: .seconds(10)
+        do {
+            try await terminal.write(
+                Data("stty -echo; printf 'POCKETROOT_STABILITY_READY\\n'\r".utf8)
+            )
+            try await collector.waitFor("POCKETROOT_STABILITY_READY")
+
+            var warmFootprintBytes: UInt64?
+            var maximumSampledFootprintBytes: UInt64 = 0
+            var highOutputByteCount = 0
+            let failureInjectionIteration = iterationCount / 2
+
+            for iteration in 1...iterationCount {
+                let bytesBeforeCycle = try await collector.totalByteCount()
+                let payloadStartMarker =
+                    "POCKETROOT_STABILITY_\(iteration)_PAYLOAD_BEGIN"
+                let payloadEndMarker =
+                    "POCKETROOT_STABILITY_\(iteration)_PAYLOAD_END"
+                let highOutputCommand = iteration.isMultiple(of: 10)
+                    ? "printf '%s' '\(payloadStartMarker)'; "
+                        + "/bin/dd if=/dev/zero bs=\(stabilityStreamByteCount) "
+                        + "count=1 2>/dev/null; "
+                        + "printf '%s' '\(payloadEndMarker)'; "
+                    : ""
+                let marker = "POCKETROOT_STABILITY_\(iteration)_DONE"
+                try await terminal.write(
+                    Data(
+                        (
+                            "printf '%s\\n' '\(iteration)' >> \(stabilityGuestPath); "
+                                + "tail -n 1 \(stabilityGuestPath); "
+                                + highOutputCommand
+                                + "printf '\\n\(marker)\\n'\r"
+                        ).utf8
                     )
                 )
-                try require(
-                    output.exitCode == 0
-                        && output.standardOutput.count == 65_536
-                        && output.standardOutput.allSatisfy { $0 == 0 },
-                    "Long-workload bounded output was corrupted at cycle \(iteration)."
+                try await collector.waitFor(marker, timeout: .seconds(10))
+
+                if iteration.isMultiple(of: 10) {
+                    let cycleOutput = try await collector.retainedOutput(
+                        sinceTotalByteCount: bytesBeforeCycle
+                    )
+                    try validateExactStabilityPayload(
+                        in: cycleOutput,
+                        startMarker: payloadStartMarker,
+                        endMarker: payloadEndMarker,
+                        iteration: iteration
+                    )
+                    highOutputByteCount += stabilityStreamByteCount
+
+                    let footprintBytes = try currentFootprintByteCount()
+                    maximumSampledFootprintBytes = max(
+                        maximumSampledFootprintBytes,
+                        footprintBytes
+                    )
+                    if warmFootprintBytes == nil {
+                        warmFootprintBytes = footprintBytes
+                    }
+                }
+
+                if iteration.isMultiple(of: 15) {
+                    let oneShot = try await system.execute(
+                        PocketRootCommandRequest(
+                            command: "tail -n 1 \(stabilityGuestPath)",
+                            workingDirectory: "/",
+                            timeout: .seconds(10)
+                        )
+                    )
+                    try require(
+                        oneShot.exitCode == 0
+                            && trimmed(oneShot.stdout) == String(iteration),
+                        "One-shot command diverged from the active PTY at cycle \(iteration)."
+                    )
+                }
+
+                if iteration == failureInjectionIteration {
+                    do {
+                        _ = try await system.execute(
+                            PocketRootCommandRequest(
+                                command: "/bin/dd if=/dev/zero bs=65536 count=129 2>/dev/null",
+                                workingDirectory: "/",
+                                timeout: .seconds(60)
+                            )
+                        )
+                        throw PocketRootSmokeFailure(
+                            message: "Stability output-limit injection did not fail."
+                        )
+                    } catch PocketRootError.commandOutputLimitExceeded(
+                        let stream,
+                        let limit
+                    ) {
+                        try require(
+                            stream == "stdout" && limit == sustainedOutputByteCount,
+                            "Stability output-limit injection returned an unexpected error."
+                        )
+                    }
+                    let recoveryMarker = "POCKETROOT_STABILITY_RECOVERED"
+                    try await terminal.write(
+                        Data("printf '\(recoveryMarker)\\n'\r".utf8)
+                    )
+                    try await collector.waitFor(recoveryMarker)
+                    try require(
+                        await system.state == .ready,
+                        "Runtime was not ready after stability failure injection."
+                    )
+                }
+
+                if iteration < iterationCount {
+                    try await Task.sleep(for: interval)
+                }
+            }
+
+            let finalFootprintBytes = try currentFootprintByteCount()
+            maximumSampledFootprintBytes = max(
+                maximumSampledFootprintBytes,
+                finalFootprintBytes
+            )
+            guard let warmFootprintBytes else {
+                throw PocketRootSmokeFailure(
+                    message: "Stability workload did not produce a warm memory sample."
                 )
             }
+            let footprintGrowthBytes = finalFootprintBytes > warmFootprintBytes
+                ? finalFootprintBytes - warmFootprintBytes
+                : 0
+            try require(
+                maximumSampledFootprintBytes <= maximumPeakResidentBytes,
+                "Sampled stability footprint exceeded "
+                    + "\(formatMebibytes(maximumPeakResidentBytes)): "
+                    + "\(formatMebibytes(maximumSampledFootprintBytes))."
+            )
+            try require(
+                footprintGrowthBytes <= maximumStabilityFootprintGrowthBytes,
+                "Physical footprint grew more than "
+                    + "\(formatMebibytes(maximumStabilityFootprintGrowthBytes)) "
+                    + "after warm-up: \(formatMebibytes(footprintGrowthBytes))."
+            )
 
-            if iteration < longWorkloadIterationCount {
-                try await Task.sleep(for: longWorkloadInterval)
+            let elapsed = startedAt.duration(to: clock.now)
+            let minimumDuration = interval * (iterationCount - 1)
+            try require(
+                elapsed >= minimumDuration,
+                "Stability duration was shorter than its bounded schedule: \(elapsed)."
+            )
+            try require(
+                await system.state == .ready,
+                "Runtime was not ready after the stability workload."
+            )
+
+            let browser = PocketRootFileBrowser(executor: system)
+            let preview = try await browser.previewFile(at: stabilityGuestPath)
+            guard let previewText = preview.text else {
+                throw PocketRootSmokeFailure(
+                    message: "Files API did not decode the stability marker as text."
+                )
             }
+            let expectedPreview = (1...iterationCount)
+                .map(String.init)
+                .joined(separator: "\n") + "\n"
+            try require(
+                !preview.isTruncated && previewText == expectedPreview,
+                "Files API did not recover the complete stability marker."
+            )
+
+            let observedPTYByteCount = try await collector.totalByteCount()
+            try require(
+                observedPTYByteCount >= highOutputByteCount,
+                "Stability PTY byte accounting lost streamed output."
+            )
+
+            await terminal.terminate()
+            await reader.value
+
+            return PocketRootSmokeCheck(
+                name: "stability-workload",
+                detail: "\(iterationCount) persistent PTY/file cycles, "
+                    + "\(highOutputByteCount / 1_024) KiB streamed output, "
+                    + "output-limit recovery, Files preview, footprint growth "
+                    + "\(formatMebibytes(footprintGrowthBytes))"
+            )
+        } catch {
+            await terminal.terminate()
+            await reader.value
+            throw error
         }
+    }
 
-        let elapsed = startedAt.duration(to: clock.now)
-        let minimumDuration = longWorkloadInterval * (longWorkloadIterationCount - 1)
-        try require(
-            elapsed >= minimumDuration,
-            "Long-workload duration was shorter than its bounded schedule: \(elapsed)."
-        )
-        try require(
-            await system.state == .ready,
-            "Runtime was not ready after the long workload."
-        )
-
-        let browser = PocketRootFileBrowser(executor: system)
-        let preview = try await browser.previewFile(at: longWorkloadGuestPath)
-        guard let previewText = preview.text else {
+    private static func validateExactStabilityPayload(
+        in cycleOutput: Data,
+        startMarker: String,
+        endMarker: String,
+        iteration: Int
+    ) throws {
+        let startMarkerData = Data(startMarker.utf8)
+        let endMarkerData = Data(endMarker.utf8)
+        guard let startRange = cycleOutput.range(of: startMarkerData),
+              let endRange = cycleOutput.range(
+                  of: endMarkerData,
+                  in: startRange.upperBound..<cycleOutput.endIndex
+              ) else {
             throw PocketRootSmokeFailure(
-                message: "Files API did not decode the long-workload marker as text."
+                message: "Stability PTY payload markers were missing at cycle \(iteration)."
             )
         }
-        let expectedPreview = (1...longWorkloadIterationCount)
-            .map(String.init)
-            .joined(separator: "\n") + "\n"
+        let payload = cycleOutput[startRange.upperBound..<endRange.lowerBound]
         try require(
-            !preview.isTruncated
-                && previewText == expectedPreview,
-            "Files API did not recover the complete long-workload marker."
-        )
-
-        return PocketRootSmokeCheck(
-            name: "long-workload",
-            detail: "90 command/file cycles across 3 minutes, bounded output, Files preview"
+            payload.count == stabilityStreamByteCount
+                && payload.allSatisfy { $0 == 0 },
+            "Stability PTY payload was truncated or corrupted at cycle \(iteration): "
+                + "\(payload.count) bytes."
         )
     }
 
@@ -1210,6 +1411,55 @@ private enum PocketRootRuntimeSmokeRunner {
         return UInt64(usage.ru_maxrss)
     }
 
+    private static func currentFootprintByteCount() throws -> UInt64 {
+        var information = task_vm_info_data_t()
+        var count = mach_msg_type_number_t(
+            MemoryLayout<task_vm_info_data_t>.size / MemoryLayout<integer_t>.size
+        )
+        let result = withUnsafeMutablePointer(to: &information) { pointer in
+            pointer.withMemoryRebound(
+                to: integer_t.self,
+                capacity: Int(count)
+            ) { reboundPointer in
+                task_info(
+                    mach_task_self_,
+                    task_flavor_t(TASK_VM_INFO),
+                    reboundPointer,
+                    &count
+                )
+            }
+        }
+        try require(
+            result == KERN_SUCCESS,
+            "Unable to read physical footprint: mach error \(result)."
+        )
+        try require(
+            information.phys_footprint > 0,
+            "Physical footprint was not reported."
+        )
+        return information.phys_footprint
+    }
+
+    private static func boundedEnvironmentInteger(
+        named name: String,
+        defaultValue: Int,
+        range: ClosedRange<Int>
+    ) throws -> Int {
+        guard let rawValue = ProcessInfo.processInfo.environment[name] else {
+            return defaultValue
+        }
+        guard !rawValue.isEmpty,
+              rawValue.allSatisfy(\.isNumber),
+              let value = Int(rawValue),
+              range.contains(value)
+        else {
+            throw PocketRootSmokeFailure(
+                message: "\(name) must be an integer in \(range.lowerBound)...\(range.upperBound)."
+            )
+        }
+        return value
+    }
+
     private static func formatMebibytes(_ byteCount: UInt64) -> String {
         String(format: "%.1f MiB", Double(byteCount) / Double(1_024 * 1_024))
     }
@@ -1264,8 +1514,11 @@ final class PocketRootIshRuntimeSmokeApp: UIResponder, UIApplicationDelegate {
                 ProcessInfo.processInfo.environment["POCKETROOT_SMOKE_STORAGE_FAILURE"] == "1"
             let memoryWarningMode =
                 ProcessInfo.processInfo.environment["POCKETROOT_SMOKE_MEMORY_WARNING"] == "1"
-            let longWorkloadMode =
-                ProcessInfo.processInfo.environment["POCKETROOT_SMOKE_LONG_WORKLOAD"] == "1"
+            let stabilityMode =
+                ProcessInfo.processInfo.environment["POCKETROOT_SMOKE_STABILITY"] == "1"
+                || ProcessInfo.processInfo.environment[
+                    "POCKETROOT_SMOKE_LONG_WORKLOAD"
+                ] == "1"
             let relaunchPersistencePhase: PocketRootSmokeRelaunchPersistencePhase
             switch ProcessInfo.processInfo.environment[
                 "POCKETROOT_SMOKE_RELAUNCH_PERSISTENCE"
@@ -1283,7 +1536,7 @@ final class PocketRootIshRuntimeSmokeApp: UIResponder, UIApplicationDelegate {
                 uiLifecycleMode: uiLifecycleMode,
                 storageFailureMode: storageFailureMode,
                 memoryWarningMode: memoryWarningMode,
-                longWorkloadMode: longWorkloadMode,
+                stabilityMode: stabilityMode,
                 relaunchPersistencePhase: relaunchPersistencePhase
             )
             do {

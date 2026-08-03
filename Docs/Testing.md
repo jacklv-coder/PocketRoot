@@ -14,11 +14,11 @@ PocketRoot 把验证分成宿主逻辑、真实 RootFS、iOS 构建、完整原�
 | 原生最终链接 | `./Scripts/build-runtime-spike.sh` | Apple toolchain | 完整实验依赖图可生成 iOS 可执行文件 | 真机或 guest 行为 |
 | 工程 App/archive 扫描 | `ruby Scripts/scan-release-artifact.rb` | macOS + 外部 `.app`/`.xcarchive` | 确定性文件摘要、Mach-O、签名/entitlement 风险信号与文件级 SPDX | 最终导出制品、依赖许可证完备性或分发授权 |
 | development-signed archive 门禁 | `./Scripts/build-signed-engineering-archive.sh` | macOS + Xcode 账号/开发签名 | 标准 `.xcarchive`、development entitlement、clean 风险信号、复验与 SPDX schema | IPA/export、发行签名、安装、上传或分发授权 |
-| Simulator 原生 smoke | `./Scripts/run-runtime-smoke.sh` | Apple Silicon + iOS 18 Simulator + archive | prepare、boot、命令边界和 soft shutdown 返回 | 其他工具链、真机或发行可用 |
+| Simulator 原生 smoke | `./Scripts/run-runtime-smoke.sh` | Apple Silicon + iOS 18 Simulator + archive | prepare、boot、命令边界、可选持久 PTY 稳定性和 soft shutdown 返回 | 其他工具链、真机或发行可用 |
 | Quick Start UI smoke | `./Scripts/run-quick-start-ui-smoke.sh` | Apple Silicon + iOS 18 Simulator + archive | 最小业务 App 的 Files/Terminal 两个入口可从冷启动自动 boot，真实 PTY 创建的文件可由 Files 预览 | 真机、完整 Host 生命周期或发行可用 |
 | Host App UI smoke | `./Scripts/run-host-app-ui-smoke.sh` | Apple Silicon + iOS 18 Simulator + archive | iPhone/iPad Simulator 上的公开宿主 Boot、SwiftTerm PTY、生命周期、Workspace 会话持续性、Files 增删改/预览、系统 document picker 导入、share sheet 保存与再次导入 round-trip，以及有序 shutdown | 真机系统文件交互、真机键盘、iPad 真机或发行可用 |
 | Host App 真机 UI smoke | `./Scripts/run-host-app-device-ui-smoke.sh` | Xcode 可解析的 development-signed iPhone/iPad + archive | 同一 Host App 生命周期 UI 测试的真机执行、签名与 development entitlement | iPad、真实压力或发行可用 |
-| 物理设备原生 smoke | `./Scripts/run-runtime-device-smoke.sh` | 签名 iOS 18+ iPhone/iPad + archive | 同一 17 项检查、可选进程暂停/恢复、UIKit 前后台、强制重启持久化、受限存储故障、有界内存警告恢复或 3 分钟持续负载，development entitlement 与 shutdown 返回 | 真实 storage/memory pressure、断电、jetsam、iPad 或发行可用 |
+| 物理设备原生 smoke | `./Scripts/run-runtime-device-smoke.sh` | 签名 iOS 18+ iPhone/iPad + archive | 同一 17 项检查、可选进程暂停/恢复、UIKit 前后台、强制重启持久化、受限存储故障、有界内存警告恢复或持久 PTY 稳定性，development entitlement 与 shutdown 返回 | 真实 storage/memory pressure、断电、jetsam、iPad 或发行可用 |
 | 源码发布审计 | `ruby Scripts/verify-source-release.rb --version 0.1.0` | Git commit/tag | 源码轨道 Ready、版本文档齐全，`git archive` 不含 RootFS、App、IPA、XCFramework 镜像、压缩载荷或原生二进制 | Runtime/App/RootFS 分发授权 |
 | 文档检查 | `./Scripts/check-docs.sh` | macOS/Linux shell | 中英文成对、中文覆盖和相对链接 | 技术实现正确 |
 
@@ -213,6 +213,9 @@ POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
 | `POCKETROOT_ROOTFS_CANDIDATE` | `ish-arm64-pkg` 生成的仓库外本地候选目录；设置后从其中选择并校验 `fs.tar.gz` 与全部候选凭据 |
 | `POCKETROOT_SMOKE_DEVICE` | 指定现有 Simulator UDID |
 | `POCKETROOT_SMOKE_TIMEOUT_SECONDS` | 启动 App 后等待 JSON report 的秒数，默认 300；不含工程生成、构建、Simulator boot 和 report 后固定 20 秒 runner 清理检查 |
+| `POCKETROOT_SMOKE_STABILITY` | 设为 `1` 时增加持久 PTY 稳定性门禁；Simulator 与真机 runner 均支持 |
+| `POCKETROOT_SMOKE_STABILITY_ITERATIONS` | 稳定性循环次数，20...600，默认 90 |
+| `POCKETROOT_SMOKE_STABILITY_INTERVAL_MILLISECONDS` | 稳定性循环间隔，25...10000 ms，默认 2000 |
 | `POCKETROOT_KEEP_SIMULATOR` | 设为 `1` 时保留脚本创建的临时 Simulator |
 
 未指定设备时，脚本创建临时 iPhone 16 Simulator，构建、安装和启动 smoke
@@ -297,6 +300,16 @@ guest 命令执行期间确定性调用公开
 相同 shutdown/peak-memory 门禁。这是 repository-owned 回调注入，不会制造真实
 memory pressure，也不能证明系统低内存通知、jetsam 或重启恢复。
 
+Simulator 或真机设置 `POCKETROOT_SMOKE_STABILITY=1` 时增加第 18 项。一个 PTY
+在全部循环中保持打开，每 10 轮流过带唯一边界的 64 KiB 零字节 payload，并逐字节
+校验长度与内容；同时与一次性命令和 Files API 读同一
+文件；中途一次性命令触发 8 MiB stdout 上限后，原 PTY 必须继续工作。collector 只
+保留最近 1 MiB transcript，但单独累计完整字节数，避免测试本身无限增长。第 10 轮
+热身后的 `phys_footprint` 到结束最多增长 64 MiB；全部采样和进程生命周期峰值仍受
+256 MiB 限制。默认 90×2 秒约 3 分钟；CI 使用 30×250 ms 的有界配置持续覆盖该路径。
+旧的 `POCKETROOT_SMOKE_LONG_WORKLOAD=1` 仍映射到此模式。这不制造真实压力，也不能
+证明后台保活、系统低内存通知或 jetsam。
+
 第 9 项证明持续二进制输出可以被 Swift 持续消费，不会因 4 MiB native backlog
 本身而截断或损坏。第 17 项在 Simulator 上约束包含 RootFS 准备、8 MiB 输出、
 超限恢复、取消与 shutdown 的完整进程峰值；它不是物理设备 jetsam 证明。第 10 项
@@ -323,9 +336,14 @@ Simulator 通过全部 17 项；8 MiB binary stdout 逐字节精确，完整生�
 `candidate-9375e0ecc9cf` 安装，报告 Alpine 3.19.1 与 aarch64，完成全部
 command/recovery/shutdown 检查，峰值 146.6 MiB。候选始终位于仓库外且未上传。
 
+2026-08-03，新的稳定性路径在 iOS 18.2 arm64 Simulator 以 CI 同款
+30×250 ms 配置通过全部 20 项。单一 PTY 完成 30 轮、累计 192 KiB 有界流输出并在
+中途 stdout-limit 后继续；Files 与一次性命令读取一致，热身后 `phys_footprint`
+增长 0.3 MiB，完整生命周期峰值 165.6 MiB。
+
 仓库的最低工具链 job 会在 arm64 macOS runner 上明确选择 Xcode 16.0 与 iOS 18.0
 SDK，完成固定 RootFS 首次物化、arm64 Simulator/unsigned device final-link，并在
-iOS 18.0 Simulator 执行同一套 17 项 native smoke。
+iOS 18.0 Simulator 执行标准 17 项加 30×250 ms 稳定性项的 native smoke。
 
 ### Development-signed engineering archive
 
@@ -412,13 +430,13 @@ POCKETROOT_SMOKE_MEMORY_WARNING=1 \
   ./Scripts/run-runtime-device-smoke.sh
 ```
 
-验证约 3 分钟的持续执行、文件写读和有界输出时使用独立模式：
+验证可配置的持久 PTY、文件一致性、故障恢复和内存增长时使用独立模式：
 
 ```bash
 POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
 POCKETROOT_SMOKE_DEVICE=<physical-device-reference> \
 POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
-POCKETROOT_SMOKE_LONG_WORKLOAD=1 \
+POCKETROOT_SMOKE_STABILITY=1 \
 POCKETROOT_SMOKE_TIMEOUT_SECONDS=600 \
   ./Scripts/run-runtime-device-smoke.sh
 ```

@@ -247,11 +247,14 @@ POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
 命令执行期间确定性调用 App delegate 回调，要求新鲜回调证据、运行中命令和后续命令
 都成功，runtime 仍为 `.ready`。这不会制造真实内存压力，也不等价于 jetsam。
 
-需要验证持续执行稳定性时，改用互斥的 `POCKETROOT_SMOKE_LONG_WORKLOAD=1`，并把
-`POCKETROOT_SMOKE_TIMEOUT_SECONDS` 设为至少 `600`。该模式执行 90 次间隔 2 秒的
-命令/文件写读循环，每 10 次校验 64 KiB 二进制输出，最后通过 Files API 预览完整
-标记文件并执行 shutdown 与 256 MiB 峰值门禁。它是约 3 分钟的有界基线，不制造
-真实内存压力，也不等价于长期后台执行或 jetsam。
+需要验证持续执行稳定性时，Simulator 或真机都可设置
+`POCKETROOT_SMOKE_STABILITY=1`，并把 `POCKETROOT_SMOKE_TIMEOUT_SECONDS` 设为至少
+`600`。默认模式让同一个 PTY 持续 90 次、每次间隔 2 秒；每 10 次流过 64 KiB，期间
+交叉执行一次性命令，中途触发并恢复输出上限，最后用 Files API 校验完整文件。它还
+比较第 10 轮热身后和结束时的 `phys_footprint`，增长不得超过 64 MiB，采样值和完整
+生命周期峰值都不得超过 256 MiB。迭代数可在 20...600、间隔可在 25...10000 ms 内
+配置；`POCKETROOT_SMOKE_LONG_WORKLOAD=1` 仅作为旧命令兼容别名。该门禁是前台有界
+基线，不制造真实内存压力，也不等价于长期后台执行、系统低内存或 jetsam。
 
 ## 8. 常用命令
 
@@ -271,7 +274,7 @@ POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
 | 签名真机强制重启持久化 smoke | `POCKETROOT_SMOKE_RELAUNCH_PERSISTENCE=1` 加到签名真机 smoke 命令 |
 | 签名真机受限存储故障 smoke | `POCKETROOT_SMOKE_STORAGE_FAILURE=1` 加到签名真机 smoke 命令 |
 | 签名真机有界内存警告 smoke | `POCKETROOT_SMOKE_MEMORY_WARNING=1` 加到签名真机 smoke 命令 |
-| 签名真机持续负载 smoke | `POCKETROOT_SMOKE_LONG_WORKLOAD=1 POCKETROOT_SMOKE_TIMEOUT_SECONDS=600` 加到签名真机 smoke 命令 |
+| Simulator/签名真机稳定性 smoke | `POCKETROOT_SMOKE_STABILITY=1 POCKETROOT_SMOKE_TIMEOUT_SECONDS=600` 加到对应 native smoke 命令 |
 | 双语文档和链接检查 | `./Scripts/check-docs.sh` |
 
 ## 9. 不应提交的本地内容

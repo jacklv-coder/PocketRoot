@@ -364,6 +364,9 @@ jobs:
       - name: Run native smoke with Xcode 16.0
         env:
           POCKETROOT_SMOKE_TIMEOUT_SECONDS: "600"
+          POCKETROOT_SMOKE_STABILITY: "1"
+          POCKETROOT_SMOKE_STABILITY_ITERATIONS: "30"
+          POCKETROOT_SMOKE_STABILITY_INTERVAL_MILLISECONDS: "250"
         run: ./Scripts/run-runtime-smoke.sh
 
       - name: Run public-SHA External Consumer UI acceptance

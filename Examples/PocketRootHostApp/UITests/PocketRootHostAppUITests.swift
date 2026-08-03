@@ -392,9 +392,25 @@ final class PocketRootHostAppUITests: XCTestCase {
             return
         }
         recordCheckpoint("interactive-top-output-observed")
+        dismissKeyboardOnboardingIfPresent(in: app)
         let interruptButton = app.buttons["PocketRootTerminal.key.ctrl-c"]
-        XCTAssertTrue(interruptButton.waitForExistence(timeout: 10))
-        interruptButton.tap()
+        guard let interruptFrames = waitForInteractionFrames(
+            of: interruptButton,
+            in: app,
+            timeout: 10
+        ) else {
+            XCTFail("Ctrl-C to expose a usable interaction frame")
+            return
+        }
+        // Fresh iOS 18.0 simulators can present keyboard onboarding over the
+        // accessory bar. After dismissing it above, avoid XCTest's redundant
+        // kAXScrollToVisibleAction and tap the verified frame through the app
+        // coordinate. The marker assertion below still proves Ctrl-C delivery.
+        tapFrame(
+            interruptFrames.elementFrame,
+            in: interruptFrames.appFrame,
+            using: app
+        )
         guard wait(
             for: NSPredicate(
                 format: "value CONTAINS %@",
@@ -1230,6 +1246,25 @@ final class PocketRootHostAppUITests: XCTestCase {
 
     private func allowTerminalToDrain() {
         RunLoop.current.run(until: Date().addingTimeInterval(1))
+    }
+
+    private func dismissKeyboardOnboardingIfPresent(
+        in app: XCUIApplication
+    ) {
+        let continueButton = app.buttons["Continue"]
+        for _ in 0..<3 {
+            guard continueButton.waitForExistence(timeout: 1) else {
+                return
+            }
+            continueButton.tap()
+            RunLoop.current.run(
+                until: Date().addingTimeInterval(0.5)
+            )
+        }
+        XCTAssertFalse(
+            continueButton.exists,
+            "The system keyboard onboarding still covers the accessory bar."
+        )
     }
 
     private func dismissKeyboard(in app: XCUIApplication) {

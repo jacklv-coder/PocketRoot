@@ -20,7 +20,9 @@ UI_LIFECYCLE_MODE="${POCKETROOT_SMOKE_UI_LIFECYCLE:-0}"
 RELAUNCH_PERSISTENCE_MODE="${POCKETROOT_SMOKE_RELAUNCH_PERSISTENCE:-0}"
 STORAGE_FAILURE_MODE="${POCKETROOT_SMOKE_STORAGE_FAILURE:-0}"
 MEMORY_WARNING_MODE="${POCKETROOT_SMOKE_MEMORY_WARNING:-0}"
-LONG_WORKLOAD_MODE="${POCKETROOT_SMOKE_LONG_WORKLOAD:-0}"
+STABILITY_MODE="${POCKETROOT_SMOKE_STABILITY:-${POCKETROOT_SMOKE_LONG_WORKLOAD:-0}}"
+STABILITY_ITERATIONS="${POCKETROOT_SMOKE_STABILITY_ITERATIONS:-90}"
+STABILITY_INTERVAL_MILLISECONDS="${POCKETROOT_SMOKE_STABILITY_INTERVAL_MILLISECONDS:-2000}"
 RUN_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/PocketRootDeviceSmoke.XXXXXX")"
 DERIVED_DATA_ROOT="$RUN_ROOT/DerivedData"
 CLONED_SOURCE_PACKAGES_DIR="${POCKETROOT_CLONED_SOURCE_PACKAGES_DIR:-${TMPDIR:-/tmp}/PocketRootSharedSourcePackages}"
@@ -139,6 +141,9 @@ Usage:
   [POCKETROOT_SMOKE_LONG_WORKLOAD=1] \\
   $0
 
+POCKETROOT_SMOKE_LONG_WORKLOAD=1 remains a compatibility alias for
+POCKETROOT_SMOKE_STABILITY=1. Stability defaults to 90 iterations at 2000 ms.
+
 For a local unapproved double-build candidate, replace
 POCKETROOT_ROOTFS_ARCHIVE with:
   POCKETROOT_ROOTFS_CANDIDATE=/absolute/candidate-directory
@@ -190,8 +195,16 @@ if [[ "$MEMORY_WARNING_MODE" != "0" && "$MEMORY_WARNING_MODE" != "1" ]]; then
     echo "POCKETROOT_SMOKE_MEMORY_WARNING must be 0 or 1." >&2
     exit 2
 fi
-if [[ "$LONG_WORKLOAD_MODE" != "0" && "$LONG_WORKLOAD_MODE" != "1" ]]; then
-    echo "POCKETROOT_SMOKE_LONG_WORKLOAD must be 0 or 1." >&2
+if [[ "$STABILITY_MODE" != "0" && "$STABILITY_MODE" != "1" ]]; then
+    echo "POCKETROOT_SMOKE_STABILITY must be 0 or 1." >&2
+    exit 2
+fi
+if [[ ! "$STABILITY_ITERATIONS" =~ ^[0-9]+$ ]] || [[ "$STABILITY_ITERATIONS" -lt 20 ]] || [[ "$STABILITY_ITERATIONS" -gt 600 ]]; then
+    echo "POCKETROOT_SMOKE_STABILITY_ITERATIONS must be an integer from 20 through 600." >&2
+    exit 2
+fi
+if [[ ! "$STABILITY_INTERVAL_MILLISECONDS" =~ ^[0-9]+$ ]] || [[ "$STABILITY_INTERVAL_MILLISECONDS" -lt 25 ]] || [[ "$STABILITY_INTERVAL_MILLISECONDS" -gt 10000 ]]; then
+    echo "POCKETROOT_SMOKE_STABILITY_INTERVAL_MILLISECONDS must be an integer from 25 through 10000." >&2
     exit 2
 fi
 HOST_CONTROL_MODE_COUNT=$((LIFECYCLE_MODE + UI_LIFECYCLE_MODE + RELAUNCH_PERSISTENCE_MODE))
@@ -208,9 +221,9 @@ if [[ "$MEMORY_WARNING_MODE" == "1" \
     echo "Memory-warning smoke cannot be combined with another optional mode." >&2
     exit 2
 fi
-if [[ "$LONG_WORKLOAD_MODE" == "1" \
+if [[ "$STABILITY_MODE" == "1" \
   && $((HOST_CONTROL_MODE_COUNT + STORAGE_FAILURE_MODE + MEMORY_WARNING_MODE)) -gt 0 ]]; then
-    echo "Long-workload smoke cannot be combined with another optional mode." >&2
+    echo "Stability smoke cannot be combined with another optional mode." >&2
     exit 2
 fi
 SMOKE_MANIFEST_ARGS=(
@@ -761,12 +774,13 @@ elif [[ "$MEMORY_WARNING_MODE" == "1" ]]; then
       "$BUNDLE_ID" \
       >"$CONSOLE_LOG" 2>&1 &
     LAUNCH_CLIENT_PID=$!
-elif [[ "$LONG_WORKLOAD_MODE" == "1" ]]; then
+elif [[ "$STABILITY_MODE" == "1" ]]; then
+    STABILITY_LAUNCH_ENVIRONMENT="$(printf '{"POCKETROOT_SMOKE_STABILITY":"1","POCKETROOT_SMOKE_STABILITY_ITERATIONS":"%s","POCKETROOT_SMOKE_STABILITY_INTERVAL_MILLISECONDS":"%s"}' "$STABILITY_ITERATIONS" "$STABILITY_INTERVAL_MILLISECONDS")"
     xcrun devicectl device process launch \
       --device "$DEVICE_ID" \
       --terminate-existing \
       --environment-variables \
-        '{"POCKETROOT_SMOKE_LONG_WORKLOAD":"1"}' \
+        "$STABILITY_LAUNCH_ENVIRONMENT" \
       --console \
       --timeout "$SMOKE_TIMEOUT_SECONDS" \
       "$BUNDLE_ID" \
