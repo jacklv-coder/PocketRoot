@@ -1121,7 +1121,10 @@ class ReleaseComplianceTests < Minitest::Test
       '"FullDocumentManagerViewControllerNavigationBar"'
     )
     assert_includes ui_test, "pickerLanding.waitForExistence(timeout: 30)"
-    assert_includes ui_test, "hostDestination.waitForExistence(timeout: 30)"
+    assert_includes ui_test, "for _ in 0..<2"
+    assert_includes ui_test, "hostDestination.waitForExistence(timeout: 10)"
+    assert_includes ui_test, "openedHostDestination"
+    assert_includes ui_test, '"DOC.sidebar.item.On My iPad"'
     assert_includes ui_test, '"PocketRoot Host, Actions Menu"'
     refute_includes ui_test, "currentHostDocuments.waitForExistence(timeout: 3)"
     refute_includes(
@@ -1131,7 +1134,7 @@ class ReleaseComplianceTests < Minitest::Test
     assert_operator(
       ui_test.index("pickerLanding.waitForExistence(timeout: 30)"),
       :<,
-      ui_test.index("localLocation.tap()")
+      ui_test.index("localLocation.waitForExistence(timeout: 30)")
     )
     assert_includes ui_test, "testPTYLifecycleAndShutdown"
     assert_includes ui_test, "PocketRoot Host UI checkpoint"

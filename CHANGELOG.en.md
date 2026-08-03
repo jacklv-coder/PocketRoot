@@ -8,6 +8,11 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 
 ### Added
 
+- Interactive SwiftTerm PTYs now show an iPhone-friendly Esc, Tab, Ctrl-C,
+  Ctrl-D, history up/down, and keyboard-dismiss key row by default; hosts can
+  hide it with `showsAccessoryView: false`. Unit tests pin every emitted byte, and the Host
+  App lifecycle smoke launches BusyBox `top`, observes live output, and uses
+  Ctrl-C to recover the shell.
 - Bilingual security and community-conduct policies, support routing,
   structured bug/integration/feature Issue forms, and a pull request checklist.
   Documentation validation now requires these open-source collaboration files
@@ -31,10 +36,12 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   underlying host geometry.
 - The physical Host App UI runner no longer treats a device-OS versus iOS-SDK
   minor-version comparison as Xcode's device-support range. `xcodebuild` with
-  the exact destination now provides the authoritative compatibility result.
-  Xcode 26.1.1 built, development-signed, installed, and launched the Host App
-  on Jack iPhone running iOS 26.6; two XCTest attempts still timed out while
-  enabling automation mode, so the physical UI lifecycle is not yet passed.
+  the exact destination provides the authoritative result. Earlier Xcode
+  26.1.1 attempts timed out during the automation-mode handshake; Xcode 26.6
+  subsequently development-signed and passed the complete lifecycle XCTest on
+  Jack iPhone / iOS 26.6, including BusyBox `top`, Ctrl-C,
+  background/foreground, rotation resize, PTY reopen, persistent Files preview,
+  and ordered shutdown.
 - Added a mutually exclusive three-minute signed physical-device workload
   smoke: 90 command/file write-read cycles, a 64 KiB binary-output check every
   tenth cycle, complete marker verification through the Files API, shutdown,

@@ -112,7 +112,9 @@ final class ExternalConsumerAppUITests: XCTestCase {
             if continueButton.exists {
                 continueButton.tap()
             } else {
-                let hideKeyboardButton = app.buttons["hide keyboard"]
+                let hideKeyboardButton = app.buttons[
+                    "PocketRootTerminal.key.dismiss-keyboard"
+                ]
                 XCTAssertTrue(
                     hideKeyboardButton.waitForExistence(timeout: 10)
                 )

@@ -180,6 +180,6 @@ success only after bounded shutdown returns.
 
 ## Open implementation
 
-Prepared-system Demo injection, currently available signed-iPhone PTY lifecycle and sustained-output
+Prepared-system Demo injection, longer signed-iPhone PTY output and real-memory-pressure
 coverage, iPad keyboard/rotation/layout, VoiceOver, and app-transition
 hardening remain open. See the [roadmap](Roadmap.md).

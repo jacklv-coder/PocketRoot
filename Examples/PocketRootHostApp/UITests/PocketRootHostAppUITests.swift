@@ -19,7 +19,11 @@ final class PocketRootHostAppUITests: XCTestCase {
 
     func testFilesCreateAndDelete() {
         let app = launchAndBoot()
-        app.buttons["PocketRootHost.files"].tap()
+        let filesButton = app.buttons["PocketRootHost.files"]
+        XCTAssertTrue(filesButton.waitForExistence(timeout: 10))
+        waitForEnabled(filesButton)
+        XCTAssertTrue(waitForHittable(filesButton))
+        filesButton.tap()
 
         let suffix = String(UUID().uuidString.prefix(8)).lowercased()
         let fileName = "files-\(suffix).txt"
@@ -27,6 +31,10 @@ final class PocketRootHostAppUITests: XCTestCase {
         let folderName = "folder-\(suffix)"
         let nestedFileName = "nested-\(suffix).txt"
         let actions = app.buttons["PocketRootFiles.actions"]
+        if !actions.waitForExistence(timeout: 10) {
+            XCTAssertTrue(waitForHittable(filesButton))
+            filesButton.tap()
+        }
         XCTAssertTrue(actions.waitForExistence(timeout: 30))
         waitForEnabled(actions)
 
@@ -359,6 +367,46 @@ final class PocketRootHostAppUITests: XCTestCase {
             return
         }
 
+        let interactiveStartedMarker = "__INTERACTIVE_TOP_STARTED__"
+        let interactiveInterruptedMarker = "__INTERACTIVE_TOP_INTERRUPTED__"
+        terminal.tap()
+        terminal.typeText(
+            "printf '\(interactiveStartedMarker)\\n'; "
+                + "top; printf '\(interactiveInterruptedMarker)\\n'\n"
+        )
+        guard wait(
+            for: NSPredicate(
+                format: "value CONTAINS %@",
+                interactiveStartedMarker
+            ),
+            evaluatedWith: terminal,
+            timeout: 30
+        ) else {
+            return
+        }
+        guard wait(
+            for: NSPredicate(format: "value CONTAINS %@", "Mem:"),
+            evaluatedWith: terminal,
+            timeout: 30
+        ) else {
+            return
+        }
+        recordCheckpoint("interactive-top-output-observed")
+        let interruptButton = app.buttons["PocketRootTerminal.key.ctrl-c"]
+        XCTAssertTrue(interruptButton.waitForExistence(timeout: 10))
+        interruptButton.tap()
+        guard wait(
+            for: NSPredicate(
+                format: "value CONTAINS %@",
+                interactiveInterruptedMarker
+            ),
+            evaluatedWith: terminal,
+            timeout: 30
+        ) else {
+            return
+        }
+        recordCheckpoint("interactive-top-interrupted")
+
         device.press(.home)
         let springboard = XCUIApplication(
             bundleIdentifier: "com.apple.springboard"
@@ -486,6 +534,15 @@ final class PocketRootHostAppUITests: XCTestCase {
             terminal.typeText(reopenCommand)
         }
         XCTAssertTrue(exitedNavigationBar.waitForExistence(timeout: 30))
+        let endedInterruptButton = app.buttons[
+            "PocketRootTerminal.key.ctrl-c"
+        ]
+        XCTAssertTrue(endedInterruptButton.waitForExistence(timeout: 10))
+        wait(
+            for: NSPredicate(format: "enabled == false"),
+            evaluatedWith: endedInterruptButton,
+            timeout: 10
+        )
         recordCheckpoint("reopened-session-exited")
         exitedNavigationBar.buttons.element(boundBy: 0).tap()
 
@@ -882,12 +939,26 @@ final class PocketRootHostAppUITests: XCTestCase {
             "我的 iPhone",
             "我的 iPad",
         ]
-        let localLocation = app.descendants(matching: .any).matching(
+        let localLocationPredicate = NSPredicate(
+            format: "identifier IN %@ OR label IN %@",
+            [
+                "DOC.sidebar.item.On My iPhone",
+                "DOC.sidebar.item.On My iPad",
+            ],
+            localLocationLabels
+        )
+        let sidebarLocalLocation = app.cells.matching(
+            localLocationPredicate
+        ).firstMatch
+        let fallbackLocalLocation = app.descendants(matching: .any).matching(
             NSPredicate(
                 format: "label IN %@",
                 localLocationLabels
             )
         ).firstMatch
+        let localLocation = sidebarLocalLocation.waitForExistence(timeout: 5)
+            ? sidebarLocalLocation
+            : fallbackLocalLocation
         let pickerLanding = app.descendants(matching: .any).matching(
             NSPredicate(
                 format: "label IN %@",
@@ -898,9 +969,6 @@ final class PocketRootHostAppUITests: XCTestCase {
         if currentHostDocuments.exists {
             return
         }
-
-        XCTAssertTrue(localLocation.exists)
-        localLocation.tap()
 
         let hostDocuments = app.cells.matching(
             NSPredicate(
@@ -917,12 +985,41 @@ final class PocketRootHostAppUITests: XCTestCase {
                 "PocketRoot Host,"
             )
         ).firstMatch
-        XCTAssertTrue(hostDestination.waitForExistence(timeout: 30))
+        XCTAssertTrue(localLocation.waitForExistence(timeout: 30))
+        var openedHostDestination = false
+        for _ in 0..<2 {
+            guard let frames = waitForInteractionFrames(
+                of: localLocation,
+                in: app,
+                timeout: 5
+            ) else {
+                continue
+            }
+            tapFrame(
+                frames.elementFrame,
+                in: frames.appFrame,
+                using: app
+            )
+            if hostDestination.waitForExistence(timeout: 10) {
+                openedHostDestination = true
+                break
+            }
+        }
+        XCTAssertTrue(
+            openedHostDestination,
+            "local document location to reveal the host container"
+        )
+        guard openedHostDestination else {
+            return
+        }
         if currentHostDocuments.exists {
             return
         }
 
         XCTAssertTrue(hostDocuments.exists)
+        guard hostDocuments.exists else {
+            return
+        }
         hostDocuments.tap()
     }
 
@@ -1142,7 +1239,9 @@ final class PocketRootHostAppUITests: XCTestCase {
             if continueButton.exists {
                 continueButton.tap()
             } else {
-                let hideKeyboardButton = app.buttons["hide keyboard"]
+                let hideKeyboardButton = app.buttons[
+                    "PocketRootTerminal.key.dismiss-keyboard"
+                ]
                 XCTAssertTrue(
                     hideKeyboardButton.waitForExistence(timeout: 10)
                 )

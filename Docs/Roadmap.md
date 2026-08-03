@@ -86,7 +86,8 @@
 - 同一设备通过真实 UIKit background/foreground/active 18 项门禁；原 PID 保持，
   前台恢复后 guest 命令成功，峰值 89.4 MiB。
 
-这些证据建立了当前 Simulator、最低 Xcode 16 与单一 iPhone 的一次性命令路径，不覆盖 iPad、完整真机生命周期、PTY 或公开发行。
+这些证据与后续 Host App UI smoke 建立了当前 Simulator、最低 Xcode 16 与单一
+iPhone 的一次性命令、PTY 和 App 生命周期路径；不覆盖 iPad、真实压力或公开发行。
 
 ### 当前门禁
 
@@ -104,7 +105,7 @@
 | 默认 post-boot identity gate | 已通过 | `aarch64`、Alpine identity、可选 version 与 command context 通过后才 ready；保持失败占用槽位回归 |
 | Demo 与外部宿主 runtime 接入 | 已通过 | Demo 和独立 Host App 共用公开 controller；Debug 只注入精确校验的仓库外 RootFS，Release 保持不注入 |
 | 进程安全 soft shutdown | 已通过 | v0.4.0-abi.6 soft-halt/join 返回 Swift；同进程仍只允许一次 lifecycle |
-| 签名 iPhone | 已通过 | 标准 17 项及 3 分钟持续负载 20 项 one-shot/PTY/Files/soft-shutdown/peak-memory smoke 已完成；runtime 变更后继续重跑 |
+| 签名 iPhone | 已通过 | 标准 17 项、3 分钟持续负载 20 项及 Host App lifecycle/交互式 `top` UI smoke 已完成；runtime 变更后继续重跑 |
 | iPad Simulator Host UI | 已通过 | iOS 18 上覆盖 RootFS boot、PTY、Files、Workspace、旋转、系统文件导入/分享保存 round-trip 与 shutdown |
 | 签名 iPad | 阻塞 | physical boot 与 command smoke |
 | 最低 Xcode 16 原生兼容 | 已通过 | Xcode 16.0 / iOS 18.0 SDK 完成 RootFS install、Simulator/device final-link 和 17 项 native smoke |
@@ -164,7 +165,7 @@
 
 ## 里程碑 4：交互式终端
 
-状态：**首个 PTY/文件浏览闭环已实现；真机与 iPad 门禁进行中**。
+状态：**首个 PTY/文件浏览闭环和 iPhone 真机 UI 门禁已实现；iPad 门禁进行中**。
 
 已完成一个不依赖 Agent Loop、PTY 或 SwiftTerm 的低成本前置闭环：
 
@@ -205,13 +206,14 @@
 15. 在 iPhone/iPad Simulator 自动验证系统文件完整路径：从独立 Host App 示例的
     Documents 选择 fixture 导入 guest，经 share sheet 保存回 Files，删除 guest
     副本后再次导入并复验内容；fixture 只在显式 UI-test 启动参数下生成。
+16. 为交互式 PTY 默认提供 Esc、Tab、Ctrl-C、Ctrl-D 与上/下历史键；Xcode 26.6 在
+    Jack iPhone（iPhone 14 Pro / iOS 26.6）通过完整 Host App lifecycle XCTest，
+    包含 BusyBox `top` 动态输出、Ctrl-C 恢复 shell、前后台、旋转 resize、PTY
+    重开、Files 持久化预览与有序 shutdown。
 
 未完成门禁：
 
-- 完成 signed iPhone Host App UI runner；Xcode 26.1.1 已在 Jack iPhone / iOS 26.6
-  上完成编译、development 签名、安装和启动，但两次 XCTest 在进入测试体前超时于
-  automation mode 握手，因此尚未计为通过；
-- 真机交互程序、真实内存压力和长时间输出；
+- 真实内存压力和更长时间输出；
 - iPad 键盘、旋转、layout 和 VoiceOver 实机验证。
 
 实现直接使用低层 `IshSession` 所有权，不使用上游高层 `IshTerminal` wrapper。

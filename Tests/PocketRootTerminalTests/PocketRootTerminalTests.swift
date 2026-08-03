@@ -50,6 +50,63 @@ final class PocketRootTerminalTests: XCTestCase {
         XCTAssertEqual(configuration.commandTimeout, .seconds(8))
     }
 
+    func testInteractiveConfigurationShowsSpecialKeysByDefault() {
+        let configuration = PocketRootTerminalConfiguration.interactive()
+
+        XCTAssertTrue(configuration.showsAccessoryView)
+    }
+
+    func testInteractiveConfigurationCanHideSpecialKeys() {
+        let configuration = PocketRootTerminalConfiguration.interactive(
+            showsAccessoryView: false
+        )
+
+        XCTAssertFalse(configuration.showsAccessoryView)
+    }
+
+    func testTerminalSpecialKeysUseExpectedControlSequences() {
+        XCTAssertEqual(
+            TerminalSpecialKey.escape.input(applicationCursorMode: false),
+            Data([0x1b])
+        )
+        XCTAssertEqual(
+            TerminalSpecialKey.tab.input(applicationCursorMode: false),
+            Data([0x09])
+        )
+        XCTAssertEqual(
+            TerminalSpecialKey.interrupt.input(applicationCursorMode: false),
+            Data([0x03])
+        )
+        XCTAssertEqual(
+            TerminalSpecialKey.endOfFile.input(applicationCursorMode: false),
+            Data([0x04])
+        )
+        XCTAssertEqual(
+            TerminalSpecialKey.historyPrevious.input(applicationCursorMode: false),
+            Data([0x1b, 0x5b, 0x41])
+        )
+        XCTAssertEqual(
+            TerminalSpecialKey.historyNext.input(applicationCursorMode: false),
+            Data([0x1b, 0x5b, 0x42])
+        )
+        XCTAssertEqual(
+            TerminalSpecialKey.historyPrevious.input(applicationCursorMode: true),
+            Data([0x1b, 0x4f, 0x41])
+        )
+        XCTAssertEqual(
+            TerminalSpecialKey.historyNext.input(applicationCursorMode: true),
+            Data([0x1b, 0x4f, 0x42])
+        )
+        XCTAssertEqual(
+            Set(TerminalSpecialKey.allCases.map(\.accessibilityIdentifier)).count,
+            TerminalSpecialKey.allCases.count
+        )
+        XCTAssertEqual(
+            TerminalAccessoryControl.dismissKeyboardAccessibilityIdentifier,
+            "PocketRootTerminal.key.dismiss-keyboard"
+        )
+    }
+
     func testInteractiveConfigurationSuppliesPTYWorkingDirectoryByDefault() {
         let configuration = PocketRootTerminalConfiguration.interactive(
             initialWorkingDirectory: "/workspace",

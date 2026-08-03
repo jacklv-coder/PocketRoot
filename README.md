@@ -34,7 +34,7 @@ PocketRoot 的定位不是另一个终端 App，也不是新的操作系统：�
 > 真实 iSH 集成目前仍是 **实验性（Experimental）** 能力。固定的
 > `v0.4.0-abi.9` 已支持返回 Swift 的 soft shutdown、原子无覆盖重命名与有界 stdin
 > 写入，但每个宿主进程仍只允许一次有效
-> boot/shutdown；Host App 真机 UI 自动化、iPad 真机、真实压力与发行合规门禁尚未闭环。当前版本不得用于
+> boot/shutdown；iPad 真机、真实压力与发行合规门禁尚未闭环。当前版本不得用于
 > 生产、TestFlight 或公开二进制分发。
 
 ## 当前能做什么
@@ -45,10 +45,10 @@ PocketRoot 的定位不是另一个终端 App，也不是新的操作系统：�
 | UIKit Demo 外壳 | 可用 | 展示 System、Terminal、Files、Commands、Diagnostics 五个入口 |
 | RootFS 校验与安全安装 | 可用 | 固定大小和 SHA-256、安全解包、journal 保护的同卷 promotion、复用与中断恢复 |
 | iSH 启动与一次性命令 | 实验性 | 仅 `iOS + arm64`；支持确认 guest 退出的一次性命令取消 |
-| 终端与文件浏览 | 可接入 / 实验性 | UIKit/SwiftUI 注入已 boot system；SwiftTerm 持续 PTY 支持输入、resize、signal/EOF，文件页支持树形展开、导航、有界预览、安全增删改，以及 1 MiB 上限的系统文件导入/分享导出 |
+| 终端与文件浏览 | 可接入 / 实验性 | UIKit/SwiftUI 注入已 boot system；SwiftTerm 持续 PTY 支持输入、resize、signal/EOF，并默认提供 Esc、Tab、Ctrl-C、Ctrl-D、历史方向键与收起键盘按钮；文件页支持树形展开、导航、有界预览、安全增删改，以及 1 MiB 上限的系统文件导入/分享导出 |
 | 轻量 agent loop | 核心、OpenAI transport 与审批命令工具可用 | Agent 与 Runtime Tools 均显式 opt-in；不安装 Codex CLI，不自动批准 shell |
-| 交互式 PTY 与 SwiftTerm | 已实现，待扩大真机验证 | public session、bounded read、输入、resize、signal/EOF、registry 与 close-before-shutdown 已接通；iPhone/iPad Simulator 已通过 PTY、生命周期、Files/Workspace、系统文件导入/分享保存 round-trip 与有序 shutdown |
-| 真机与公开发行 | 部分通过 / 阻塞 | Jack iPhone 已通过命令、PTY/Files、生命周期、故障恢复和 3 分钟持续负载门禁（峰值 84.3 MiB）；Xcode 26.1.1 已完成 Host App 编译、签名、安装和启动，真机 XCTest 仍阻塞在 automation mode 握手，另需真实 storage pressure、iPad 真机、jetsam/断电、最终制品与合规门禁 |
+| 交互式 PTY 与 SwiftTerm | 已实现；iPad 真机待验证 | public session、bounded read、输入、resize、signal/EOF、registry 与 close-before-shutdown 已接通；Simulator 与 Jack iPhone 已通过 PTY lifecycle，真机还验证了 `top` 动态输出和 Ctrl-C 恢复 shell |
+| 真机与公开发行 | 部分通过 / 阻塞 | Jack iPhone 已通过命令、PTY/Files、Host App UI 生命周期、交互式 `top`、故障恢复和 3 分钟持续负载门禁（峰值 84.3 MiB）；仍需真实 storage pressure、iPad 真机、jetsam/断电、最终制品与合规门禁 |
 
 默认 `PocketRoot` 产品不会带入 agent loop 或真实 iSH 运行时，也不会打包或下载 RootFS。
 需要 agent 的应用显式依赖 `PocketRootAgent`；只有需要审批命令 adapter 时才额外依赖

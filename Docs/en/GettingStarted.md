@@ -73,7 +73,7 @@ The UIKit Demo contains System, Terminal, Files, Commands, and Diagnostics tabs:
 
 - System verifies and installs the fixed RootFS, then boots, checks, or shuts
   down the Experimental runtime.
-- Terminal presents the persistent SwiftTerm PTY and retains a Files shortcut.
+- Terminal presents the persistent SwiftTerm PTY with Esc/Tab/Ctrl-C/Ctrl-D/history keys and retains a Files shortcut.
 - Files browses `/root`; the disclosure control expands a directory inline,
   tapping the folder body navigates into it, and the action menu creates or
   confirmation-deletes guest items.

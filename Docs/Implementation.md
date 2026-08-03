@@ -343,7 +343,7 @@ RootFS 进入源码仓库或 Release bundle。
 ## 10. 尚待实现
 
 - Demo prepared-system dependency injection；
-- 当前可用 signed iPhone 的 PTY 页面生命周期与长输出验证；
+- 更长时间的 signed iPhone PTY 输出与真实内存压力验证；
 - iPad keyboard/rotation/layout 与 VoiceOver；
 - background/foreground、内存压力与性能硬化。
 

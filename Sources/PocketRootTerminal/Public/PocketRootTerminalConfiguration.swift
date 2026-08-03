@@ -51,13 +51,14 @@ public struct PocketRootTerminalConfiguration: Sendable, Equatable {
     /// A persistent PTY terminal rendered by SwiftTerm.
     public static func interactive(
         initialWorkingDirectory: String = "/root",
+        showsAccessoryView: Bool = true,
         cursorBlinkEnabled: Bool = true
     ) -> PocketRootTerminalConfiguration {
         PocketRootTerminalConfiguration(
             placeholderText: "",
             prompt: "",
             allowsInput: true,
-            showsAccessoryView: false,
+            showsAccessoryView: showsAccessoryView,
             initialWorkingDirectory: initialWorkingDirectory,
             cursorBlinkEnabled: cursorBlinkEnabled
         )

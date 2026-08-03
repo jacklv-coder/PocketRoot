@@ -21,6 +21,7 @@ final class PTYTerminalBridge: NSObject, @preconcurrency TerminalViewDelegate {
     private var accessibilityOutput = Data()
     private var pendingSize: PocketRootTerminalSize?
     private var pendingInput = Data()
+    private var acceptsInput = true
 
     var titleHandler: ((String) -> Void)?
     var directoryHandler: ((String?) -> Void)?
@@ -71,6 +72,8 @@ final class PTYTerminalBridge: NSObject, @preconcurrency TerminalViewDelegate {
                 return
             } catch {
                 let message = error.localizedDescription
+                self?.acceptsInput = false
+                self?.pendingInput.removeAll(keepingCapacity: false)
                 self?.feedStatus("\r\nPocketRoot terminal error: \(message)\r\n")
                 self?.sessionEndHandler?(.failed(message))
             }
@@ -78,6 +81,7 @@ final class PTYTerminalBridge: NSObject, @preconcurrency TerminalViewDelegate {
     }
 
     func detach(completion: (@MainActor () -> Void)? = nil) {
+        acceptsInput = false
         terminalView?.terminalDelegate = nil
         terminalView = nil
         accessibilityUpdateTask?.cancel()
@@ -142,10 +146,13 @@ final class PTYTerminalBridge: NSObject, @preconcurrency TerminalViewDelegate {
     }
 
     func send(source _: TerminalView, data: ArraySlice<UInt8>) {
-        guard allowsInput else {
+        sendInput(Data(data))
+    }
+
+    func sendInput(_ input: Data) {
+        guard allowsInput, acceptsInput else {
             return
         }
-        let input = Data(data)
         guard session != nil else {
             let availableBytes = max(0, 64 * 1_024 - pendingInput.count)
             pendingInput.append(input.prefix(availableBytes))
@@ -200,15 +207,19 @@ final class PTYTerminalBridge: NSObject, @preconcurrency TerminalViewDelegate {
             scheduleAccessibilitySnapshot()
         case .exited(let exitCode):
             feedStatus("\r\n[Process exited with code \(exitCode)]\r\n")
+            acceptsInput = false
             session = nil
             operationTail?.cancel()
             operationTail = nil
+            pendingInput.removeAll(keepingCapacity: false)
             sessionEndHandler?(.exited(exitCode))
         case .failed(let message):
             feedStatus("\r\n[PocketRoot terminal failed: \(message)]\r\n")
+            acceptsInput = false
             session = nil
             operationTail?.cancel()
             operationTail = nil
+            pendingInput.removeAll(keepingCapacity: false)
             sessionEndHandler?(.failed(message))
         }
     }
