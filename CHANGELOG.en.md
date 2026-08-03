@@ -92,12 +92,17 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   visible. Fixture selection uses a verified current frame and retries once if
   iOS 18.0 leaves the picker open after reporting a synthesized tap. The helper
   returns an explicit success state so a failed navigation or selection ends
-  the test case without cascading taps and secondary failures. The shared
+  the test case without cascading taps and secondary failures. The PTY size
+  probe likewise refocuses and resends only once when the first synthesized
+  command's unique marker remains absent for 15 seconds; the final 30-second
+  assertion still exposes a real terminal-input or resize synchronization
+  failure. The shared
   UI runner restarts and retries
   exactly once only when its own temporary Simulator test runner was not
   registered with FrontBoard; caller-supplied shared Simulators are not
   restarted, and assertion, timeout, and other build failures still fail
   immediately. If retry or restart fails, both attempt logs and available
+  `.xcresult` bundles are retained.
 - The native Xcode 16 lane validates the real RootFS install before downloading
   the multi-gigabyte Simulator runtime, preserving the disk headroom enforced
   by the installer while UI lanes retain the shared one-step setup.

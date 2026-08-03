@@ -1249,6 +1249,19 @@ class ReleaseComplianceTests < Minitest::Test
       ui_test.index("if sidebarLocalLocation.exists {")
     )
     assert_includes ui_test, "testPTYLifecycleAndShutdown"
+    query_terminal_size = ui_test[
+      /private func queryTerminalSize\(.*?\n    \}\n\n    private enum WidthChangeDirection/m
+    ]
+    refute_nil query_terminal_size
+    assert_includes(
+      query_terminal_size,
+      %q{let command = "printf '\(marker)'; stty size\n"}
+    )
+    assert_includes query_terminal_size, "if !waitWithoutAssertion("
+    assert_includes query_terminal_size, "timeout: 15"
+    assert_includes query_terminal_size, "terminal.tap()"
+    assert_equal 2, query_terminal_size.scan("terminal.typeText(command)").length
+    assert_includes query_terminal_size, "guard wait("
     assert_includes ui_test, "dismissKeyboardOnboardingIfPresent(in: app)"
     assert_includes ui_test, "let interruptFrames = waitForInteractionFrames("
     assert_includes ui_test, "interruptFrames.elementFrame"

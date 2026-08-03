@@ -1369,8 +1369,7 @@ final class PocketRootHostAppUITests: XCTestCase {
         _ terminal: XCUIElement,
         marker: String
     ) -> (rows: Int, columns: Int) {
-        terminal.typeText("printf '\(marker)'; stty size\n")
-
+        let command = "printf '\(marker)'; stty size\n"
         var result: (rows: Int, columns: Int)?
         let expression = try! NSRegularExpression(
             pattern: NSRegularExpression.escapedPattern(for: marker)
@@ -1397,7 +1396,22 @@ final class PocketRootHostAppUITests: XCTestCase {
             result = (rows, columns)
             return true
         }
-        wait(for: predicate, evaluatedWith: terminal, timeout: 30)
+        terminal.typeText(command)
+        if !waitWithoutAssertion(
+            for: predicate,
+            evaluatedWith: terminal,
+            timeout: 15
+        ) {
+            terminal.tap()
+            terminal.typeText(command)
+        }
+        guard wait(
+            for: predicate,
+            evaluatedWith: terminal,
+            timeout: 30
+        ) else {
+            return (0, 0)
+        }
         return result ?? (0, 0)
     }
 
