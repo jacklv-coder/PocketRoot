@@ -229,14 +229,19 @@ while one guest command is active, then requires fresh callback evidence, the
 active command, a later command, and `.ready` to survive. It does not create
 real memory pressure and is not jetsam evidence.
 
-Use the mutually exclusive `POCKETROOT_SMOKE_LONG_WORKLOAD=1` mode for a
-bounded sustained-execution baseline, and set
-`POCKETROOT_SMOKE_TIMEOUT_SECONDS` to at least `600`. It runs 90 command/file
-write-read cycles at two-second intervals, validates 64 KiB of binary output
-every tenth cycle, previews the complete marker through the Files API, then
-enforces shutdown and the 256 MiB peak-memory gate. This is an approximately
-three-minute baseline; it does not create real memory pressure or prove
-sustained background execution or jetsam behavior.
+Set `POCKETROOT_SMOKE_STABILITY=1` on either Simulator or a physical device for
+a bounded sustained-execution baseline, and set
+`POCKETROOT_SMOKE_TIMEOUT_SECONDS` to at least `600`. By default one PTY stays
+open for 90 cycles at two-second intervals. Every tenth cycle streams 64 KiB,
+one-shot commands are interleaved, an output-limit failure is injected and
+recovered midway, and the Files API verifies the complete file at the end. The
+gate also compares `phys_footprint` after cycle-ten warm-up with the final
+sample: growth is limited to 64 MiB, while all samples and the complete
+lifecycle peak remain limited to 256 MiB. Iterations are configurable from 20
+through 600 and intervals from 25 through 10000 ms;
+`POCKETROOT_SMOKE_LONG_WORKLOAD=1` remains only as a compatibility alias. This
+is a bounded foreground baseline, not real pressure, sustained background,
+system low-memory, or jetsam evidence.
 
 ## 8. Command reference
 
@@ -256,7 +261,7 @@ sustained background execution or jetsam behavior.
 | Signed forced-relaunch persistence smoke | Add `POCKETROOT_SMOKE_RELAUNCH_PERSISTENCE=1` to the signed physical smoke command |
 | Signed bounded storage-failure smoke | Add `POCKETROOT_SMOKE_STORAGE_FAILURE=1` to the signed physical smoke command |
 | Signed bounded memory-warning smoke | Add `POCKETROOT_SMOKE_MEMORY_WARNING=1` to the signed physical smoke command |
-| Signed sustained-workload smoke | Add `POCKETROOT_SMOKE_LONG_WORKLOAD=1 POCKETROOT_SMOKE_TIMEOUT_SECONDS=600` to the signed physical smoke command |
+| Simulator/signed physical stability smoke | Add `POCKETROOT_SMOKE_STABILITY=1 POCKETROOT_SMOKE_TIMEOUT_SECONDS=600` to the matching native smoke command |
 | Documentation checks | `./Scripts/check-docs.sh` |
 
 ## 9. Do not commit

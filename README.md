@@ -279,6 +279,11 @@ POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
 POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
   ./Scripts/run-runtime-smoke.sh
 
+POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
+POCKETROOT_SMOKE_STABILITY=1 \
+POCKETROOT_SMOKE_TIMEOUT_SECONDS=600 \
+  ./Scripts/run-runtime-smoke.sh
+
 POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
 POCKETROOT_SIGNED_ARCHIVE_OUTPUT=/absolute/new/archive-scan \
 POCKETROOT_SPDX_SCHEMA=/absolute/spdx-2.3-schema.json \

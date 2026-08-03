@@ -127,7 +127,7 @@
     "Tests/Integration/ExternalConsumerApp/Sources/ExternalConsumerApp.swift": "580fa504ff16695c53d1d40a41f1a8531da21f961906a394394a0649c40ce11b",
     "Tests/Integration/ExternalConsumerApp/UITests/ExternalConsumerAppUITests.swift": "0fa46c32d482c20d5bc4cf0aae93c6364060cf7c6b7cdca5ab99fe8400da7ab7",
     "Spikes/PocketRootIshRuntimeCompileSpike/PocketRootIshRuntimeCompileSpike.swift": "829a9ef79d67cb93aae5fbea32561c5c5497a7a017922bb1ebb344b4c0c32da8",
-    "Spikes/PocketRootIshRuntimeSmoke/PocketRootIshRuntimeSmoke.swift": "3bf87626cdaf784f78e70def043b4e1ed9de9384c77c7e873512001392a5c42b",
+    "Spikes/PocketRootIshRuntimeSmoke/PocketRootIshRuntimeSmoke.swift": "e7064ce79929d4f66fec82a40096ae30e7b0c8f89be575dc840e5cc13fc14d79",
     "Compliance/RootFS/v0.3.3/EVIDENCE.json": "98170847e01c3c738d600970ca479202e7f69bf9f3b2cef31138462d0bfc3deb",
     "Compliance/RootFS/v0.3.3/SBOM.spdx.json": "8e021cb8c4160c934a0202609691d7a94526cd016f4394a47da6e7a5ab41d0ea"
   },

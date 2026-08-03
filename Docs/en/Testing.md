@@ -14,11 +14,11 @@ PocketRoot separates host logic, real RootFS, iOS build, native final-link, and 
 | Native final link | `./Scripts/build-runtime-spike.sh` | Full graph forms arm64 executables | Physical or guest behavior |
 | Engineering App/archive scan | `ruby Scripts/scan-release-artifact.rb` | Deterministic external `.app`/`.xcarchive` file hashes, Mach-O, signature/entitlement risk signals, and file-level SPDX | Final exported artifact, dependency-license completeness, or distribution authorization |
 | Development-signed archive gate | `./Scripts/build-signed-engineering-archive.sh` | Standard `.xcarchive`, development entitlements, clean risk signals, deterministic re-verification, and SPDX schema validation | IPA export, release signing, installation, upload, or distribution authorization |
-| Simulator native smoke | `./Scripts/run-runtime-smoke.sh` | Prepare, boot, command bounds, returning soft shutdown | Other toolchains, physical devices, distribution |
+| Simulator native smoke | `./Scripts/run-runtime-smoke.sh` | Prepare, boot, command bounds, optional persistent-PTY stability, returning soft shutdown | Other toolchains, physical devices, distribution |
 | Quick Start UI smoke | `./Scripts/run-quick-start-ui-smoke.sh` | Cold Files and Terminal entries in the minimal consumer App auto-boot; a real PTY-created file is previewed through Files | Physical devices, full Host lifecycle, distribution |
 | Host App UI smoke | `./Scripts/run-host-app-ui-smoke.sh` | Public-host boot, SwiftTerm PTY, lifecycle, Workspace persistence, Files mutations/previews, system document-picker import, share-sheet save and re-import round trip, and ordered shutdown on iPhone/iPad iOS 18 Simulators | Physical-device system file interaction, physical keyboards, physical iPad, distribution |
 | Physical Host App UI smoke | `./Scripts/run-host-app-device-ui-smoke.sh` | The same lifecycle UI test on an Xcode-resolved, development-signed iPhone/iPad, including signature and development entitlements | iPad, real pressure, distribution |
-| Physical native smoke | `./Scripts/run-runtime-device-smoke.sh` | Same 17 checks with optional process suspend/resume, UIKit lifecycle, forced-relaunch persistence, bounded storage-failure recovery, bounded memory-warning recovery, or a three-minute sustained workload; development entitlements and returning soft shutdown | Real storage/memory pressure, power cut, jetsam, iPad, distribution |
+| Physical native smoke | `./Scripts/run-runtime-device-smoke.sh` | Same 17 checks with optional process suspend/resume, UIKit lifecycle, forced-relaunch persistence, bounded storage-failure recovery, bounded memory-warning recovery, or persistent-PTY stability; development entitlements and returning soft shutdown | Real storage/memory pressure, power cut, jetsam, iPad, distribution |
 | Source-release audit | `ruby Scripts/verify-source-release.rb --version 0.1.0` | Source track Ready, complete version documents, and a `git archive` without RootFS, App, IPA, XCFramework mirror, compressed payload, or native binary content | Runtime/App/RootFS distribution authorization |
 | Documentation | `./Scripts/check-docs.sh` | Pairs, Chinese coverage, relative links | Implementation correctness |
 
@@ -120,6 +120,10 @@ still passes traversal, duplicate, link, and materialization checks.
 `POCKETROOT_SMOKE_TIMEOUT_SECONDS` changes only the default 300-second JSON
 report wait after App launch. It does not bound project generation, the build,
 Simulator boot, or the fixed 20-second post-report runner-cleanup check. A
+`POCKETROOT_SMOKE_STABILITY=1` adds the persistent-PTY stability gate on either
+runner. `POCKETROOT_SMOKE_STABILITY_ITERATIONS` accepts 20 through 600
+(default 90), and `POCKETROOT_SMOKE_STABILITY_INTERVAL_MILLISECONDS` accepts
+25 through 10000 (default 2000). A
 script-created Simulator is deleted on script exit unless
 `POCKETROOT_KEEP_SIMULATOR=1`. A caller-supplied Simulator is booted, has the
 old smoke App uninstalled before the new one is installed, and retains the new
@@ -190,6 +194,19 @@ output, a later command, `.ready`, shutdown, and peak memory must all pass.
 This repository-owned injection does not create real memory pressure and does
 not prove system low-memory delivery, jetsam, or relaunch recovery.
 
+With `POCKETROOT_SMOKE_STABILITY=1` on Simulator or a physical device, an
+eighteenth check keeps one PTY open for every cycle. It streams 64 KiB every
+tenth cycle, interleaves one-shot commands and Files API reads against the same
+file, injects an 8 MiB stdout-limit failure midway, and requires the original
+PTY to continue. The collector retains only its latest 1 MiB transcript while
+accounting for all consumed bytes. `phys_footprint` may grow at most 64 MiB
+between the cycle-ten warm sample and the final sample; every sample and the
+full-process high-water mark remain capped at 256 MiB. The default 90×2-second
+run is about three minutes; CI continuously exercises the same path with a
+bounded 30×250-ms configuration. The old
+`POCKETROOT_SMOKE_LONG_WORKLOAD=1` maps to this mode for compatibility. This is
+not real pressure, background-longevity, system low-memory, or jetsam evidence.
+
 The sustained-output check proves that Swift can continuously consume binary
 output without truncation or corruption merely because it exceeds the 4 MiB
 native backlog. The lifecycle high-water check covers RootFS preparation,
@@ -220,10 +237,16 @@ Simulator. It installed as `candidate-9375e0ecc9cf`, reported Alpine 3.19.1 and
 aarch64, completed all command/recovery/shutdown checks, and peaked at
 146.6 MiB. The candidate stayed outside the repository and was not uploaded.
 
+On 2026-08-03, the new stability path passed all 20 checks on an iOS 18.2
+arm64 Simulator with the CI's 30×250-ms configuration. One PTY completed all
+30 cycles, consumed 192 KiB of bounded streamed output, and continued after the
+midway stdout-limit failure. Files and one-shot reads agreed, post-warm-up
+`phys_footprint` grew by 0.3 MiB, and the full lifecycle peaked at 165.6 MiB.
+
 The repository's minimum-toolchain job explicitly selects Xcode 16.0 and the
 iOS 18.0 SDK on an arm64 macOS runner, materializes the pinned RootFS,
-final-links arm64 Simulator and unsigned-device Apps, and runs the same
-17-check native smoke on an iOS 18.0 Simulator.
+final-links arm64 Simulator and unsigned-device Apps, and runs the standard 17
+checks plus a 30×250-ms stability check on an iOS 18.0 Simulator.
 
 ### Development-signed engineering archive
 
@@ -315,14 +338,14 @@ POCKETROOT_SMOKE_MEMORY_WARNING=1 \
   ./Scripts/run-runtime-device-smoke.sh
 ```
 
-Use a separate mode for an approximately three-minute sustained command,
-file-I/O, and bounded-output baseline:
+Use a separate mode for configurable persistent-PTY, file-consistency,
+failure-recovery, and memory-growth coverage:
 
 ```bash
 POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
 POCKETROOT_SMOKE_DEVICE=<physical-device-reference> \
 POCKETROOT_DEVELOPMENT_TEAM=<team-id> \
-POCKETROOT_SMOKE_LONG_WORKLOAD=1 \
+POCKETROOT_SMOKE_STABILITY=1 \
 POCKETROOT_SMOKE_TIMEOUT_SECONDS=600 \
   ./Scripts/run-runtime-device-smoke.sh
 ```
