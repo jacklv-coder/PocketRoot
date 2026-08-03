@@ -6,7 +6,14 @@ PocketRoot 的重要变化记录在这里，并从首个公开版本开始遵循
 
 ## Unreleased
 
-当前暂无未归入候选版本的变更。
+### Changed
+
+- 将最低 Xcode 16 门禁拆为独立 native runtime job 和五路 `fail-fast: false` UI
+  matrix，分别并行验证公开 SHA 外部消费者、Quick Start iPhone/iPad 与 Host App
+  iPhone/iPad。全部 job 复用仓库内 composite action，但各自在隔离 runner 上重新
+  校验 RootFS、XcodeGen、Xcode 16 与 iOS 18 runtime，不传递未审计 App 或 DerivedData；
+  每路失败诊断使用独立 artifact 名称。测试覆盖不减少，PR 墙钟时间不再由全部 UI
+  smoke 串行累加。
 
 ## 0.2.0 - Unreleased
 

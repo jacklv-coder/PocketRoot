@@ -499,9 +499,16 @@ private-framework, private-entitlement, JIT-entitlement, `MAP_JIT`, or invalid
 signature signal, and validates the generated SBOM with the same schema. It
 uploads neither the App nor scan evidence.
 
-The minimum-toolchain job explicitly selects Xcode 16.0 / iOS 18.0 SDK,
-validates real RootFS installation, installs the iOS 18.0 Simulator runtime,
-final-links Simulator/device Apps, runs the 17-check native smoke, and executes
+The minimum-toolchain gate is split into one native-runtime job and a five-way
+parallel UI matrix. Every job independently uses the repository-owned
+composite action to select Xcode 16.0 / iOS 18.0 SDK, verify and obtain the
+same RootFS, and install the same XcodeGen and iOS 18.0 Simulator runtime. Jobs
+do not transfer an unreviewed App, RootFS, or DerivedData between runners. The
+native job validates real RootFS installation, final-links Simulator/device
+Apps, and runs the 17-check native smoke. The `fail-fast: false` UI matrix runs
+the public-SHA external consumer, iPhone/iPad Quick Start, and iPhone/iPad Host
+App independently, so one failure does not cancel the remaining evidence and
+each lane has a collision-free diagnostic artifact name. These lanes execute
 the minimal Quick Start cold Files/Terminal and PTY-to-Files file closure plus
 the full Host App PTY, Files, Workspace, system document-picker import,
 share-sheet save, guest deletion, re-import, and content-verification UI

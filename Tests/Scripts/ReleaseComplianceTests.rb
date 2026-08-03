@@ -1023,8 +1023,52 @@ class ReleaseComplianceTests < Minitest::Test
     assert_includes runner, "POCKETROOT_EXTERNAL_CONSUMER_REVISION"
     assert_includes runner,
       "POCKETROOT_EXTERNAL_CONSUMER_REPOSITORY_URL"
-    assert_includes workflow,
-      "Run public-SHA External Consumer UI acceptance"
+    assert_includes workflow, "suite: external-consumer"
+    assert_includes workflow, "./Scripts/run-external-consumer-ui-smoke.sh"
+  end
+
+  def test_minimum_xcode_ci_parallelizes_native_and_ui_coverage
+    workflow = REPOSITORY_ROOT.join(".github/workflows/ci.yml").binread
+    setup_action =
+      REPOSITORY_ROOT
+        .join(".github/actions/setup-minimum-xcode-16/action.yml")
+        .binread
+
+    assert_match(/^  minimum-xcode-16-runtime:$/, workflow)
+    assert_match(/^  minimum-xcode-16-ui:$/, workflow)
+    refute_match(/^  minimum-xcode-16:$/, workflow)
+    assert_includes workflow, "fail-fast: false"
+    assert_equal(
+      2,
+      workflow.scan("uses: ./.github/actions/setup-minimum-xcode-16").length
+    )
+    %w[
+      external-consumer
+      quick-start-iphone
+      quick-start-ipad
+      host-iphone
+      host-ipad
+    ].each do |suite|
+      assert_includes workflow, "suite: #{suite}"
+    end
+    assert_includes workflow, "./Scripts/run-runtime-smoke.sh"
+    assert_includes workflow, "./Scripts/run-external-consumer-ui-smoke.sh"
+    assert_includes workflow, "./Scripts/run-quick-start-ui-smoke.sh"
+    assert_includes workflow, "./Scripts/run-host-app-ui-smoke.sh"
+    assert_includes(
+      workflow,
+      "pocketroot-ui-failure-${{ matrix.suite }}-${{ github.run_id }}"
+    )
+
+    assert_includes setup_action, "/Applications/Xcode_16.0.app"
+    assert_includes setup_action, 'ROOTFS_BYTE_COUNT: "6581376"'
+    assert_includes(
+      setup_action,
+      'ROOTFS_SHA256: "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"'
+    )
+    assert_includes setup_action, 'XCODEGEN_VERSION: "2.46.0"'
+    assert_includes setup_action, "xcodebuild -downloadPlatform iOS"
+    assert_includes setup_action, 'grep -F "iOS 18.0"'
   end
 
   def test_standalone_host_retains_runtime_across_scene_recreation

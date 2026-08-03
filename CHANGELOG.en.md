@@ -6,7 +6,16 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 
 ## Unreleased
 
-There are currently no changes outside the release candidate.
+### Changed
+
+- Split the minimum-Xcode 16 gate into an independent native-runtime job and a
+  five-way `fail-fast: false` UI matrix for the public-SHA external consumer,
+  Quick Start iPhone/iPad, and Host App iPhone/iPad. Every isolated runner
+  re-verifies the RootFS, XcodeGen, Xcode 16, and iOS 18 runtime through one
+  repository-owned composite action without transferring an unreviewed App or
+  DerivedData; each lane has a collision-free failure artifact. Coverage is
+  unchanged while PR wall-clock time no longer accumulates every UI smoke
+  serially.
 
 ## 0.2.0 - Unreleased
 
