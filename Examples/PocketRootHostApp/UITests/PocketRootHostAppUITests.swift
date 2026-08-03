@@ -393,8 +393,24 @@ final class PocketRootHostAppUITests: XCTestCase {
         }
         recordCheckpoint("interactive-top-output-observed")
         let interruptButton = app.buttons["PocketRootTerminal.key.ctrl-c"]
-        XCTAssertTrue(interruptButton.waitForExistence(timeout: 10))
-        interruptButton.tap()
+        guard let interruptFrames = waitForInteractionFrames(
+            of: interruptButton,
+            in: app,
+            timeout: 10
+        ) else {
+            XCTFail("Ctrl-C to expose a usable interaction frame")
+            return
+        }
+        // XCTest's element tap can issue kAXScrollToVisibleAction even when
+        // the accessory button already has an on-screen frame. iOS 18.0
+        // Simulator can reject that redundant AX action. Tap the verified
+        // frame through the application coordinate so the smoke still proves
+        // Ctrl-C delivery without depending on AX scrolling.
+        tapFrame(
+            interruptFrames.elementFrame,
+            in: interruptFrames.appFrame,
+            using: app
+        )
         guard wait(
             for: NSPredicate(
                 format: "value CONTAINS %@",

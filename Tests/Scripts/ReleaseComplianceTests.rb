@@ -1137,6 +1137,9 @@ class ReleaseComplianceTests < Minitest::Test
       ui_test.index("localLocation.waitForExistence(timeout: 30)")
     )
     assert_includes ui_test, "testPTYLifecycleAndShutdown"
+    assert_includes ui_test, "let interruptFrames = waitForInteractionFrames("
+    assert_includes ui_test, "interruptFrames.elementFrame"
+    refute_includes ui_test, "interruptButton.tap()"
     assert_includes ui_test, "PocketRoot Host UI checkpoint"
     assert_includes ui_test, "testWorkspaceKeepsPTYAliveAcrossFilesTab"
     assert_includes(
