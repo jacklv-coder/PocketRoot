@@ -164,22 +164,18 @@ public struct PocketRootFileBrowserView: View {
                 }
             }
         }
-        .sheet(
-            item: $sharePayload,
-            onDismiss: {
-                if let payload = sharePayload {
-                    model.removeExport(payload)
-                    sharePayload = nil
-                }
+        .background {
+            if let payload = sharePayload {
+                PocketRootActivityPresenter(
+                    payload: payload,
+                    completion: {
+                        model.removeExport(payload)
+                        if sharePayload?.id == payload.id {
+                            sharePayload = nil
+                        }
+                    }
+                )
             }
-        ) { payload in
-            PocketRootActivityView(
-                url: payload.url,
-                completion: {
-                    model.removeExport(payload)
-                    sharePayload = nil
-                }
-            )
         }
         .task {
             await model.loadIfNeeded()
@@ -912,25 +908,110 @@ private struct PocketRootSharePayload: Identifiable, Sendable {
 }
 
 @available(iOS 18.0, *)
-private struct PocketRootActivityView: UIViewControllerRepresentable {
-    let url: URL
+private struct PocketRootActivityPresenter: UIViewControllerRepresentable {
+    let payload: PocketRootSharePayload
     let completion: () -> Void
 
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        let controller = UIActivityViewController(
-            activityItems: [url],
-            applicationActivities: nil
-        )
-        controller.completionWithItemsHandler = { _, _, _, _ in
-            completion()
-        }
+    func makeUIViewController(
+        context: Context
+    ) -> PocketRootActivityPresenterViewController {
+        let controller = PocketRootActivityPresenterViewController()
+        controller.configure(payload: payload, completion: completion)
         return controller
     }
 
     func updateUIViewController(
-        _ uiViewController: UIActivityViewController,
+        _ uiViewController: PocketRootActivityPresenterViewController,
         context: Context
-    ) {}
+    ) {
+        uiViewController.configure(payload: payload, completion: completion)
+    }
+}
+
+@available(iOS 18.0, *)
+private final class PocketRootActivityPresenterViewController:
+    UIViewController,
+    UIPopoverPresentationControllerDelegate
+{
+    private var payloadID: UUID?
+    private var exportURL: URL?
+    private var presentationCompletion: (() -> Void)?
+    private var isPresentingActivity = false
+    private var didFinishActivity = false
+
+    override func loadView() {
+        let view = UIView()
+        view.backgroundColor = .clear
+        self.view = view
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        presentActivityIfNeeded()
+    }
+
+    func configure(
+        payload: PocketRootSharePayload,
+        completion: @escaping () -> Void
+    ) {
+        if payloadID != payload.id {
+            payloadID = payload.id
+            exportURL = payload.url
+            didFinishActivity = false
+        }
+        presentationCompletion = completion
+        presentActivityIfNeeded()
+    }
+
+    private func presentActivityIfNeeded() {
+        guard viewIfLoaded?.window != nil,
+              presentedViewController == nil,
+              !isPresentingActivity,
+              !didFinishActivity,
+              let exportURL
+        else {
+            return
+        }
+
+        isPresentingActivity = true
+        let activity = UIActivityViewController(
+            activityItems: [exportURL],
+            applicationActivities: nil
+        )
+        activity.modalPresentationStyle = .popover
+        activity.completionWithItemsHandler = { [weak self] _, _, _, _ in
+            self?.finishActivity()
+        }
+        if let popover = activity.popoverPresentationController {
+            let bounds = view.bounds
+            popover.sourceView = view
+            popover.sourceRect = CGRect(
+                x: bounds.midX,
+                y: bounds.midY,
+                width: 1,
+                height: 1
+            )
+            popover.permittedArrowDirections = []
+            popover.delegate = self
+        }
+        present(activity, animated: true)
+    }
+
+    func popoverPresentationControllerDidDismissPopover(
+        _ popoverPresentationController: UIPopoverPresentationController
+    ) {
+        finishActivity()
+    }
+
+    private func finishActivity() {
+        guard !didFinishActivity else {
+            return
+        }
+        didFinishActivity = true
+        isPresentingActivity = false
+        presentationCompletion?()
+        presentationCompletion = nil
+    }
 }
 
 private enum PocketRootFileTransferUIError: LocalizedError {

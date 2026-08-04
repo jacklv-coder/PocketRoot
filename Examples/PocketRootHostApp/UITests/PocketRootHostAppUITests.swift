@@ -40,9 +40,14 @@ final class PocketRootHostAppUITests: XCTestCase {
 
         actions.tap()
         XCTAssertTrue(app.buttons["Import File"].waitForExistence(timeout: 10))
-        app.buttons["New File"].tap()
         let nameField = app.textFields["Name"]
-        XCTAssertTrue(nameField.waitForExistence(timeout: 10))
+        guard openCreationDialog(
+            action: "New File",
+            nameField: nameField,
+            in: app
+        ) else {
+            return
+        }
         nameField.typeText(fileName)
         let file = app.descendants(matching: .any)[
             "PocketRootFiles.entry./root/\(fileName)"
@@ -102,8 +107,13 @@ final class PocketRootHostAppUITests: XCTestCase {
 
         waitForEnabled(actions)
         actions.tap()
-        app.buttons["New Folder"].tap()
-        XCTAssertTrue(nameField.waitForExistence(timeout: 10))
+        guard openCreationDialog(
+            action: "New Folder",
+            nameField: nameField,
+            in: app
+        ) else {
+            return
+        }
         nameField.typeText(folderName)
         let folder = app.descendants(matching: .any)[
             "PocketRootFiles.entry./root/\(folderName)"
@@ -128,8 +138,13 @@ final class PocketRootHostAppUITests: XCTestCase {
 
         waitForEnabled(actions)
         actions.tap()
-        app.buttons["New File"].tap()
-        XCTAssertTrue(nameField.waitForExistence(timeout: 10))
+        guard openCreationDialog(
+            action: "New File",
+            nameField: nameField,
+            in: app
+        ) else {
+            return
+        }
         nameField.typeText(nestedFileName)
         let nestedFile = app.descendants(matching: .any)[
             "PocketRootFiles.entry./root/\(folderName)/\(nestedFileName)"
@@ -160,6 +175,94 @@ final class PocketRootHostAppUITests: XCTestCase {
         wait(
             for: NSPredicate(format: "exists == false"),
             evaluatedWith: folder,
+            timeout: 30
+        )
+        shutdownRuntime(in: app)
+    }
+
+    func testFileExportUsesPlatformActivityPresentation() {
+        let app = launchAndBoot()
+        app.buttons["PocketRootHost.files"].tap()
+
+        let suffix = String(UUID().uuidString.prefix(8)).lowercased()
+        let fileName = "share-\(suffix).txt"
+        let file = app.descendants(matching: .any)[
+            "PocketRootFiles.entry./root/\(fileName)"
+        ]
+        let actions = app.buttons["PocketRootFiles.actions"]
+        XCTAssertTrue(actions.waitForExistence(timeout: 30))
+        waitForEnabled(actions)
+        actions.tap()
+        let nameField = app.textFields["Name"]
+        guard openCreationDialog(
+            action: "New File",
+            nameField: nameField,
+            in: app
+        ) else {
+            return
+        }
+        nameField.typeText(fileName)
+        guard submitCreation(expectedEntry: file, in: app),
+              revealFileEntry(file, in: app),
+              let share = openFileEntryContextMenu(
+                  for: file,
+                  expectedAction: "Share / Export",
+                  in: app
+              ),
+              activateMenuAction(share, in: app)
+        else {
+            return
+        }
+
+        let saveToFiles = app.cells.matching(
+            NSPredicate(
+                format: "label IN %@",
+                ["Save to Files", "存储到“文件”", "存储到文件"]
+            )
+        ).firstMatch
+        guard saveToFiles.waitForExistence(timeout: 30) else {
+            attachHierarchy(
+                named: "System activity presentation did not expose Save to Files",
+                from: app
+            )
+            XCTFail("system activity presentation to expose Save to Files")
+            return
+        }
+
+        guard activateMenuAction(saveToFiles, in: app),
+              waitForDocumentPickerPresentation(in: app, timeout: 30)
+        else {
+            attachHierarchy(
+                named: "Save to Files did not open the document picker",
+                from: app
+            )
+            XCTFail("Save to Files to open the document picker")
+            return
+        }
+        // The document picker owns its transient Cancel element. Restart the
+        // host after proving the handoff instead of resolving that system
+        // button while the activity controller is completing its transition.
+        relaunchAndBoot(app)
+        let filesButton = app.buttons["PocketRootHost.files"]
+        XCTAssertTrue(filesButton.waitForExistence(timeout: 10))
+        filesButton.tap()
+        let persistedFile = app.descendants(matching: .any)[
+            "PocketRootFiles.entry./root/\(fileName)"
+        ]
+        guard revealFileEntry(persistedFile, in: app),
+              let delete = openFileEntryContextMenu(
+                  for: persistedFile,
+                  expectedAction: "Delete",
+                  in: app
+              )
+        else {
+            return
+        }
+        delete.tap()
+        confirmDeletion(of: fileName, in: app)
+        wait(
+            for: NSPredicate(format: "exists == false"),
+            evaluatedWith: persistedFile,
             timeout: 30
         )
         shutdownRuntime(in: app)
@@ -267,7 +370,9 @@ final class PocketRootHostAppUITests: XCTestCase {
         ) else {
             return
         }
-        share.tap()
+        guard activateMenuAction(share, in: app) else {
+            return
+        }
 
         let saveToFiles = app.cells.matching(
             NSPredicate(
@@ -1019,6 +1124,12 @@ final class PocketRootHostAppUITests: XCTestCase {
                 localLocationLabels
             )
         ).firstMatch
+        let localLocationLabel = app.staticTexts.matching(
+            NSPredicate(
+                format: "label IN %@",
+                localLocationLabels
+            )
+        ).firstMatch
         let hostFixture = app.cells[
             "\(Self.systemImportFixtureDisplayName), txt"
         ]
@@ -1028,7 +1139,7 @@ final class PocketRootHostAppUITests: XCTestCase {
         // file list. Spend one deadline waiting for either the fixture itself,
         // a local location, or a usable Browse transition.
         let pickerDeadline = Date().addingTimeInterval(60)
-        var localLocation: XCUIElement?
+        var foundLocalLocation = false
         var didTapBrowse = false
         while Date() < pickerDeadline {
             if currentHostDocuments.exists {
@@ -1045,11 +1156,11 @@ final class PocketRootHostAppUITests: XCTestCase {
                 continue
             }
             if sidebarLocalLocation.exists {
-                localLocation = sidebarLocalLocation
+                foundLocalLocation = true
                 break
             }
             if fallbackLocalLocation.exists {
-                localLocation = fallbackLocalLocation
+                foundLocalLocation = true
                 break
             }
             if !didTapBrowse, browse.exists {
@@ -1077,7 +1188,7 @@ final class PocketRootHostAppUITests: XCTestCase {
             }
             return true
         }
-        guard let localLocation else {
+        guard foundLocalLocation else {
             XCTFail("document picker to expose a usable Host or local destination")
             return false
         }
@@ -1098,7 +1209,9 @@ final class PocketRootHostAppUITests: XCTestCase {
             )
         ).firstMatch
         var openedHostDestination = false
-        for _ in 0..<2 {
+        var lastLocalAppFrame = CGRect.null
+        var lastLocalElementFrame = CGRect.null
+        for attempt in 0..<2 {
             // Browse can restore the last Host destination while the local
             // location query is transitioning out of the accessibility tree.
             // Re-check that stronger navigation state before touching a stale
@@ -1107,32 +1220,77 @@ final class PocketRootHostAppUITests: XCTestCase {
                 openedHostDestination = true
                 break
             }
-            guard let frames = waitForInteractionFrames(
-                of: localLocation,
-                in: app,
-                timeout: 5
-            ) else {
-                if currentHostDocuments.waitForExistence(timeout: 5) {
+
+            // Re-query on every attempt. iPad keeps its sidebar cell visible
+            // while changing the selected location, so retaining the element
+            // that originally won the readiness race can synthesize two taps
+            // against the same stale accessibility snapshot.
+            let currentLocalLocation: XCUIElement
+            if attempt == 1, localLocationLabel.exists {
+                // The label frame is an independent, freshly resolved target
+                // inside the same row. It avoids asking a cell that can vanish
+                // during the selection transition to execute its own action.
+                currentLocalLocation = localLocationLabel
+            } else if sidebarLocalLocation.exists {
+                currentLocalLocation = sidebarLocalLocation
+            } else if fallbackLocalLocation.exists {
+                currentLocalLocation = fallbackLocalLocation
+            } else {
+                if waitForDocumentPickerDestination(
+                    currentHostDocuments: currentHostDocuments,
+                    hostDestination: hostDestination,
+                    timeout: 5
+                ) {
                     openedHostDestination = true
                     break
                 }
                 continue
             }
+            guard let frames = waitForInteractionFrames(
+                of: currentLocalLocation,
+                in: app,
+                timeout: 5
+            ) else {
+                if waitForDocumentPickerDestination(
+                    currentHostDocuments: currentHostDocuments,
+                    hostDestination: hostDestination,
+                    timeout: 5
+                ) {
+                    openedHostDestination = true
+                    break
+                }
+                continue
+            }
+            lastLocalAppFrame = frames.appFrame
+            lastLocalElementFrame = frames.elementFrame
+            // Always synthesize through the application using captured values.
+            // Calling tap() on the query would resolve the element again, and
+            // the system picker can remove that cell between frame validation
+            // and event dispatch.
             tapFrame(
                 frames.elementFrame,
                 in: frames.appFrame,
                 using: app
             )
-            if hostDestination.waitForExistence(timeout: 10) {
+            if waitForDocumentPickerDestination(
+                currentHostDocuments: currentHostDocuments,
+                hostDestination: hostDestination,
+                timeout: 10
+            ) {
                 openedHostDestination = true
                 break
             }
         }
-        XCTAssertTrue(
-            openedHostDestination,
-            "local document location to reveal the host container"
-        )
         guard openedHostDestination else {
+            attachHierarchy(
+                named: "Document picker failed to open local location",
+                from: app
+            )
+            XCTFail(
+                "local document location to reveal the host container; "
+                    + "app=\(lastLocalAppFrame), "
+                    + "element=\(lastLocalElementFrame)"
+            )
             return false
         }
         if !currentHostDocuments.exists {
@@ -1289,6 +1447,30 @@ final class PocketRootHostAppUITests: XCTestCase {
             .tap()
     }
 
+    private func activateMenuAction(
+        _ action: XCUIElement,
+        in app: XCUIApplication
+    ) -> Bool {
+        guard let frames = waitForInteractionFrames(
+            of: action,
+            in: app,
+            timeout: 5
+        ) else {
+            attachHierarchy(
+                named: "Menu action did not expose a usable frame",
+                from: app
+            )
+            XCTFail("menu action \(action.label) to expose a usable frame")
+            return false
+        }
+        tapFrame(
+            frames.elementFrame,
+            in: frames.appFrame,
+            using: app
+        )
+        return true
+    }
+
     private func waitForInteractionFrames(
         of element: XCUIElement,
         in app: XCUIApplication,
@@ -1313,6 +1495,87 @@ final class PocketRootHostAppUITests: XCTestCase {
             RunLoop.current.run(until: Date().addingTimeInterval(0.2))
         }
         return nil
+    }
+
+    private func openCreationDialog(
+        action actionName: String,
+        nameField: XCUIElement,
+        in app: XCUIApplication
+    ) -> Bool {
+        let action = app.buttons[actionName]
+        var lastAppFrame = CGRect.null
+        var lastActionFrame = CGRect.null
+
+        // iPad can report a successful semantic menu-button tap while merely
+        // focusing the popover row. Use a validated physical coordinate, then
+        // re-query and retry that coordinate once only while the menu remains.
+        for _ in 0..<2 {
+            if nameField.exists {
+                return true
+            }
+            guard let frames = waitForInteractionFrames(
+                of: action,
+                in: app,
+                timeout: 5
+            ) else {
+                break
+            }
+            lastAppFrame = frames.appFrame
+            lastActionFrame = frames.elementFrame
+            tapFrame(
+                frames.elementFrame,
+                in: frames.appFrame,
+                using: app
+            )
+            if nameField.waitForExistence(timeout: 10) {
+                return true
+            }
+        }
+
+        attachHierarchy(
+            named: "\(actionName) did not open the creation dialog",
+            from: app
+        )
+        XCTFail(
+            "\(actionName) creation dialog to appear; "
+                + "app=\(lastAppFrame), action=\(lastActionFrame)"
+        )
+        return false
+    }
+
+    private func waitForDocumentPickerDestination(
+        currentHostDocuments: XCUIElement,
+        hostDestination: XCUIElement,
+        timeout: TimeInterval
+    ) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if currentHostDocuments.exists || hostDestination.exists {
+                return true
+            }
+            RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+        }
+        return currentHostDocuments.exists || hostDestination.exists
+    }
+
+    private func waitForDocumentPickerPresentation(
+        in app: XCUIApplication,
+        timeout: TimeInterval
+    ) -> Bool {
+        let navigationBar = app.navigationBars[
+            "FullDocumentManagerViewControllerNavigationBar"
+        ]
+        return navigationBar.waitForExistence(timeout: timeout)
+    }
+
+    private func attachHierarchy(
+        named name: String,
+        from app: XCUIApplication
+    ) {
+        let attachment = XCTAttachment(string: app.debugDescription)
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
     }
 
     private func openFileEntryContextMenu(

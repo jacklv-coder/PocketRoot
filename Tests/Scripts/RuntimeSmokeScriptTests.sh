@@ -459,7 +459,12 @@ fi
 
 if ! grep -Fq -- 'pocketroot-system-file-ui-fixture.txt' "$HOST_APP_SOURCE" \
   || ! grep -Fq -- 'testSystemFileImportAndShareExportRoundTrip' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'testFileExportUsesPlatformActivityPresentation' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'Save to Files' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'waitForDocumentPickerPresentation(in: app, timeout: 30)' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'Save to Files to open the document picker' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'return navigationBar.waitForExistence(timeout: timeout)' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'The document picker owns its transient Cancel element' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'revealFileEntry' "$HOST_UI_TESTS" \
   || ! grep -Fq -- '"PocketRootFiles.list"' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'if element.isEnabled' "$HOST_UI_TESTS" \
@@ -478,7 +483,14 @@ if ! grep -Fq -- 'pocketroot-system-file-ui-fixture.txt' "$HOST_APP_SOURCE" \
   || ! grep -Fq -- 'then let the stronger Files entry and exact preview assertions below' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'UUID().uuidString.lowercased()' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'XCTAssertEqual(preview.label, integratedContents)' "$HOST_UI_TESTS" \
-  || ! grep -Fq -- 'if currentHostDocuments.waitForExistence(timeout: 5)' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'openCreationDialog(' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'validated physical coordinate' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'waitForDocumentPickerDestination(' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'localLocationLabel.exists' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'Always synthesize through the application using captured values' "$HOST_UI_TESTS" \
+  || grep -Fq -- 'currentLocalLocation.tap()' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'attachHierarchy(' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'activateMenuAction(share, in: app)' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'underlying host geometry' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'for attempt in 0..<2' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'relaunchAndBoot(app)' "$HOST_UI_TESTS" \
@@ -489,6 +501,12 @@ if ! grep -Fq -- 'pocketroot-system-file-ui-fixture.txt' "$HOST_APP_SOURCE" \
   || ! grep -Fq -- 'try? activityView.snapshot()' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'tapOutsideSnapshotFrame(' "$HOST_UI_TESTS" \
   || grep -Fq -- 'tapOutsideCurrentFrame' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'PocketRootActivityPresenter(' "$ROOT_DIR/Sources/PocketRootTerminal/Public/PocketRootFileBrowserView.swift" \
+  || ! grep -Fq -- 'activity.modalPresentationStyle = .popover' "$ROOT_DIR/Sources/PocketRootTerminal/Public/PocketRootFileBrowserView.swift" \
+  || ! grep -Fq -- 'popover.sourceView = view' "$ROOT_DIR/Sources/PocketRootTerminal/Public/PocketRootFileBrowserView.swift" \
+  || ! grep -Fq -- 'popoverPresentationControllerDidDismissPopover(' "$ROOT_DIR/Sources/PocketRootTerminal/Public/PocketRootFileBrowserView.swift" \
+  || ! grep -Fq -- 'model.removeExport(payload)' "$ROOT_DIR/Sources/PocketRootTerminal/Public/PocketRootFileBrowserView.swift" \
+  || grep -Fq -- '.sheet(' "$ROOT_DIR/Sources/PocketRootTerminal/Public/PocketRootFileBrowserView.swift" \
   || ! grep -Fq -- 'LSSupportsOpeningDocumentsInPlace: true' "$HOST_PROJECT_SPEC" \
   || ! grep -Fq -- 'UIFileSharingEnabled: true' "$HOST_PROJECT_SPEC"; then
     echo "Host App UI smoke is missing the system file transfer closure." >&2

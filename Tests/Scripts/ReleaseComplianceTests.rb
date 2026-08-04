@@ -1173,6 +1173,12 @@ class ReleaseComplianceTests < Minitest::Test
           "Examples/PocketRootHostApp/UITests/PocketRootHostAppUITests.swift"
         )
         .binread
+    file_browser =
+      REPOSITORY_ROOT
+        .join(
+          "Sources/PocketRootTerminal/Public/PocketRootFileBrowserView.swift"
+        )
+        .binread
     host_source =
       REPOSITORY_ROOT
         .join("Examples/PocketRootHostApp/Sources/HostApp.swift")
@@ -1200,6 +1206,15 @@ class ReleaseComplianceTests < Minitest::Test
     assert_includes ui_test, "try? activityView.snapshot()"
     assert_includes ui_test, "tapOutsideSnapshotFrame("
     refute_includes ui_test, "tapOutsideCurrentFrame"
+    assert_includes file_browser, "PocketRootActivityPresenter("
+    assert_includes file_browser, "activity.modalPresentationStyle = .popover"
+    assert_includes file_browser, "popover.sourceView = view"
+    assert_includes file_browser, "popover.permittedArrowDirections = []"
+    assert_includes file_browser, "popoverPresentationControllerDidDismissPopover("
+    assert_includes file_browser, "model.removeExport(payload)"
+    refute_includes file_browser, '.popover(item: $sharePayload)'
+    refute_includes file_browser, ".presentationCompactAdaptation(.sheet)"
+    refute_includes file_browser, ".sheet(\n            item: $sharePayload"
     assert_includes(
       ui_test,
       '"FullDocumentManagerViewControllerNavigationBar"'
@@ -1229,10 +1244,24 @@ class ReleaseComplianceTests < Minitest::Test
     refute_includes ui_test, "fixture.tap()"
     refute_includes ui_test, "exported.tap()"
     assert_includes ui_test, "for _ in 0..<2"
-    assert_includes ui_test, "hostDestination.waitForExistence(timeout: 10)"
+    assert_includes ui_test, "waitForDocumentPickerDestination("
+    assert_includes ui_test, "localLocationLabel.exists"
+    refute_includes ui_test, "currentLocalLocation.tap()"
+    assert_includes ui_test, "lastLocalElementFrame"
+    assert_includes ui_test, "attachHierarchy("
     assert_includes ui_test, "openedHostDestination"
     assert_includes ui_test, '"DOC.sidebar.item.On My iPad"'
     assert_includes ui_test, '"PocketRoot Host, Actions Menu"'
+    assert_equal 4, ui_test.scan("guard openCreationDialog(").length
+    assert_includes ui_test, "testFileExportUsesPlatformActivityPresentation"
+    assert_includes ui_test, "waitForDocumentPickerPresentation(in: app, timeout: 30)"
+    assert_includes ui_test, 'XCTFail("Save to Files to open the document picker")'
+    assert_includes ui_test, "return navigationBar.waitForExistence(timeout: timeout)"
+    assert_includes ui_test, "The document picker owns its transient Cancel element"
+    assert_equal 2, ui_test.scan("activateMenuAction(share, in: app)").length
+    assert_includes ui_test, "validated physical coordinate"
+    refute_includes ui_test, 'app.buttons["New File"].tap()'
+    refute_includes ui_test, 'app.buttons["New Folder"].tap()'
     refute_includes ui_test, "currentHostDocuments.waitForExistence(timeout: 3)"
     refute_includes(
       ui_test,

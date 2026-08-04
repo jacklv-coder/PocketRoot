@@ -21,6 +21,20 @@ PocketRoot 的重要变化记录在这里，并从首个公开版本开始遵循
   正在消失的元素。通用 UI runner 也会把 XCTest 在测试方法执行前报告的
   Accessibility 加载超时识别为模拟器基础设施故障，仅对自己创建的临时 Simulator
   重启并有界重试一次；调用方提供的设备、普通测试断言和第二次失败仍立即 fail-closed。
+- Host App iPad 文件创建 smoke 不再直接语义点击 popover 中的 `New File` / `New Folder`：
+  测试会重新校验 App 与动作 frame、通过物理坐标有界重试，并在名称输入框未出现时附带
+  accessibility hierarchy 与最后 frame 立即失败。系统文件选择器进入本机位置时也会在
+  每次尝试前重新查询目标，首次使用 sidebar 条目、第二次使用条目内新解析的文字 frame，
+  且两次都只通过已捕获的 App 坐标触发，同时等待 Host 导航状态或容器条目；两条路径都
+  未完成转换时保留层级证据，不会要求正在消失的系统 cell 重新解析并执行自身动作。
+- Files 导出现在按 UIKit 平台契约在 iPad 使用 popover 呈现
+  `UIActivityViewController`，并仅在 iPhone 等紧凑宽度环境适配为 sheet；这避免 iPad
+  在先前的模态 sheet 路径中只显示变暗背景、分享内容仍停留在屏幕下方。临时导出目录
+  改由 `UIActivityViewController` 完成回调清理，不会在 popover 为 `Save to Files` 交接
+  系统文件保存器时提前删除；完成、取消或关闭分享流程后仍会清理。新增独立的 iPad
+  导出 UI smoke，不依赖系统文件导入即可验证平台分享界面、`Save to Files` 动作以及
+  文件保存器确实打开；系统 round-trip 的分享菜单动作也改为通过重新校验的物理 frame
+  触发。
 - 收紧 `v0.2.0` 未打 tag 源码候选审计：`--allow-source-blocked` 只接受最终源码发布
   授权这一项尚未满足，固定门禁集合、NOTICE、许可证、公开 API 状态或源码边界漂移
   都会失败；CI 和受信 tag 工作流只上传带 commit、archive SHA-256、文件统计和精确

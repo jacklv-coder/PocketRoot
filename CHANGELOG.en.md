@@ -28,6 +28,29 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   infrastructure failure, restarting only its own temporary Simulator for one
   bounded retry; caller-owned devices, ordinary assertions, and a second
   failure still fail closed immediately.
+- Host App iPad file-creation smoke no longer semantically taps `New File` or
+  `New Folder` directly in a popover. It revalidates the App and action frames,
+  performs a bounded physical-coordinate retry, and attaches the accessibility
+  hierarchy plus final frames if the name field never appears. Entering the
+  local document-picker location now also re-queries its target before every
+  attempt, using the sidebar item first and a newly resolved text frame inside
+  that row second. Both attempts dispatch only through captured App
+  coordinates while waiting for either Host navigation state or the Host
+  container. If neither completes the transition, hierarchy evidence is kept
+  without asking a disappearing system cell to resolve and perform its own
+  action.
+- Files export now follows the UIKit presentation contract by showing
+  `UIActivityViewController` in a popover on iPad and adapting to a sheet only
+  in compact-width environments such as iPhone. This avoids the former iPad
+  modal path getting stuck with a dimmed background while the share content
+  remains below the screen. The temporary export directory is now removed by
+  the `UIActivityViewController` completion callback, so it is not deleted
+  while the popover hands the URL to the `Save to Files` document picker; it
+  is still cleaned up after completion, cancellation, or dismissal. A
+  dedicated iPad export UI smoke now verifies the platform activity UI, the
+  `Save to Files` action, and the actual document-picker handoff without
+  depending on system file import, while the system round-trip activates its
+  share menu action through a freshly validated physical frame.
 - Tightened the untagged `v0.2.0` source-candidate audit:
   `--allow-source-blocked` accepts only final source-release authorization as
   unsatisfied, and fails on any pinned-gate-set, NOTICE, license, public API
