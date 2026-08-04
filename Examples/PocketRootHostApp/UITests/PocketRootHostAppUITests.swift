@@ -51,11 +51,14 @@ final class PocketRootHostAppUITests: XCTestCase {
         ]
         XCTAssertTrue(file.waitForExistence(timeout: 30))
         waitForEnabled(file)
-        file.press(forDuration: 1)
-        XCTAssertTrue(
-            app.buttons["Share / Export"].waitForExistence(timeout: 10)
-        )
-        app.buttons["Rename"].tap()
+        guard let rename = openFileEntryContextMenu(
+            for: file,
+            expectedAction: "Rename",
+            in: app
+        ) else {
+            return
+        }
+        rename.tap()
         let renameAlert = app.alerts["Rename"]
         XCTAssertTrue(renameAlert.waitForExistence(timeout: 10))
         let renameNameField = renameAlert.textFields["Name"]
@@ -78,8 +81,14 @@ final class PocketRootHostAppUITests: XCTestCase {
             timeout: 30
         )
         waitForEnabled(renamedFile)
-        renamedFile.press(forDuration: 1)
-        app.buttons["Delete"].tap()
+        guard let delete = openFileEntryContextMenu(
+            for: renamedFile,
+            expectedAction: "Delete",
+            in: app
+        ) else {
+            return
+        }
+        delete.tap()
         confirmDeletion(of: renamedFileName, in: app)
         wait(
             for: NSPredicate(format: "exists == false"),
@@ -131,8 +140,14 @@ final class PocketRootHostAppUITests: XCTestCase {
             "PocketRootFiles.entry./root/\(folderName)/\(nestedFileName)"
         ]
         XCTAssertTrue(nestedFile.waitForExistence(timeout: 30))
-        folder.press(forDuration: 1)
-        app.buttons["Delete"].tap()
+        guard let delete = openFileEntryContextMenu(
+            for: folder,
+            expectedAction: "Delete",
+            in: app
+        ) else {
+            return
+        }
+        delete.tap()
         confirmDeletion(of: folderName, in: app)
         wait(
             for: NSPredicate(format: "exists == false"),
@@ -237,8 +252,14 @@ final class PocketRootHostAppUITests: XCTestCase {
         guard revealFileEntry(reopenedImport, in: app) else {
             return
         }
-        pressCurrentFrame(of: reopenedImport, in: app)
-        app.buttons["Share / Export"].tap()
+        guard let share = openFileEntryContextMenu(
+            for: reopenedImport,
+            expectedAction: "Share / Export",
+            in: app
+        ) else {
+            return
+        }
+        share.tap()
 
         let saveToFiles = app.cells.matching(
             NSPredicate(
@@ -285,8 +306,14 @@ final class PocketRootHostAppUITests: XCTestCase {
         guard revealFileEntry(persistedImport, in: app) else {
             return
         }
-        pressCurrentFrame(of: persistedImport, in: app)
-        app.buttons["Delete"].tap()
+        guard let delete = openFileEntryContextMenu(
+            for: persistedImport,
+            expectedAction: "Delete",
+            in: app
+        ) else {
+            return
+        }
+        delete.tap()
         confirmDeletion(of: Self.systemImportFixtureName, in: app)
         wait(
             for: NSPredicate(format: "exists == false"),
@@ -912,8 +939,14 @@ final class PocketRootHostAppUITests: XCTestCase {
         guard revealFileEntry(file, in: app) else {
             return
         }
-        pressCurrentFrame(of: file, in: app)
-        app.buttons["Delete"].tap()
+        guard let delete = openFileEntryContextMenu(
+            for: file,
+            expectedAction: "Delete",
+            in: app
+        ) else {
+            return
+        }
+        delete.tap()
         confirmDeletion(of: itemName, in: app)
         wait(
             for: NSPredicate(format: "exists == false"),
@@ -1246,20 +1279,43 @@ final class PocketRootHostAppUITests: XCTestCase {
         return nil
     }
 
-    private func pressCurrentFrame(
-        of element: XCUIElement,
+    private func openFileEntryContextMenu(
+        for element: XCUIElement,
+        expectedAction: String,
         in app: XCUIApplication
-    ) {
-        let appFrame = app.frame
-        let elementFrame = element.frame
-        app.coordinate(withNormalizedOffset: .zero)
-            .withOffset(
-                CGVector(
-                    dx: elementFrame.midX - appFrame.minX,
-                    dy: elementFrame.midY - appFrame.minY
+    ) -> XCUIElement? {
+        let action = app.buttons[expectedAction]
+        var lastAppFrame = CGRect.null
+        var lastElementFrame = CGRect.null
+
+        for _ in 0..<2 {
+            guard let frames = waitForInteractionFrames(
+                of: element,
+                in: app,
+                timeout: 10
+            ) else {
+                continue
+            }
+            lastAppFrame = frames.appFrame
+            lastElementFrame = frames.elementFrame
+            app.coordinate(withNormalizedOffset: .zero)
+                .withOffset(
+                    CGVector(
+                        dx: frames.elementFrame.midX - frames.appFrame.minX,
+                        dy: frames.elementFrame.midY - frames.appFrame.minY
+                    )
                 )
-            )
-            .press(forDuration: 1)
+                .press(forDuration: 1)
+            if action.waitForExistence(timeout: 10) {
+                return action
+            }
+        }
+
+        XCTFail(
+            "\(expectedAction) context action to appear; "
+                + "app=\(lastAppFrame), element=\(lastElementFrame)"
+        )
+        return nil
     }
 
     private func tapOutsideSnapshotFrame(

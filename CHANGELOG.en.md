@@ -8,6 +8,11 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 
 ### Changed
 
+- Host App Files UI smoke now waits for the expected rename, delete, or share
+  action to enter the accessibility tree after pressing a file or directory.
+  If the first synthesized press does not open the menu, it retries once with
+  newly validated App and entry frames, then fails closed with frame evidence
+  instead of tapping a context-menu button that does not yet exist.
 - Tightened the untagged `v0.2.0` source-candidate audit:
   `--allow-source-blocked` accepts only final source-release authorization as
   unsatisfied, and fails on any pinned-gate-set, NOTICE, license, public API

@@ -8,6 +8,10 @@ PocketRoot 的重要变化记录在这里，并从首个公开版本开始遵循
 
 ### Changed
 
+- Host App 文件 UI smoke 现在会在长按文件或目录后，有界等待预期的重命名、删除或
+  分享菜单动作进入 accessibility tree；若首次合成长按未打开菜单，会使用重新校验的
+  App/条目 frame 再试一次，仍失败则带 frame 证据 fail-closed，避免直接点击尚不存在
+  的上下文菜单按钮造成间歇性 XCTest 失败。
 - 收紧 `v0.2.0` 未打 tag 源码候选审计：`--allow-source-blocked` 只接受最终源码发布
   授权这一项尚未满足，固定门禁集合、NOTICE、许可证、公开 API 状态或源码边界漂移
   都会失败；CI 和受信 tag 工作流只上传带 commit、archive SHA-256、文件统计和精确
