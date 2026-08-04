@@ -229,11 +229,31 @@ final class PocketRootHostAppUITests: XCTestCase {
             return
         }
 
-        if dismissShareSheetIfNeeded(in: app) {
-            returnToHost(in: app)
-        } else {
-            relaunchAndBoot(app)
+        guard activateMenuAction(saveToFiles, in: app),
+              waitForDocumentPickerPresentation(in: app, timeout: 30)
+        else {
+            attachHierarchy(
+                named: "Save to Files did not open the document picker",
+                from: app
+            )
+            XCTFail("Save to Files to open the document picker")
+            return
         }
+        let cancel = app.buttons.matching(
+            NSPredicate(format: "label IN %@", ["Cancel", "取消"])
+        ).firstMatch
+        if let frames = waitForInteractionFrames(
+            of: cancel,
+            in: app,
+            timeout: 10
+        ) {
+            tapFrame(
+                frames.elementFrame,
+                in: frames.appFrame,
+                using: app
+            )
+        }
+        relaunchAndBoot(app)
         let filesButton = app.buttons["PocketRootHost.files"]
         XCTAssertTrue(filesButton.waitForExistence(timeout: 10))
         filesButton.tap()
@@ -1547,6 +1567,26 @@ final class PocketRootHostAppUITests: XCTestCase {
             RunLoop.current.run(until: Date().addingTimeInterval(0.2))
         }
         return currentHostDocuments.exists || hostDestination.exists
+    }
+
+    private func waitForDocumentPickerPresentation(
+        in app: XCUIApplication,
+        timeout: TimeInterval
+    ) -> Bool {
+        let navigationBar = app.navigationBars[
+            "FullDocumentManagerViewControllerNavigationBar"
+        ]
+        let cancel = app.buttons.matching(
+            NSPredicate(format: "label IN %@", ["Cancel", "取消"])
+        ).firstMatch
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if navigationBar.exists || cancel.exists {
+                return true
+            }
+            RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+        }
+        return navigationBar.exists || cancel.exists
     }
 
     private func attachHierarchy(

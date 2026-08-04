@@ -461,6 +461,8 @@ if ! grep -Fq -- 'pocketroot-system-file-ui-fixture.txt' "$HOST_APP_SOURCE" \
   || ! grep -Fq -- 'testSystemFileImportAndShareExportRoundTrip' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'testFileExportUsesPlatformActivityPresentation' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'Save to Files' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'waitForDocumentPickerPresentation(in: app, timeout: 30)' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'Save to Files to open the document picker' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'revealFileEntry' "$HOST_UI_TESTS" \
   || ! grep -Fq -- '"PocketRootFiles.list"' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'if element.isEnabled' "$HOST_UI_TESTS" \
@@ -497,8 +499,11 @@ if ! grep -Fq -- 'pocketroot-system-file-ui-fixture.txt' "$HOST_APP_SOURCE" \
   || ! grep -Fq -- 'try? activityView.snapshot()' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'tapOutsideSnapshotFrame(' "$HOST_UI_TESTS" \
   || grep -Fq -- 'tapOutsideCurrentFrame' "$HOST_UI_TESTS" \
-  || ! grep -Fq -- '.popover(item: $sharePayload)' "$ROOT_DIR/Sources/PocketRootTerminal/Public/PocketRootFileBrowserView.swift" \
-  || ! grep -Fq -- '.presentationCompactAdaptation(.sheet)' "$ROOT_DIR/Sources/PocketRootTerminal/Public/PocketRootFileBrowserView.swift" \
+  || ! grep -Fq -- 'PocketRootActivityPresenter(' "$ROOT_DIR/Sources/PocketRootTerminal/Public/PocketRootFileBrowserView.swift" \
+  || ! grep -Fq -- 'activity.modalPresentationStyle = .popover' "$ROOT_DIR/Sources/PocketRootTerminal/Public/PocketRootFileBrowserView.swift" \
+  || ! grep -Fq -- 'popover.sourceView = view' "$ROOT_DIR/Sources/PocketRootTerminal/Public/PocketRootFileBrowserView.swift" \
+  || ! grep -Fq -- 'popoverPresentationControllerDidDismissPopover(' "$ROOT_DIR/Sources/PocketRootTerminal/Public/PocketRootFileBrowserView.swift" \
+  || ! grep -Fq -- 'model.removeExport(payload)' "$ROOT_DIR/Sources/PocketRootTerminal/Public/PocketRootFileBrowserView.swift" \
   || grep -Fq -- '.sheet(' "$ROOT_DIR/Sources/PocketRootTerminal/Public/PocketRootFileBrowserView.swift" \
   || ! grep -Fq -- 'LSSupportsOpeningDocumentsInPlace: true' "$HOST_PROJECT_SPEC" \
   || ! grep -Fq -- 'UIFileSharingEnabled: true' "$HOST_PROJECT_SPEC"; then
