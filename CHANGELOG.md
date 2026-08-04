@@ -8,6 +8,19 @@ PocketRoot 的重要变化记录在这里，并从首个公开版本开始遵循
 
 ### Changed
 
+- Host App 文件 UI smoke 现在会在长按文件或目录后，有界等待预期的重命名、删除或
+  分享菜单动作进入 accessibility tree；若首次合成长按未打开菜单，会使用重新校验的
+  App/条目 frame 再试一次，仍失败则带 frame 证据 fail-closed，避免直接点击尚不存在
+  的上下文菜单按钮造成间歇性 XCTest 失败。创建文件/目录前也会关闭系统键盘 onboarding，
+  并在重新校验的 Create frame 上最多提交两次；目标条目未出现时立即停止当前用例，
+  不再继续查询不存在的 disclosure 并产生级联误报。集成 Workspace 每次写入唯一 guest
+  内容，在终端 accessibility 文本滞后时改用该内容的精确预览作为权威结果；系统文件
+  选择器也会在 Browse 后先复核是否已经恢复到 Host 目录，再决定是否操作正在消失的
+  本地位置条目。Host 与 Quick Start 的键盘清理会点击已校验的快照 frame，并给
+  onboarding UI 一个有界退场窗口，避免 XCTest interruption handling 期间直接操作
+  正在消失的元素。通用 UI runner 也会把 XCTest 在测试方法执行前报告的
+  Accessibility 加载超时识别为模拟器基础设施故障，仅对自己创建的临时 Simulator
+  重启并有界重试一次；调用方提供的设备、普通测试断言和第二次失败仍立即 fail-closed。
 - 收紧 `v0.2.0` 未打 tag 源码候选审计：`--allow-source-blocked` 只接受最终源码发布
   授权这一项尚未满足，固定门禁集合、NOTICE、许可证、公开 API 状态或源码边界漂移
   都会失败；CI 和受信 tag 工作流只上传带 commit、archive SHA-256、文件统计和精确

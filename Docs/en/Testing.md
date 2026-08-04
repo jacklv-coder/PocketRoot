@@ -525,13 +525,14 @@ Use `POCKETROOT_QUICK_START_UI_DEVICE_TYPE` and
 `run-ios-example-ui-smoke.sh` for the same RootFS, timeouts, xcresult, and safe
 cleanup boundaries. For failure diagnosis, `POCKETROOT_KEEP_UI_RESULT=1`
 retains temporary DerivedData and the `.xcresult`. When Xcode explicitly
-reports that the Simulator test runner was not registered with FrontBoard, the
-shared runner restarts the same temporary Simulator. When Xcode explicitly
+reports that the Simulator test runner was not registered with FrontBoard, or
+XCTest times out waiting for Accessibility to load before any test method runs,
+the shared runner restarts the same temporary Simulator. When Xcode explicitly
 reports that the destination has disappeared, it recreates that temporary
 Simulator with the same runtime and device type. These infrastructure paths
 share one total retry. Recovery applies only to a Simulator created by the
 runner; a shared Simulator supplied through `POCKETROOT_UI_SMOKE_DEVICE` is
-never automatically shut down, restarted, or recreated. Assertions, test
+never automatically shut down, restarted, or recreated. Assertions, test-method
 timeouts, and other build failures are not retried. Set
 `POCKETROOT_UI_INFRASTRUCTURE_RETRY_LIMIT=0` to disable this recovery path. If
 the retry or restart also fails, the failure artifact retains the first and

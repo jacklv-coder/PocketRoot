@@ -85,6 +85,7 @@ if ! grep -Fq -- 'POCKETROOT_KEEP_UI_RESULT' "$GENERIC_UI_RUNNER" \
   || ! grep -Fq -- 'POCKETROOT_UI_FAILURE_ARTIFACTS_DIR' "$GENERIC_UI_RUNNER" \
   || ! grep -Fq -- 'POCKETROOT_UI_INFRASTRUCTURE_RETRY_LIMIT' "$GENERIC_UI_RUNNER" \
   || ! grep -Fq -- 'retryable_simulator_failure_kind' "$GENERIC_UI_RUNNER" \
+  || ! grep -Fq -- 'Timed out waiting for AX loaded notification' "$GENERIC_UI_RUNNER" \
   || ! grep -Fq -- "is unknown to FrontBoard" "$GENERIC_UI_RUNNER" \
   || ! grep -Fq -- 'no available devices matched the request' "$GENERIC_UI_RUNNER" \
   || ! grep -Fq -- 'retrying once' "$GENERIC_UI_RUNNER" \
@@ -191,6 +192,12 @@ if [[ "${POCKETROOT_MOCK_XCODEBUILD_MODE:-retry}" == "missing-destination" && "$
     echo "The requested device could not be found because no available devices matched the request."
     exit 70
 fi
+if [[ "${POCKETROOT_MOCK_XCODEBUILD_MODE:-retry}" == "accessibility-initialization" && "$calls" -eq 1 ]]; then
+    echo "Testing failed:"
+    echo "The test runner failed to initialize for UI testing."
+    echo "Underlying Error: Timed out waiting for AX loaded notification"
+    exit 65
+fi
 if [[ "${POCKETROOT_MOCK_XCODEBUILD_MODE:-retry}" == "assertion" ]]; then
     echo "Testing failed: expected value did not match"
     exit 65
@@ -217,6 +224,32 @@ if [[ "$(cat "$GENERIC_RUNNER_XCODEBUILD_CALLS")" != "2" ]] \
   || ! grep -Fq -- 'retrying once' "$GENERIC_RUNNER_OUTPUT" \
   || ! grep -Fq -- 'simctl shutdown MOCK-UDID' "$GENERIC_RUNNER_XCRUN_CALLS"; then
     echo "Shared example UI runner did not bound and recover the FrontBoard launch retry." >&2
+    exit 1
+fi
+
+printf '0\n' > "$GENERIC_RUNNER_XCODEBUILD_CALLS"
+: > "$GENERIC_RUNNER_XCRUN_CALLS"
+: > "$GENERIC_RUNNER_BOOTSTATUS_CALLS"
+: > "$GENERIC_RUNNER_BOOT_CALLS"
+ACCESSIBILITY_INITIALIZATION_OUTPUT="$GENERIC_RUNNER_TEST_ROOT/accessibility-initialization-output.txt"
+PATH="$GENERIC_RUNNER_MOCK_BIN:$PATH" \
+POCKETROOT_UI_APP_DIR="$GENERIC_RUNNER_APP" \
+POCKETROOT_UI_PROJECT_NAME="MockApp" \
+POCKETROOT_UI_SCHEME="MockApp" \
+POCKETROOT_UI_TEST_BUNDLE="MockAppUITests" \
+POCKETROOT_CLONED_SOURCE_PACKAGES_DIR="$GENERIC_RUNNER_TEST_ROOT/packages" \
+POCKETROOT_MOCK_XCODEBUILD_CALLS="$GENERIC_RUNNER_XCODEBUILD_CALLS" \
+POCKETROOT_MOCK_XCRUN_CALLS="$GENERIC_RUNNER_XCRUN_CALLS" \
+POCKETROOT_MOCK_BOOTSTATUS_CALLS="$GENERIC_RUNNER_BOOTSTATUS_CALLS" \
+POCKETROOT_MOCK_BOOT_CALLS="$GENERIC_RUNNER_BOOT_CALLS" \
+POCKETROOT_MOCK_XCODEBUILD_MODE="accessibility-initialization" \
+  "$GENERIC_UI_RUNNER" "$GENERIC_RUNNER_ARCHIVE" \
+  > "$ACCESSIBILITY_INITIALIZATION_OUTPUT" 2>&1
+
+if [[ "$(cat "$GENERIC_RUNNER_XCODEBUILD_CALLS")" != "2" ]] \
+  || ! grep -Fq -- 'initializing Accessibility' "$ACCESSIBILITY_INITIALIZATION_OUTPUT" \
+  || ! grep -Fq -- 'simctl shutdown MOCK-UDID' "$GENERIC_RUNNER_XCRUN_CALLS"; then
+    echo "Shared example UI runner did not bound and recover the Accessibility initialization retry." >&2
     exit 1
 fi
 
@@ -437,6 +470,15 @@ if ! grep -Fq -- 'pocketroot-system-file-ui-fixture.txt' "$HOST_APP_SOURCE" \
   || grep -Fq -- 'hostActions.isHittable' "$HOST_UI_TESTS" \
   || grep -Fq -- 'hostIsHittable' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'waitForInteractionFrames(' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'submitCreation(expectedEntry:' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'dismissKeyboardOnboardingIfPresent(in: app)' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'Keyboard onboarding can auto-dismiss during XCTest interruption' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'evaluatedWith: continueButton' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'expectedEntry.waitForExistence(timeout: 35)' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'then let the stronger Files entry and exact preview assertions below' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'UUID().uuidString.lowercased()' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'XCTAssertEqual(preview.label, integratedContents)' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'if currentHostDocuments.waitForExistence(timeout: 5)' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'underlying host geometry' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'for attempt in 0..<2' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'relaunchAndBoot(app)' "$HOST_UI_TESTS" \
@@ -461,6 +503,8 @@ if ! grep -Fq -- 'makeTerminalViewController()' "$QUICK_START_SOURCE" \
   || ! grep -Fq -- 'testTerminalCreatesFileThatFilesCanPreview' "$QUICK_START_UI_TESTS" \
   || ! grep -Fq -- 'PocketRootTerminal.pty' "$QUICK_START_UI_TESTS" \
   || ! grep -Fq -- 'PocketRootFiles.preview' "$QUICK_START_UI_TESTS" \
+  || ! grep -Fq -- 'tapCurrentFrame(of: continueButton, in: app)' "$QUICK_START_UI_TESTS" \
+  || ! grep -Fq -- 'waitForDisappearance(of: keyboard, timeout: 2)' "$QUICK_START_UI_TESTS" \
   || ! grep -Fq -- 'PocketRootQuickStartAppUITests:' "$QUICK_START_PROJECT_SPEC" \
   || ! grep -Fq -- 'path: ../..' "$QUICK_START_PROJECT_SPEC" \
   || ! grep -Fq -- 'product: PocketRootIshRuntimeIntegration' "$QUICK_START_PROJECT_SPEC" \

@@ -44,18 +44,21 @@ final class PocketRootHostAppUITests: XCTestCase {
         let nameField = app.textFields["Name"]
         XCTAssertTrue(nameField.waitForExistence(timeout: 10))
         nameField.typeText(fileName)
-        app.buttons["Create"].tap()
-
         let file = app.descendants(matching: .any)[
             "PocketRootFiles.entry./root/\(fileName)"
         ]
-        XCTAssertTrue(file.waitForExistence(timeout: 30))
+        guard submitCreation(expectedEntry: file, in: app) else {
+            return
+        }
         waitForEnabled(file)
-        file.press(forDuration: 1)
-        XCTAssertTrue(
-            app.buttons["Share / Export"].waitForExistence(timeout: 10)
-        )
-        app.buttons["Rename"].tap()
+        guard let rename = openFileEntryContextMenu(
+            for: file,
+            expectedAction: "Rename",
+            in: app
+        ) else {
+            return
+        }
+        rename.tap()
         let renameAlert = app.alerts["Rename"]
         XCTAssertTrue(renameAlert.waitForExistence(timeout: 10))
         let renameNameField = renameAlert.textFields["Name"]
@@ -66,20 +69,30 @@ final class PocketRootHostAppUITests: XCTestCase {
         ).tap()
         renameNameField.typeText(".renamed")
         XCTAssertEqual(renameNameField.value as? String, renamedFileName)
+        dismissKeyboardOnboardingIfPresent(in: app)
         renameAlert.buttons["Rename"].tap()
 
         let renamedFile = app.descendants(matching: .any)[
             "PocketRootFiles.entry./root/\(renamedFileName)"
         ]
-        XCTAssertTrue(renamedFile.waitForExistence(timeout: 30))
+        guard renamedFile.waitForExistence(timeout: 30) else {
+            XCTFail("renamed file to appear after submitting the rename")
+            return
+        }
         wait(
             for: NSPredicate(format: "exists == false"),
             evaluatedWith: file,
             timeout: 30
         )
         waitForEnabled(renamedFile)
-        renamedFile.press(forDuration: 1)
-        app.buttons["Delete"].tap()
+        guard let delete = openFileEntryContextMenu(
+            for: renamedFile,
+            expectedAction: "Delete",
+            in: app
+        ) else {
+            return
+        }
+        delete.tap()
         confirmDeletion(of: renamedFileName, in: app)
         wait(
             for: NSPredicate(format: "exists == false"),
@@ -92,16 +105,19 @@ final class PocketRootHostAppUITests: XCTestCase {
         app.buttons["New Folder"].tap()
         XCTAssertTrue(nameField.waitForExistence(timeout: 10))
         nameField.typeText(folderName)
-        app.buttons["Create"].tap()
-
         let folder = app.descendants(matching: .any)[
             "PocketRootFiles.entry./root/\(folderName)"
         ]
-        XCTAssertTrue(folder.waitForExistence(timeout: 30))
+        guard submitCreation(expectedEntry: folder, in: app) else {
+            return
+        }
         let disclosure = app.buttons[
             "PocketRootFiles.disclosure./root/\(folderName)"
         ]
-        XCTAssertTrue(disclosure.waitForExistence(timeout: 10))
+        guard disclosure.waitForExistence(timeout: 10) else {
+            XCTFail("new folder disclosure to appear")
+            return
+        }
         waitForEnabled(disclosure)
         disclosure.tap()
         guard revealFileEntry(folder, in: app) else {
@@ -115,7 +131,12 @@ final class PocketRootHostAppUITests: XCTestCase {
         app.buttons["New File"].tap()
         XCTAssertTrue(nameField.waitForExistence(timeout: 10))
         nameField.typeText(nestedFileName)
-        app.buttons["Create"].tap()
+        let nestedFile = app.descendants(matching: .any)[
+            "PocketRootFiles.entry./root/\(folderName)/\(nestedFileName)"
+        ]
+        guard submitCreation(expectedEntry: nestedFile, in: app) else {
+            return
+        }
         waitForEnabled(actions)
         let childNavigationBar = app.navigationBars[folderName]
         guard childNavigationBar.waitForExistence(timeout: 30) else {
@@ -127,12 +148,14 @@ final class PocketRootHostAppUITests: XCTestCase {
         XCTAssertTrue(waitForHittable(backButton))
         backButton.tap()
 
-        let nestedFile = app.descendants(matching: .any)[
-            "PocketRootFiles.entry./root/\(folderName)/\(nestedFileName)"
-        ]
-        XCTAssertTrue(nestedFile.waitForExistence(timeout: 30))
-        folder.press(forDuration: 1)
-        app.buttons["Delete"].tap()
+        guard let delete = openFileEntryContextMenu(
+            for: folder,
+            expectedAction: "Delete",
+            in: app
+        ) else {
+            return
+        }
+        delete.tap()
         confirmDeletion(of: folderName, in: app)
         wait(
             for: NSPredicate(format: "exists == false"),
@@ -237,8 +260,14 @@ final class PocketRootHostAppUITests: XCTestCase {
         guard revealFileEntry(reopenedImport, in: app) else {
             return
         }
-        pressCurrentFrame(of: reopenedImport, in: app)
-        app.buttons["Share / Export"].tap()
+        guard let share = openFileEntryContextMenu(
+            for: reopenedImport,
+            expectedAction: "Share / Export",
+            in: app
+        ) else {
+            return
+        }
+        share.tap()
 
         let saveToFiles = app.cells.matching(
             NSPredicate(
@@ -285,8 +314,14 @@ final class PocketRootHostAppUITests: XCTestCase {
         guard revealFileEntry(persistedImport, in: app) else {
             return
         }
-        pressCurrentFrame(of: persistedImport, in: app)
-        app.buttons["Delete"].tap()
+        guard let delete = openFileEntryContextMenu(
+            for: persistedImport,
+            expectedAction: "Delete",
+            in: app
+        ) else {
+            return
+        }
+        delete.tap()
         confirmDeletion(of: Self.systemImportFixtureName, in: app)
         wait(
             for: NSPredicate(format: "exists == false"),
@@ -695,16 +730,26 @@ final class PocketRootHostAppUITests: XCTestCase {
         let terminal = terminalElement(in: app)
         XCTAssertTrue(terminal.waitForExistence(timeout: 90))
         terminal.tap()
+        let integratedRunID = UUID().uuidString.lowercased()
+        let integratedMarker =
+            "__INTEGRATED_WORKSPACE_READY_\(integratedRunID)__"
+        let integratedContents =
+            "integrated workspace \(integratedRunID)\n"
         terminal.typeText(
             "rm -f /root/pocketroot-integrated-smoke.txt; "
-                + "printf 'integrated workspace\\n' "
+                + "printf 'integrated workspace \(integratedRunID)\\n' "
                 + "> /root/pocketroot-integrated-smoke.txt; "
-                + "printf '__INTEGRATED_WORKSPACE_READY__\\n'\n"
+                + "printf '\(integratedMarker)\\n'\n"
         )
-        wait(
+        // SwiftTerm's accessibility value can lag behind output that the
+        // guest has already produced. Give it one bounded observation window,
+        // then let the stronger Files entry and exact preview assertions below
+        // prove that the command completed instead of recording a false
+        // terminal-text failure.
+        _ = waitWithoutAssertion(
             for: NSPredicate(
                 format: "value CONTAINS %@",
-                "__INTEGRATED_WORKSPACE_READY__"
+                integratedMarker
             ),
             evaluatedWith: terminal,
             timeout: 30
@@ -722,7 +767,7 @@ final class PocketRootHostAppUITests: XCTestCase {
         file.tap()
         let preview = app.staticTexts["PocketRootFiles.preview"]
         XCTAssertTrue(preview.waitForExistence(timeout: 30))
-        XCTAssertEqual(preview.label, "integrated workspace\n")
+        XCTAssertEqual(preview.label, integratedContents)
 
         returnToHost(in: app)
         wait(
@@ -912,8 +957,14 @@ final class PocketRootHostAppUITests: XCTestCase {
         guard revealFileEntry(file, in: app) else {
             return
         }
-        pressCurrentFrame(of: file, in: app)
-        app.buttons["Delete"].tap()
+        guard let delete = openFileEntryContextMenu(
+            for: file,
+            expectedAction: "Delete",
+            in: app
+        ) else {
+            return
+        }
+        delete.tap()
         confirmDeletion(of: itemName, in: app)
         wait(
             for: NSPredicate(format: "exists == false"),
@@ -1019,6 +1070,13 @@ final class PocketRootHostAppUITests: XCTestCase {
             }
             RunLoop.current.run(until: Date().addingTimeInterval(0.2))
         }
+        if currentHostDocuments.exists {
+            guard hostFixture.waitForExistence(timeout: 30) else {
+                XCTFail("Host Documents fixture to become visible")
+                return false
+            }
+            return true
+        }
         guard let localLocation else {
             XCTFail("document picker to expose a usable Host or local destination")
             return false
@@ -1039,14 +1097,25 @@ final class PocketRootHostAppUITests: XCTestCase {
                 "PocketRoot Host,"
             )
         ).firstMatch
-        XCTAssertTrue(localLocation.waitForExistence(timeout: 30))
         var openedHostDestination = false
         for _ in 0..<2 {
+            // Browse can restore the last Host destination while the local
+            // location query is transitioning out of the accessibility tree.
+            // Re-check that stronger navigation state before touching a stale
+            // local-location element.
+            if currentHostDocuments.exists {
+                openedHostDestination = true
+                break
+            }
             guard let frames = waitForInteractionFrames(
                 of: localLocation,
                 in: app,
                 timeout: 5
             ) else {
+                if currentHostDocuments.waitForExistence(timeout: 5) {
+                    openedHostDestination = true
+                    break
+                }
                 continue
             }
             tapFrame(
@@ -1246,20 +1315,77 @@ final class PocketRootHostAppUITests: XCTestCase {
         return nil
     }
 
-    private func pressCurrentFrame(
-        of element: XCUIElement,
+    private func openFileEntryContextMenu(
+        for element: XCUIElement,
+        expectedAction: String,
         in app: XCUIApplication
-    ) {
-        let appFrame = app.frame
-        let elementFrame = element.frame
-        app.coordinate(withNormalizedOffset: .zero)
-            .withOffset(
-                CGVector(
-                    dx: elementFrame.midX - appFrame.minX,
-                    dy: elementFrame.midY - appFrame.minY
+    ) -> XCUIElement? {
+        let action = app.buttons[expectedAction]
+        var lastAppFrame = CGRect.null
+        var lastElementFrame = CGRect.null
+
+        for _ in 0..<2 {
+            guard let frames = waitForInteractionFrames(
+                of: element,
+                in: app,
+                timeout: 10
+            ) else {
+                continue
+            }
+            lastAppFrame = frames.appFrame
+            lastElementFrame = frames.elementFrame
+            app.coordinate(withNormalizedOffset: .zero)
+                .withOffset(
+                    CGVector(
+                        dx: frames.elementFrame.midX - frames.appFrame.minX,
+                        dy: frames.elementFrame.midY - frames.appFrame.minY
+                    )
                 )
+                .press(forDuration: 1)
+            if action.waitForExistence(timeout: 10) {
+                return action
+            }
+        }
+
+        XCTFail(
+            "\(expectedAction) context action to appear; "
+                + "app=\(lastAppFrame), element=\(lastElementFrame)"
+        )
+        return nil
+    }
+
+    private func submitCreation(
+        expectedEntry: XCUIElement,
+        in app: XCUIApplication
+    ) -> Bool {
+        dismissKeyboardOnboardingIfPresent(in: app)
+        let create = app.buttons["Create"]
+
+        for _ in 0..<2 {
+            guard let frames = waitForInteractionFrames(
+                of: create,
+                in: app,
+                timeout: 10
+            ) else {
+                break
+            }
+            tapFrame(
+                frames.elementFrame,
+                in: frames.appFrame,
+                using: app
             )
-            .press(forDuration: 1)
+            // File-browser mutations allow up to 30 seconds. Preserve that
+            // contract, plus a small accessibility refresh allowance, before
+            // deciding whether the captured tap needs its one bounded retry.
+            if expectedEntry.waitForExistence(timeout: 35) {
+                return true
+            }
+        }
+
+        XCTFail(
+            "created entry to appear after a bounded Create retry"
+        )
+        return false
     }
 
     private func tapOutsideSnapshotFrame(
@@ -1329,13 +1455,28 @@ final class PocketRootHostAppUITests: XCTestCase {
     ) {
         let continueButton = app.buttons["Continue"]
         for _ in 0..<3 {
-            guard continueButton.waitForExistence(timeout: 1) else {
+            guard let frames = waitForInteractionFrames(
+                of: continueButton,
+                in: app,
+                timeout: 1
+            ) else {
                 return
             }
-            continueButton.tap()
-            RunLoop.current.run(
-                until: Date().addingTimeInterval(0.5)
+            // Keyboard onboarding can auto-dismiss during XCTest interruption
+            // handling. Tap the last validated frame through the application
+            // so a disappearing Continue element cannot invalidate the event.
+            tapFrame(
+                frames.elementFrame,
+                in: frames.appFrame,
+                using: app
             )
+            if waitWithoutAssertion(
+                for: NSPredicate(format: "exists == false"),
+                evaluatedWith: continueButton,
+                timeout: 2
+            ) {
+                return
+            }
         }
         XCTAssertFalse(
             continueButton.exists,
@@ -1348,19 +1489,40 @@ final class PocketRootHostAppUITests: XCTestCase {
         for _ in 0..<3 where keyboard.exists {
             let continueButton = app.buttons["Continue"]
             if continueButton.exists {
-                continueButton.tap()
+                if let frames = waitForInteractionFrames(
+                    of: continueButton,
+                    in: app,
+                    timeout: 1
+                ) {
+                    tapFrame(
+                        frames.elementFrame,
+                        in: frames.appFrame,
+                        using: app
+                    )
+                }
             } else {
                 let hideKeyboardButton = app.buttons[
                     "PocketRootTerminal.key.dismiss-keyboard"
                 ]
-                XCTAssertTrue(
-                    hideKeyboardButton.waitForExistence(timeout: 10)
-                )
-                hideKeyboardButton.tap()
+                if let frames = waitForInteractionFrames(
+                    of: hideKeyboardButton,
+                    in: app,
+                    timeout: 2
+                ) {
+                    tapFrame(
+                        frames.elementFrame,
+                        in: frames.appFrame,
+                        using: app
+                    )
+                }
             }
-            RunLoop.current.run(
-                until: Date().addingTimeInterval(0.5)
-            )
+            if waitWithoutAssertion(
+                for: NSPredicate(format: "exists == false"),
+                evaluatedWith: keyboard,
+                timeout: 2
+            ) {
+                return
+            }
         }
         XCTAssertFalse(keyboard.exists)
     }

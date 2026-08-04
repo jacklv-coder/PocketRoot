@@ -8,6 +8,26 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 
 ### Changed
 
+- Host App Files UI smoke now waits for the expected rename, delete, or share
+  action to enter the accessibility tree after pressing a file or directory.
+  If the first synthesized press does not open the menu, it retries once with
+  newly validated App and entry frames, then fails closed with frame evidence
+  instead of tapping a context-menu button that does not yet exist. File and
+  folder creation also dismisses system keyboard onboarding before submitting
+  a freshly validated Create frame at most twice, then stops the test if the
+  expected entry never appears instead of cascading into missing-disclosure
+  failures. Integrated-workspace verification now writes per-run unique guest
+  contents and treats their exact file preview as authoritative when terminal
+  accessibility text lags, and the document-picker flow rechecks whether
+  Browse already restored the Host destination before interacting with a
+  disappearing local-location cell. Host and Quick Start keyboard cleanup now
+  taps validated snapshot frames and gives onboarding UI a bounded dismissal
+  window instead of targeting elements that disappear during XCTest
+  interruption handling. The shared UI runner also recognizes an XCTest
+  Accessibility-load timeout before any test method runs as Simulator
+  infrastructure failure, restarting only its own temporary Simulator for one
+  bounded retry; caller-owned devices, ordinary assertions, and a second
+  failure still fail closed immediately.
 - Tightened the untagged `v0.2.0` source-candidate audit:
   `--allow-source-blocked` accepts only final source-release authorization as
   unsatisfied, and fails on any pinned-gate-set, NOTICE, license, public API
