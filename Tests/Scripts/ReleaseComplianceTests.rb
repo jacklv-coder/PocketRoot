@@ -1047,6 +1047,17 @@ class ReleaseComplianceTests < Minitest::Test
         .first
     assert_includes ui_job_header, "timeout-minutes: 60"
     assert_includes workflow, "fail-fast: false"
+    assert_includes workflow, "workflow_dispatch:"
+    assert_includes workflow, "include_ipad:"
+    assert_includes workflow, "Run the milestone iPad UI suites as well"
+    assert_equal 4, workflow.scan("!matrix.ipad ||").length
+    refute_includes workflow, "github.event_name == 'push' ||"
+    assert_includes(
+      workflow,
+      "github.event_name == 'workflow_dispatch' && inputs.include_ipad"
+    )
+    assert_equal 3, workflow.scan("ipad: false").length
+    assert_equal 2, workflow.scan("ipad: true").length
     assert_equal(
       2,
       workflow.scan("uses: ./.github/actions/setup-minimum-xcode-16").length

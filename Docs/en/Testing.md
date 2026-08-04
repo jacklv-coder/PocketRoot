@@ -517,7 +517,23 @@ share-sheet save, guest deletion, re-import, and content-verification UI
 closure on iPhone 16 and iPad (10th generation) Simulators. The fixture is
 written to the standalone Host App example's Documents only under the explicit
 `-PocketRootUITesting` launch argument, without relying on user iCloud or Files
-data. Set
+data.
+
+CI is tiered by platform. Ordinary `pull_request` runs and default
+`workflow_dispatch` runs execute the public-SHA external consumer, Quick Start
+iPhone, and Host App iPhone without starting iPad for every routine UI change.
+A `push` to `main` keeps the same three-suite routine iPhone baseline. After
+several larger feature blocks, when validating a milestone branch, or for a
+final release candidate, manually run `CI` for the target branch in Actions
+with `include_ipad=true` to execute all five UI suites. During development, run
+only the targeted tests affected by the small change; the full platform matrix
+no longer repeats on every merge. This tiering removes duplicate validation
+without weakening iPhone, native, build, or release gates.
+The two iPad check names remain present on PRs for existing branch-protection
+compatibility, but their gate skips every real step before checkout,
+Xcode/Simulator installation, or UI smoke.
+
+Set
 `POCKETROOT_HOST_UI_DEVICE_TYPE` and
 `POCKETROOT_HOST_UI_DEVICE_NAME` to select the Simulator created by the runner.
 Use `POCKETROOT_QUICK_START_UI_DEVICE_TYPE` and
@@ -569,8 +585,8 @@ XCFramework, or binary SDK.
 | Package/native dependency | Package + Demo + both final links + smoke |
 | `Examples/PocketRootDemo/project.yml` or Demo | Regenerate + Demo build |
 | smoke | Shell syntax + Simulator smoke + signed-device smoke when available |
-| Quick Start entry/example | Strict iOS build + iPhone/iPad Quick Start UI smoke |
-| terminal/files UI | Terminal tests + strict iOS build + Host App UI smoke |
+| Quick Start entry/example | Strict iOS build + iPhone Quick Start UI smoke; add iPad for milestones/release candidates |
+| terminal/files UI | Terminal tests + strict iOS build + Host App iPhone UI smoke; add iPad for milestones/release candidates |
 | docs | Documentation check |
 | release composition/compliance evidence | Generator tests + `--check` + pinned SPDX schema validation |
 | artifact scanner or CI scan gate | Ruby fixture security/drift tests + real unsigned-device App materialize/verify + pinned SPDX schema validation |
