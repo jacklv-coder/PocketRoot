@@ -8,6 +8,10 @@ PocketRoot 的重要变化记录在这里，并从首个公开版本开始遵循
 
 ### Changed
 
+- CI UI matrix 改为平台分层：普通 PR 与默认手动运行只执行外部消费者、Quick Start
+  iPhone 和 Host App iPhone；`main` push 也保持 iPhone 日常基线。完成几个较大功能块
+  或进入发布候选时，通过 `workflow_dispatch` 的 `include_ipad=true` 对目标分支显式补跑
+  iPad。开发期小步修改只需定向测试，完整平台矩阵不再随每次合并重复执行。
 - Host App 文件 UI smoke 现在会在长按文件或目录后，有界等待预期的重命名、删除或
   分享菜单动作进入 accessibility tree；若首次合成长按未打开菜单，会使用重新校验的
   App/条目 frame 再试一次，仍失败则带 frame 证据 fail-closed，避免直接点击尚不存在

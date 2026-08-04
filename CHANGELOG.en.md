@@ -8,6 +8,13 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 
 ### Changed
 
+- Tiered the CI UI matrix by platform: ordinary PRs and default manual runs
+  execute the external consumer, Quick Start iPhone, and Host App iPhone;
+  `main` pushes keep the same routine iPhone baseline. After several larger
+  feature blocks, or for a release candidate, explicitly add iPad on the target
+  branch with `workflow_dispatch`/`include_ipad=true`. Small development steps
+  use targeted tests, so the full platform matrix no longer repeats on every
+  merge.
 - Host App Files UI smoke now waits for the expected rename, delete, or share
   action to enter the accessibility tree after pressing a file or directory.
   If the first synthesized press does not open the menu, it retries once with

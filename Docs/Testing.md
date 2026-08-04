@@ -568,6 +568,17 @@ RootFS、安装同一 XcodeGen，并取得同一 iOS 18.0 Simulator runtime；jo
 Simulator/device final-link 并执行 17 项原生 smoke。UI matrix 设置
 `fail-fast: false`，分别运行公开 SHA 外部消费者、iPhone/iPad Quick Start 和
 iPhone/iPad Host App，因此单路失败不会取消其他证据；每路使用不冲突的失败制品名。
+
+CI 按平台分层。普通 `pull_request` 与默认 `workflow_dispatch` 运行公开 SHA 外部消费者、
+Quick Start iPhone 和 Host App iPhone，不为每个日常 UI 改动重复启动 iPad。`main`
+分支的 `push` 也保持这三路 iPhone 日常基线。完成几个较大功能块、需要验证里程碑分支，
+或进入最终发布候选时，从 Actions 对目标分支手动运行 `CI`，并设置
+`include_ipad=true`，再执行全部五路 UI。开发中的小步修改先运行受影响的定向测试；
+完整平台矩阵不再随每次合并重复执行。这一分层只减少重复验证，不降低 iPhone、native、
+构建或发行门禁。
+PR 中仍保留两路 iPad check 名称以兼容既有分支保护，但门控会在 checkout、Xcode/Simulator
+安装和 UI smoke 前跳过所有实际步骤。
+
 这些 UI job 在 iPhone 16 与 iPad（第 10 代）Simulator 运行最小 Quick Start 的
 Files/Terminal 冷启动与 PTY-to-Files 文件闭环，以及 Host App 的 PTY、Files、
 Workspace、系统 document picker 导入、share sheet 保存、guest 删除后再次导入并
@@ -614,9 +625,9 @@ runtime 与 device type 重建该临时 Simulator。这些基础设施恢复合�
 | Package.swift 或 native dependency | `swift test` + Demo build + 两个 arm64 final-link + native smoke |
 | `Examples/PocketRootDemo/project.yml` 或 Demo | regenerate + Demo build |
 | smoke App/runner | shell syntax + Simulator smoke + 可用时 signed device smoke |
-| Quick Start 入口或示例 | strict iOS build + iPhone/iPad Quick Start UI smoke |
+| Quick Start 入口或示例 | strict iOS build + iPhone Quick Start UI smoke；里程碑/发布候选补跑 iPad |
 | terminal/file browser | terminal tests（含二进制 stdin、原子导入、导出上限）+ strict iOS build + Demo build |
-| PTY/SwiftTerm | session/runtime unit + final-link + Host App UI smoke + signed iPhone/iPad lifecycle |
+| PTY/SwiftTerm | session/runtime unit + final-link + Host App iPhone UI smoke；里程碑/发布候选补跑 iPad，真机可用时执行 signed lifecycle |
 | 文档 | `./Scripts/check-docs.sh` |
 | 发行组成或合规证据 | 生成器测试 + `--check` + 固定 SPDX schema 校验 |
 | 制品扫描器或 CI 扫描门禁 | Ruby fixture 安全/漂移测试 + 真实 unsigned device App 生成/复验 + 固定 SPDX schema 校验 |

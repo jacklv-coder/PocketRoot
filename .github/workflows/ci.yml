@@ -5,6 +5,13 @@ on:
     branches:
       - main
   pull_request:
+  workflow_dispatch:
+    inputs:
+      include_ipad:
+        description: Run the milestone iPad UI suites as well
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -348,23 +355,43 @@ jobs:
         include:
           - suite: external-consumer
             label: External consumer
+            ipad: false
           - suite: quick-start-iphone
             label: Quick Start iPhone
+            ipad: false
           - suite: quick-start-ipad
             label: Quick Start iPad
+            ipad: true
           - suite: host-iphone
             label: Host App iPhone
+            ipad: false
           - suite: host-ipad
             label: Host App iPad
+            ipad: true
 
     steps:
       - name: Check out repository
+        if: >-
+          ${{
+            !matrix.ipad ||
+            (github.event_name == 'workflow_dispatch' && inputs.include_ipad)
+          }}
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up minimum Xcode 16 environment
+        if: >-
+          ${{
+            !matrix.ipad ||
+            (github.event_name == 'workflow_dispatch' && inputs.include_ipad)
+          }}
         uses: ./.github/actions/setup-minimum-xcode-16
 
       - name: Run ${{ matrix.label }} UI smoke with Xcode 16.0
+        if: >-
+          ${{
+            !matrix.ipad ||
+            (github.event_name == 'workflow_dispatch' && inputs.include_ipad)
+          }}
         env:
           POCKETROOT_UI_SUITE: ${{ matrix.suite }}
           POCKETROOT_UI_FAILURE_ROOT: >-
@@ -408,7 +435,12 @@ jobs:
           esac
 
       - name: Upload UI failure diagnostics
-        if: failure()
+        if: >-
+          ${{
+            failure() &&
+            (!matrix.ipad ||
+              (github.event_name == 'workflow_dispatch' && inputs.include_ipad))
+          }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: pocketroot-ui-failure-${{ matrix.suite }}-${{ github.run_id }}-${{ github.run_attempt }}
