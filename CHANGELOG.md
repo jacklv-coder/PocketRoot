@@ -18,7 +18,9 @@ PocketRoot 的重要变化记录在这里，并从首个公开版本开始遵循
   选择器也会在 Browse 后先复核是否已经恢复到 Host 目录，再决定是否操作正在消失的
   本地位置条目。Host 与 Quick Start 的键盘清理会点击已校验的快照 frame，并给
   onboarding UI 一个有界退场窗口，避免 XCTest interruption handling 期间直接操作
-  正在消失的元素。
+  正在消失的元素。通用 UI runner 也会把 XCTest 在测试方法执行前报告的
+  Accessibility 加载超时识别为模拟器基础设施故障，仅对自己创建的临时 Simulator
+  重启并有界重试一次；调用方提供的设备、普通测试断言和第二次失败仍立即 fail-closed。
 - 收紧 `v0.2.0` 未打 tag 源码候选审计：`--allow-source-blocked` 只接受最终源码发布
   授权这一项尚未满足，固定门禁集合、NOTICE、许可证、公开 API 状态或源码边界漂移
   都会失败；CI 和受信 tag 工作流只上传带 commit、archive SHA-256、文件统计和精确

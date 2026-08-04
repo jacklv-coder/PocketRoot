@@ -196,11 +196,13 @@ post-report runner-cleanup check. Missing reports and crashes are failures.
 Compare toolchains, SDK, destination architecture, resolved dependencies, XcodeGen, artifact digests, generated project source, and uncommitted local dependencies. CI runs `./Scripts/check-docs.sh` before tests and builds. The `actions/checkout` implementation is pinned to an exact revision, while the repository content is the workflow event SHA (push SHA or PR merge SHA). CI has no local archive, DerivedData, generated project, or credentials.
 
 If Xcode 16 intermittently reports that a UI test runner `is unknown to
-FrontBoard`, the shared Simulator UI runner restarts the device and retries
-once only when the runner created that temporary device. It does not restart a
-shared Simulator supplied by the caller. Only that exact infrastructure signature triggers a retry; do not add
-ordinary test failures to the retry condition. If the retry also fails, inspect
-both the first and final `xcodebuild` logs.
+FrontBoard`, or XCTest reports `Timed out waiting for AX loaded notification`
+before a test method runs, the shared Simulator UI runner restarts the device
+and retries once only when the runner created that temporary device. It does
+not restart a shared Simulator supplied by the caller. Only these exact
+infrastructure signatures trigger a retry; do not add ordinary test failures
+to the retry condition. If the retry also fails, inspect both the first and
+final `xcodebuild` logs.
 
 ## Issue report
 

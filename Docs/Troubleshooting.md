@@ -359,10 +359,11 @@ POCKETROOT_ROOTFS_ARCHIVE=/path/to/fs.tar.gz \
 
 CI 先运行 `./Scripts/check-docs.sh`，再执行测试与构建。`actions/checkout` 自身固定到精确 revision，但它检出的仓库内容是 workflow 事件选定的 SHA（push SHA 或 PR merge SHA）。CI 是干净 checkout，不能访问本地 archive、DerivedData、未提交工程或凭据。
 
-若 Xcode 16 偶发报告 UI test runner `is unknown to FrontBoard`，通用 Simulator UI
-runner 会重启由它创建的临时设备并重试一次；调用方指定的共享 Simulator 不会被自动
-重启。只有这组精确的基础设施信号会触发重试；不要把普通测试失败加入重试条件。重试
-后仍失败时，应同时检查首次与最终 `xcodebuild` 日志。
+若 Xcode 16 偶发报告 UI test runner `is unknown to FrontBoard`，或 XCTest 在执行测试
+方法前报告 `Timed out waiting for AX loaded notification`，通用 Simulator UI runner
+会重启由它创建的临时设备并重试一次；调用方指定的共享 Simulator 不会被自动重启。
+只有这些精确的基础设施信号会触发重试；不要把普通测试失败加入重试条件。重试后仍失败
+时，应同时检查首次与最终 `xcodebuild` 日志。
 
 ## 报告问题时提供
 

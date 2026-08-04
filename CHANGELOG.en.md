@@ -23,7 +23,11 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   disappearing local-location cell. Host and Quick Start keyboard cleanup now
   taps validated snapshot frames and gives onboarding UI a bounded dismissal
   window instead of targeting elements that disappear during XCTest
-  interruption handling.
+  interruption handling. The shared UI runner also recognizes an XCTest
+  Accessibility-load timeout before any test method runs as Simulator
+  infrastructure failure, restarting only its own temporary Simulator for one
+  bounded retry; caller-owned devices, ordinary assertions, and a second
+  failure still fail closed immediately.
 - Tightened the untagged `v0.2.0` source-candidate audit:
   `--allow-source-blocked` accepts only final source-release authorization as
   unsatisfied, and fails on any pinned-gate-set, NOTICE, license, public API

@@ -133,6 +133,11 @@ run_ui_tests() {
 }
 
 retryable_simulator_failure_kind() {
+    if grep -Fq 'The test runner failed to initialize for UI testing.' "$TEST_LOG_PATH" &&
+       grep -Fq 'Timed out waiting for AX loaded notification' "$TEST_LOG_PATH"; then
+        printf 'accessibility-initialization\n'
+        return 0
+    fi
     if grep -Fq 'Simulator device failed to launch' "$TEST_LOG_PATH" &&
        grep -Fq 'is unknown to FrontBoard' "$TEST_LOG_PATH"; then
         printf 'frontboard-launch\n'
@@ -166,6 +171,8 @@ if [[ "$test_exit_code" -ne 0 &&
     fi
     if [[ "$RETRY_FAILURE_KIND" == "missing-destination" ]]; then
         echo "$ARTIFACT_LABEL Simulator destination disappeared; recreating the runner-owned Simulator and retrying once." >&2
+    elif [[ "$RETRY_FAILURE_KIND" == "accessibility-initialization" ]]; then
+        echo "$ARTIFACT_LABEL UI test runner timed out while initializing Accessibility; restarting the Simulator and retrying once." >&2
     else
         echo "$ARTIFACT_LABEL UI test runner was not registered with FrontBoard; restarting the Simulator and retrying once." >&2
     fi
