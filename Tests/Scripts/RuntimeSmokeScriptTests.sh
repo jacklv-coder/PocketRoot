@@ -459,6 +459,7 @@ fi
 
 if ! grep -Fq -- 'pocketroot-system-file-ui-fixture.txt' "$HOST_APP_SOURCE" \
   || ! grep -Fq -- 'testSystemFileImportAndShareExportRoundTrip' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'testFileExportUsesPlatformActivityPresentation' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'Save to Files' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'revealFileEntry' "$HOST_UI_TESTS" \
   || ! grep -Fq -- '"PocketRootFiles.list"' "$HOST_UI_TESTS" \
@@ -485,6 +486,7 @@ if ! grep -Fq -- 'pocketroot-system-file-ui-fixture.txt' "$HOST_APP_SOURCE" \
   || ! grep -Fq -- 'Always synthesize through the application using captured values' "$HOST_UI_TESTS" \
   || grep -Fq -- 'currentLocalLocation.tap()' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'attachHierarchy(' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'activateMenuAction(share, in: app)' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'underlying host geometry' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'for attempt in 0..<2' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'relaunchAndBoot(app)' "$HOST_UI_TESTS" \
@@ -495,6 +497,9 @@ if ! grep -Fq -- 'pocketroot-system-file-ui-fixture.txt' "$HOST_APP_SOURCE" \
   || ! grep -Fq -- 'try? activityView.snapshot()' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'tapOutsideSnapshotFrame(' "$HOST_UI_TESTS" \
   || grep -Fq -- 'tapOutsideCurrentFrame' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- '.popover(item: $sharePayload)' "$ROOT_DIR/Sources/PocketRootTerminal/Public/PocketRootFileBrowserView.swift" \
+  || ! grep -Fq -- '.presentationCompactAdaptation(.sheet)' "$ROOT_DIR/Sources/PocketRootTerminal/Public/PocketRootFileBrowserView.swift" \
+  || grep -Fq -- '.sheet(' "$ROOT_DIR/Sources/PocketRootTerminal/Public/PocketRootFileBrowserView.swift" \
   || ! grep -Fq -- 'LSSupportsOpeningDocumentsInPlace: true' "$HOST_PROJECT_SPEC" \
   || ! grep -Fq -- 'UIFileSharingEnabled: true' "$HOST_PROJECT_SPEC"; then
     echo "Host App UI smoke is missing the system file transfer closure." >&2

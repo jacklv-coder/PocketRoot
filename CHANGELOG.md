@@ -27,6 +27,12 @@ PocketRoot 的重要变化记录在这里，并从首个公开版本开始遵循
   每次尝试前重新查询目标，首次使用 sidebar 条目、第二次使用条目内新解析的文字 frame，
   且两次都只通过已捕获的 App 坐标触发，同时等待 Host 导航状态或容器条目；两条路径都
   未完成转换时保留层级证据，不会要求正在消失的系统 cell 重新解析并执行自身动作。
+- Files 导出现在按 UIKit 平台契约在 iPad 使用 popover 呈现
+  `UIActivityViewController`，并仅在 iPhone 等紧凑宽度环境适配为 sheet；这避免 iPad
+  在先前的模态 sheet 路径中只显示变暗背景、分享内容仍停留在屏幕下方。无论用户完成、
+  取消还是点按外部关闭分享界面，临时导出目录都会随展示内容退场后清理。新增独立的
+  iPad 导出 UI smoke，不依赖系统文件导入即可验证平台分享界面和 `Save to Files` 动作；
+  系统 round-trip 的分享菜单动作也改为通过重新校验的物理 frame 触发。
 - 收紧 `v0.2.0` 未打 tag 源码候选审计：`--allow-source-blocked` 只接受最终源码发布
   授权这一项尚未满足，固定门禁集合、NOTICE、许可证、公开 API 状态或源码边界漂移
   都会失败；CI 和受信 tag 工作流只上传带 commit、archive SHA-256、文件统计和精确

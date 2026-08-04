@@ -39,6 +39,16 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   container. If neither completes the transition, hierarchy evidence is kept
   without asking a disappearing system cell to resolve and perform its own
   action.
+- Files export now follows the UIKit presentation contract by showing
+  `UIActivityViewController` in a popover on iPad and adapting to a sheet only
+  in compact-width environments such as iPhone. This avoids the former iPad
+  modal path getting stuck with a dimmed background while the share content
+  remains below the screen. The temporary export directory is removed after
+  the presentation disappears whether the user completes, cancels, or taps
+  outside the share UI. A dedicated iPad export UI smoke now verifies the
+  platform activity UI and `Save to Files` action without depending on system
+  file import, and the system round-trip activates its share menu action
+  through a freshly validated physical frame.
 - Tightened the untagged `v0.2.0` source-candidate audit:
   `--allow-source-blocked` accepts only final source-release authorization as
   unsatisfied, and fails on any pinned-gate-set, NOTICE, license, public API

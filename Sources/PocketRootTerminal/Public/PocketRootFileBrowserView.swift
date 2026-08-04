@@ -164,22 +164,19 @@ public struct PocketRootFileBrowserView: View {
                 }
             }
         }
-        .sheet(
-            item: $sharePayload,
-            onDismiss: {
-                if let payload = sharePayload {
-                    model.removeExport(payload)
-                    sharePayload = nil
-                }
-            }
-        ) { payload in
+        .popover(item: $sharePayload) { payload in
             PocketRootActivityView(
                 url: payload.url,
                 completion: {
-                    model.removeExport(payload)
                     sharePayload = nil
                 }
             )
+            // UIActivityViewController must be presented in a popover on iPad.
+            // Compact-width devices retain the familiar modal share sheet.
+            .presentationCompactAdaptation(.sheet)
+            .onDisappear {
+                model.removeExport(payload)
+            }
         }
         .task {
             await model.loadIfNeeded()

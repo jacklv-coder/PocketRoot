@@ -180,6 +180,85 @@ final class PocketRootHostAppUITests: XCTestCase {
         shutdownRuntime(in: app)
     }
 
+    func testFileExportUsesPlatformActivityPresentation() {
+        let app = launchAndBoot()
+        app.buttons["PocketRootHost.files"].tap()
+
+        let suffix = String(UUID().uuidString.prefix(8)).lowercased()
+        let fileName = "share-\(suffix).txt"
+        let file = app.descendants(matching: .any)[
+            "PocketRootFiles.entry./root/\(fileName)"
+        ]
+        let actions = app.buttons["PocketRootFiles.actions"]
+        XCTAssertTrue(actions.waitForExistence(timeout: 30))
+        waitForEnabled(actions)
+        actions.tap()
+        let nameField = app.textFields["Name"]
+        guard openCreationDialog(
+            action: "New File",
+            nameField: nameField,
+            in: app
+        ) else {
+            return
+        }
+        nameField.typeText(fileName)
+        guard submitCreation(expectedEntry: file, in: app),
+              revealFileEntry(file, in: app),
+              let share = openFileEntryContextMenu(
+                  for: file,
+                  expectedAction: "Share / Export",
+                  in: app
+              ),
+              activateMenuAction(share, in: app)
+        else {
+            return
+        }
+
+        let saveToFiles = app.cells.matching(
+            NSPredicate(
+                format: "label IN %@",
+                ["Save to Files", "存储到“文件”", "存储到文件"]
+            )
+        ).firstMatch
+        guard saveToFiles.waitForExistence(timeout: 30) else {
+            attachHierarchy(
+                named: "System activity presentation did not expose Save to Files",
+                from: app
+            )
+            XCTFail("system activity presentation to expose Save to Files")
+            return
+        }
+
+        if dismissShareSheetIfNeeded(in: app) {
+            returnToHost(in: app)
+        } else {
+            relaunchAndBoot(app)
+        }
+        let filesButton = app.buttons["PocketRootHost.files"]
+        XCTAssertTrue(filesButton.waitForExistence(timeout: 10))
+        filesButton.tap()
+        let persistedFile = app.descendants(matching: .any)[
+            "PocketRootFiles.entry./root/\(fileName)"
+        ]
+        guard revealFileEntry(persistedFile, in: app),
+              let delete = openFileEntryContextMenu(
+                  for: persistedFile,
+                  expectedAction: "Delete",
+                  in: app
+              )
+        else {
+            return
+        }
+        delete.tap()
+        confirmDeletion(of: fileName, in: app)
+        wait(
+            for: NSPredicate(format: "exists == false"),
+            evaluatedWith: persistedFile,
+            timeout: 30
+        )
+        shutdownRuntime(in: app)
+    }
+
     func testPTYCommandCreatesFileVisibleInFiles() {
         let app = launchAndBoot()
 
@@ -282,7 +361,9 @@ final class PocketRootHostAppUITests: XCTestCase {
         ) else {
             return
         }
-        share.tap()
+        guard activateMenuAction(share, in: app) else {
+            return
+        }
 
         let saveToFiles = app.cells.matching(
             NSPredicate(
@@ -1355,6 +1436,30 @@ final class PocketRootHostAppUITests: XCTestCase {
                 )
             )
             .tap()
+    }
+
+    private func activateMenuAction(
+        _ action: XCUIElement,
+        in app: XCUIApplication
+    ) -> Bool {
+        guard let frames = waitForInteractionFrames(
+            of: action,
+            in: app,
+            timeout: 5
+        ) else {
+            attachHierarchy(
+                named: "Menu action did not expose a usable frame",
+                from: app
+            )
+            XCTFail("menu action \(action.label) to expose a usable frame")
+            return false
+        }
+        tapFrame(
+            frames.elementFrame,
+            in: frames.appFrame,
+            using: app
+        )
+        return true
     }
 
     private func waitForInteractionFrames(

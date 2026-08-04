@@ -1173,6 +1173,12 @@ class ReleaseComplianceTests < Minitest::Test
           "Examples/PocketRootHostApp/UITests/PocketRootHostAppUITests.swift"
         )
         .binread
+    file_browser =
+      REPOSITORY_ROOT
+        .join(
+          "Sources/PocketRootTerminal/Public/PocketRootFileBrowserView.swift"
+        )
+        .binread
     host_source =
       REPOSITORY_ROOT
         .join("Examples/PocketRootHostApp/Sources/HostApp.swift")
@@ -1200,6 +1206,11 @@ class ReleaseComplianceTests < Minitest::Test
     assert_includes ui_test, "try? activityView.snapshot()"
     assert_includes ui_test, "tapOutsideSnapshotFrame("
     refute_includes ui_test, "tapOutsideCurrentFrame"
+    assert_includes file_browser, '.popover(item: $sharePayload)'
+    assert_includes file_browser, ".presentationCompactAdaptation(.sheet)"
+    assert_includes file_browser, ".onDisappear {"
+    assert_includes file_browser, "model.removeExport(payload)"
+    refute_includes file_browser, ".sheet(\n            item: $sharePayload"
     assert_includes(
       ui_test,
       '"FullDocumentManagerViewControllerNavigationBar"'
@@ -1237,7 +1248,9 @@ class ReleaseComplianceTests < Minitest::Test
     assert_includes ui_test, "openedHostDestination"
     assert_includes ui_test, '"DOC.sidebar.item.On My iPad"'
     assert_includes ui_test, '"PocketRoot Host, Actions Menu"'
-    assert_equal 3, ui_test.scan("guard openCreationDialog(").length
+    assert_equal 4, ui_test.scan("guard openCreationDialog(").length
+    assert_includes ui_test, "testFileExportUsesPlatformActivityPresentation"
+    assert_equal 2, ui_test.scan("activateMenuAction(share, in: app)").length
     assert_includes ui_test, "validated physical coordinate"
     refute_includes ui_test, 'app.buttons["New File"].tap()'
     refute_includes ui_test, 'app.buttons["New Folder"].tap()'
