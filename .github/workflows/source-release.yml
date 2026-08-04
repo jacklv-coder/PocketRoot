@@ -63,7 +63,8 @@ jobs:
             --tooling-root trusted \
             --version "$version" \
             --ref "$RELEASE_TAG" \
-            --require-tag "$RELEASE_TAG"
+            --require-tag "$RELEASE_TAG" \
+            --report "$RUNNER_TEMP/pocketroot-$version-source-release.json"
 
       - name: Resolve exact Swift Package version externally
         env:
@@ -74,3 +75,18 @@ jobs:
           commit="$(git -C candidate rev-parse "$RELEASE_TAG^{commit}")"
           ./trusted/Scripts/verify-immutable-upstream-releases.sh
           ./trusted/Scripts/verify-swiftpm-release-tag.sh "$version" "$commit"
+
+      - name: Require source release verification report
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          version="${RELEASE_TAG#v}"
+          test -f "$RUNNER_TEMP/pocketroot-$version-source-release.json"
+
+      - name: Publish source release verification report artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pocketroot-source-release-${{ inputs.tag }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/pocketroot-0.2.0-source-release.json
+          if-no-files-found: error
+          retention-days: 30

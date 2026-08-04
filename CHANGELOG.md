@@ -8,6 +8,10 @@ PocketRoot 的重要变化记录在这里，并从首个公开版本开始遵循
 
 ### Changed
 
+- 收紧 `v0.2.0` 未打 tag 源码候选审计：`--allow-source-blocked` 只接受最终源码发布
+  授权这一项尚未满足，固定门禁集合、NOTICE、许可证、公开 API 状态或源码边界漂移
+  都会失败；CI 和受信 tag 工作流只上传带 commit、archive SHA-256、文件统计和精确
+  阻塞项的 JSON 验证报告，不上传临时源码 tar、RootFS、App 或二进制制品。
 - 将最低 Xcode 16 门禁拆为独立 native runtime job 和五路 `fail-fast: false` UI
   matrix，分别并行验证公开 SHA 外部消费者、Quick Start iPhone/iPad 与 Host App
   iPhone/iPad。全部 job 复用仓库内 composite action，但各自在隔离 runner 上重新

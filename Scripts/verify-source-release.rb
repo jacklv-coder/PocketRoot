@@ -14,6 +14,15 @@ module PocketRootSourceRelease
   class VerificationError < StandardError; end
 
   RELEASE_VERSION = "0.2.0"
+  SOURCE_AUTHORIZATION_GATE_ID = "source-release-authorized"
+  EXPECTED_SOURCE_GATE_IDS = %w[
+    source-boundary-excludes-rootfs
+    public-api-status-declared
+    top-level-license-finalized
+    contributor-policy-approved
+    release-notice-approved
+    source-release-authorized
+  ].freeze
   MAX_ENTRIES = 20_000
   MAX_FILE_BYTES = 64 * 1024 * 1024
   MAX_ARCHIVE_CONTENT_BYTES = 256 * 1024 * 1024
@@ -175,25 +184,75 @@ module PocketRootSourceRelease
     decisions_path = root.join("Compliance/Release/RELEASE-DECISIONS.json")
     readiness = load_json(readiness_path, "release readiness")
     decisions = load_json(decisions_path, "release decisions")
-    source_status = readiness.dig("tracks", "sourcePackageRelease", "status")
+    source_track = readiness.dig("tracks", "sourcePackageRelease")
+    source_status = source_track&.fetch("status", nil)
     unless readiness["releaseVersion"] == version &&
       decisions["releaseVersion"] == version &&
       %w[blocked ready].include?(source_status)
       raise VerificationError,
         "source readiness is not bound to release #{version}"
     end
-    if require_ready &&
-      (
-        source_status != "ready" ||
-        !%w[
-          source-release-authorized
-          source-and-runtime-distribution-authorized
-        ].include?(decisions["status"])
-      )
+    gates = source_track.fetch("gates")
+    unless gates.is_a?(Array) &&
+      gates.all? { |gate| gate.is_a?(Hash) } &&
+      gates.map { |gate| gate["id"] } == EXPECTED_SOURCE_GATE_IDS
+      raise VerificationError,
+        "source readiness gate set is not bound to release #{version}"
+    end
+    blocked_gate_ids = gates.each_with_object([]) do |gate, blocked|
+      blocked << gate.fetch("id") unless gate.fetch("satisfied") == true
+    end
+    authorized = %w[
+      source-release-authorized
+      source-and-runtime-distribution-authorized
+    ].include?(decisions["status"])
+    if require_ready && (source_status != "ready" || !authorized)
       raise VerificationError,
         "source authorization is not bound to release #{version}"
     end
-    source_status
+    if source_status == "ready" && (!blocked_gate_ids.empty? || !authorized)
+      raise VerificationError,
+        "ready source track has unresolved gates for release #{version}"
+    end
+    if !require_ready && source_status == "blocked" &&
+      blocked_gate_ids != [SOURCE_AUTHORIZATION_GATE_ID]
+      raise VerificationError,
+        "source candidate has unresolved gates beyond explicit release " \
+        "authorization: #{blocked_gate_ids.join(', ')}"
+    end
+
+    {
+      "status" => source_status,
+      "candidateReady" => blocked_gate_ids.empty? ||
+        blocked_gate_ids == [SOURCE_AUTHORIZATION_GATE_ID],
+      "blockedGateIds" => blocked_gate_ids,
+      "authorizationStatus" => decisions.fetch("status")
+    }
+  end
+
+  def write_report(path, result)
+    report = Pathname(path).expand_path
+    report.dirname.mkpath
+    if report.symlink? || (report.exist? && !report.file?)
+      raise VerificationError,
+        "source verification report path is not a regular file: #{report}"
+    end
+
+    temporary = Tempfile.new(
+      [".#{report.basename}", ".tmp"],
+      report.dirname.to_s
+    )
+    temporary.binmode
+    temporary.write(JSON.pretty_generate(result))
+    temporary.write("\n")
+    temporary.flush
+    temporary.fsync
+    temporary.close
+    File.rename(temporary.path, report)
+    report
+  ensure
+    temporary&.close unless temporary&.closed?
+    temporary&.unlink
   end
 
   def verify_annotated_tag(root, ref, tag)
@@ -461,7 +520,7 @@ module PocketRootSourceRelease
       prefix,
       required_paths: REQUIRED_PATHS + release_paths
     )
-    source_status = nil
+    source_readiness = nil
     Dir.mktmpdir("pocketroot-source-release-snapshot-") do |directory|
       release_root = materialize_archive(
         archive,
@@ -473,18 +532,24 @@ module PocketRootSourceRelease
         version,
         require_released: require_source_ready
       )
-      source_status = verify_source_readiness(
+      source_readiness = verify_source_readiness(
         release_root,
         version,
         tooling_root: Pathname(tooling_root).realpath,
         require_ready: require_source_ready
       )
     end
-    result = result.merge(
+    result = {
+      "schemaVersion" => 1
+    }.merge(result).merge(
       "releaseVersion" => version,
       "ref" => ref,
       "commit" => run_git(root, "rev-parse", "#{ref}^{commit}"),
-      "sourceTrack" => source_status
+      "sourceTrack" => source_readiness.fetch("status"),
+      "sourceCandidateReady" => source_readiness.fetch("candidateReady"),
+      "sourceBlockedGateIds" => source_readiness.fetch("blockedGateIds"),
+      "authorizationStatus" =>
+        source_readiness.fetch("authorizationStatus")
     )
     result["archivePath"] = archive.to_s if output
     result
@@ -526,6 +591,9 @@ if $PROGRAM_NAME == __FILE__
       cli.on("--output PATH", "Keep the verified tar at PATH") do |value|
         options[:output] = value
       end
+      cli.on("--report PATH", "Write the JSON verification report at PATH") do |value|
+        options[:report] = value
+      end
     end
     parser.parse!
     raise OptionParser::MissingArgument, "--version" unless options[:version]
@@ -539,6 +607,14 @@ if $PROGRAM_NAME == __FILE__
       tooling_root: options.fetch(:tooling_root, options[:root]),
       require_source_ready: options[:require_source_ready]
     )
+    if options[:report]
+      report = Pathname(options[:report]).expand_path
+      if options[:output] && report == Pathname(options[:output]).expand_path
+        raise PocketRootSourceRelease::VerificationError,
+          "source archive and JSON report paths must be different"
+      end
+      PocketRootSourceRelease.write_report(report, result)
+    end
     puts JSON.pretty_generate(result)
   rescue OptionParser::ParseError,
          PocketRootSourceRelease::VerificationError => error

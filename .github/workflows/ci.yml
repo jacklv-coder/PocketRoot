@@ -103,7 +103,16 @@ jobs:
           ruby Scripts/verify-source-release.rb \
             --version 0.2.0 \
             --ref HEAD \
-            --allow-source-blocked
+            --allow-source-blocked \
+            --report "$RUNNER_TEMP/pocketroot-v0.2.0-source-candidate.json"
+
+      - name: Upload source candidate audit report
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pocketroot-source-candidate-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/pocketroot-v0.2.0-source-candidate.json
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Report Apple toolchain
         run: |

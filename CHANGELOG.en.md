@@ -8,6 +8,12 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 
 ### Changed
 
+- Tightened the untagged `v0.2.0` source-candidate audit:
+  `--allow-source-blocked` accepts only final source-release authorization as
+  unsatisfied, and fails on any pinned-gate-set, NOTICE, license, public API
+  status, or source-boundary drift. CI and the trusted tag workflow upload only
+  a JSON verification report with the commit, archive SHA-256, file counts,
+  and exact blockers—not the temporary source tar, RootFS, App, or binaries.
 - Split the minimum-Xcode 16 gate into an independent native-runtime job and a
   five-way `fail-fast: false` UI matrix for the public-SHA external consumer,
   Quick Start iPhone/iPad, and Host App iPhone/iPad. Every isolated runner
