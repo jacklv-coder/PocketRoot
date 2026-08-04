@@ -16,7 +16,11 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   folder creation also dismisses system keyboard onboarding before submitting
   a freshly validated Create frame at most twice, then stops the test if the
   expected entry never appears instead of cascading into missing-disclosure
-  failures.
+  failures. Integrated-workspace verification now writes per-run unique guest
+  contents and treats their exact file preview as authoritative when terminal
+  accessibility text lags, and the document-picker flow rechecks whether
+  Browse already restored the Host destination before interacting with a
+  disappearing local-location cell.
 - Tightened the untagged `v0.2.0` source-candidate audit:
   `--allow-source-blocked` accepts only final source-release authorization as
   unsatisfied, and fails on any pinned-gate-set, NOTICE, license, public API

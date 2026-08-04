@@ -730,16 +730,26 @@ final class PocketRootHostAppUITests: XCTestCase {
         let terminal = terminalElement(in: app)
         XCTAssertTrue(terminal.waitForExistence(timeout: 90))
         terminal.tap()
+        let integratedRunID = UUID().uuidString.lowercased()
+        let integratedMarker =
+            "__INTEGRATED_WORKSPACE_READY_\(integratedRunID)__"
+        let integratedContents =
+            "integrated workspace \(integratedRunID)\n"
         terminal.typeText(
             "rm -f /root/pocketroot-integrated-smoke.txt; "
-                + "printf 'integrated workspace\\n' "
+                + "printf 'integrated workspace \(integratedRunID)\\n' "
                 + "> /root/pocketroot-integrated-smoke.txt; "
-                + "printf '__INTEGRATED_WORKSPACE_READY__\\n'\n"
+                + "printf '\(integratedMarker)\\n'\n"
         )
-        wait(
+        // SwiftTerm's accessibility value can lag behind output that the
+        // guest has already produced. Give it one bounded observation window,
+        // then let the stronger Files entry and exact preview assertions below
+        // prove that the command completed instead of recording a false
+        // terminal-text failure.
+        _ = waitWithoutAssertion(
             for: NSPredicate(
                 format: "value CONTAINS %@",
-                "__INTEGRATED_WORKSPACE_READY__"
+                integratedMarker
             ),
             evaluatedWith: terminal,
             timeout: 30
@@ -757,7 +767,7 @@ final class PocketRootHostAppUITests: XCTestCase {
         file.tap()
         let preview = app.staticTexts["PocketRootFiles.preview"]
         XCTAssertTrue(preview.waitForExistence(timeout: 30))
-        XCTAssertEqual(preview.label, "integrated workspace\n")
+        XCTAssertEqual(preview.label, integratedContents)
 
         returnToHost(in: app)
         wait(
@@ -1060,6 +1070,13 @@ final class PocketRootHostAppUITests: XCTestCase {
             }
             RunLoop.current.run(until: Date().addingTimeInterval(0.2))
         }
+        if currentHostDocuments.exists {
+            guard hostFixture.waitForExistence(timeout: 30) else {
+                XCTFail("Host Documents fixture to become visible")
+                return false
+            }
+            return true
+        }
         guard let localLocation else {
             XCTFail("document picker to expose a usable Host or local destination")
             return false
@@ -1080,14 +1097,25 @@ final class PocketRootHostAppUITests: XCTestCase {
                 "PocketRoot Host,"
             )
         ).firstMatch
-        XCTAssertTrue(localLocation.waitForExistence(timeout: 30))
         var openedHostDestination = false
         for _ in 0..<2 {
+            // Browse can restore the last Host destination while the local
+            // location query is transitioning out of the accessibility tree.
+            // Re-check that stronger navigation state before touching a stale
+            // local-location element.
+            if currentHostDocuments.exists {
+                openedHostDestination = true
+                break
+            }
             guard let frames = waitForInteractionFrames(
                 of: localLocation,
                 in: app,
                 timeout: 5
             ) else {
+                if currentHostDocuments.waitForExistence(timeout: 5) {
+                    openedHostDestination = true
+                    break
+                }
                 continue
             }
             tapFrame(

@@ -440,6 +440,10 @@ if ! grep -Fq -- 'pocketroot-system-file-ui-fixture.txt' "$HOST_APP_SOURCE" \
   || ! grep -Fq -- 'submitCreation(expectedEntry:' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'dismissKeyboardOnboardingIfPresent(in: app)' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'expectedEntry.waitForExistence(timeout: 35)' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'then let the stronger Files entry and exact preview assertions below' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'UUID().uuidString.lowercased()' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'XCTAssertEqual(preview.label, integratedContents)' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'if currentHostDocuments.waitForExistence(timeout: 5)' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'underlying host geometry' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'for attempt in 0..<2' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'relaunchAndBoot(app)' "$HOST_UI_TESTS" \
