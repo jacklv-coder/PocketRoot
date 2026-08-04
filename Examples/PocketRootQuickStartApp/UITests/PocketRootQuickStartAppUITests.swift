@@ -84,21 +84,59 @@ final class PocketRootQuickStartAppUITests: XCTestCase {
         for _ in 0..<3 where keyboard.exists {
             let continueButton = app.buttons["Continue"]
             if continueButton.exists {
-                continueButton.tap()
+                tapCurrentFrame(of: continueButton, in: app)
             } else {
                 let hideKeyboardButton = app.buttons[
                     "PocketRootTerminal.key.dismiss-keyboard"
                 ]
-                XCTAssertTrue(
-                    hideKeyboardButton.waitForExistence(timeout: 10)
-                )
-                hideKeyboardButton.tap()
+                if hideKeyboardButton.waitForExistence(timeout: 2) {
+                    tapCurrentFrame(of: hideKeyboardButton, in: app)
+                }
             }
-            RunLoop.current.run(
-                until: Date().addingTimeInterval(0.5)
-            )
+            if waitForDisappearance(of: keyboard, timeout: 2) {
+                return
+            }
         }
         XCTAssertFalse(keyboard.exists)
+    }
+
+    private func tapCurrentFrame(
+        of element: XCUIElement,
+        in app: XCUIApplication
+    ) {
+        guard let snapshot = try? element.snapshot() else {
+            return
+        }
+        let appFrame = app.frame
+        let elementFrame = snapshot.frame
+        let center = CGPoint(x: elementFrame.midX, y: elementFrame.midY)
+        guard appFrame.width > 0,
+              appFrame.height > 0,
+              elementFrame.width > 0,
+              elementFrame.height > 0,
+              appFrame.contains(center)
+        else {
+            return
+        }
+        app.coordinate(withNormalizedOffset: .zero)
+            .withOffset(
+                CGVector(
+                    dx: center.x - appFrame.minX,
+                    dy: center.y - appFrame.minY
+                )
+            )
+            .tap()
+    }
+
+    private func waitForDisappearance(
+        of element: XCUIElement,
+        timeout: TimeInterval
+    ) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while element.exists, Date() < deadline {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+        }
+        return !element.exists
     }
 
     private func tapBackButton(in app: XCUIApplication) {

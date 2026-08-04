@@ -20,7 +20,10 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   contents and treats their exact file preview as authoritative when terminal
   accessibility text lags, and the document-picker flow rechecks whether
   Browse already restored the Host destination before interacting with a
-  disappearing local-location cell.
+  disappearing local-location cell. Host and Quick Start keyboard cleanup now
+  taps validated snapshot frames and gives onboarding UI a bounded dismissal
+  window instead of targeting elements that disappear during XCTest
+  interruption handling.
 - Tightened the untagged `v0.2.0` source-candidate audit:
   `--allow-source-blocked` accepts only final source-release authorization as
   unsatisfied, and fails on any pinned-gate-set, NOTICE, license, public API

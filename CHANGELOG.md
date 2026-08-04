@@ -16,7 +16,9 @@ PocketRoot 的重要变化记录在这里，并从首个公开版本开始遵循
   不再继续查询不存在的 disclosure 并产生级联误报。集成 Workspace 每次写入唯一 guest
   内容，在终端 accessibility 文本滞后时改用该内容的精确预览作为权威结果；系统文件
   选择器也会在 Browse 后先复核是否已经恢复到 Host 目录，再决定是否操作正在消失的
-  本地位置条目。
+  本地位置条目。Host 与 Quick Start 的键盘清理会点击已校验的快照 frame，并给
+  onboarding UI 一个有界退场窗口，避免 XCTest interruption handling 期间直接操作
+  正在消失的元素。
 - 收紧 `v0.2.0` 未打 tag 源码候选审计：`--allow-source-blocked` 只接受最终源码发布
   授权这一项尚未满足，固定门禁集合、NOTICE、许可证、公开 API 状态或源码边界漂移
   都会失败；CI 和受信 tag 工作流只上传带 commit、archive SHA-256、文件统计和精确

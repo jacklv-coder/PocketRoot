@@ -439,6 +439,8 @@ if ! grep -Fq -- 'pocketroot-system-file-ui-fixture.txt' "$HOST_APP_SOURCE" \
   || ! grep -Fq -- 'waitForInteractionFrames(' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'submitCreation(expectedEntry:' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'dismissKeyboardOnboardingIfPresent(in: app)' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'Keyboard onboarding can auto-dismiss during XCTest interruption' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'evaluatedWith: continueButton' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'expectedEntry.waitForExistence(timeout: 35)' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'then let the stronger Files entry and exact preview assertions below' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'UUID().uuidString.lowercased()' "$HOST_UI_TESTS" \
@@ -468,6 +470,8 @@ if ! grep -Fq -- 'makeTerminalViewController()' "$QUICK_START_SOURCE" \
   || ! grep -Fq -- 'testTerminalCreatesFileThatFilesCanPreview' "$QUICK_START_UI_TESTS" \
   || ! grep -Fq -- 'PocketRootTerminal.pty' "$QUICK_START_UI_TESTS" \
   || ! grep -Fq -- 'PocketRootFiles.preview' "$QUICK_START_UI_TESTS" \
+  || ! grep -Fq -- 'tapCurrentFrame(of: continueButton, in: app)' "$QUICK_START_UI_TESTS" \
+  || ! grep -Fq -- 'waitForDisappearance(of: keyboard, timeout: 2)' "$QUICK_START_UI_TESTS" \
   || ! grep -Fq -- 'PocketRootQuickStartAppUITests:' "$QUICK_START_PROJECT_SPEC" \
   || ! grep -Fq -- 'path: ../..' "$QUICK_START_PROJECT_SPEC" \
   || ! grep -Fq -- 'product: PocketRootIshRuntimeIntegration' "$QUICK_START_PROJECT_SPEC" \

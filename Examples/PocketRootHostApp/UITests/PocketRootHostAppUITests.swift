@@ -1455,13 +1455,28 @@ final class PocketRootHostAppUITests: XCTestCase {
     ) {
         let continueButton = app.buttons["Continue"]
         for _ in 0..<3 {
-            guard continueButton.waitForExistence(timeout: 1) else {
+            guard let frames = waitForInteractionFrames(
+                of: continueButton,
+                in: app,
+                timeout: 1
+            ) else {
                 return
             }
-            continueButton.tap()
-            RunLoop.current.run(
-                until: Date().addingTimeInterval(0.5)
+            // Keyboard onboarding can auto-dismiss during XCTest interruption
+            // handling. Tap the last validated frame through the application
+            // so a disappearing Continue element cannot invalidate the event.
+            tapFrame(
+                frames.elementFrame,
+                in: frames.appFrame,
+                using: app
             )
+            if waitWithoutAssertion(
+                for: NSPredicate(format: "exists == false"),
+                evaluatedWith: continueButton,
+                timeout: 2
+            ) {
+                return
+            }
         }
         XCTAssertFalse(
             continueButton.exists,
@@ -1474,19 +1489,40 @@ final class PocketRootHostAppUITests: XCTestCase {
         for _ in 0..<3 where keyboard.exists {
             let continueButton = app.buttons["Continue"]
             if continueButton.exists {
-                continueButton.tap()
+                if let frames = waitForInteractionFrames(
+                    of: continueButton,
+                    in: app,
+                    timeout: 1
+                ) {
+                    tapFrame(
+                        frames.elementFrame,
+                        in: frames.appFrame,
+                        using: app
+                    )
+                }
             } else {
                 let hideKeyboardButton = app.buttons[
                     "PocketRootTerminal.key.dismiss-keyboard"
                 ]
-                XCTAssertTrue(
-                    hideKeyboardButton.waitForExistence(timeout: 10)
-                )
-                hideKeyboardButton.tap()
+                if let frames = waitForInteractionFrames(
+                    of: hideKeyboardButton,
+                    in: app,
+                    timeout: 2
+                ) {
+                    tapFrame(
+                        frames.elementFrame,
+                        in: frames.appFrame,
+                        using: app
+                    )
+                }
             }
-            RunLoop.current.run(
-                until: Date().addingTimeInterval(0.5)
-            )
+            if waitWithoutAssertion(
+                for: NSPredicate(format: "exists == false"),
+                evaluatedWith: keyboard,
+                timeout: 2
+            ) {
+                return
+            }
         }
         XCTAssertFalse(keyboard.exists)
     }
