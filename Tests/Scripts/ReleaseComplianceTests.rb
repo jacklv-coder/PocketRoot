@@ -1256,6 +1256,8 @@ class ReleaseComplianceTests < Minitest::Test
     assert_includes ui_test, "testFileExportUsesPlatformActivityPresentation"
     assert_includes ui_test, "waitForDocumentPickerPresentation(in: app, timeout: 30)"
     assert_includes ui_test, 'XCTFail("Save to Files to open the document picker")'
+    assert_includes ui_test, "return navigationBar.waitForExistence(timeout: timeout)"
+    assert_includes ui_test, "The document picker owns its transient Cancel element"
     assert_equal 2, ui_test.scan("activateMenuAction(share, in: app)").length
     assert_includes ui_test, "validated physical coordinate"
     refute_includes ui_test, 'app.buttons["New File"].tap()'

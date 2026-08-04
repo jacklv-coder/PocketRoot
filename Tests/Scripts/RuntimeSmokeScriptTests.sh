@@ -463,6 +463,8 @@ if ! grep -Fq -- 'pocketroot-system-file-ui-fixture.txt' "$HOST_APP_SOURCE" \
   || ! grep -Fq -- 'Save to Files' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'waitForDocumentPickerPresentation(in: app, timeout: 30)' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'Save to Files to open the document picker' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'return navigationBar.waitForExistence(timeout: timeout)' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'The document picker owns its transient Cancel element' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'revealFileEntry' "$HOST_UI_TESTS" \
   || ! grep -Fq -- '"PocketRootFiles.list"' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'if element.isEnabled' "$HOST_UI_TESTS" \

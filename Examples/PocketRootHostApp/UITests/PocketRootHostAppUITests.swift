@@ -239,20 +239,9 @@ final class PocketRootHostAppUITests: XCTestCase {
             XCTFail("Save to Files to open the document picker")
             return
         }
-        let cancel = app.buttons.matching(
-            NSPredicate(format: "label IN %@", ["Cancel", "取消"])
-        ).firstMatch
-        if let frames = waitForInteractionFrames(
-            of: cancel,
-            in: app,
-            timeout: 10
-        ) {
-            tapFrame(
-                frames.elementFrame,
-                in: frames.appFrame,
-                using: app
-            )
-        }
+        // The document picker owns its transient Cancel element. Restart the
+        // host after proving the handoff instead of resolving that system
+        // button while the activity controller is completing its transition.
         relaunchAndBoot(app)
         let filesButton = app.buttons["PocketRootHost.files"]
         XCTAssertTrue(filesButton.waitForExistence(timeout: 10))
@@ -1576,17 +1565,7 @@ final class PocketRootHostAppUITests: XCTestCase {
         let navigationBar = app.navigationBars[
             "FullDocumentManagerViewControllerNavigationBar"
         ]
-        let cancel = app.buttons.matching(
-            NSPredicate(format: "label IN %@", ["Cancel", "取消"])
-        ).firstMatch
-        let deadline = Date().addingTimeInterval(timeout)
-        while Date() < deadline {
-            if navigationBar.exists || cancel.exists {
-                return true
-            }
-            RunLoop.current.run(until: Date().addingTimeInterval(0.2))
-        }
-        return navigationBar.exists || cancel.exists
+        return navigationBar.waitForExistence(timeout: timeout)
     }
 
     private func attachHierarchy(
