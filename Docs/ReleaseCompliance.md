@@ -22,9 +22,9 @@ PocketRoot 的实验性 iSH runtime、XCFramework 和候选 RootFS 当前仅用�
 源码已经依据根目录 [`LICENSE`](../LICENSE) 中的 MIT License 获准发布；第三方
 组件仍适用各自许可证，范围说明见 [`NOTICE.md`](../NOTICE.md)。
 
-## v0.2.0 候选双轨发布闸门
+## v0.2.0 双轨发布闸门
 
-仓库把未打 tag 的 `v0.2.0` Developer Preview 候选拆为两条互不替代的轨道：
+仓库把 `v0.2.0` 拆为两条互不替代的轨道：
 
 1. **源码与 Swift Package 发布**：只包含 PocketRoot 源码和 Swift Package
    元数据，不包含 RootFS、App、IPA、XCFramework 镜像或二进制 SDK；
@@ -32,9 +32,8 @@ PocketRoot 的实验性 iSH runtime、XCFramework 和候选 RootFS 当前仅用�
    runtime 制品，但明确不包含任何 RootFS 资产；RootFS 仍只能由调用方在本地取得
    并自行确认授权。
 
-当前候选的源码与 Swift Package 轨道为 **Blocked**，因为尚未授予 `v0.2.0`
-源码发布授权；Runtime 分发轨道同样为 **Blocked**。已公开的 `v0.1.0` 历史状态
-仍保存在原版本快照中。当前机器可读状态见
+源码与 Swift Package 轨道为 **Ready**；Runtime 分发轨道仍为 **Blocked**。
+已公开的 `v0.1.0` 历史状态仍保存在原版本快照中。当前机器可读状态见
 [`READINESS.json`](../Compliance/Release/experimental-v0.2.0/READINESS.json)，
 人工复核入口见
 [`RELEASE-CHECKLIST.md`](../Compliance/Release/experimental-v0.2.0/RELEASE-CHECKLIST.md)，
@@ -51,9 +50,10 @@ ruby Scripts/generate-release-compliance.rb --require-source-ready
 ruby Scripts/generate-release-compliance.rb --require-runtime-ready
 ```
 
-后两个命令分别反映各自轨道；在候选 PR 中二者都返回非零。源码轨道必须经过明确
-授权并再次评审后才能打 tag。下一项 Runtime 工程门禁是扫描精确的最终
-制品、记录人工复核的 SHA-256，并以内容级证据确认制品不包含 RootFS。
+后两个命令分别反映各自轨道：`--require-source-ready` 返回成功，
+`--require-runtime-ready` 仍返回非零。源码 tag 还必须通过独立的 archive、annotated
+tag 与外部精确 SwiftPM 解析门禁。下一项 Runtime 工程门禁是扫描精确的最终制品、
+记录人工复核的 SHA-256，并以内容级证据确认制品不包含 RootFS。
 
 `RELEASE-DECISIONS.json` 是受代码评审的授权输入，不是自动授权开关。任何非空许可
 证或批准项都必须同时记录非空 `approvedBy`、UTC RFC 3339 `approvedAt` 和说明；

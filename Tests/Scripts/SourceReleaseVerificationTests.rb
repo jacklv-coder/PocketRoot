@@ -20,24 +20,18 @@ class SourceReleaseVerificationTests < Minitest::Test
     FileUtils.remove_entry(@temporary_directory) if @temporary_directory.exist?
   end
 
-  def test_current_release_candidate_passes_source_archive_audit_while_blocked
+  def test_current_release_commit_passes_source_archive_audit
     result = PocketRootSourceRelease.verify(
       root: REPOSITORY_ROOT,
       ref: "HEAD",
-      version: "0.2.0",
-      require_source_ready: false
+      version: "0.2.0"
     )
 
-    assert_equal "blocked", result.fetch("sourceTrack")
+    assert_equal "ready", result.fetch("sourceTrack")
     assert result.fetch("sourceCandidateReady")
-    assert_equal(
-      ["source-release-authorized"],
-      result.fetch("sourceBlockedGateIds")
-    )
-    assert_equal(
-      "no-release-authorization-granted",
+    assert_empty result.fetch("sourceBlockedGateIds")
+    assert_equal "source-release-authorized",
       result.fetch("authorizationStatus")
-    )
     assert_equal 1, result.fetch("schemaVersion")
     refute result.fetch("rootFSIncluded")
     refute result.fetch("runtimeArtifactIncluded")
@@ -107,6 +101,7 @@ class SourceReleaseVerificationTests < Minitest::Test
 
     assert_includes ci,
       '--report "$RUNNER_TEMP/pocketroot-v0.2.0-source-candidate.json"'
+    refute_includes ci, "--allow-source-blocked"
     assert_includes ci, "Upload source candidate audit report"
     assert_includes ci,
       "path: ${{ runner.temp }}/pocketroot-v0.2.0-source-candidate.json"
@@ -120,16 +115,11 @@ class SourceReleaseVerificationTests < Minitest::Test
     refute_match(/path:.*\.tar\s*$/i, release)
   end
 
-  def test_current_release_candidate_fails_closed_without_source_authorization
-    error = assert_raises(PocketRootSourceRelease::VerificationError) do
-      PocketRootSourceRelease.verify(
-        root: REPOSITORY_ROOT,
-        ref: "HEAD",
-        version: "0.2.0"
-      )
-    end
-
-    assert_includes error.message, "does not declare release 0.2.0"
+  def test_current_release_documents_declare_frozen_version
+    PocketRootSourceRelease.verify_release_documents(
+      REPOSITORY_ROOT,
+      "0.2.0"
+    )
   end
 
   def test_rejects_git_archive_export_filtering_in_candidate_ref

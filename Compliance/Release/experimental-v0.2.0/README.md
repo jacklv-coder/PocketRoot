@@ -10,7 +10,7 @@ IshEmbed/XCFramework、精确 iSH gitlink、静态 supervisor 使用的 musl sou
 
 默认 Demo 显式链接 IshEmbed，但仓库不包含 RootFS；只有本地 Debug 构建可把
 精确固定的仓库外资产注入 App，Release 明确跳过。RootFS 不由库下载。
-PocketRoot 原创源码使用 MIT 许可证；0.2.0 源码发布尚未获得明确授权。 Runtime 的完整 LICENSE/NOTICE、
+PocketRoot 原创源码使用 MIT 许可证；0.2.0 源码发布已明确授权。 Runtime 的完整 LICENSE/NOTICE、
 对应源码交付、App Store 2.5.2、法律审查和发行授权仍未完成。由于没有最终
 archive，本目录明确保持
 `completeReleaseArtifactSBOM=false`、`distributionAuthorized=false`。
@@ -42,7 +42,7 @@ asset into two independent, fail-closed tracks.
 The default Demo explicitly links IshEmbed, but the repository contains
 no RootFS. Only a local Debug build may inject the exact pinned external
 asset; Release skips it. The library never downloads the RootFS. The
-Original PocketRoot source is licensed under MIT, but the 0.2.0 source release is not explicitly authorized. The Runtime's
+Original PocketRoot source is licensed under MIT, and the 0.2.0 source release is explicitly authorized. The Runtime's
 complete LICENSE/NOTICE set, corresponding-source delivery, App Store 2.5.2
 disposition, legal review, and distribution authorization remain open.
 Because no final archive was scanned, this evidence keeps

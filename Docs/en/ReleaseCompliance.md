@@ -18,9 +18,9 @@ release under the MIT License in the repository-root
 [`LICENSE`](../../LICENSE). Third-party components retain their respective
 licenses; see [`NOTICE.md`](../../NOTICE.md) for the scope boundary.
 
-## v0.2.0 candidate two-track release gates
+## v0.2.0 two-track release gates
 
-The untagged `v0.2.0` Developer Preview candidate is split into two independent tracks:
+The `v0.2.0` release is split into two independent tracks:
 
 1. **Source and Swift Package release** includes only PocketRoot source and
    Swift Package metadata, with no RootFS, App, IPA, mirrored XCFramework, or
@@ -30,10 +30,9 @@ The untagged `v0.2.0` Developer Preview candidate is split into two independent 
    RootFS asset. The RootFS remains a caller-obtained, caller-authorized local
    input.
 
-The candidate source and Swift Package track is currently **Blocked** because
-`v0.2.0` source-release authorization has not been granted. The Runtime
-distribution track is also **Blocked**. The historical state of the published
-`v0.1.0` remains in its versioned snapshot. The current machine-readable state is
+The source and Swift Package track is **Ready**. The Runtime distribution track
+remains **Blocked**. The historical state of the published `v0.1.0` remains in
+its versioned snapshot. The current machine-readable state is
 [`READINESS.json`](../../Compliance/Release/experimental-v0.2.0/READINESS.json),
 the review entry is
 [`RELEASE-CHECKLIST.md`](../../Compliance/Release/experimental-v0.2.0/RELEASE-CHECKLIST.md),
@@ -52,10 +51,11 @@ ruby Scripts/generate-release-compliance.rb --require-source-ready
 ruby Scripts/generate-release-compliance.rb --require-runtime-ready
 ```
 
-The last two commands report their tracks independently; both remain nonzero
-in this candidate PR. The source track requires explicit authorization and a
-fresh review before tagging. The next Runtime engineering gate is
-to scan the exact final artifact, record its reviewed SHA-256, and provide
+The last two commands report their tracks independently:
+`--require-source-ready` succeeds, while `--require-runtime-ready` remains
+nonzero. The source tag must also pass the independent archive, annotated-tag,
+and external exact SwiftPM-resolution gates. The next Runtime engineering gate
+is to scan the exact final artifact, record its reviewed SHA-256, and provide
 content-based evidence that it contains no RootFS.
 
 `RELEASE-DECISIONS.json` is a code-reviewed authorization input, not an

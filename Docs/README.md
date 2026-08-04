@@ -17,8 +17,8 @@
 1. [产品规划](ProductPlan.md)：目标用户、核心场景、价值、非目标和版本定义。
 2. [路线图](Roadmap.md)：当前完成度、开放门禁和后续优先级。
 3. [发行与合规](ReleaseCompliance.md)：许可证、RootFS、SBOM 与 App Store 限制。
-4. [v0.2.0 候选说明](Releases/0.2.0.md)：核心闭环、真机证据、未授权边界和发布前门禁。
-5. [v0.1.0 发布说明](Releases/0.1.0.md)：当前公开源码版本的能力、接入方式与发布边界。
+4. [v0.2.0 发布说明](Releases/0.2.0.md)：当前公开源码版本、核心闭环、真机证据与发布边界。
+5. [v0.1.0 发布说明](Releases/0.1.0.md)：首个公开源码版本的能力、接入方式与发布边界。
 6. [ADR-001](Decisions/ADR-001-IshEmbed-Feasibility.md)：为什么当前只以实验性方式采用 IshEmbed。
 
 ### 应用接入者
@@ -54,8 +54,8 @@
 | [测试与验证](Testing.md) | 测试命令、环境、覆盖范围和证据 |
 | [上游依赖清单](UpstreamDependencies.md) | revision、gitlink、URL、大小和哈希 |
 | [发行与合规](ReleaseCompliance.md) | 许可证、NOTICE、对应源码、SBOM 与商店门禁 |
-| [v0.2.0 候选说明](Releases/0.2.0.md) | 核心能力、真机证据、候选边界与发布前门禁 |
-| [v0.1.0 发布说明](Releases/0.1.0.md) | 当前公开版本能力、Swift Package 接入、发布边界与已知限制 |
+| [v0.2.0 发布说明](Releases/0.2.0.md) | 当前公开能力、Swift Package 接入、真机证据、发布边界与已知限制 |
+| [v0.1.0 发布说明](Releases/0.1.0.md) | 首个公开版本能力、接入方式与发布边界 |
 | [ADR](Decisions/ADR-001-IshEmbed-Feasibility.md) | 已冻结的技术决策、理由与后果 |
 | [变更日志](../CHANGELOG.md) | 每次版本或未发布变更 |
 
@@ -74,8 +74,9 @@
 - iOS 18.2 arm64 Simulator：原生 smoke 已通过。
 - 默认 boot identity gate：已验证 `aarch64`、Alpine 身份、可选版本与 guest 工作目录后才 ready。
 - Terminal、Files 与共享 Workspace 核心闭环已通过公开 SHA 外部消费者、Xcode 16、
-  iPhone/iPad Simulator UI 和 Jack iPhone 90×2 秒稳定性门禁；v0.2.0 仍是未授权、
-  未打 tag 的候选，iPad 真机、真实 pressure/jetsam/断电和公开 runtime 分发继续开放。
+  iPhone/iPad Simulator UI 和 Jack iPhone 90×2 秒稳定性门禁；v0.2.0 源码与
+  Swift Package 轨道为 Ready，iPad 真机、真实 pressure/jetsam/断电和公开 runtime
+  分发继续开放。
 
 最新动态状态只在[路线图](Roadmap.md)维护。
 

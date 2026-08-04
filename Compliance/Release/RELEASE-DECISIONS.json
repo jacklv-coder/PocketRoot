@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
   "releaseVersion": "0.2.0",
-  "status": "no-release-authorization-granted",
+  "status": "source-release-authorized",
   "sourceRelease": {
     "topLevelLicenseSpdx": "MIT",
     "contributorPolicyApproved": true,
     "releaseNoticeApproved": true,
-    "sourceReleaseAuthorized": false
+    "sourceReleaseAuthorized": true
   },
   "runtimeDistribution": {
     "rootFSDeliveryModel": "caller-provided-local-input",
@@ -21,7 +21,7 @@
   },
   "approval": {
     "approvedBy": "jacklv-coder",
-    "approvedAt": "2026-07-31T08:21:14Z",
-    "notes": "PocketRoot v0.2.0 Developer Preview preparation inherits the approved MIT, contributor, and NOTICE policies, but no v0.2.0 source tag or runtime, App, binary, third-party artifact, or RootFS distribution is authorized by this preparation PR."
+    "approvedAt": "2026-08-04T15:55:00Z",
+    "notes": "PocketRoot v0.2.0 original source and Swift Package metadata are authorized for release under MIT. Runtime, App, binary, third-party artifact, XCFramework, and RootFS distribution remain unauthorized."
   }
 }

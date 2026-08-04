@@ -32,19 +32,15 @@ approval-gated command adapter documented in [Lightweight Agent Loop](Agent.md).
 A real guest requires the explicit integration product. Add
 `PocketRootIshRuntime` only when calling the lower-level runtime factory
 directly; the recommended host controller does not require the App to import
-it. The first source release is `v0.1.0`. The API remains Experimental, so pin
+it. The current source release is `v0.2.0`. The API remains Experimental, so pin
 the exact version instead of automatically accepting a later, potentially
 breaking `0.x` release:
-
-The `v0.2.0` work on `main` remains an unauthorized, untagged candidate.
-Remote application integrations should keep pinning public `0.1.0` until the
-release gates close; candidate validation uses only a complete Git SHA.
 
 ```swift
 dependencies: [
     .package(
         url: "https://github.com/jacklv-coder/PocketRoot.git",
-        exact: "0.1.0"
+        exact: "0.2.0"
     )
 ],
 targets: [
@@ -62,12 +58,12 @@ targets: [
 ```
 
 In Xcode, choose **File → Add Package Dependencies**, enter the repository
-URL, select **Exact Version** `0.1.0`, add `PocketRoot` for the safe API, and
+URL, select **Exact Version** `0.2.0`, add `PocketRoot` for the safe API, and
 explicitly add `PocketRootIshRuntimeIntegration` for Experimental runtime work.
 
 Local development may use `.package(path: "../PocketRoot")`. Do not use a
 floating branch. During the Experimental `0.x` period, avoid
-`from: "0.1.0"` when later minor releases could break API compatibility. The
+`from: "0.2.0"` when later minor releases could break API compatibility. The
 source tag contains no RootFS, App, IPA, XCFramework mirror, or binary SDK and
 does not open the Runtime distribution gate.
 

@@ -142,7 +142,7 @@ class ReleaseComplianceTests < Minitest::Test
     refute composition.dig("coverage", "distributionAuthorized")
     assert_equal "blocked", readiness.fetch("overallStatus")
     assert_equal(
-      "source-release-authorized",
+      "rootfs-external-input-boundary",
       readiness.dig("nextRequiredDecision", "id")
     )
   end
@@ -153,18 +153,18 @@ class ReleaseComplianceTests < Minitest::Test
     source = readiness.dig("tracks", "sourcePackageRelease")
     runtime = readiness.dig("tracks", "runtimeDistribution")
 
-    assert_equal "blocked", source.fetch("status")
+    assert_equal "ready", source.fetch("status")
     assert_equal "blocked", runtime.fetch("status")
     assert_includes(
       JSON.parse(outputs.fetch("SBOM.spdx.json"))
         .fetch("packages")
         .find { |package| package.fetch("name") == "PocketRoot" }
         .fetch("sourceInfo"),
-      "0.2.0 source release is not explicitly authorized"
+      "0.2.0 source release is explicitly authorized"
     )
     assert_includes runtime.fetch("scope"), "excludes every RootFS asset"
     assert_equal(
-      [true, true, true, true, true, false],
+      [true, true, true, true, true, true],
       source.fetch("gates").map { |gate| gate.fetch("satisfied") }
     )
     assert_equal(
@@ -173,11 +173,10 @@ class ReleaseComplianceTests < Minitest::Test
     )
     assert_includes(
       readiness.fetch("warning"),
-      "source track would not authorize runtime"
+      "Ready source track does not authorize runtime"
     )
     assert_equal(
-      ["source-release-authorized"] +
-        runtime.fetch("gates").drop(1).map { |gate| gate.fetch("id") },
+      runtime.fetch("gates").drop(1).map { |gate| gate.fetch("id") },
       readiness.fetch("blockedGateIds")
     )
   end
@@ -632,9 +631,9 @@ class ReleaseComplianceTests < Minitest::Test
       "Runtime / App / binary distribution (RootFS excluded"
     assert_includes checklist, "--require-source-ready"
     assert_includes checklist, "--require-runtime-ready"
-    assert_includes checklist, "源码轨道当前故意返回非零状态"
+    assert_includes checklist, "源码轨道当前返回成功"
     assert_includes checklist,
-      "the source command intentionally remains nonzero"
+      "the source command currently succeeds"
     assert_includes checklist, "项目所有者确定为 MIT"
   end
 
@@ -844,26 +843,25 @@ class ReleaseComplianceTests < Minitest::Test
     )
   end
 
-  def test_readiness_cli_reports_both_candidate_tracks_blocked
+  def test_readiness_cli_reports_source_ready_and_runtime_blocked
     status_output, status_error =
       capture_io do
         assert_equal 0, PocketRootReleaseCompliance.execute(["--status"])
       end
     assert_empty status_error
     assert_includes status_output, "release readiness: BLOCKED"
-    assert_includes status_output, "sourcePackageRelease: BLOCKED"
+    assert_includes status_output, "sourcePackageRelease: READY"
     assert_includes status_output, "runtimeDistribution: BLOCKED"
 
     source_output, source_error =
       capture_io do
         assert_equal(
-          2,
+          0,
           PocketRootReleaseCompliance.execute(["--require-source-ready"])
         )
       end
-    assert_empty source_output
-    assert_includes source_error, "sourcePackageRelease is BLOCKED"
-    assert_includes source_error, "source-release-authorized"
+    assert_empty source_error
+    assert_includes source_output, "Source and Swift Package release track is READY"
 
     runtime_output, runtime_error =
       capture_io do

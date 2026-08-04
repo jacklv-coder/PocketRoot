@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-03T00:00:00Z",
+  "generatedAt": "2026-08-04T00:00:00Z",
   "release": {
     "name": "PocketRoot",
     "version": "0.2.0",
@@ -14,7 +14,7 @@
     "CONTRIBUTING.md": "0beaceb8d56f1c43fa458d0b121d3d005c4a9cedb12b32029b35e74aff7b3d0b",
     "CONTRIBUTING.en.md": "0f619a667ea5ae4749f77f9afe5a9583447fcdab8a0985c11dcc4c935dead94a",
     "Compliance/SPDX/LICENSE-LIST-3.28.0.json": "7376db20698ff21511fe802aded9b5d7145520a86133b74f68b0c1568dd6dd1c",
-    "Compliance/Release/RELEASE-DECISIONS.json": "93ef573069e44ea8d74f43c4fb380ec694dea700ddb2881e2b76e646020d86f2",
+    "Compliance/Release/RELEASE-DECISIONS.json": "7e89cd0a3903d681251bc87da19697d34b4fef0bd8f9205e283e1086ad1ad6c6",
     "Package.resolved": "a121fd0f287bcb42e22d1860f915203447dd552fddc82461e9d385b957fb3718",
     "Package.swift": "9ec4f31f7a91c5c001b6e5826c5ab2824e98c06eb61444027485a70f1efccfff",
     "Examples/PocketRootDemo/project.yml": "8547227f488ce384600e01202f3c74778e1be99b1cee8b952ead61e043e1f3e0",

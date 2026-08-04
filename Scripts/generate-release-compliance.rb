@@ -13,7 +13,7 @@ require_relative "scan-release-artifact"
 
 module PocketRootReleaseCompliance
   RELEASE_VERSION = "0.2.0"
-  GENERATED_AT = "2026-08-03T00:00:00Z"
+  GENERATED_AT = "2026-08-04T00:00:00Z"
   OUTPUT_RELATIVE = "Compliance/Release/experimental-v0.2.0"
   MIT_LICENSE_TEXT = <<~LICENSE.freeze
     MIT License
@@ -259,7 +259,7 @@ module PocketRootReleaseCompliance
     "Compliance/SPDX/LICENSE-LIST-3.28.0.json" =>
       "7376db20698ff21511fe802aded9b5d7145520a86133b74f68b0c1568dd6dd1c",
     "Compliance/Release/RELEASE-DECISIONS.json" =>
-      "93ef573069e44ea8d74f43c4fb380ec694dea700ddb2881e2b76e646020d86f2",
+      "7e89cd0a3903d681251bc87da19697d34b4fef0bd8f9205e283e1086ad1ad6c6",
     "Package.resolved" =>
       "a121fd0f287bcb42e22d1860f915203447dd552fddc82461e9d385b957fb3718",
     "Package.swift" =>
@@ -2046,8 +2046,8 @@ module PocketRootReleaseCompliance
           end
         ),
       "warning" =>
-        "Engineering validation is not distribution authorization. A ready " \
-        "source track would not authorize runtime, RootFS, App, or binary " \
+        "Engineering validation is not distribution authorization. A Ready " \
+        "source track does not authorize runtime, RootFS, App, or binary " \
         "distribution."
     }
   end
@@ -2150,8 +2150,8 @@ module PocketRootReleaseCompliance
       document.fetch("blockedGateIds") == expected_blocked &&
       document.fetch("nextRequiredDecision") == expected_next_decision &&
       document.fetch("warning") ==
-        "Engineering validation is not distribution authorization. A ready " \
-        "source track would not authorize runtime, RootFS, App, or binary " \
+        "Engineering validation is not distribution authorization. A Ready " \
+        "source track does not authorize runtime, RootFS, App, or binary " \
         "distribution." &&
       valid_gate_shapes
     unless valid_document
