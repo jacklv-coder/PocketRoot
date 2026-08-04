@@ -1229,10 +1229,17 @@ class ReleaseComplianceTests < Minitest::Test
     refute_includes ui_test, "fixture.tap()"
     refute_includes ui_test, "exported.tap()"
     assert_includes ui_test, "for _ in 0..<2"
-    assert_includes ui_test, "hostDestination.waitForExistence(timeout: 10)"
+    assert_includes ui_test, "waitForDocumentPickerDestination("
+    assert_includes ui_test, "currentLocalLocation.tap()"
+    assert_includes ui_test, "lastLocalElementFrame"
+    assert_includes ui_test, "attachHierarchy("
     assert_includes ui_test, "openedHostDestination"
     assert_includes ui_test, '"DOC.sidebar.item.On My iPad"'
     assert_includes ui_test, '"PocketRoot Host, Actions Menu"'
+    assert_equal 3, ui_test.scan("guard openCreationDialog(").length
+    assert_includes ui_test, "validated physical coordinate"
+    refute_includes ui_test, 'app.buttons["New File"].tap()'
+    refute_includes ui_test, 'app.buttons["New Folder"].tap()'
     refute_includes ui_test, "currentHostDocuments.waitForExistence(timeout: 3)"
     refute_includes(
       ui_test,

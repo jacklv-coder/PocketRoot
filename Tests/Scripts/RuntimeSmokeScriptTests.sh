@@ -478,7 +478,11 @@ if ! grep -Fq -- 'pocketroot-system-file-ui-fixture.txt' "$HOST_APP_SOURCE" \
   || ! grep -Fq -- 'then let the stronger Files entry and exact preview assertions below' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'UUID().uuidString.lowercased()' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'XCTAssertEqual(preview.label, integratedContents)' "$HOST_UI_TESTS" \
-  || ! grep -Fq -- 'if currentHostDocuments.waitForExistence(timeout: 5)' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'openCreationDialog(' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'validated physical coordinate' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'waitForDocumentPickerDestination(' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'currentLocalLocation.tap()' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'attachHierarchy(' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'underlying host geometry' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'for attempt in 0..<2' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'relaunchAndBoot(app)' "$HOST_UI_TESTS" \
