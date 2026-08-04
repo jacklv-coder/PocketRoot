@@ -44,12 +44,12 @@ final class PocketRootHostAppUITests: XCTestCase {
         let nameField = app.textFields["Name"]
         XCTAssertTrue(nameField.waitForExistence(timeout: 10))
         nameField.typeText(fileName)
-        app.buttons["Create"].tap()
-
         let file = app.descendants(matching: .any)[
             "PocketRootFiles.entry./root/\(fileName)"
         ]
-        XCTAssertTrue(file.waitForExistence(timeout: 30))
+        guard submitCreation(expectedEntry: file, in: app) else {
+            return
+        }
         waitForEnabled(file)
         guard let rename = openFileEntryContextMenu(
             for: file,
@@ -69,12 +69,16 @@ final class PocketRootHostAppUITests: XCTestCase {
         ).tap()
         renameNameField.typeText(".renamed")
         XCTAssertEqual(renameNameField.value as? String, renamedFileName)
+        dismissKeyboardOnboardingIfPresent(in: app)
         renameAlert.buttons["Rename"].tap()
 
         let renamedFile = app.descendants(matching: .any)[
             "PocketRootFiles.entry./root/\(renamedFileName)"
         ]
-        XCTAssertTrue(renamedFile.waitForExistence(timeout: 30))
+        guard renamedFile.waitForExistence(timeout: 30) else {
+            XCTFail("renamed file to appear after submitting the rename")
+            return
+        }
         wait(
             for: NSPredicate(format: "exists == false"),
             evaluatedWith: file,
@@ -101,16 +105,19 @@ final class PocketRootHostAppUITests: XCTestCase {
         app.buttons["New Folder"].tap()
         XCTAssertTrue(nameField.waitForExistence(timeout: 10))
         nameField.typeText(folderName)
-        app.buttons["Create"].tap()
-
         let folder = app.descendants(matching: .any)[
             "PocketRootFiles.entry./root/\(folderName)"
         ]
-        XCTAssertTrue(folder.waitForExistence(timeout: 30))
+        guard submitCreation(expectedEntry: folder, in: app) else {
+            return
+        }
         let disclosure = app.buttons[
             "PocketRootFiles.disclosure./root/\(folderName)"
         ]
-        XCTAssertTrue(disclosure.waitForExistence(timeout: 10))
+        guard disclosure.waitForExistence(timeout: 10) else {
+            XCTFail("new folder disclosure to appear")
+            return
+        }
         waitForEnabled(disclosure)
         disclosure.tap()
         guard revealFileEntry(folder, in: app) else {
@@ -124,7 +131,12 @@ final class PocketRootHostAppUITests: XCTestCase {
         app.buttons["New File"].tap()
         XCTAssertTrue(nameField.waitForExistence(timeout: 10))
         nameField.typeText(nestedFileName)
-        app.buttons["Create"].tap()
+        let nestedFile = app.descendants(matching: .any)[
+            "PocketRootFiles.entry./root/\(folderName)/\(nestedFileName)"
+        ]
+        guard submitCreation(expectedEntry: nestedFile, in: app) else {
+            return
+        }
         waitForEnabled(actions)
         let childNavigationBar = app.navigationBars[folderName]
         guard childNavigationBar.waitForExistence(timeout: 30) else {
@@ -136,10 +148,6 @@ final class PocketRootHostAppUITests: XCTestCase {
         XCTAssertTrue(waitForHittable(backButton))
         backButton.tap()
 
-        let nestedFile = app.descendants(matching: .any)[
-            "PocketRootFiles.entry./root/\(folderName)/\(nestedFileName)"
-        ]
-        XCTAssertTrue(nestedFile.waitForExistence(timeout: 30))
         guard let delete = openFileEntryContextMenu(
             for: folder,
             expectedAction: "Delete",
@@ -1316,6 +1324,40 @@ final class PocketRootHostAppUITests: XCTestCase {
                 + "app=\(lastAppFrame), element=\(lastElementFrame)"
         )
         return nil
+    }
+
+    private func submitCreation(
+        expectedEntry: XCUIElement,
+        in app: XCUIApplication
+    ) -> Bool {
+        dismissKeyboardOnboardingIfPresent(in: app)
+        let create = app.buttons["Create"]
+
+        for _ in 0..<2 {
+            guard let frames = waitForInteractionFrames(
+                of: create,
+                in: app,
+                timeout: 10
+            ) else {
+                break
+            }
+            tapFrame(
+                frames.elementFrame,
+                in: frames.appFrame,
+                using: app
+            )
+            // File-browser mutations allow up to 30 seconds. Preserve that
+            // contract, plus a small accessibility refresh allowance, before
+            // deciding whether the captured tap needs its one bounded retry.
+            if expectedEntry.waitForExistence(timeout: 35) {
+                return true
+            }
+        }
+
+        XCTFail(
+            "created entry to appear after a bounded Create retry"
+        )
+        return false
     }
 
     private func tapOutsideSnapshotFrame(

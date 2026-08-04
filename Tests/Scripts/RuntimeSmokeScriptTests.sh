@@ -437,6 +437,9 @@ if ! grep -Fq -- 'pocketroot-system-file-ui-fixture.txt' "$HOST_APP_SOURCE" \
   || grep -Fq -- 'hostActions.isHittable' "$HOST_UI_TESTS" \
   || grep -Fq -- 'hostIsHittable' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'waitForInteractionFrames(' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'submitCreation(expectedEntry:' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'dismissKeyboardOnboardingIfPresent(in: app)' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'expectedEntry.waitForExistence(timeout: 35)' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'underlying host geometry' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'for attempt in 0..<2' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'relaunchAndBoot(app)' "$HOST_UI_TESTS" \

@@ -12,7 +12,11 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   action to enter the accessibility tree after pressing a file or directory.
   If the first synthesized press does not open the menu, it retries once with
   newly validated App and entry frames, then fails closed with frame evidence
-  instead of tapping a context-menu button that does not yet exist.
+  instead of tapping a context-menu button that does not yet exist. File and
+  folder creation also dismisses system keyboard onboarding before submitting
+  a freshly validated Create frame at most twice, then stops the test if the
+  expected entry never appears instead of cascading into missing-disclosure
+  failures.
 - Tightened the untagged `v0.2.0` source-candidate audit:
   `--allow-source-blocked` accepts only final source-release authorization as
   unsatisfied, and fails on any pinned-gate-set, NOTICE, license, public API
