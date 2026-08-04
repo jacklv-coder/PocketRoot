@@ -29,10 +29,95 @@ class SourceReleaseVerificationTests < Minitest::Test
     )
 
     assert_equal "blocked", result.fetch("sourceTrack")
+    assert result.fetch("sourceCandidateReady")
+    assert_equal(
+      ["source-release-authorized"],
+      result.fetch("sourceBlockedGateIds")
+    )
+    assert_equal(
+      "no-release-authorization-granted",
+      result.fetch("authorizationStatus")
+    )
+    assert_equal 1, result.fetch("schemaVersion")
     refute result.fetch("rootFSIncluded")
     refute result.fetch("runtimeArtifactIncluded")
     assert_match(/\A[0-9a-f]{64}\z/, result.fetch("archiveSha256"))
     assert_operator result.fetch("regularFileCount"), :>, 100
+  end
+
+  def test_blocked_candidate_rejects_any_non_authorization_source_gate
+    repository = release_repository(
+      version: "0.2.0",
+      authorized_version: "0.2.0",
+      authorization_status: "no-release-authorization-granted",
+      source_status: "blocked",
+      blocked_gate_ids: [
+        "release-notice-approved",
+        "source-release-authorized"
+      ]
+    )
+
+    error = assert_raises(PocketRootSourceRelease::VerificationError) do
+      PocketRootSourceRelease.verify(
+        root: repository,
+        ref: "HEAD",
+        version: "0.2.0",
+        require_source_ready: false
+      )
+    end
+
+    assert_includes error.message,
+      "unresolved gates beyond explicit release authorization"
+    assert_includes error.message, "release-notice-approved"
+  end
+
+  def test_writes_atomic_json_verification_report
+    report = @temporary_directory.join("reports/source-candidate.json")
+    result = {
+      "schemaVersion" => 1,
+      "sourceCandidateReady" => true,
+      "sourceBlockedGateIds" => ["source-release-authorized"]
+    }
+
+    written = PocketRootSourceRelease.write_report(report, result)
+
+    assert_equal report, written
+    assert_equal result, JSON.parse(report.binread)
+    assert report.binread.end_with?("\n")
+  end
+
+  def test_rejects_symbolic_link_report_destination
+    target = @temporary_directory.join("target.json")
+    target.binwrite("preserve\n")
+    report = @temporary_directory.join("report.json")
+    File.symlink(target, report)
+
+    error = assert_raises(PocketRootSourceRelease::VerificationError) do
+      PocketRootSourceRelease.write_report(report, {"verified" => true})
+    end
+
+    assert_includes error.message, "not a regular file"
+    assert_equal "preserve\n", target.binread
+  end
+
+  def test_ci_and_tag_workflows_publish_json_verification_reports_only
+    ci = REPOSITORY_ROOT.join(".github/workflows/ci.yml").binread
+    release =
+      REPOSITORY_ROOT.join(".github/workflows/source-release.yml").binread
+
+    assert_includes ci,
+      '--report "$RUNNER_TEMP/pocketroot-v0.2.0-source-candidate.json"'
+    assert_includes ci, "Upload source candidate audit report"
+    assert_includes ci,
+      "path: ${{ runner.temp }}/pocketroot-v0.2.0-source-candidate.json"
+    assert_includes release,
+      '--report "$RUNNER_TEMP/pocketroot-$version-source-release.json"'
+    assert_includes release,
+      "Publish source release verification report artifact"
+    assert_includes release,
+      "path: ${{ runner.temp }}/pocketroot-0.2.0-source-release.json"
+    refute_match(/path:.*\.tar\s*$/i, ci)
+    refute_match(/path:.*\.tar\s*$/i, release)
   end
 
   def test_current_release_candidate_fails_closed_without_source_authorization
@@ -282,7 +367,9 @@ class SourceReleaseVerificationTests < Minitest::Test
   def release_repository(
     version:,
     authorized_version:,
-    authorization_status: "source-release-authorized"
+    authorization_status: "source-release-authorized",
+    source_status: "ready",
+    blocked_gate_ids: []
   )
     repository = @temporary_directory.join("release-repository-#{version}")
     repository.mkpath
@@ -307,7 +394,18 @@ class SourceReleaseVerificationTests < Minitest::Test
     compliance_script.binwrite("exit(%w[--check --require-source-ready].include?(ARGV.first) ? 0 : 2)\n")
     readiness = {
       "releaseVersion" => authorized_version,
-      "tracks" => {"sourcePackageRelease" => {"status" => "ready"}}
+      "tracks" => {
+        "sourcePackageRelease" => {
+          "status" => source_status,
+          "gates" =>
+            PocketRootSourceRelease::EXPECTED_SOURCE_GATE_IDS.map do |id|
+              {
+                "id" => id,
+                "satisfied" => !blocked_gate_ids.include?(id)
+              }
+            end
+        }
+      }
     }
     readiness_path = repository.join(
       "Compliance/Release/experimental-v#{version}/READINESS.json"
