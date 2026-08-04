@@ -1034,6 +1034,12 @@ final class PocketRootHostAppUITests: XCTestCase {
                 localLocationLabels
             )
         ).firstMatch
+        let localLocationLabel = app.staticTexts.matching(
+            NSPredicate(
+                format: "label IN %@",
+                localLocationLabels
+            )
+        ).firstMatch
         let hostFixture = app.cells[
             "\(Self.systemImportFixtureDisplayName), txt"
         ]
@@ -1130,7 +1136,12 @@ final class PocketRootHostAppUITests: XCTestCase {
             // that originally won the readiness race can synthesize two taps
             // against the same stale accessibility snapshot.
             let currentLocalLocation: XCUIElement
-            if sidebarLocalLocation.exists {
+            if attempt == 1, localLocationLabel.exists {
+                // The label frame is an independent, freshly resolved target
+                // inside the same row. It avoids asking a cell that can vanish
+                // during the selection transition to execute its own action.
+                currentLocalLocation = localLocationLabel
+            } else if sidebarLocalLocation.exists {
                 currentLocalLocation = sidebarLocalLocation
             } else if fallbackLocalLocation.exists {
                 currentLocalLocation = fallbackLocalLocation
@@ -1162,18 +1173,15 @@ final class PocketRootHostAppUITests: XCTestCase {
             }
             lastLocalAppFrame = frames.appFrame
             lastLocalElementFrame = frames.elementFrame
-            if attempt == 0 {
-                tapFrame(
-                    frames.elementFrame,
-                    in: frames.appFrame,
-                    using: app
-                )
-            } else {
-                // The semantic cell action uses a different XCTest event path
-                // than the captured coordinate. Keep it as the single bounded
-                // fallback only after validating the freshly queried frame.
-                currentLocalLocation.tap()
-            }
+            // Always synthesize through the application using captured values.
+            // Calling tap() on the query would resolve the element again, and
+            // the system picker can remove that cell between frame validation
+            // and event dispatch.
+            tapFrame(
+                frames.elementFrame,
+                in: frames.appFrame,
+                using: app
+            )
             if waitForDocumentPickerDestination(
                 currentHostDocuments: currentHostDocuments,
                 hostDestination: hostDestination,

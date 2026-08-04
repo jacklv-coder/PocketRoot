@@ -32,12 +32,13 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   `New Folder` directly in a popover. It revalidates the App and action frames,
   performs a bounded physical-coordinate retry, and attaches the accessibility
   hierarchy plus final frames if the name field never appears. Entering the
-  local document-picker location now also re-queries the sidebar item before
-  each attempt, uses a captured coordinate first and an independent semantic
-  action path second, and waits for either Host navigation state or the Host
-  container. If neither path completes the transition, hierarchy evidence is
-  retained instead of repeating an event against one stale accessibility
-  snapshot.
+  local document-picker location now also re-queries its target before every
+  attempt, using the sidebar item first and a newly resolved text frame inside
+  that row second. Both attempts dispatch only through captured App
+  coordinates while waiting for either Host navigation state or the Host
+  container. If neither completes the transition, hierarchy evidence is kept
+  without asking a disappearing system cell to resolve and perform its own
+  action.
 - Tightened the untagged `v0.2.0` source-candidate audit:
   `--allow-source-blocked` accepts only final source-release authorization as
   unsatisfied, and fails on any pinned-gate-set, NOTICE, license, public API

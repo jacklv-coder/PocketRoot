@@ -24,9 +24,9 @@ PocketRoot 的重要变化记录在这里，并从首个公开版本开始遵循
 - Host App iPad 文件创建 smoke 不再直接语义点击 popover 中的 `New File` / `New Folder`：
   测试会重新校验 App 与动作 frame、通过物理坐标有界重试，并在名称输入框未出现时附带
   accessibility hierarchy 与最后 frame 立即失败。系统文件选择器进入本机位置时也会在
-  每次尝试前重新查询 sidebar 条目，首次使用已捕获坐标、第二次使用独立的语义动作路径，
-  同时等待 Host 导航状态或容器条目；两条路径都未完成转换时保留层级证据，不再重复操作
-  同一个过期 accessibility snapshot。
+  每次尝试前重新查询目标，首次使用 sidebar 条目、第二次使用条目内新解析的文字 frame，
+  且两次都只通过已捕获的 App 坐标触发，同时等待 Host 导航状态或容器条目；两条路径都
+  未完成转换时保留层级证据，不会要求正在消失的系统 cell 重新解析并执行自身动作。
 - 收紧 `v0.2.0` 未打 tag 源码候选审计：`--allow-source-blocked` 只接受最终源码发布
   授权这一项尚未满足，固定门禁集合、NOTICE、许可证、公开 API 状态或源码边界漂移
   都会失败；CI 和受信 tag 工作流只上传带 commit、archive SHA-256、文件统计和精确

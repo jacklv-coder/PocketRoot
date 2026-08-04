@@ -481,7 +481,9 @@ if ! grep -Fq -- 'pocketroot-system-file-ui-fixture.txt' "$HOST_APP_SOURCE" \
   || ! grep -Fq -- 'openCreationDialog(' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'validated physical coordinate' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'waitForDocumentPickerDestination(' "$HOST_UI_TESTS" \
-  || ! grep -Fq -- 'currentLocalLocation.tap()' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'localLocationLabel.exists' "$HOST_UI_TESTS" \
+  || ! grep -Fq -- 'Always synthesize through the application using captured values' "$HOST_UI_TESTS" \
+  || grep -Fq -- 'currentLocalLocation.tap()' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'attachHierarchy(' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'underlying host geometry' "$HOST_UI_TESTS" \
   || ! grep -Fq -- 'for attempt in 0..<2' "$HOST_UI_TESTS" \
