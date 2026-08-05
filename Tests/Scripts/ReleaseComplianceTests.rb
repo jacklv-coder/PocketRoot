@@ -1034,6 +1034,7 @@ class ReleaseComplianceTests < Minitest::Test
 
     assert_match(/^  minimum-xcode-16-runtime:$/, workflow)
     assert_match(/^  minimum-xcode-16-ui:$/, workflow)
+    assert_match(/^  classify-changes:$/, workflow)
     refute_match(/^  minimum-xcode-16:$/, workflow)
     ui_job_header =
       workflow.split(/^  minimum-xcode-16-ui:\n/, 2).fetch(1).lines.first(5).join
@@ -1048,6 +1049,11 @@ class ReleaseComplianceTests < Minitest::Test
     assert_includes workflow, "workflow_dispatch:"
     assert_includes workflow, "include_ipad:"
     assert_includes workflow, "Run the milestone iPad UI suites as well"
+    assert_includes workflow, "./Scripts/classify-ci-changes.sh"
+    assert_includes workflow, "needs.classify-changes.outputs.native == 'true'"
+    assert_includes workflow, "needs.classify-changes.outputs.ui == 'true'"
+    assert_includes workflow, "needs.classify-changes.outputs.external == 'true'"
+    assert_includes workflow, "testPTYCommandCreatesFileVisibleInFiles"
     assert_equal 4, workflow.scan("!matrix.ipad ||").length
     refute_includes workflow, "github.event_name == 'push' ||"
     assert_includes(

@@ -519,16 +519,22 @@ written to the standalone Host App example's Documents only under the explicit
 `-PocketRootUITesting` launch argument, without relying on user iCloud or Files
 data.
 
-CI is tiered by platform. Ordinary `pull_request` runs and default
-`workflow_dispatch` runs execute the public-SHA external consumer, Quick Start
-iPhone, and Host App iPhone without starting iPad for every routine UI change.
-A `push` to `main` keeps the same three-suite routine iPhone baseline. After
-several larger feature blocks, when validating a milestone branch, or for a
-final release candidate, manually run `CI` for the target branch in Actions
-with `include_ipad=true` to execute all five UI suites. During development, run
-only the targeted tests affected by the small change; the full platform matrix
-no longer repeats on every merge. This tiering removes duplicate validation
-without weakening iPhone, native, build, or release gates.
+CI first uses a Linux classifier to map the exact event diff onto package, iOS
+build, native, iPhone UI, and external-consumer gates. Documentation,
+CHANGELOG, and release-evidence-only changes run documentation, script-contract,
+compliance-generator, and source-audit checks without starting Xcode builds,
+RootFS/Simulator downloads, or UI. Package-only changes add `swift test`; iOS,
+native, and UI lanes run only when their product boundaries are affected.
+
+Routine `pull_request` and `main` push UI validation is iPhone-only. Quick Start
+keeps the minimal Terminal/Files closure, while Host App runs the representative
+PTY-created-file-to-Files-preview closure; public integration changes also add
+the external consumer. After several larger feature blocks, for a milestone
+branch, or for a final release candidate, manually run `CI` on the target
+branch. A manual run forces every validation tier and the complete iPhone
+suites; `include_ipad=true` additionally executes all five UI lanes. Routine
+PRs therefore avoid the complete platform matrix while milestone validation
+retains the prior gate strength.
 The two iPad check names remain present on PRs for existing branch-protection
 compatibility, but their gate skips every real step before checkout,
 Xcode/Simulator installation, or UI smoke.
