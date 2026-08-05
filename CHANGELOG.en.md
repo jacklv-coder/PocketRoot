@@ -6,7 +6,15 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 
 ## Unreleased
 
-There are no unreleased changes.
+### Changed
+
+- CI now classifies the actual PR or push diff before selecting package, iOS
+  build, native-runtime, iPhone UI, and external-consumer gates. Documentation-
+  and release-evidence-only changes run fast documentation, script-contract,
+  and compliance checks without starting Xcode builds, Simulators, or UI.
+  Routine PR/push Host App UI runs use one representative Terminal-to-Files
+  closure; manually dispatched `CI` runs retain the complete iPhone suites and
+  `include_ipad=true` explicitly adds the milestone iPad matrix.
 
 ## 0.2.0 - 2026-08-04
 

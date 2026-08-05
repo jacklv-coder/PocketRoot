@@ -569,15 +569,19 @@ Simulator/device final-link 并执行 17 项原生 smoke。UI matrix 设置
 `fail-fast: false`，分别运行公开 SHA 外部消费者、iPhone/iPad Quick Start 和
 iPhone/iPad Host App，因此单路失败不会取消其他证据；每路使用不冲突的失败制品名。
 
-CI 按平台分层。普通 `pull_request` 与默认 `workflow_dispatch` 运行公开 SHA 外部消费者、
-Quick Start iPhone 和 Host App iPhone，不为每个日常 UI 改动重复启动 iPad。`main`
-分支的 `push` 也保持这三路 iPhone 日常基线。完成几个较大功能块、需要验证里程碑分支，
-或进入最终发布候选时，从 Actions 对目标分支手动运行 `CI`，并设置
-`include_ipad=true`，再执行全部五路 UI。开发中的小步修改先运行受影响的定向测试；
-完整平台矩阵不再随每次合并重复执行。这一分层只减少重复验证，不降低 iPhone、native、
-构建或发行门禁。
-PR 中仍保留两路 iPad check 名称以兼容既有分支保护，但门控会在 checkout、Xcode/Simulator
-安装和 UI smoke 前跳过所有实际步骤。
+CI 先由 Linux classifier 对事件的精确 diff 分类，再选择 package、iOS build、native、
+iPhone UI 和外部消费者门禁。纯文档、CHANGELOG 或发行证据改动只执行文档、脚本契约、
+合规生成器和源码审计，不启动 Xcode 构建、RootFS/Simulator 下载或 UI。Package-only
+改动只增加 `swift test`；只有影响对应产品边界的改动才进入 iOS build、native 或 UI。
+
+普通 `pull_request` 与 `main` push 的 UI 层只运行 iPhone：Quick Start 保留最小
+Terminal/Files 闭环，Host App 运行代表性的 PTY 创建文件并由 Files 预览闭环；只有公共
+接入边界变化时才增加外部消费者。完成几个较大功能块、需要验证里程碑分支，或进入最终
+发布候选时，从 Actions 对目标分支手动运行 `CI`：手动运行强制启用全部验证层和完整
+iPhone 套件，设置 `include_ipad=true` 再执行全部五路 UI。这样日常 PR 不重复完整平台
+矩阵，里程碑仍保留原门禁强度。
+不需要 UI 的 diff 会在分配 macOS runner 前跳过整个 UI matrix；需要 UI 的普通 PR 仍创建
+两路 iPad check，但会在 checkout、Xcode/Simulator 安装和 UI smoke 前跳过实际步骤。
 
 这些 UI job 在 iPhone 16 与 iPad（第 10 代）Simulator 运行最小 Quick Start 的
 Files/Terminal 冷启动与 PTY-to-Files 文件闭环，以及 Host App 的 PTY、Files、

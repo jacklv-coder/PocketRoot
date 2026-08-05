@@ -6,7 +6,13 @@ PocketRoot 的重要变化记录在这里，并从首个公开版本开始遵循
 
 ## Unreleased
 
-当前暂无未发布变更。
+### Changed
+
+- CI 现在先根据 PR 或 push 的实际 diff 选择 package、iOS build、native runtime、
+  iPhone UI 与外部消费者门禁；纯文档/发布证据改动只执行快速文档、脚本契约和合规
+  检查，不再启动 Xcode 构建、Simulator 或 UI。普通 PR/push 的 Host App UI 只运行
+  Terminal-to-Files 代表性闭环；从 Actions 手动运行 `CI` 仍执行完整 iPhone 套件，
+  `include_ipad=true` 再显式加入 iPad 里程碑矩阵。
 
 ## 0.2.0 - 2026-08-04
 

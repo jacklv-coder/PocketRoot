@@ -21,8 +21,49 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  classify-changes:
+    name: Classify changes
+    runs-on: ubuntu-latest
+    outputs:
+      package: ${{ steps.classify.outputs.package }}
+      ios: ${{ steps.classify.outputs.ios }}
+      native: ${{ steps.classify.outputs.native }}
+      ui: ${{ steps.classify.outputs.ui }}
+      external: ${{ steps.classify.outputs.external }}
+
+    steps:
+      - name: Check out repository history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Select required validation tiers
+        id: classify
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: >-
+            ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: >-
+            ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            ./Scripts/classify-ci-changes.sh \
+              --full \
+              --output "$GITHUB_OUTPUT"
+          else
+            if [[ -z "$BASE_SHA" ||
+                  "$BASE_SHA" == "0000000000000000000000000000000000000000" ]]; then
+              BASE_SHA="$(git rev-parse "$HEAD_SHA^")"
+            fi
+            ./Scripts/classify-ci-changes.sh \
+              --base "$BASE_SHA" \
+              --head "$HEAD_SHA" \
+              --output "$GITHUB_OUTPUT"
+          fi
+
   test-and-build:
     name: Test and build
+    needs: classify-changes
     runs-on: macos-15
     timeout-minutes: 30
 
@@ -45,6 +86,7 @@ jobs:
           bash -n Scripts/run-runtime-device-smoke.sh
           bash -n Scripts/build-signed-engineering-archive.sh
           bash -n Scripts/inject-demo-rootfs.sh
+          bash -n Scripts/classify-ci-changes.sh
           bash -n Scripts/run-external-consumer-ui-smoke.sh
           ruby -c Scripts/prepare-rootfs-smoke-manifest.rb
           ruby -c Scripts/rootfs-corresponding-source-review-results.rb
@@ -68,6 +110,7 @@ jobs:
           bash -n Tests/Scripts/SignedEngineeringArchiveScriptTests.sh
           bash -n Tests/Scripts/RootFSCandidateSmokeManifestTests.sh
           bash -n Tests/Scripts/DemoRootFSInjectionScriptTests.sh
+          bash -n Tests/Scripts/CIChangeClassifierTests.sh
           ruby -c Tests/Scripts/RootFSLicenseReviewTests.rb
           ruby -c Tests/Scripts/RootFSCorrespondingSourceReviewResultsTests.rb
           ruby -c Tests/Scripts/RootFSLicenseReviewResultsTests.rb
@@ -84,6 +127,7 @@ jobs:
           bash Tests/Scripts/SignedEngineeringArchiveScriptTests.sh
           bash Tests/Scripts/RootFSCandidateSmokeManifestTests.sh
           bash Tests/Scripts/DemoRootFSInjectionScriptTests.sh
+          bash Tests/Scripts/CIChangeClassifierTests.sh
           ruby Tests/Scripts/RootFSCorrespondingSourceReviewResultsTests.rb
           ruby Tests/Scripts/RootFSLicenseReviewTests.rb
           ruby Tests/Scripts/RootFSLicenseReviewResultsTests.rb
@@ -121,15 +165,18 @@ jobs:
           retention-days: 14
 
       - name: Report Apple toolchain
+        if: ${{ needs.classify-changes.outputs.package == 'true' }}
         run: |
           xcodebuild -version
           swift --version
           xcrun --sdk iphonesimulator --show-sdk-version
 
       - name: Run Swift package tests
+        if: ${{ needs.classify-changes.outputs.package == 'true' }}
         run: swift test
 
       - name: Validate pinned RootFS release archive
+        if: ${{ needs.classify-changes.outputs.ios == 'true' }}
         env:
           ROOTFS_SHA256: "be0f3c133f78f28b023288459b33dc28fa253a6ef29f7123bc5f3892edf90ad4"
           ROOTFS_BYTE_COUNT: "6581376"
@@ -171,6 +218,7 @@ jobs:
           echo "POCKETROOT_DEVELOPMENT_ROOTFS_ARCHIVE=$archive" >> "$GITHUB_ENV"
 
       - name: Install XcodeGen
+        if: ${{ needs.classify-changes.outputs.ios == 'true' }}
         env:
           XCODEGEN_VERSION: "2.46.0"
           XCODEGEN_SHA256: "4d9e34b62172d645eed6457cac13fc222569974098ef4ee9c3368bedf0196806"
@@ -185,6 +233,7 @@ jobs:
           echo "$install_root/xcodegen/bin" >> "$GITHUB_PATH"
 
       - name: Generate Xcode project
+        if: ${{ needs.classify-changes.outputs.ios == 'true' }}
         run: |
           xcodegen version
           (
@@ -201,6 +250,7 @@ jobs:
           )
 
       - name: Build for generic iOS Simulator
+        if: ${{ needs.classify-changes.outputs.ios == 'true' }}
         run: |
           xcodebuild \
             -project Examples/PocketRootDemo/PocketRootDemo.xcodeproj \
@@ -217,6 +267,7 @@ jobs:
             | shasum -a 256 --check
 
       - name: Build standalone Host App integration example
+        if: ${{ needs.classify-changes.outputs.ios == 'true' }}
         run: |
           xcodebuild \
             -project Examples/PocketRootHostApp/PocketRootHostApp.xcodeproj \
@@ -233,6 +284,7 @@ jobs:
             | shasum -a 256 --check
 
       - name: Build two-entry Quick Start integration example
+        if: ${{ needs.classify-changes.outputs.ios == 'true' }}
         run: |
           xcodebuild \
             -project Examples/PocketRootQuickStartApp/PocketRootQuickStartApp.xcodeproj \
@@ -249,6 +301,7 @@ jobs:
             | shasum -a 256 --check
 
       - name: Compile Demo unit tests
+        if: ${{ needs.classify-changes.outputs.ios == 'true' }}
         run: |
           xcodebuild \
             -project Examples/PocketRootDemo/PocketRootDemo.xcodeproj \
@@ -261,6 +314,7 @@ jobs:
             build-for-testing
 
       - name: Final-link iSH runtime app for arm64 iOS Simulator
+        if: ${{ needs.classify-changes.outputs.ios == 'true' }}
         run: |
           xcodebuild \
             -project Examples/PocketRootDemo/PocketRootDemo.xcodeproj \
@@ -274,6 +328,7 @@ jobs:
             build
 
       - name: Final-link iSH runtime app for arm64 iOS device
+        if: ${{ needs.classify-changes.outputs.ios == 'true' }}
         run: |
           xcodebuild \
             -project Examples/PocketRootDemo/PocketRootDemo.xcodeproj \
@@ -288,6 +343,7 @@ jobs:
             build
 
       - name: Scan unsigned iSH runtime engineering app
+        if: ${{ needs.classify-changes.outputs.ios == 'true' }}
         run: |
           app="$RUNNER_TEMP/PocketRootIshRuntimeDeviceCompileSpikeDerivedData/Build/Products/Debug-iphoneos/PocketRootIshRuntimeCompileSpike.app"
           evidence="$RUNNER_TEMP/PocketRootIshRuntimeArtifactScan"
@@ -308,6 +364,8 @@ jobs:
 
   minimum-xcode-16-runtime:
     name: Minimum Xcode 16.0 / Native runtime
+    needs: classify-changes
+    if: ${{ needs.classify-changes.outputs.native == 'true' }}
     runs-on: macos-15
     timeout-minutes: 35
 
@@ -346,6 +404,8 @@ jobs:
 
   minimum-xcode-16-ui:
     name: Minimum Xcode 16.0 / UI (${{ matrix.label }})
+    needs: classify-changes
+    if: ${{ needs.classify-changes.outputs.ui == 'true' }}
     runs-on: macos-15
     timeout-minutes: 60
     strategy:
@@ -372,24 +432,33 @@ jobs:
       - name: Check out repository
         if: >-
           ${{
-            !matrix.ipad ||
-            (github.event_name == 'workflow_dispatch' && inputs.include_ipad)
+            needs.classify-changes.outputs.ui == 'true' &&
+            (matrix.suite != 'external-consumer' ||
+              needs.classify-changes.outputs.external == 'true') &&
+            (!matrix.ipad ||
+              (github.event_name == 'workflow_dispatch' && inputs.include_ipad))
           }}
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up minimum Xcode 16 environment
         if: >-
           ${{
-            !matrix.ipad ||
-            (github.event_name == 'workflow_dispatch' && inputs.include_ipad)
+            needs.classify-changes.outputs.ui == 'true' &&
+            (matrix.suite != 'external-consumer' ||
+              needs.classify-changes.outputs.external == 'true') &&
+            (!matrix.ipad ||
+              (github.event_name == 'workflow_dispatch' && inputs.include_ipad))
           }}
         uses: ./.github/actions/setup-minimum-xcode-16
 
       - name: Run ${{ matrix.label }} UI smoke with Xcode 16.0
         if: >-
           ${{
-            !matrix.ipad ||
-            (github.event_name == 'workflow_dispatch' && inputs.include_ipad)
+            needs.classify-changes.outputs.ui == 'true' &&
+            (matrix.suite != 'external-consumer' ||
+              needs.classify-changes.outputs.external == 'true') &&
+            (!matrix.ipad ||
+              (github.event_name == 'workflow_dispatch' && inputs.include_ipad))
           }}
         env:
           POCKETROOT_UI_SUITE: ${{ matrix.suite }}
@@ -401,6 +470,10 @@ jobs:
           POCKETROOT_EXTERNAL_CONSUMER_REVISION: >-
             ${{ github.event.pull_request.head.sha || github.sha }}
           POCKETROOT_EXTERNAL_CONSUMER_REQUIRE_REMOTE: "1"
+          POCKETROOT_HOST_UI_ONLY_TESTING: >-
+            ${{ github.event_name != 'workflow_dispatch' &&
+                'PocketRootHostAppUITests/PocketRootHostAppUITests/testPTYCommandCreatesFileVisibleInFiles' ||
+                '' }}
         run: |
           case "$POCKETROOT_UI_SUITE" in
             external-consumer)
@@ -437,6 +510,9 @@ jobs:
         if: >-
           ${{
             failure() &&
+            needs.classify-changes.outputs.ui == 'true' &&
+            (matrix.suite != 'external-consumer' ||
+              needs.classify-changes.outputs.external == 'true') &&
             (!matrix.ipad ||
               (github.event_name == 'workflow_dispatch' && inputs.include_ipad))
           }}
