@@ -405,6 +405,7 @@ jobs:
   minimum-xcode-16-ui:
     name: Minimum Xcode 16.0 / UI (${{ matrix.label }})
     needs: classify-changes
+    if: ${{ needs.classify-changes.outputs.ui == 'true' }}
     runs-on: macos-15
     timeout-minutes: 60
     strategy:

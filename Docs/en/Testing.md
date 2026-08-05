@@ -535,9 +535,10 @@ branch. A manual run forces every validation tier and the complete iPhone
 suites; `include_ipad=true` additionally executes all five UI lanes. Routine
 PRs therefore avoid the complete platform matrix while milestone validation
 retains the prior gate strength.
-The two iPad check names remain present on PRs for existing branch-protection
-compatibility, but their gate skips every real step before checkout,
-Xcode/Simulator installation, or UI smoke.
+Diffs that do not require UI skip the entire UI matrix before allocating a
+macOS runner. UI-relevant routine PRs still create the two iPad checks, whose
+gate skips every real step before checkout, Xcode/Simulator installation, or
+UI smoke.
 
 Set
 `POCKETROOT_HOST_UI_DEVICE_TYPE` and

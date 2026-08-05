@@ -580,8 +580,8 @@ Terminal/Files 闭环，Host App 运行代表性的 PTY 创建文件并由 Files
 发布候选时，从 Actions 对目标分支手动运行 `CI`：手动运行强制启用全部验证层和完整
 iPhone 套件，设置 `include_ipad=true` 再执行全部五路 UI。这样日常 PR 不重复完整平台
 矩阵，里程碑仍保留原门禁强度。
-PR 中仍保留两路 iPad check 名称以兼容既有分支保护，但门控会在 checkout、Xcode/Simulator
-安装和 UI smoke 前跳过所有实际步骤。
+不需要 UI 的 diff 会在分配 macOS runner 前跳过整个 UI matrix；需要 UI 的普通 PR 仍创建
+两路 iPad check，但会在 checkout、Xcode/Simulator 安装和 UI smoke 前跳过实际步骤。
 
 这些 UI job 在 iPhone 16 与 iPad（第 10 代）Simulator 运行最小 Quick Start 的
 Files/Terminal 冷启动与 PTY-to-Files 文件闭环，以及 Host App 的 PTY、Files、
