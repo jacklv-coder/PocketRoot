@@ -3,9 +3,9 @@
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "PocketRoot experimental full-graph composition 0.2.0",
-  "documentNamespace": "https://github.com/jacklv-coder/PocketRoot/sbom/release/experimental-v0.2.0/0049373bdf849047d56579b2c2245c2c996f767576a577e300085bfc0b84d643",
+  "documentNamespace": "https://github.com/jacklv-coder/PocketRoot/sbom/release/experimental-v0.2.0/289f1a63f0e9f66806ffc6a0c43fc1182993826f570eed773428c69fd9a50e4e",
   "creationInfo": {
-    "created": "2026-08-04T00:00:00Z",
+    "created": "2026-08-04T15:55:00Z",
     "creators": [
       "Tool: PocketRoot Scripts/generate-release-compliance.rb"
     ]

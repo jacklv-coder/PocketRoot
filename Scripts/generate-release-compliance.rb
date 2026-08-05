@@ -13,7 +13,7 @@ require_relative "scan-release-artifact"
 
 module PocketRootReleaseCompliance
   RELEASE_VERSION = "0.2.0"
-  GENERATED_AT = "2026-08-04T00:00:00Z"
+  GENERATED_AT = "2026-08-04T15:55:00Z"
   OUTPUT_RELATIVE = "Compliance/Release/experimental-v0.2.0"
   MIT_LICENSE_TEXT = <<~LICENSE.freeze
     MIT License
