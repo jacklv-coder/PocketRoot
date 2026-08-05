@@ -6,6 +6,22 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 
 ## Unreleased
 
+There are no unreleased changes.
+
+## 0.2.0 - 2026-08-04
+
+### Added
+
+- Interactive SwiftTerm PTYs now show an iPhone-friendly Esc, Tab, Ctrl-C,
+  Ctrl-D, history up/down, and keyboard-dismiss key row by default; hosts can
+  hide it with `showsAccessoryView: false`. Unit tests pin every emitted byte, and the Host
+  App lifecycle smoke launches BusyBox `top`, observes live output, and uses
+  Ctrl-C to recover the shell.
+- Bilingual security and community-conduct policies, support routing,
+  structured bug/integration/feature Issue forms, and a pull request checklist.
+  Documentation validation now requires these open-source collaboration files
+  and complete root-level Chinese/English mirrors.
+
 ### Changed
 
 - Tiered the CI UI matrix by platform: ordinary PRs and default manual runs
@@ -74,23 +90,6 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
   with the same runtime/device type for one bounded retry; caller-owned devices
   and assertion failures are never retried. Coverage is unchanged while PR
   wall-clock time no longer accumulates every UI smoke serially.
-
-## 0.2.0 - Unreleased
-
-### Added
-
-- Interactive SwiftTerm PTYs now show an iPhone-friendly Esc, Tab, Ctrl-C,
-  Ctrl-D, history up/down, and keyboard-dismiss key row by default; hosts can
-  hide it with `showsAccessoryView: false`. Unit tests pin every emitted byte, and the Host
-  App lifecycle smoke launches BusyBox `top`, observes live output, and uses
-  Ctrl-C to recover the shell.
-- Bilingual security and community-conduct policies, support routing,
-  structured bug/integration/feature Issue forms, and a pull request checklist.
-  Documentation validation now requires these open-source collaboration files
-  and complete root-level Chinese/English mirrors.
-
-### Changed
-
 - RootFS delivery-candidate output bounding now tolerates macOS `EPERM` from a
   process-group exit race only after Open3 confirms the child has exited and a
   signal-zero probe confirms the whole group is gone. Surviving or unsignalable

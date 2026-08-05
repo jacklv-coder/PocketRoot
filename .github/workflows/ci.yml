@@ -110,7 +110,6 @@ jobs:
           ruby Scripts/verify-source-release.rb \
             --version 0.2.0 \
             --ref HEAD \
-            --allow-source-blocked \
             --report "$RUNNER_TEMP/pocketroot-v0.2.0-source-candidate.json"
 
       - name: Upload source candidate audit report

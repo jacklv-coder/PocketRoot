@@ -19,7 +19,7 @@ PocketRoot separates host logic, real RootFS, iOS build, native final-link, and 
 | Host App UI smoke | `./Scripts/run-host-app-ui-smoke.sh` | Public-host boot, SwiftTerm PTY, lifecycle, Workspace persistence, Files mutations/previews, system document-picker import, share-sheet save and re-import round trip, and ordered shutdown on iPhone/iPad iOS 18 Simulators | Physical-device system file interaction, physical keyboards, physical iPad, distribution |
 | Physical Host App UI smoke | `./Scripts/run-host-app-device-ui-smoke.sh` | The same lifecycle UI test on an Xcode-resolved, development-signed iPhone/iPad, including signature and development entitlements | iPad, real pressure, distribution |
 | Physical native smoke | `./Scripts/run-runtime-device-smoke.sh` | Same 17 checks with optional process suspend/resume, UIKit lifecycle, forced-relaunch persistence, bounded storage-failure recovery, bounded memory-warning recovery, or persistent-PTY stability; development entitlements and returning soft shutdown | Real storage/memory pressure, power cut, jetsam, iPad, distribution |
-| Source-release audit | `ruby Scripts/verify-source-release.rb --version 0.2.0 --allow-source-blocked` | Every gate except final source-release authorization is satisfied, candidate documents are complete, and `git archive` contains no RootFS, App, IPA, XCFramework mirror, compressed payload, or native binary content | Granted source-release authorization or Runtime/App/RootFS distribution authorization |
+| Source-release audit | `ruby Scripts/verify-source-release.rb --version 0.2.0` | The source track is authorized and fully Ready, release documents are frozen, and `git archive` contains no RootFS, App, IPA, XCFramework mirror, compressed payload, or native binary content | Runtime/App/RootFS distribution authorization |
 | Documentation | `./Scripts/check-docs.sh` | Pairs, Chinese coverage, relative links | Implementation correctness |
 
 ## Package tests
@@ -555,17 +555,14 @@ the retry or restart also fails, the failure artifact retains the first and
 final logs plus both available `.xcresult` bundles. This Simulator evidence
 does not prove signed-device or distribution readiness.
 
-This candidate PR audits only an untagged `v0.2.0` commit with
-`--allow-source-blocked`. That mode does not bypass gates: it requires the
-exact pinned source-gate set and order, with `source-release-authorized` as the
-only unsatisfied gate. Any NOTICE, license, public-API-status, or source-boundary
-regression fails the audit. The JSON report records its schema, commit, archive
-SHA-256, file counts, exact blockers, and authorization status. CI retains only
-that JSON report for 14 days and neither retains nor uploads the temporary
-source tar. `--require-source-ready` and the tag workflow remain fail closed.
-Only after explicit source-release authorization and another review may an
-annotated `v0.2.0` tag be pushed and
-`.github/workflows/source-release.yml` dispatched from protected `main`. The workflow
+The `v0.2.0` source-release audit requires the exact pinned source-gate set and
+order to be fully satisfied. Any NOTICE, license, public-API-status,
+authorization, or source-boundary regression fails the audit. The JSON report
+records its schema, commit, archive SHA-256, file counts, exact blockers, and
+authorization status. CI retains only that JSON report for 14 days and neither
+retains nor uploads the temporary source tar. After the release PR is merged,
+an annotated `v0.2.0` tag may be pushed and
+`.github/workflows/source-release.yml` dispatched from trusted `main`. The workflow
 uses trusted verifier tooling from the `main` checkout against a separate tag
 checkout, requires the annotated tag commit to belong to that trusted `main`
 history, regenerates and audits the `git archive`, then resolves the public

@@ -19,7 +19,7 @@ PocketRoot 把验证分成宿主逻辑、真实 RootFS、iOS 构建、完整原�
 | Host App UI smoke | `./Scripts/run-host-app-ui-smoke.sh` | Apple Silicon + iOS 18 Simulator + archive | iPhone/iPad Simulator 上的公开宿主 Boot、SwiftTerm PTY、生命周期、Workspace 会话持续性、Files 增删改/预览、系统 document picker 导入、share sheet 保存与再次导入 round-trip，以及有序 shutdown | 真机系统文件交互、真机键盘、iPad 真机或发行可用 |
 | Host App 真机 UI smoke | `./Scripts/run-host-app-device-ui-smoke.sh` | Xcode 可解析的 development-signed iPhone/iPad + archive | 同一 Host App 生命周期 UI 测试的真机执行、签名与 development entitlement | iPad、真实压力或发行可用 |
 | 物理设备原生 smoke | `./Scripts/run-runtime-device-smoke.sh` | 签名 iOS 18+ iPhone/iPad + archive | 同一 17 项检查、可选进程暂停/恢复、UIKit 前后台、强制重启持久化、受限存储故障、有界内存警告恢复或持久 PTY 稳定性，development entitlement 与 shutdown 返回 | 真实 storage/memory pressure、断电、jetsam、iPad 或发行可用 |
-| 源码发布审计 | `ruby Scripts/verify-source-release.rb --version 0.2.0 --allow-source-blocked` | Git commit | 除最终源码发布授权外的门禁全部满足，候选版本文档齐全，`git archive` 不含 RootFS、App、IPA、XCFramework 镜像、压缩载荷或原生二进制 | 已授予源码发布授权或 Runtime/App/RootFS 分发授权 |
+| 源码发布审计 | `ruby Scripts/verify-source-release.rb --version 0.2.0` | Git commit | 源码轨道已授权且全部 Ready，版本文档已冻结，`git archive` 不含 RootFS、App、IPA、XCFramework 镜像、压缩载荷或原生二进制 | Runtime/App/RootFS 分发授权 |
 | 文档检查 | `./Scripts/check-docs.sh` | macOS/Linux shell | 中英文成对、中文覆盖和相对链接 | 技术实现正确 |
 
 ## 2. 宿主 Swift Package 测试
@@ -600,13 +600,11 @@ runtime 与 device type 重建该临时 Simulator。这些基础设施恢复合�
 失败，也保留首次 `xcodebuild` 的诊断结果。
 这些 Simulator 结果不证明签名真机或发行可用。
 
-当前候选 PR 只允许以 `--allow-source-blocked` 审计未打 tag 的 `v0.2.0` commit。
-这个模式不是绕过门禁：它要求固定的源码门禁集合和顺序完全一致，并且唯一未满足项
-必须是 `source-release-authorized`；NOTICE、许可证、公开 API 状态或源码边界出现任何
-回退都会失败。审计报告记录 schema、commit、archive SHA-256、文件统计、精确阻塞项
-和授权状态；CI 只保留该 JSON 报告 14 天，不保留或上传临时源码 tar。
-`--require-source-ready` 与 tag 工作流保持失败关闭。只有明确授予源码发布授权并再次
-评审后，才可推送 `v0.2.0` annotated tag，并从受保护的 `main` 手动调度
+`v0.2.0` 源码发布审计要求固定的源码门禁集合和顺序全部满足；NOTICE、许可证、公开
+API 状态、授权或源码边界出现任何回退都会失败。审计报告记录 schema、commit、
+archive SHA-256、文件统计、精确阻塞项和授权状态；CI 只保留该 JSON 报告 14 天，
+不保留或上传临时源码 tar。合并发布 PR 后，才可推送 `v0.2.0` annotated tag，并从
+受信任的 `main` 手动调度
 `.github/workflows/source-release.yml`。工作流使用 `main` checkout
 里的可信校验工具审计独立的 tag checkout，要求 annotated tag 的 commit 位于该
 `main` 历史上，重新生成并扫描 `git archive`，随后从仓库外以 `exact: "0.2.0"`

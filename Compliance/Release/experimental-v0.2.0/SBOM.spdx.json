@@ -3,9 +3,9 @@
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "PocketRoot experimental full-graph composition 0.2.0",
-  "documentNamespace": "https://github.com/jacklv-coder/PocketRoot/sbom/release/experimental-v0.2.0/05495d05d69b4ddec325abb9b712c6bd632df73213c7c0ac51db6b2f036a6ba4",
+  "documentNamespace": "https://github.com/jacklv-coder/PocketRoot/sbom/release/experimental-v0.2.0/289f1a63f0e9f66806ffc6a0c43fc1182993826f570eed773428c69fd9a50e4e",
   "creationInfo": {
-    "created": "2026-08-03T00:00:00Z",
+    "created": "2026-08-04T15:55:00Z",
     "creators": [
       "Tool: PocketRoot Scripts/generate-release-compliance.rb"
     ]
@@ -25,7 +25,7 @@
       "licenseDeclared": "MIT",
       "copyrightText": "NOASSERTION",
       "primaryPackagePurpose": "LIBRARY",
-      "sourceInfo": "Original PocketRoot source is licensed under MIT, but the 0.2.0 source release is not explicitly authorized. No Runtime, RootFS, App, archive, IPA, or binary distribution is asserted.",
+      "sourceInfo": "Original PocketRoot source is licensed under MIT, and the 0.2.0 source release is explicitly authorized. No Runtime, RootFS, App, archive, IPA, or binary distribution is asserted.",
       "licenseComments": "The top-level MIT license covers original PocketRoot source only. Third-party components retain their respective upstream licenses."
     },
     {

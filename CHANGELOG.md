@@ -6,6 +6,18 @@ PocketRoot 的重要变化记录在这里，并从首个公开版本开始遵循
 
 ## Unreleased
 
+当前暂无未发布变更。
+
+## 0.2.0 - 2026-08-04
+
+### Added
+
+- 为交互式 SwiftTerm PTY 默认加入适配 iPhone 软键盘的 Esc、Tab、Ctrl-C、Ctrl-D、
+  上/下历史键与收起键盘按钮；宿主可通过 `showsAccessoryView: false` 隐藏。单元测试固定发送字节，
+  Host App lifecycle smoke 真实启动 BusyBox `top`、观察动态输出并用 Ctrl-C 回到 shell。
+- 加入双语安全策略与社区行为准则、支持入口、结构化 Bug/接入/功能请求表单和
+  PR 检查表；文档校验现在要求这些开源协作文件存在，并保持根级中英文镜像完整。
+
 ### Changed
 
 - CI UI matrix 改为平台分层：普通 PR 与默认手动运行只执行外部消费者、Quick Start
@@ -50,19 +62,6 @@ PocketRoot 的重要变化记录在这里，并从首个公开版本开始遵循
   每路失败诊断使用独立 artifact 名称。runner 自建 Simulator 明确从 Xcode destination
   消失时可按相同 runtime/device type 重建并有界重试一次；调用方设备和断言失败不重试。
   测试覆盖不减少，PR 墙钟时间不再由全部 UI smoke 串行累加。
-
-## 0.2.0 - Unreleased
-
-### Added
-
-- 为交互式 SwiftTerm PTY 默认加入适配 iPhone 软键盘的 Esc、Tab、Ctrl-C、Ctrl-D、
-  上/下历史键与收起键盘按钮；宿主可通过 `showsAccessoryView: false` 隐藏。单元测试固定发送字节，
-  Host App lifecycle smoke 真实启动 BusyBox `top`、观察动态输出并用 Ctrl-C 回到 shell。
-- 加入双语安全策略与社区行为准则、支持入口、结构化 Bug/接入/功能请求表单和
-  PR 检查表；文档校验现在要求这些开源协作文件存在，并保持根级中英文镜像完整。
-
-### Changed
-
 - RootFS delivery candidate 的命令输出上限处理只会在 Open3 确认子进程已退出、且 signal
   0 探测确认整个进程组已消失后，容忍 macOS 在退出竞态中返回的 `EPERM`；残留或不可发送
   信号的后代仍然 fail-closed，同时 CI 可以正常回收已退出命令，不再泄漏平台异常。
