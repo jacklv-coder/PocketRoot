@@ -28,8 +28,10 @@ public final class PocketRootIshWorkspaceHost {
     public var onPhaseChange: ((PocketRootIshRuntimePhase) -> Void)?
 
     private let runtimeController: PocketRootIshRuntimeController
+    private let rootFSRemover: @Sendable () async throws -> Bool
     private var bootTask: Task<PocketRootSystem, Error>?
     private var shutdownTask: Task<Void, Error>?
+    private var rootFSRemovalTask: Task<Bool, Error>?
 
     #if canImport(SwiftUI) && canImport(UIKit)
     private var workspaceControllers: [
@@ -48,17 +50,24 @@ public final class PocketRootIshWorkspaceHost {
         runtimeController = PocketRootIshRuntimeController(
             configuration: runtimeConfiguration
         )
+        rootFSRemover = Self.makeRootFSRemover(
+            configuration: runtimeConfiguration
+        )
         bindRuntimeController()
     }
 
     init(
         runtimeController: PocketRootIshRuntimeController,
         workspaceConfiguration:
-            PocketRootWorkspaceConfiguration = .init()
+            PocketRootWorkspaceConfiguration = .init(),
+        rootFSRemover: (@Sendable () async throws -> Bool)? = nil
     ) {
         runtimeConfiguration = runtimeController.configuration
         self.workspaceConfiguration = workspaceConfiguration
         self.runtimeController = runtimeController
+        self.rootFSRemover = rootFSRemover ?? Self.makeRootFSRemover(
+            configuration: runtimeController.configuration
+        )
         bindRuntimeController()
     }
 
@@ -70,7 +79,7 @@ public final class PocketRootIshWorkspaceHost {
     }
 
     public var readySystem: PocketRootSystem? {
-        guard shutdownTask == nil else {
+        guard shutdownTask == nil, rootFSRemovalTask == nil else {
             return nil
         }
         return runtimeController.readySystem
@@ -81,16 +90,20 @@ public final class PocketRootIshWorkspaceHost {
     }
 
     public var canBoot: Bool {
-        shutdownTask == nil && runtimeController.canBoot
+        shutdownTask == nil
+            && rootFSRemovalTask == nil
+            && runtimeController.canBoot
     }
 
     public var canShutdown: Bool {
-        shutdownTask == nil && runtimeController.canShutdown
+        shutdownTask == nil
+            && rootFSRemovalTask == nil
+            && runtimeController.canShutdown
     }
 
     /// Whether a new integrated screen may boot or attach a Workspace.
     public var canOpenWorkspace: Bool {
-        guard shutdownTask == nil else {
+        guard shutdownTask == nil, rootFSRemovalTask == nil else {
             return false
         }
         switch runtimeController.phase {
@@ -107,6 +120,9 @@ public final class PocketRootIshWorkspaceHost {
     /// already in progress.
     @discardableResult
     public func boot() async throws -> PocketRootSystem {
+        guard rootFSRemovalTask == nil else {
+            throw PocketRootIshRuntimeControllerError.rootFSRemovalInProgress
+        }
         if let readySystem {
             return readySystem
         }
@@ -133,6 +149,9 @@ public final class PocketRootIshWorkspaceHost {
     public func execute(
         _ request: PocketRootCommandRequest
     ) async throws -> PocketRootCommandResult {
+        guard rootFSRemovalTask == nil else {
+            throw PocketRootIshRuntimeControllerError.rootFSRemovalInProgress
+        }
         guard shutdownTask == nil else {
             throw PocketRootIshRuntimeControllerError.lifecycleInProgress(
                 .shuttingDown
@@ -161,6 +180,10 @@ public final class PocketRootIshWorkspaceHost {
     /// process-global runtime shutdown. Repeated calls join the same operation;
     /// a successfully terminated host treats later calls as no-ops.
     public func shutdown() async throws {
+        if let rootFSRemovalTask {
+            _ = try await rootFSRemovalTask.value
+            return
+        }
         if phase == .terminated {
             return
         }
@@ -188,6 +211,66 @@ public final class PocketRootIshWorkspaceHost {
             }
         }
         try await task.value
+    }
+
+    /// Permanently removes the installed Linux filesystem owned by this host.
+    ///
+    /// A ready runtime is first closed and shut down. Never-prepared idle,
+    /// unavailable, and already terminated hosts may remove storage directly.
+    /// Transitional, failed, and prepared-idle runtimes are rejected because
+    /// native code may still reference the installation; restart the App
+    /// before retrying in that case.
+    ///
+    /// This operation deletes guest operating-system and user files but never
+    /// deletes the caller-provided archive. It is idempotent and returns
+    /// `true` only when managed RootFS storage existed. Successful shutdown is
+    /// terminal for the current process, so booting again requires an App
+    /// restart.
+    @discardableResult
+    public func removeRootFS() async throws -> Bool {
+        if let rootFSRemovalTask {
+            return try await rootFSRemovalTask.value
+        }
+        guard bootTask == nil, shutdownTask == nil else {
+            throw PocketRootIshRuntimeControllerError
+                .rootFSRemovalRequiresRuntimeRestart(phase)
+        }
+
+        switch phase {
+        case .ready:
+            try await shutdown()
+        case .idle:
+            guard runtimeController.preparedSystem == nil else {
+                throw PocketRootIshRuntimeControllerError
+                    .rootFSRemovalRequiresRuntimeRestart(phase)
+            }
+        case .unavailable, .terminated:
+            break
+        case .preparingRootFS, .booting, .shuttingDown, .failed:
+            throw PocketRootIshRuntimeControllerError
+                .rootFSRemovalRequiresRuntimeRestart(phase)
+        }
+
+        let task = Task { [rootFSRemover] in
+            try await rootFSRemover()
+        }
+        rootFSRemovalTask = task
+        defer {
+            rootFSRemovalTask = nil
+        }
+        return try await task.value
+    }
+
+    private static func makeRootFSRemover(
+        configuration: PocketRootIshRuntimeControllerConfiguration
+    ) -> @Sendable () async throws -> Bool {
+        {
+            let installer = PocketRootRootFSInstaller(
+                baseDirectoryURL: configuration.applicationSupportURL,
+                manifest: configuration.manifest
+            )
+            return try await installer.removeInstalledRootFS()
+        }
     }
 
     private func bindRuntimeController() {

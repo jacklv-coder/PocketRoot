@@ -20,6 +20,7 @@ public struct PocketRootRootFSInstallation: Sendable, Equatable {
 public enum PocketRootRootFSInstallationError: Error, Sendable, Equatable {
     case invalidBaseDirectory(String)
     case invalidVersion(String)
+    case archiveInsideManagedRootFS(String)
     case archiveCopyLimitExceeded(UInt64)
     case insufficientStorage(requiredBytes: UInt64, availableBytes: UInt64)
     case missingArchiveRoot(String)
@@ -33,6 +34,8 @@ extension PocketRootRootFSInstallationError: LocalizedError {
             return "The RootFS installation base must be a local directory URL: \(path)"
         case .invalidVersion(let version):
             return "The RootFS version is not safe for use as a directory name: \(version)"
+        case .archiveInsideManagedRootFS(let path):
+            return "The caller-owned RootFS archive must be outside managed storage: \(path)"
         case .archiveCopyLimitExceeded(let limit):
             return "The RootFS archive exceeds the \(limit)-byte staging limit."
         case .insufficientStorage(let requiredBytes, let availableBytes):
@@ -167,6 +170,61 @@ public actor PocketRootRootFSInstaller {
         }
     }
 
+    /// Removes every RootFS installation and transaction owned by this base
+    /// directory. The caller-provided archive is never removed.
+    ///
+    /// Removal is serialized with installation and is idempotent. Callers must
+    /// first stop every runtime and session that references an installed tree;
+    /// use the integration host's `removeRootFS()` when it owns the runtime.
+    /// Cancellation is observed before deletion begins. Once deletion starts,
+    /// the operation completes so the durable on-disk state is unambiguous.
+    @discardableResult
+    public func removeInstalledRootFS() async throws -> Bool {
+        let baseDirectoryURL = baseDirectoryURL
+        return try await executor.perform { cancellation in
+            try Self.removeInstalledRootFSSynchronously(
+                baseDirectoryURL: baseDirectoryURL,
+                cancellation: cancellation
+            )
+        }
+    }
+
+    private static func removeInstalledRootFSSynchronously(
+        baseDirectoryURL: URL,
+        cancellation: RootFSInstallationCancellation
+    ) throws -> Bool {
+        guard baseDirectoryURL.isFileURL else {
+            throw PocketRootRootFSInstallationError.invalidBaseDirectory(
+                baseDirectoryURL.absoluteString
+            )
+        }
+        guard itemExists(at: baseDirectoryURL) else {
+            return false
+        }
+        guard isExistingRealDirectory(at: baseDirectoryURL) else {
+            throw PocketRootRootFSInstallationError.invalidBaseDirectory(
+                baseDirectoryURL.path
+            )
+        }
+
+        let rootFSDirectoryURL = baseDirectoryURL.appendingPathComponent(
+            "rootfs",
+            isDirectory: true
+        )
+        guard itemExists(at: rootFSDirectoryURL) else {
+            return false
+        }
+        guard isExistingRealDirectory(at: rootFSDirectoryURL) else {
+            throw PocketRootRootFSInstallationError.invalidBaseDirectory(
+                rootFSDirectoryURL.path
+            )
+        }
+
+        try cancellation.check()
+        try removeItemAndSynchronizeParent(at: rootFSDirectoryURL)
+        return true
+    }
+
     private static func prepareArchiveSynchronously(
         archiveURL: URL,
         baseDirectoryURL: URL,
@@ -203,6 +261,11 @@ public actor PocketRootRootFSInstaller {
         }
         let rootFSDirectoryURL = baseDirectoryURL
             .appendingPathComponent("rootfs", isDirectory: true)
+        guard !isURL(archiveURL, containedIn: rootFSDirectoryURL) else {
+            throw PocketRootRootFSInstallationError.archiveInsideManagedRootFS(
+                archiveURL.path
+            )
+        }
         let finalURL = rootFSDirectoryURL
             .appendingPathComponent(version, isDirectory: true)
         let currentRecordURL = rootFSDirectoryURL
@@ -374,6 +437,20 @@ public actor PocketRootRootFSInstaller {
         }
         return result == 0
             && (status.st_mode & mode_t(S_IFMT)) == mode_t(S_IFDIR)
+    }
+
+    private static func isURL(_ candidateURL: URL, containedIn directoryURL: URL)
+        -> Bool
+    {
+        guard candidateURL.isFileURL, directoryURL.isFileURL else {
+            return false
+        }
+        let candidatePath = candidateURL.resolvingSymlinksInPath()
+            .standardizedFileURL.path
+        let directoryPath = directoryURL.resolvingSymlinksInPath()
+            .standardizedFileURL.path
+        return candidatePath == directoryPath
+            || candidatePath.hasPrefix(directoryPath + "/")
     }
 
     private static func createRootFSDirectoryIfNeeded(at url: URL) throws {

@@ -32,7 +32,7 @@ RootFS 是 PocketRoot 的外部供应链输入，不是普通测试 fixture。�
 
 - 决定是否允许网络获取；
 - 取得合法、经过审核的 archive；
-- 把 archive 放入 App 可访问的本地路径；
+- 把 archive 放入 App 可访问、且位于受管 `rootfs/` 树之外的本地路径；
 - 处理用户同意、缓存、删除和数据保留策略；
 - 确认许可证、NOTICE、对应源码与 SBOM；
 - 在 manifest 变更时重新审核。
@@ -45,7 +45,8 @@ PocketRoot 负责：
 - 安全解包；
 - 校验 fakefs 布局；
 - 版本化、journal 保护的同卷 promotion；
-- 复用、可回滚替换与中断恢复。
+- 复用、可回滚替换与中断恢复；
+- 提供串行、no-follow、幂等的整个受管 RootFS 删除入口。
 
 PocketRoot 不负责：
 
@@ -53,7 +54,7 @@ PocketRoot 不负责：
 - 证明调用方拥有再分发权；
 - 对 archive 内每个 guest 文件单独签名；
 - 在每次安装时执行 SQLite `integrity_check`；
-- 在当前版本中完成 VM 数据迁移或用户数据备份。
+- 完成 VM 数据迁移、用户数据备份或按版本选择性清理。
 
 ## 3. 本地获取与独立验证
 
@@ -475,7 +476,25 @@ promotion 前，installer 从叶到根对候选树的普通文件执行 `F_FULLF
 
 命令见[测试与验证](Testing.md)。
 
-## 10. 更新 RootFS 的规则
+## 10. 删除、更新与备份规则
+
+底层 `PocketRootRootFSInstaller.removeInstalledRootFS()` 只删除其
+`baseDirectoryURL/rootfs` 受管树，不删除调用方 archive；调用方必须先停止所有引用该树
+的 runtime/session。正常集成应优先调用
+`PocketRootIshWorkspaceHost.removeRootFS()`：ready host 会先有序关闭 PTY 和 native
+runtime，过渡态或失败态拒绝删除，避免原生代码仍持有路径时移除文件。删除操作不可撤销，
+会同时清除 guest OS、事务记录、旧版本和全部 guest 用户文件；重复调用安全地返回
+`false`。
+
+版本升级由新 manifest 驱动并继续使用事务化 promotion。它不会迁移旧 guest 用户数据，
+也不会自动删除旧版本目录；当前没有按版本清理 API。产品在升级前必须选择导出/迁移，
+或者把“新环境为空”明确呈现给用户。
+
+PocketRoot 不会自动为整个受管树设置 iCloud/iTunes backup exclusion，因为 OS 数据可
+重建，而同一树中的用户文件可能不可重建。宿主 App 负责明确备份、数据保留、隐私和
+恢复策略。Demo 可以为了可重复测试排除自己的 workspace，但这不是生产默认值。
+
+## 11. 更新 RootFS 制品的规则
 
 任何新版本必须：
 

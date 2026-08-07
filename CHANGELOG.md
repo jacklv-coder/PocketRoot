@@ -6,6 +6,12 @@ PocketRoot 的重要变化记录在这里，并从首个公开版本开始遵循
 
 ## Unreleased
 
+### Added
+
+- 新增显式 RootFS 重置 API：底层 installer 串行、no-follow、幂等地删除整个受管树；
+  `PocketRootIshWorkspaceHost` 会先关闭所属 PTY 并 shutdown ready runtime，过渡态和失败态
+  fail-close。中英文文档同步固定升级不迁移用户数据、archive 不删除及备份策略由宿主负责。
+
 ### Changed
 
 - CI 现在先根据 PR 或 push 的实际 diff 选择 package、iOS build、native runtime、

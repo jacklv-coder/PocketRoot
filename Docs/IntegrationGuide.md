@@ -163,7 +163,8 @@ let localReviewedArchiveURL = try importRootFSArchive(
 受控下载也应先完成到 App 自有的唯一临时/持久路径，再把该本地 URL 传入。
 调用方负责网络、认证、许可证、文件保护、备份排除和清理策略。installer 会
 再次要求输入为真实普通文件，并在自己的私有 staging 中建立快照。`prepareSystem`
-返回后，调用方可按产品策略删除 `RootFSInput` 中的导入副本。
+返回后，调用方可按产品策略删除 `RootFSInput` 中的导入副本。调用方 archive 必须位于
+`applicationSupportURL/rootfs` 受管树之外，否则安装会拒绝，避免之后重置时误删它。
 
 准备系统：
 
@@ -259,6 +260,30 @@ SwiftUI 与 UIKit Workspace 会使用同一个只读边界。
 ```swift
 PocketRootIshWorkspaceView(host: pocketRootHost)
 ```
+
+需要让用户“重置 Linux 环境”时，使用高层 host API：
+
+```swift
+let removed = try await pocketRootHost.removeRootFS()
+```
+
+若 runtime 已 ready，host 会先关闭它创建的全部 PTY，再完成 native shutdown，最后
+串行删除 `<Application Support>/rootfs`；从未 prepare 的 idle、unavailable 或已
+terminated 时可直接删除。idle 但仍保留 prepared system 时也会拒绝，避免下次 boot
+复用指向已删除路径的 system。操作幂等，只有确实存在受管目录时才返回 `true`，并且不会删除调用方提供的
+RootFS archive。这个操作不可撤销，会同时删除 guest OS 和用户在 guest 中创建的文件。
+在 boot/shutdown 过渡期或 `.failed` 状态下会 fail-close；重启 App 后用新的 idle host
+重试。成功 shutdown 后当前进程不能再次 boot，重新安装和启动应发生在下一次 App 进程。
+
+RootFS 版本更新是新的清单、hash 与合规审查，不是用户数据迁移。installer 会事务化
+安装新版本并更新 `current.json`，但不会把旧 guest 文件复制到新版本，也不会自动删除
+旧版本。当前唯一公开清理边界是删除整个受管 `rootfs/`。生产 App 在升级前应提供显式
+导出/迁移方案，或明确告知用户将得到一个全新环境。
+
+`applicationSupportURL` 默认参与系统备份。由于受管树同时包含可重建 OS 文件和可能
+不可重建的用户文件，PocketRoot 不会自动设置整个目录的 backup-exclusion。宿主 App
+必须在隐私、容量和恢复需求之间作出明确选择；若排除整个 demo workspace，仅应把它
+作为 demo 策略，不应直接复制成生产数据策略。
 
 Host 不会下载或选择 RootFS，也不会安装 Node.js、npm、Codex CLI 或 Agent Loop。
 只有 Terminal / Files 两个入口的最小 XcodeGen 宿主位于

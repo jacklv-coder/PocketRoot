@@ -104,7 +104,7 @@ paths, not iPad, real pressure, or distribution readiness.
 | Native transport backpressure | Passed | Bounded protocol/session/stdin/log/control queues, an 8 MiB binary-output baseline beyond the 4 MiB backlog, and a 256 MiB Simulator lifecycle `ru_maxrss` gate are integrated; physical jetsam remains under the lifecycle gate |
 | End-to-end native control-path time bound | Passed | ABI.6 finite SPAWN and bounded asynchronous close/terminate are integrated; PocketRoot reuses one deadline from driver entry and retains a fixed bounded exit-confirmation window |
 | iOS 18 Simulator native behavior | Passed | v0.4.0-abi.6 passed the 17-check soft-shutdown/peak-memory smoke; keep rerunning after changes |
-| Secure RootFS install/recovery | Passed | Preserve real-asset, snapshot, capacity-preflight, rollback, and recovery coverage |
+| Secure RootFS install/recovery/reset | Passed | Preserve real-asset, snapshot, capacity-preflight, rollback/recovery, no-follow whole-tree removal, and shutdown-before-remove coverage |
 | RootFS/runtime composition | Passed | Keep caller-controlled, no-download, no-auto-boot |
 | Default post-boot identity gate | Passed | Require aarch64, Alpine identity, optional version, and command context before ready; retain failed-slot regression coverage |
 | Demo and external-host runtime integration | Passed | The Demo and standalone Host App share the public controller; Debug injects only the exact verified external RootFS and Release remains payload-free |

@@ -576,6 +576,123 @@ final class PocketRootResourcesTests: XCTestCase {
         )
     }
 
+    func testRootFSInstallerRemovesOnlyManagedStorageAndCanReinstall()
+        async throws
+    {
+        let baseURL = try makeTemporaryDirectory()
+        let archiveURL = try makeValidFakeFSArchiveFile()
+        let installer = PocketRootRootFSInstaller(
+            baseDirectoryURL: baseURL,
+            manifest: makeFixtureManifest(version: "fixture-v1")
+        )
+        let first = try await installer.prepareArchive(at: archiveURL)
+
+        let removed = try await installer.removeInstalledRootFS()
+        XCTAssertTrue(removed)
+        XCTAssertFalse(
+            FileManager.default.fileExists(
+                atPath: baseURL.appendingPathComponent("rootfs").path
+            )
+        )
+        XCTAssertTrue(FileManager.default.fileExists(atPath: archiveURL.path))
+        let removedAgain = try await installer.removeInstalledRootFS()
+        XCTAssertFalse(removedAgain)
+
+        let reinstalled = try await installer.prepareArchive(at: archiveURL)
+        XCTAssertFalse(reinstalled.reusedExistingInstallation)
+        XCTAssertEqual(reinstalled.rootFSURL, first.rootFSURL)
+    }
+
+    func testRootFSInstallerRemovalTreatsMissingBaseAsAlreadyRemoved()
+        async throws
+    {
+        let missingBaseURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "PocketRootMissingRemovalBase-\(UUID().uuidString)",
+                isDirectory: true
+            )
+        let installer = PocketRootRootFSInstaller(
+            baseDirectoryURL: missingBaseURL,
+            manifest: makeFixtureManifest(version: "fixture-v1")
+        )
+
+        let removed = try await installer.removeInstalledRootFS()
+        XCTAssertFalse(removed)
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: missingBaseURL.path)
+        )
+    }
+
+    func testRootFSInstallerRejectsArchiveInsideManagedStorage() async throws {
+        let baseURL = try makeTemporaryDirectory()
+        let rootFSURL = baseURL.appendingPathComponent(
+            "rootfs",
+            isDirectory: true
+        )
+        try FileManager.default.createDirectory(
+            at: rootFSURL,
+            withIntermediateDirectories: false
+        )
+        let sourceArchiveURL = try makeValidFakeFSArchiveFile()
+        let managedArchiveURL = rootFSURL.appendingPathComponent(
+            "caller-owned.tar.gz",
+            isDirectory: false
+        )
+        try FileManager.default.copyItem(
+            at: sourceArchiveURL,
+            to: managedArchiveURL
+        )
+        let installer = PocketRootRootFSInstaller(
+            baseDirectoryURL: baseURL,
+            manifest: makeFixtureManifest(version: "fixture-v1")
+        )
+
+        do {
+            _ = try await installer.prepareArchive(at: managedArchiveURL)
+            XCTFail("Managed storage must not contain the caller archive.")
+        } catch let error as PocketRootRootFSInstallationError {
+            XCTAssertEqual(
+                error,
+                .archiveInsideManagedRootFS(managedArchiveURL.path)
+            )
+        }
+        XCTAssertTrue(
+            FileManager.default.fileExists(atPath: managedArchiveURL.path)
+        )
+    }
+
+    func testRootFSInstallerRejectsManagedDirectorySymlinkWithoutFollowingIt()
+        async throws
+    {
+        let baseURL = try makeTemporaryDirectory()
+        let outsideURL = try makeTemporaryDirectory().appendingPathComponent(
+            "must-survive.txt",
+            isDirectory: false
+        )
+        try Data("outside".utf8).write(to: outsideURL)
+        try FileManager.default.createSymbolicLink(
+            at: baseURL.appendingPathComponent("rootfs", isDirectory: true),
+            withDestinationURL: outsideURL.deletingLastPathComponent()
+        )
+        let installer = PocketRootRootFSInstaller(
+            baseDirectoryURL: baseURL,
+            manifest: makeFixtureManifest(version: "fixture-v1")
+        )
+
+        do {
+            _ = try await installer.removeInstalledRootFS()
+            XCTFail("A symlinked managed directory must be rejected.")
+        } catch let error as PocketRootRootFSInstallationError {
+            XCTAssertEqual(
+                error,
+                .invalidBaseDirectory(
+                    baseURL.appendingPathComponent("rootfs").path
+                )
+            )
+        }
+        XCTAssertEqual(try Data(contentsOf: outsideURL), Data("outside".utf8))
+    }
+
     func testRootFSInstallerPersistsEntriesWithoutOwnerReadPermissions()
         async throws
     {

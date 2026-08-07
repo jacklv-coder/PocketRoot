@@ -64,6 +64,8 @@ public enum PocketRootIshRuntimeControllerError:
     case runtimeUnavailable
     case lifecycleInProgress(PocketRootIshRuntimePhase)
     case runtimeNotReady
+    case rootFSRemovalInProgress
+    case rootFSRemovalRequiresRuntimeRestart(PocketRootIshRuntimePhase)
     case unexpectedState(PocketRootRuntimeState)
 
     public var errorDescription: String? {
@@ -74,6 +76,10 @@ public enum PocketRootIshRuntimeControllerError:
             "The iSH runtime cannot start another lifecycle operation from \(phase)."
         case .runtimeNotReady:
             "Boot the iSH runtime before using this feature."
+        case .rootFSRemovalInProgress:
+            "RootFS removal is already in progress."
+        case .rootFSRemovalRequiresRuntimeRestart(let phase):
+            "RootFS removal is unsafe while the iSH runtime is in \(phase); restart the host App before removing it."
         case .unexpectedState(let state):
             "The iSH runtime reached an unexpected state: \(state)."
         }

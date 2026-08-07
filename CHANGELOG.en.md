@@ -6,6 +6,15 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 
 ## Unreleased
 
+### Added
+
+- Added explicit RootFS reset APIs: the low-level installer serially removes
+  the whole managed tree with no-follow, idempotent semantics, while
+  `PocketRootIshWorkspaceHost` first closes owned PTYs and shuts down a ready
+  runtime and fails closed in transitional or failed phases. Bilingual policy
+  now fixes no user-data migration, caller-owned archive retention, and host-
+  owned backup decisions.
+
 ### Changed
 
 - CI now classifies the actual PR or push diff before selecting package, iOS
