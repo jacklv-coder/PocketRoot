@@ -16,9 +16,12 @@ PocketRoot 的重要变化记录在这里，并从首个公开版本开始遵循
 
 - CI 现在先根据 PR 或 push 的实际 diff 选择 package、iOS build、native runtime、
   iPhone UI 与外部消费者门禁；纯文档/发布证据改动只执行快速文档、脚本契约和合规
-  检查，不再启动 Xcode 构建、Simulator 或 UI。普通 PR/push 的 Host App UI 只运行
-  Terminal-to-Files 代表性闭环；从 Actions 手动运行 `CI` 仍执行完整 iPhone 套件，
-  `include_ipad=true` 再显式加入 iPad 里程碑矩阵。
+  检查，不再启动 Xcode 构建、Simulator 或 UI。PR 合并到 `main` 后，只有精确绑定
+  PR head SHA、固定 workflow、合并时间、等价 commit tree 和六个成功门禁时才复用 PR CI，
+  避免重复运行约 20 分钟的 Xcode/UI；CI 信任链变更、任何 API 或证据异常、直接 push 都
+  fail-closed 回退完整门禁。
+  普通 PR 的 Host App UI 只运行 Terminal-to-Files 代表性闭环；从 Actions 手动运行
+  `CI` 仍执行完整 iPhone 套件，`include_ipad=true` 再显式加入 iPad 里程碑矩阵。
 
 ## 0.2.0 - 2026-08-04
 

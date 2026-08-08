@@ -122,6 +122,16 @@ external=true
 EOF
 )"
 
+REUSE_VERIFIER_CHANGE="$(commit_path Scripts/verify-pr-ci-reuse.rb)"
+assert_outputs "$CLASSIFIER_CHANGE" "$REUSE_VERIFIER_CHANGE" "$(cat <<'EOF'
+package=true
+ios=true
+native=true
+ui=true
+external=true
+EOF
+)"
+
 FULL_OUTPUT="$TEST_ROOT/full-output"
 : > "$FULL_OUTPUT"
 POCKETROOT_CI_REPOSITORY_ROOT="$REPOSITORY" \

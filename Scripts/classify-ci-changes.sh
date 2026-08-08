@@ -70,7 +70,7 @@ classify_path() {
     local classified="false"
 
     case "$path" in
-        Package.swift|Package.resolved|.github/workflows/ci.yml|.github/actions/setup-minimum-xcode-16/*|Scripts/classify-ci-changes.sh|Tests/Scripts/CIChangeClassifierTests.sh)
+        Package.swift|Package.resolved|.github/workflows/ci.yml|.github/actions/setup-minimum-xcode-16/*|Scripts/classify-ci-changes.sh|Scripts/verify-pr-ci-reuse.rb|Tests/Scripts/CIChangeClassifierTests.sh|Tests/Scripts/PRCIReuseTests.rb)
             enable_all
             return
             ;;

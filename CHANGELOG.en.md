@@ -20,10 +20,15 @@ All notable PocketRoot changes are recorded here. Semantic Versioning begins wit
 - CI now classifies the actual PR or push diff before selecting package, iOS
   build, native-runtime, iPhone UI, and external-consumer gates. Documentation-
   and release-evidence-only changes run fast documentation, script-contract,
-  and compliance checks without starting Xcode builds, Simulators, or UI.
-  Routine PR/push Host App UI runs use one representative Terminal-to-Files
-  closure; manually dispatched `CI` runs retain the complete iPhone suites and
-  `include_ipad=true` explicitly adds the milestone iPad matrix.
+  and compliance checks without starting Xcode builds, Simulators, or UI. A
+  merged PR into `main` reuses PR CI only after binding the exact PR head SHA,
+  fixed workflow, merge time, equivalent commit tree, and six successful gates,
+  avoiding about 20 minutes of duplicate Xcode/UI work; CI trust-boundary
+  changes, API or evidence failures, and direct pushes fail closed to the full
+  gates. Routine PR Host App UI uses one
+  representative Terminal-to-Files closure; manually dispatched `CI` retains
+  the complete iPhone suites and `include_ipad=true` explicitly adds the
+  milestone iPad matrix.
 
 ## 0.2.0 - 2026-08-04
 

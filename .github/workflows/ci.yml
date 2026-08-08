@@ -14,7 +14,9 @@ on:
         type: boolean
 
 permissions:
+  actions: read
   contents: read
+  pull-requests: read
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -30,6 +32,7 @@ jobs:
       native: ${{ steps.classify.outputs.native }}
       ui: ${{ steps.classify.outputs.ui }}
       external: ${{ steps.classify.outputs.external }}
+      reused_pr_ci: ${{ steps.classify.outputs.reused_pr_ci }}
 
     steps:
       - name: Check out repository history
@@ -45,8 +48,37 @@ jobs:
             ${{ github.event.pull_request.base.sha || github.event.before }}
           HEAD_SHA: >-
             ${{ github.event.pull_request.head.sha || github.sha }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
-          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+          reuse_output="$RUNNER_TEMP/pocketroot-pr-ci-reuse"
+          : > "$reuse_output"
+          if [[ "$EVENT_NAME" == "push" ]]; then
+            if ! ruby Scripts/verify-pr-ci-reuse.rb \
+              --repository "$GITHUB_REPOSITORY" \
+              --commit "$HEAD_SHA" \
+              --base-ref "main" \
+              --output "$reuse_output"; then
+              echo "reused_pr_ci=false" > "$reuse_output"
+              echo "reuse_reason=verifier_failed" >> "$reuse_output"
+            fi
+          else
+            echo "reused_pr_ci=false" > "$reuse_output"
+            echo "reuse_reason=not_main_push" >> "$reuse_output"
+          fi
+
+          reused_pr_ci="$(
+            awk -F= '$1 == "reused_pr_ci" { value = $2 } END { print value }' \
+              "$reuse_output"
+          )"
+          if [[ "$reused_pr_ci" == "true" ]]; then
+            {
+              echo "package=false"
+              echo "ios=false"
+              echo "native=false"
+              echo "ui=false"
+              echo "external=false"
+            } >> "$GITHUB_OUTPUT"
+          elif [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
             ./Scripts/classify-ci-changes.sh \
               --full \
               --output "$GITHUB_OUTPUT"
@@ -60,6 +92,7 @@ jobs:
               --head "$HEAD_SHA" \
               --output "$GITHUB_OUTPUT"
           fi
+          cat "$reuse_output" >> "$GITHUB_OUTPUT"
 
   test-and-build:
     name: Test and build
@@ -87,6 +120,7 @@ jobs:
           bash -n Scripts/build-signed-engineering-archive.sh
           bash -n Scripts/inject-demo-rootfs.sh
           bash -n Scripts/classify-ci-changes.sh
+          ruby -c Scripts/verify-pr-ci-reuse.rb
           bash -n Scripts/run-external-consumer-ui-smoke.sh
           ruby -c Scripts/prepare-rootfs-smoke-manifest.rb
           ruby -c Scripts/rootfs-corresponding-source-review-results.rb
@@ -111,6 +145,7 @@ jobs:
           bash -n Tests/Scripts/RootFSCandidateSmokeManifestTests.sh
           bash -n Tests/Scripts/DemoRootFSInjectionScriptTests.sh
           bash -n Tests/Scripts/CIChangeClassifierTests.sh
+          ruby -c Tests/Scripts/PRCIReuseTests.rb
           ruby -c Tests/Scripts/RootFSLicenseReviewTests.rb
           ruby -c Tests/Scripts/RootFSCorrespondingSourceReviewResultsTests.rb
           ruby -c Tests/Scripts/RootFSLicenseReviewResultsTests.rb
@@ -128,6 +163,7 @@ jobs:
           bash Tests/Scripts/RootFSCandidateSmokeManifestTests.sh
           bash Tests/Scripts/DemoRootFSInjectionScriptTests.sh
           bash Tests/Scripts/CIChangeClassifierTests.sh
+          ruby Tests/Scripts/PRCIReuseTests.rb
           ruby Tests/Scripts/RootFSCorrespondingSourceReviewResultsTests.rb
           ruby Tests/Scripts/RootFSLicenseReviewTests.rb
           ruby Tests/Scripts/RootFSLicenseReviewResultsTests.rb
