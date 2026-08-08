@@ -26,7 +26,7 @@ jailbreak, and no Codex CLI installation.
   terminal session alive.
 - **Linux Runtime** — prepare, boot, and manage an iSH-based Alpine ARM64
   environment inside the iOS sandbox.
-- **RootFS lifecycle** — verify, install, reuse, and recover a caller-supplied,
+- **RootFS lifecycle** — verify, install, reuse, recover, and safely reset a caller-supplied,
   reviewed RootFS archive.
 - **Swift APIs and ready-made UI** — execute bounded commands or present UIKit
   and SwiftUI workspace screens directly.
@@ -48,7 +48,7 @@ an existing iOS App. Start with the
 | --- | --- | --- |
 | Swift Package modules and public API | Available | Core, Resources, Terminal, Agent, Agent Runtime Tools, and safe umbrella |
 | UIKit Demo shell | Available | System, Terminal, Files, Commands, and Diagnostics entry points |
-| RootFS verification and safe install | Available | Fixed digest, secure extraction, journal-protected same-volume promotion, reuse, recovery |
+| RootFS verification and safe install | Available | Fixed digest, secure extraction, journal-protected same-volume promotion, reuse, recovery, and explicit reset |
 | iSH boot and one-shot commands | Experimental | `iOS + arm64`; one-shot cancellation confirms guest exit |
 | Terminal and file browser | Embeddable / Experimental | UIKit/SwiftUI inject a booted system; the persistent SwiftTerm PTY includes Esc, Tab, Ctrl-C, Ctrl-D, history keys, and keyboard dismissal, plus inline tree expansion, navigation, bounded previews, safe mutations, and 1 MiB-capped document import/share export |
 | Lightweight agent loop | Core, OpenAI transport, and approval-gated command tool available | Agent and Runtime Tools are explicit opt-ins; no Codex CLI install or automatic shell approval |

@@ -328,7 +328,8 @@ Alpine `apk` 可以下载、安装和执行新增代码。即使初始 RootFS �
   inventory/SPDX SBOM；最终签名、导出和授权门禁保持关闭。
 - [ ] 从最终构建并扫描的发行制品生成完整 SBOM。
 - [ ] 安全与已知限制。
-- [ ] RootFS 更新和删除策略。
+- [x] RootFS 更新、整树删除、备份责任与用户数据非迁移策略；公开 API fail-close，
+  archive 保持调用方所有。
 - [ ] App Review notes。
 - [ ] 可复现构建记录。
 

@@ -24,9 +24,9 @@ A RootFS is an external supply-chain input, not a normal fixture. PocketRoot com
 
 ## Ownership boundary
 
-The caller obtains and authorizes a local archive, owns network and retention policy, and completes license review. PocketRoot verifies a local regular file, snapshots it privately, validates and extracts it, verifies fakefs layout, and manages journal-protected, same-volume promotion, rollback, and recovery.
+The caller obtains and authorizes a local archive outside the managed `rootfs/` tree, owns network and retention policy, and completes license review. PocketRoot verifies a local regular file, snapshots it privately, validates and extracts it, verifies fakefs layout, manages journal-protected same-volume promotion, rollback, and recovery, and exposes serialized no-follow idempotent removal of the complete managed RootFS tree.
 
-PocketRoot does not choose the latest version, prove redistribution rights, sign every guest file, run SQLite integrity checks on every install, or currently migrate user VM data.
+PocketRoot does not choose the latest version, prove redistribution rights, sign every guest file, run SQLite integrity checks on every install, migrate or back up user VM data, or selectively clean individual installed versions.
 
 ## Independent local verification
 
@@ -379,7 +379,30 @@ states verify inferred rollback or commit. This establishes implementation and
 host-filesystem persistence ordering; physical-device forced-power-cut evidence
 remains a separate gate.
 
-## Update rule
+## Deletion, update, and backup policy
+
+The low-level `PocketRootRootFSInstaller.removeInstalledRootFS()` removes only
+its `baseDirectoryURL/rootfs` managed tree and never the caller-owned archive.
+Callers must first stop every runtime and session referencing that tree. Normal
+integrations should prefer `PocketRootIshWorkspaceHost.removeRootFS()`: a ready
+host closes PTYs and the native runtime in order, while transitional and failed
+phases reject removal so native code cannot retain deleted paths. Removal is
+irreversible and deletes the guest OS, transaction records, older versions,
+and every guest user file. Repeated calls safely return `false`.
+
+Version upgrades remain manifest-driven transactional promotions. They do not
+migrate old guest user data or automatically delete older version directories;
+there is currently no per-version cleanup API. Before upgrading, a product must
+export or migrate user data, or clearly present that the new environment starts
+empty.
+
+PocketRoot does not automatically exclude the entire managed tree from
+iCloud/iTunes backup: the OS payload is reproducible while user files in the
+same tree may not be. The host App owns its backup, retention, privacy, and
+restore policy. Demo workspace exclusion is a repeatable-test choice, not a
+production default.
+
+## Updating the RootFS artifact
 
 A new RootFS requires immutable source and nested gitlinks, original Alpine digest, build review, independently computed artifact limits/hash, fakefs/package audit, updated manifest and tests, real-asset/final-link/Simulator/physical smoke, regenerated license/NOTICE/source/SBOM material, and updated supply-chain, ADR, and compliance documents.
 

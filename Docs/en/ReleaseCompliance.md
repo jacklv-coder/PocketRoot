@@ -323,7 +323,8 @@ The current code does not provide a complete product-level privacy policy.
   and authorization gates closed.
 - [ ] Generate a complete SBOM from the built and scanned final release artifact.
 - [ ] Security guidance and known limitations.
-- [ ] RootFS update and deletion policy.
+- [x] RootFS update, whole-tree deletion, backup ownership, and no-user-data-
+  migration policy; the public API fails closed and the archive remains caller-owned.
 - [ ] App Review notes.
 - [ ] Reproducible-build record.
 

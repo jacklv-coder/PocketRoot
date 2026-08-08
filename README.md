@@ -21,7 +21,7 @@ PocketRoot 是面向 iPhone 和 iPad App 的本地 Linux Workspace SDK。它把�
   并可通过系统文件选择器导入、通过分享面板导出文件。
 - **Workspace**：在 Terminal 与 Files 间切换，同时保持同一个终端 session。
 - **Linux Runtime**：在 iOS 沙箱内准备、启动并管理基于 iSH 的 Alpine ARM64 环境。
-- **RootFS 生命周期**：校验、安装、复用、恢复调用方提供的已审查 RootFS 归档。
+- **RootFS 生命周期**：校验、安装、复用、恢复和安全重置调用方提供的已审查 RootFS。
 - **Swift API 与现成 UI**：执行有界命令，或直接展示 UIKit / SwiftUI Workspace 页面。
 
 PocketRoot 的定位不是另一个终端 App，也不是新的操作系统：它是让现有 iOS App
@@ -43,7 +43,7 @@ PocketRoot 的定位不是另一个终端 App，也不是新的操作系统：�
 | --- | --- | --- |
 | Swift Package 模块与公共 API | 可用 | Core、Resources、Terminal、Agent、Agent Runtime Tools 及默认伞形产品 |
 | UIKit Demo 外壳 | 可用 | 展示 System、Terminal、Files、Commands、Diagnostics 五个入口 |
-| RootFS 校验与安全安装 | 可用 | 固定大小和 SHA-256、安全解包、journal 保护的同卷 promotion、复用与中断恢复 |
+| RootFS 校验与安全安装 | 可用 | 固定大小和 SHA-256、安全解包、journal 保护的同卷 promotion、复用、中断恢复与显式重置 |
 | iSH 启动与一次性命令 | 实验性 | 仅 `iOS + arm64`；支持确认 guest 退出的一次性命令取消 |
 | 终端与文件浏览 | 可接入 / 实验性 | UIKit/SwiftUI 注入已 boot system；SwiftTerm 持续 PTY 支持输入、resize、signal/EOF，并默认提供 Esc、Tab、Ctrl-C、Ctrl-D、历史方向键与收起键盘按钮；文件页支持树形展开、导航、有界预览、安全增删改，以及 1 MiB 上限的系统文件导入/分享导出 |
 | 轻量 agent loop | 核心、OpenAI transport 与审批命令工具可用 | Agent 与 Runtime Tools 均显式 opt-in；不安装 Codex CLI，不自动批准 shell |

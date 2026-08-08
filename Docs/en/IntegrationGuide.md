@@ -155,7 +155,9 @@ A controlled download should likewise finish to a unique app-owned local path
 before calling PocketRoot. The caller owns network, authentication, license,
 file protection, backup exclusion, and cleanup policy. The installer still
 requires a real regular file and captures its own private snapshot. The import
-copy may be removed under product policy after `prepareSystem` returns.
+copy may be removed under product policy after `prepareSystem` returns. The
+caller archive must remain outside the managed `applicationSupportURL/rootfs`
+tree; installation rejects that layout so a later reset cannot delete it.
 
 Preparation validates and installs the fakefs directly under
 `applicationSupportURL/rootfs/<version>`, where `meta.db`, `data/`, and
@@ -229,7 +231,41 @@ before process-global shutdown.
 
 SwiftUI passes the same process-retained host to
 `PocketRootIshWorkspaceView(host: pocketRootHost)`; do not recreate the host
-from `body`. The host never downloads or chooses a RootFS and does not install
+from `body`.
+
+Use the high-level host API for a user-visible “Reset Linux environment” action:
+
+```swift
+let removed = try await pocketRootHost.removeRootFS()
+```
+
+For a ready runtime, the host closes every PTY it created, completes native
+shutdown, and then serially removes `<Application Support>/rootfs`.
+Never-prepared idle, unavailable, and terminated hosts can remove it directly.
+An idle host that still retains a prepared system rejects removal so a later
+boot cannot reuse paths that were deleted. The operation is
+idempotent, returns `true` only when managed storage existed, and never deletes
+the caller-owned archive. It is irreversible and removes both the guest OS and
+every user-created guest file. Transitional and failed phases reject the
+operation fail-closed; restart the App and retry with a fresh idle host. A
+successful shutdown also means reinstall and boot must occur in a new App
+process.
+
+A RootFS version update is a new manifest, digest, and compliance review—not a
+user-data migration. The installer transactionally installs the new version
+and updates `current.json`, but neither copies old guest data nor automatically
+deletes old versions. The only public cleanup boundary is currently the entire
+managed `rootfs/` tree. Production Apps should export or migrate data before an
+update, or clearly tell users that the new environment starts empty.
+
+`applicationSupportURL` participates in system backup by default. Because the
+managed tree contains both reproducible OS data and potentially irreplaceable
+user files, PocketRoot does not automatically exclude the whole directory from
+backup. The host App must explicitly choose its privacy, capacity, and restore
+policy. Excluding an entire demo workspace is a demo decision, not a production
+default.
+
+The host never downloads or chooses a RootFS and does not install
 Node.js, npm, Codex CLI, or an Agent Loop. The two-entry
 [`Examples/PocketRootQuickStartApp`](../../Examples/PocketRootQuickStartApp)
 and full-lifecycle

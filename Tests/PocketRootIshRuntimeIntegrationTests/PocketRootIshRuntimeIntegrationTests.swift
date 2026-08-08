@@ -336,6 +336,218 @@ final class PocketRootIshRuntimeIntegrationTests: XCTestCase {
         )
     }
 
+    @MainActor
+    func testWorkspaceHostShutsDownBeforeRemovingManagedRootFS() async throws {
+        let fixture = try makeHostRemovalFixture()
+        addTeardownBlock {
+            try? FileManager.default.removeItem(at: fixture.containerURL)
+        }
+        let runtime = WorkspaceHostLinuxRuntime()
+        let system = PocketRootSystem(runtime: runtime)
+        let controller = PocketRootIshRuntimeController(
+            configuration: fixture.configuration,
+            runtimeAvailable: true,
+            prepareSystem: { _ in
+                PocketRootPreparedIshSystem(
+                    system: system,
+                    installation: PocketRootRootFSInstallation(
+                        version: "fixture-v1",
+                        rootFSURL: fixture.installedURL,
+                        reusedExistingInstallation: true
+                    )
+                )
+            }
+        )
+        let host = PocketRootIshWorkspaceHost(runtimeController: controller)
+
+        _ = try await host.boot()
+        let removedAfterBoot = try await host.removeRootFS()
+        XCTAssertTrue(removedAfterBoot)
+        let shutdownCountAfterRemoval = await runtime.shutdownCount
+        XCTAssertEqual(shutdownCountAfterRemoval, 1)
+        XCTAssertEqual(host.phase, .terminated)
+        XCTAssertFalse(
+            FileManager.default.fileExists(
+                atPath: fixture.rootFSDirectoryURL.path
+            )
+        )
+        XCTAssertTrue(
+            FileManager.default.fileExists(
+                atPath: fixture.configuration.archiveURL.path
+            )
+        )
+        let removedAgain = try await host.removeRootFS()
+        XCTAssertFalse(removedAgain)
+        let shutdownCountAfterIdempotentRemoval = await runtime.shutdownCount
+        XCTAssertEqual(shutdownCountAfterIdempotentRemoval, 1)
+    }
+
+    @MainActor
+    func testWorkspaceHostRemovesRootFSWithoutBootingIdleRuntime() async throws {
+        let fixture = try makeHostRemovalFixture()
+        addTeardownBlock {
+            try? FileManager.default.removeItem(at: fixture.containerURL)
+        }
+        let controller = PocketRootIshRuntimeController(
+            configuration: fixture.configuration,
+            runtimeAvailable: true,
+            prepareSystem: { _ in
+                XCTFail("Idle removal must not prepare or boot the runtime.")
+                throw CocoaError(.fileReadUnknown)
+            }
+        )
+        let host = PocketRootIshWorkspaceHost(runtimeController: controller)
+
+        let removedWhileIdle = try await host.removeRootFS()
+        XCTAssertTrue(removedWhileIdle)
+        XCTAssertEqual(host.phase, .idle)
+        XCTAssertFalse(
+            FileManager.default.fileExists(
+                atPath: fixture.rootFSDirectoryURL.path
+            )
+        )
+    }
+
+    @MainActor
+    func testWorkspaceHostCoalescesRemovalAndRejectsBootUntilItFinishes()
+        async throws
+    {
+        let fixture = try makeHostRemovalFixture()
+        addTeardownBlock {
+            try? FileManager.default.removeItem(at: fixture.containerURL)
+        }
+        let removalGate = WorkspaceHostPreparationGate()
+        let controller = PocketRootIshRuntimeController(
+            configuration: fixture.configuration,
+            runtimeAvailable: true,
+            prepareSystem: { _ in
+                XCTFail("Boot must not start while RootFS removal is active.")
+                throw CocoaError(.fileReadUnknown)
+            }
+        )
+        let host = PocketRootIshWorkspaceHost(
+            runtimeController: controller,
+            rootFSRemover: {
+                await removalGate.enter()
+                return true
+            }
+        )
+
+        let firstRemoval = Task { @MainActor in
+            try await host.removeRootFS()
+        }
+        await removalGate.waitUntilEntered()
+        XCTAssertFalse(host.canBoot)
+        XCTAssertFalse(host.canOpenWorkspace)
+        XCTAssertNil(host.readySystem)
+
+        do {
+            _ = try await host.boot()
+            XCTFail("Boot unexpectedly joined an active RootFS removal.")
+        } catch let error as PocketRootIshRuntimeControllerError {
+            XCTAssertEqual(error, .rootFSRemovalInProgress)
+        }
+
+        let secondRemoval = Task { @MainActor in
+            try await host.removeRootFS()
+        }
+        await Task.yield()
+        let removalCount = await removalGate.entryCount
+        XCTAssertEqual(removalCount, 1)
+        await removalGate.resume()
+
+        let firstRemoved = try await firstRemoval.value
+        let secondRemoved = try await secondRemoval.value
+        XCTAssertTrue(firstRemoved)
+        XCTAssertTrue(secondRemoved)
+    }
+
+    @MainActor
+    func testWorkspaceHostFailsClosedRemovingRootFSAfterRuntimeFailure()
+        async throws
+    {
+        let fixture = try makeHostRemovalFixture()
+        addTeardownBlock {
+            try? FileManager.default.removeItem(at: fixture.containerURL)
+        }
+        let controller = PocketRootIshRuntimeController(
+            configuration: fixture.configuration,
+            runtimeAvailable: true,
+            prepareSystem: { _ in
+                throw CocoaError(.fileReadCorruptFile)
+            }
+        )
+        let host = PocketRootIshWorkspaceHost(runtimeController: controller)
+        do {
+            _ = try await host.boot()
+            XCTFail("The injected preparation failure unexpectedly booted.")
+        } catch {
+            // Expected preparation failure.
+        }
+
+        do {
+            _ = try await host.removeRootFS()
+            XCTFail("A failed runtime must not permit in-process removal.")
+        } catch let error as PocketRootIshRuntimeControllerError {
+            guard case .rootFSRemovalRequiresRuntimeRestart(.failed(_)) = error else {
+                return XCTFail("Unexpected removal error: \(error)")
+            }
+        }
+        XCTAssertTrue(
+            FileManager.default.fileExists(
+                atPath: fixture.rootFSDirectoryURL.path
+            )
+        )
+    }
+
+    @MainActor
+    func testWorkspaceHostRejectsRemovalWhenIdleControllerRetainsSystem()
+        async throws
+    {
+        let fixture = try makeHostRemovalFixture()
+        addTeardownBlock {
+            try? FileManager.default.removeItem(at: fixture.containerURL)
+        }
+        let runtime = WorkspaceHostLinuxRuntime()
+        let system = PocketRootSystem(runtime: runtime)
+        let controller = PocketRootIshRuntimeController(
+            configuration: fixture.configuration,
+            runtimeAvailable: true,
+            prepareSystem: { _ in
+                PocketRootPreparedIshSystem(
+                    system: system,
+                    installation: PocketRootRootFSInstallation(
+                        version: "fixture-v1",
+                        rootFSURL: fixture.installedURL,
+                        reusedExistingInstallation: true
+                    )
+                )
+            }
+        )
+        let host = PocketRootIshWorkspaceHost(runtimeController: controller)
+
+        _ = try await host.boot()
+        await runtime.setState(.idle)
+        await host.refreshRuntimeState()
+        XCTAssertEqual(host.phase, .idle)
+        XCTAssertNotNil(controller.preparedSystem)
+
+        do {
+            _ = try await host.removeRootFS()
+            XCTFail("A retained prepared system must block RootFS removal.")
+        } catch let error as PocketRootIshRuntimeControllerError {
+            XCTAssertEqual(
+                error,
+                .rootFSRemovalRequiresRuntimeRestart(.idle)
+            )
+        }
+        XCTAssertTrue(
+            FileManager.default.fileExists(
+                atPath: fixture.rootFSDirectoryURL.path
+            )
+        )
+    }
+
     func testFactoryPreparesArchiveAndAlignsSystemVersion() async throws {
         let directoryURL = FileManager.default.temporaryDirectory.appendingPathComponent(
             "PocketRootIntegrationTests-\(UUID().uuidString)",
@@ -474,6 +686,49 @@ final class PocketRootIshRuntimeIntegrationTests: XCTestCase {
             expandedArchiveByteCount: 10_240
         )
         return (directoryURL, archiveURL, applicationSupportURL, manifest)
+    }
+
+    private func makeHostRemovalFixture() throws -> (
+        containerURL: URL,
+        configuration: PocketRootIshRuntimeControllerConfiguration,
+        rootFSDirectoryURL: URL,
+        installedURL: URL
+    ) {
+        let containerURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "PocketRootHostRemovalTests-\(UUID().uuidString)",
+                isDirectory: true
+            )
+        let applicationSupportURL = containerURL.appendingPathComponent(
+            "Application Support/PocketRoot",
+            isDirectory: true
+        )
+        let rootFSDirectoryURL = applicationSupportURL.appendingPathComponent(
+            "rootfs",
+            isDirectory: true
+        )
+        let installedURL = rootFSDirectoryURL.appendingPathComponent(
+            "fixture-v1",
+            isDirectory: true
+        )
+        try FileManager.default.createDirectory(
+            at: installedURL.appendingPathComponent("data", isDirectory: true),
+            withIntermediateDirectories: true
+        )
+        let archiveURL = containerURL.appendingPathComponent(
+            "reviewed-rootfs.tar.gz",
+            isDirectory: false
+        )
+        try Data("reviewed archive".utf8).write(to: archiveURL)
+        return (
+            containerURL,
+            PocketRootIshRuntimeControllerConfiguration(
+                archiveURL: archiveURL,
+                applicationSupportURL: applicationSupportURL
+            ),
+            rootFSDirectoryURL,
+            installedURL
+        )
     }
 
     private func makeControllerConfiguration()

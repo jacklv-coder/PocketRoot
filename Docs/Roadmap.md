@@ -103,7 +103,7 @@ iPhone 的一次性命令、PTY 和 App 生命周期路径；不覆盖 iPad、�
 | 原生 transport 背压 | 已通过 | 有界 protocol/session/stdin/log/control queue、跨越 4 MiB backlog 的 8 MiB 二进制输出及 256 MiB Simulator 生命周期 `ru_maxrss` 门禁均已接入；真机 jetsam 由 lifecycle 门禁维护 |
 | 原生 control path 端到端时间界限 | 已通过 | ABI.6 finite SPAWN 与有界异步 close/terminate 已接入；PocketRoot 从 driver 入口复用统一 deadline，并为退出确认保留固定有界清理窗口 |
 | iOS 18 Simulator 原生行为 | 已通过 | v0.4.0-abi.6 已重跑 17 项 soft-shutdown/peak-memory smoke；后续变更继续回归 |
-| RootFS 安全安装与恢复 | 已通过 | 保持真实资产、snapshot、容量预检、rollback 和 recovery coverage |
+| RootFS 安装、恢复与显式重置 | 已通过 | 保持真实资产、snapshot、容量预检、rollback/recovery、no-follow 整树删除与 shutdown-before-remove coverage |
 | RootFS/runtime composition | 已通过 | 保持 caller-controlled、no-download、no-auto-boot |
 | 默认 post-boot identity gate | 已通过 | `aarch64`、Alpine identity、可选 version 与 command context 通过后才 ready；保持失败占用槽位回归 |
 | Demo 与外部宿主 runtime 接入 | 已通过 | Demo 和独立 Host App 共用公开 controller；Debug 只注入精确校验的仓库外 RootFS，Release 保持不注入 |
