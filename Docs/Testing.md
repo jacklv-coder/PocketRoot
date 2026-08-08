@@ -574,7 +574,19 @@ iPhone UI 和外部消费者门禁。纯文档、CHANGELOG 或发行证据改动
 合规生成器和源码审计，不启动 Xcode 构建、RootFS/Simulator 下载或 UI。Package-only
 改动只增加 `swift test`；只有影响对应产品边界的改动才进入 iOS build、native 或 UI。
 
-普通 `pull_request` 与 `main` push 的 UI 层只运行 iPhone：Quick Start 保留最小
+`main` 收到 PR 合并后的 push 时，Linux classifier 会先通过只读 GitHub API 验证
+该提交精确对应一个已合并到本仓库 `main` 的 PR，并确认其不可变 head SHA 只关联这一个
+PR。候选运行还必须匹配该 PR 的 head 仓库、分支、SHA、固定 `.github/workflows/ci.yml`、
+`pull_request` 事件、合并前完成时间，以及 Classifier、主构建、native runtime、外部消费者、
+Quick Start iPhone 和 Host App iPhone 六个成功 job。合并提交还必须以该 PR 的固定 base SHA
+为唯一父提交，并与已测试的 head commit 具有完全相同的 tree；常规 squash merge 满足这个
+可验证边界。全部匹配时，`main` 只保留文档、脚本契约、合规生成器和源码审计，不重复下载
+RootFS、安装 Simulator 或执行 Xcode/UI。直接 push、无法证明 tree 等价的 merge/rebase、
+head SHA 关联多个 PR、PR 修改 CI workflow/verifier/local action、缺少/跳过 job、API/权限/
+字段异常，或 PR CI 未完整通过时都会 fail-closed，回退到按 diff 选择的完整门禁；手动运行
+仍强制全部验证层。
+
+普通 `pull_request`，以及不能安全复用 PR CI 的 `main` push，其 UI 层只运行 iPhone：Quick Start 保留最小
 Terminal/Files 闭环，Host App 运行代表性的 PTY 创建文件并由 Files 预览闭环；只有公共
 接入边界变化时才增加外部消费者。完成几个较大功能块、需要验证里程碑分支，或进入最终
 发布候选时，从 Actions 对目标分支手动运行 `CI`：手动运行强制启用全部验证层和完整

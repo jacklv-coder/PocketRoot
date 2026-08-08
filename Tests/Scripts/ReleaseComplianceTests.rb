@@ -1115,6 +1115,48 @@ class ReleaseComplianceTests < Minitest::Test
     )
   end
 
+  def test_main_push_reuses_only_complete_verified_pull_request_ci
+    workflow = REPOSITORY_ROOT.join(".github/workflows/ci.yml").binread
+    verifier =
+      REPOSITORY_ROOT.join("Scripts/verify-pr-ci-reuse.rb").binread
+    verifier_tests =
+      REPOSITORY_ROOT.join("Tests/Scripts/PRCIReuseTests.rb").binread
+
+    assert_includes workflow, "actions: read"
+    assert_includes workflow, "pull-requests: read"
+    assert_includes workflow, "GITHUB_TOKEN: ${{ github.token }}"
+    assert_includes workflow, "ruby Scripts/verify-pr-ci-reuse.rb"
+    assert_includes workflow, '--commit "$HEAD_SHA"'
+    assert_includes workflow, "reused_pr_ci:"
+    assert_includes workflow, 'if [[ "$reused_pr_ci" == "true" ]]'
+    assert_includes workflow, "reuse_reason=verifier_failed"
+    assert_includes workflow, "ruby Tests/Scripts/PRCIReuseTests.rb"
+
+    assert_includes verifier, 'WORKFLOW_PATH = ".github/workflows/ci.yml"'
+    assert_includes verifier, 'run["event"] == "pull_request"'
+    assert_includes verifier, 'run["head_sha"] == head_sha'
+    assert_includes verifier, 'run["head_branch"] == head_ref'
+    assert_includes verifier, 'run.dig("head_repository", "full_name") == head_repository'
+    assert_includes verifier, 'head_pull_requests.length != 1'
+    assert_includes verifier, '!same_pull_request?(head_pull_requests.first, pull_request)'
+    assert_includes verifier, 'return reject("ci_trust_boundary_changed")'
+    assert_includes verifier, 'parents.first["sha"] == base_sha'
+    assert_includes verifier, 'head_commit.dig("commit", "tree", "sha") == merge_tree'
+    assert_includes verifier, 'run["conclusion"] == "success"'
+    assert_includes verifier, 'updated_at <= merged_at'
+    assert_includes verifier, "matching_jobs.length == 1"
+    assert_includes verifier, 'matching_jobs.first["conclusion"] == "success"'
+    assert_includes verifier, 'Decision.new(reusable: false'
+    assert_includes verifier_tests,
+      "test_accepts_exact_squash_merge_with_all_required_jobs"
+    assert_includes verifier_tests,
+      "test_rejects_skipped_or_missing_required_job"
+    assert_includes verifier_tests,
+      "test_rejects_pull_request_that_changes_ci_trust_boundary"
+    assert_includes verifier_tests,
+      "test_rejects_rebase_shape_whose_last_parent_is_not_the_pr_base"
+  end
+
   def test_standalone_host_retains_runtime_across_scene_recreation
     source =
       REPOSITORY_ROOT

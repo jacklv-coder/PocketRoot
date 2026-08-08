@@ -526,7 +526,26 @@ compliance-generator, and source-audit checks without starting Xcode builds,
 RootFS/Simulator downloads, or UI. Package-only changes add `swift test`; iOS,
 native, and UI lanes run only when their product boundaries are affected.
 
-Routine `pull_request` and `main` push UI validation is iPhone-only. Quick Start
+When `main` receives a merged-PR push, the Linux classifier first uses the
+read-only GitHub API to verify that the commit maps exactly to one PR merged
+into this repository's `main`, and that its immutable head SHA is associated
+with only that PR. A candidate run must also match the PR's head repository,
+branch, and SHA, the fixed `.github/workflows/ci.yml` path, a `pull_request`
+event completed before the merge, and successful Classifier, primary build,
+native runtime, external consumer, Quick Start iPhone, and Host App iPhone jobs.
+The merged commit must also have the PR's fixed base SHA as its sole parent and
+the exact tree of the tested head commit; a routine squash merge satisfies this
+verifiable boundary. Only when every signal matches does `main` retain the
+documentation, script-contract, compliance, and source-audit checks without
+downloading RootFS/Simulator assets or repeating Xcode/UI. Direct pushes,
+merge/rebase results without provable tree equivalence, head SHAs associated
+with multiple PRs, PR changes to the CI workflow, verifier, or local actions,
+missing or skipped jobs, API, permission, or metadata failures, and incomplete
+PR CI all fail closed to the normal diff-selected gates. Manual dispatch still
+forces every validation tier.
+
+Routine `pull_request` validation, and `main` pushes that cannot safely reuse PR
+CI, are iPhone-only. Quick Start
 keeps the minimal Terminal/Files closure, while Host App runs the representative
 PTY-created-file-to-Files-preview closure; public integration changes also add
 the external consumer. After several larger feature blocks, for a milestone
